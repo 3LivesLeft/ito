@@ -122,13 +122,28 @@ MeshBeacon never lets RNS start in that state.
   watchdog poll in test).
 - Isolated node (no peers): warning logged at start and at most every 6 hours; no outbound
   connection attempts.
-- Memory guard: a test hook raises reported RSS above the ceiling → controlled restart.
+- Memory guard: a test hook raises reported RSS + swap above the ceiling → controlled restart.
 - CPU: processes run with the configured niceness.
 - Storage: fill a test `/data` to below the thresholds → warning / refusal as designed; oversized
   `cache/` cleared on start.
 - Logs: a local announce flood or a debug-level RNS produces at most the configured rate; a
   "lines suppressed" summary appears.
 - `SIGTERM` honoured within the Supervisor timeout.
+
+### 5.1 Low-memory profile
+
+The reference device has 8 GB, which would hide excessive memory use, so lightweight operation is
+tested separately in CI and before release:
+
+| ID | Test | Pass criteria |
+|---|---|---|
+| L1 | Container started with `--memory=256m --memory-swap=256m` (no swap), both architectures (aarch64 under QEMU in CI) | Starts, renders config, connects to an isolated test peer |
+| L2 | L1 plus a bounded local announce flood against a transport-enabled instance | No out-of-memory kill; memory guard restarts, if any, are logged and recover |
+| L3 | L1 with transport on for 24 h on the isolated test network (release check, not every push) | No out-of-memory kill; RSS + swap stays below the 256 MB guard |
+| L4 | Idle measurement in CI (amd64 and aarch64) | RSS + swap of all app processes ≤ 128 MB; a regression of more than 10 % against the previous release fails the build |
+
+If a lower-memory physical device becomes available (feasibility Q-34), L1–L3 are repeated on it
+before major releases.
 
 ## 6. Reference environment testing (before each release)
 
@@ -185,7 +200,7 @@ Rules:
 | S3 | **Transport on**, connected to ≥ 2 peers (at least one busy network) | **≥ 7 days** | No monotonic RSS growth after warm-up; RSS below the ceiling (no guard restarts) or guard restarts documented and explained; CPU at reduced priority and HA UI responsive throughout; `/data` growth bounded; bytes written to SSD recorded; 5G data in/out recorded per day; no peer-operator bans (e.g. Diamond limits) |
 | S4 | Transport on during an RNS release-candidate upgrade (when an upgrade is due) | 72 h | As S3; identity hash unchanged after upgrade |
 
-Recorded for each soak: RSS and CPU at least hourly (from the periodic status line), `/data` size
+Recorded for each soak: RSS, **swap** and CPU at least hourly (from the periodic status line), `/data` size
 daily, bytes in/out daily, restart counts by cause.
 
 ### 6.4 Internet outage recovery

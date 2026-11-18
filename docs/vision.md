@@ -60,7 +60,8 @@ Over time it aims to let a household:
    MeshChat) because it is the same protocol — not through bridges or translations.
 7. **Good network citizenship.** Be a considerate neighbour on shared networks and shared radio
    spectrum.
-8. **Light on resources.** The Home Assistant host comes first.
+8. **Light on resources.** The Home Assistant host comes first. MeshBeacon must run comfortably on
+   lower-memory devices, not just on well-equipped ones: the idle target is 128 MB or less.
 9. **Maintainable, testable and portable.** A small core that runs with or without Home
    Assistant, tested against real, isolated Reticulum networks.
 10. **Honest.** Clear about what works, what does not, what is experimental, and how the project

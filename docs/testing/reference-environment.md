@@ -22,7 +22,8 @@ Used for: hardware, compatibility, soak and recovery testing before each release
 | Home Assistant Core | **2026.11.2** | Maintainer |
 | Supervisor | **2026.11.0** — reported healthy and supported | Maintainer |
 | Docker | 29.8.2 | Maintainer |
-| RAM | Believed to be 8 GB — **awaiting confirmation** (Q-30) | Maintainer |
+| RAM | **8 GB model** — 7.6 GiB usable; 1.3 GiB used and 6.4 GiB available at the time of reporting (before MeshBeacon is installed) | Maintainer |
+| Swap | 2.5 GiB, zero usage at the time of reporting | Maintainer |
 | Storage | 916.2 GB total, 8.1 GB used (SSD) | Maintainer |
 | Power | UPS battery backup | Maintainer |
 | Uplink | 5G broadband; CGNAT **not yet confirmed** (Q-32) | Maintainer |
@@ -50,8 +51,14 @@ no 32-bit (`armv7`) build is needed.
 
 ## 3. Implications for MeshBeacon
 
-- **Memory:** with 8 GB (once confirmed) the ≤ 128 MB idle target and 256 MB ceiling are
-  comfortable. Defaults must still suit 1–2 GB Pi 4 boards, so they are not raised for this device.
+- **Memory:** the reference device has ample headroom (6.4 GiB available with all current apps
+  running), so it **cannot by itself show whether MeshBeacon is light enough**. The idle
+  acceptance criterion stays at **≤ 128 MB**, and defaults are designed for lower-memory devices
+  (for example 1–2 GB Raspberry Pi boards) — never raised to suit this one. Low-memory behaviour
+  is tested separately with an enforced container memory limit (testing strategy §5.1).
+- **Swap:** the device has swap, so memory pressure may show up as swap use rather than failure.
+  Memory measurements and the memory guard therefore count **RSS plus swap** (`VmRSS` + `VmSwap`)
+  for MeshBeacon's processes, and soak tests record swap use.
 - **Storage:** ample space; storage guards matter for SSD **wear** (log volume and SQLite writes)
   more than capacity. The soak tests record bytes written.
 - **Wi-Fi as the default interface:** Wi-Fi drops and reconnections are expected events. They are
@@ -65,7 +72,6 @@ no 32-bit (`armv7`) build is needed.
 
 | ID | Item |
 |---|---|
-| Q-30 | Confirm RAM (believed 8 GB) — e.g. from *Settings → System → Hardware*; record the figure only |
 | Q-31 | Will the reference device move to Ethernet? Testing runs on Wi-Fi either way; repeat on Ethernet if it moves |
 | Q-32 | Confirm whether the 5G connection is behind CGNAT. One way: compare the router's WAN address with the public address a website reports, without recording either here |
 | Q-33 | Does AdGuard Home serve DNS for the Supervisor/apps on this device, and with which blocklists? |

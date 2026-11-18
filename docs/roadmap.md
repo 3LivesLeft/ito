@@ -131,23 +131,28 @@ published RNS-upgrade policy.
 
 ### Resources
 
-20. Idle memory of the whole app ≤ 128 MB on aarch64.
-21. On the [reference environment](testing/reference-environment.md): baseline R1–R4,
+20. Idle memory of the whole app **≤ 128 MB** on aarch64, measured as RSS + swap of all app
+    processes after 1 hour, on the reference device — retained even though the reference board has
+    8 GB.
+21. **Low-memory profile:** with the container limited to 256 MB of memory and no swap, the app
+    starts, connects, survives a local announce flood test and runs 24 hours with transport on
+    without being killed for lack of memory (testing strategy §5.1).
+22. On the [reference environment](testing/reference-environment.md): baseline R1–R4,
     compatibility C1–C10 (Tailscale, AdGuard Home, Matter Server), soaks S1–S3 (including **≥ 7
     days with transport on**), internet-outage O1–O5, power-outage P1–P5 and backup/restore B1–B6
     all pass ([testing strategy §6](testing/strategy.md#6-reference-environment-testing-before-each-release)).
-22. Under a local announce flood in test, logs remain rate-limited and HA stays responsive.
+23. Under a local announce flood in test, logs remain rate-limited and HA stays responsive.
 
 ### Supply chain and licensing
 
-23. Dependencies hash-pinned; base image digest-pinned; image Cosign-signed; SBOM published.
-24. `THIRD_PARTY_NOTICES` (including the full Reticulum License text) and the GPL source bundle are
+24. Dependencies hash-pinned; base image digest-pinned; image Cosign-signed; SBOM published.
+25. `THIRD_PARTY_NOTICES` (including the full Reticulum License text) and the GPL source bundle are
     published with the image (licensing O1–O7).
-25. CI green: lint, unit, isolated integration, container tests on both architectures, secret
+26. CI green: lint, unit, isolated integration, container tests on both architectures, secret
     scanning, vulnerability scanning, licence allow-list.
 
 ### Documentation and provenance
 
-26. `DOCS.md` covers: what the app does, privacy of public peers, transport mode, backups contain
+27. `DOCS.md` covers: what the app does, privacy of public peers, transport mode, backups contain
     the private key, how to restore, experimental status, Reticulum License conditions.
-27. AI assistance disclosed; every merged change reviewed by the named human maintainer.
+28. AI assistance disclosed; every merged change reviewed by the named human maintainer.

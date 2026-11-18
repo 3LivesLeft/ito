@@ -573,7 +573,8 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-27 | Is GitHub private vulnerability reporting enabled on the repository? | Open — maintainer (could not be checked from the research environment) |
 | Q-28 | Will Ratspeak (and a second operator) agree to being listed as presets? | Open — maintainer |
 | Q-29 | Courtesy contact with the existing MeshBeacon maintainers — outcome | Open — maintainer, before first image |
-| Q-30 | Confirm the reference device's RAM (believed 8 GB) | Open — maintainer |
+| Q-30 | Confirm the reference device's RAM | **Resolved:** 8 GB model, 7.6 GiB usable, 2.5 GiB swap ([reference environment](../testing/reference-environment.md)) |
+| Q-34 | Is a lower-memory physical device (e.g. a 1–2 GB Raspberry Pi) available for occasional release testing, in addition to the enforced-limit container test? | Open — maintainer |
 | Q-31 | Will the reference device move from Wi-Fi to Ethernet? | Open — maintainer; tests run on Wi-Fi meanwhile |
 | Q-32 | Is the reference 5G connection behind CGNAT? | Open — maintainer |
 | Q-33 | Does AdGuard Home serve DNS for apps on the reference device, and with which blocklists? | Open — maintainer; test C5–C8 |
