@@ -11,7 +11,11 @@ chown -R meshbeacon:meshbeacon /data/meshbeacon /data/reticulum 2>/dev/null \
 chmod 0700 /data/meshbeacon /data/reticulum /data/reticulum/storage 2>/dev/null || true
 # options.json is written by the Supervisor; the service user only needs to read it.
 if [ -f /data/options.json ]; then
-    chgrp meshbeacon /data/options.json 2>/dev/null && chmod 0640 /data/options.json 2>/dev/null || true
+    if chgrp meshbeacon /data/options.json 2>/dev/null; then
+        chmod 0640 /data/options.json 2>/dev/null || true
+    fi
 fi
-chgrp meshbeacon /data 2>/dev/null && chmod 0750 /data 2>/dev/null || true
+if chgrp meshbeacon /data 2>/dev/null; then
+    chmod 0750 /data 2>/dev/null || true
+fi
 exit 0
