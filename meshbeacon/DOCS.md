@@ -17,7 +17,8 @@ in later versions of MeshBeacon, over radio as well.
   backups.
 - Optionally **shares your connection** with others (transport mode, off by default).
 
-It does not yet show entities or dashboards in Home Assistant, send messages, or use radio.
+From v0.2 it can also **show its status in Home Assistant** (optional, off by default; see
+below). It does not yet send messages or use radio.
 
 ## Install as a local app (prototype)
 
@@ -108,6 +109,26 @@ folder. MeshBeacon will not start while the option is left on after a replacemen
 
 MeshBeacon always stays "running" in Home Assistant while it waits for you, so that the watchdog
 does not restart it pointlessly.
+
+## Show MeshBeacon's status in Home Assistant (v0.2)
+
+Switch on **Show MeshBeacon's status in Home Assistant** in the Configuration tab and restart the
+app. Home Assistant then shows **MeshBeacon discovered** under Settings → Devices & services. Choose
+**Add** to get sensors for status, connectivity, peers, traffic, known paths, relayed links, CPU,
+memory and restarts, with history and statistics kept by Home Assistant itself. An example
+dashboard is in the repository (`docs/home-assistant/dashboard.yaml`).
+
+- **Read-only.** Home Assistant can see the status but cannot control your node.
+- **Private.** The status stays on Home Assistant's internal network, protected by a key that
+  changes every time the app starts. It contains no addresses, keys, passphrases or network names.
+  Nothing is sent anywhere else.
+- **Honest numbers.** Anything Reticulum does not report is shown as "unknown". MeshBeacon shows
+  **relayed links** as a sign that transport mode is carrying traffic for others; Reticulum does not
+  report how many packets it forwarded, so MeshBeacon does not show that.
+- After an app restart, the sensors are unavailable for a few seconds while Home Assistant receives
+  the new key.
+
+Full details: `docs/home-assistant-integration.md` in the repository.
 
 ## Resource use
 

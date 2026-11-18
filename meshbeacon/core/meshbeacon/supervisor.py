@@ -8,6 +8,7 @@ Runs as the unprivileged ``meshbeacon`` user. Deliberately does not import RNS (
 from __future__ import annotations
 
 import contextlib
+import functools
 import hashlib
 import json
 import os
@@ -73,6 +74,15 @@ PROBLEMS = (
     "unexpected",
 )
 SUPERVISOR_TOKEN_ENV = "SUPERVISOR_TOKEN"  # noqa: S105 - the variable name, not a secret
+
+
+@functools.cache
+def installed_rns_version() -> str | None:
+    """The installed RNS version (looked up once: the lookup scans site-packages)."""
+    try:
+        return metadata.version("rns")
+    except metadata.PackageNotFoundError:
+        return None
 
 
 class LineBuffer:
@@ -554,16 +564,12 @@ class Supervisor:
         return code, None if code == "none" else self.redact(describe(snap).lstrip("⚠ "))
 
     def build_snapshot(self) -> dict[str, Any]:
-        try:
-            rns_version: str | None = metadata.version("rns")
-        except metadata.PackageNotFoundError:
-            rns_version = None
         code, message = self.problem()
         snap = self.snapshot
         return self.collector.snapshot(
             {
                 "version": __version__,
-                "rns_version": rns_version,
+                "rns_version": installed_rns_version(),
                 "arch": platform.machine(),
                 "state": self.state,
                 "connectivity": snap.state.value if snap is not None else Connectivity.UNKNOWN.value,

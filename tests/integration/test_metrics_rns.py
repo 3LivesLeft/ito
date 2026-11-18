@@ -239,3 +239,21 @@ def test_transport_mode_relays_a_link(data, tmp_path, supervisor, runner_factory
         for p in procs:
             p.terminate()
             p.wait(10)
+
+
+def test_saturated_api_never_starves_the_health_endpoint(data, supervisor, runner_factory):
+    import socket
+
+    write_options(data, home_assistant_integration=True)
+    r = start_runner(runner_factory, data, supervisor)
+    assert wait_for(lambda: supervisor.messages, timeout=30)
+    token, port = supervisor.messages[0]["config"]["token"], supervisor.messages[0]["config"]["port"]
+    idle = [socket.create_connection(("127.0.0.1", port)) for _ in range(20)]  # far more than the limit
+    try:
+        for _ in range(5):
+            assert r.health() == 200  # the watchdog's endpoint has its own port and server
+        assert r.sup.child is not None or r.sup.state == "starting"
+    finally:
+        for s in idle:
+            s.close()
+    assert wait_for(lambda: fetch(port, token)[0] == 200, timeout=20)  # the API recovers by itself

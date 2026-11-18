@@ -41,12 +41,21 @@ Explicitly **out of scope** for v0.1.0 (moved or deferred):
 | Remote automation | v0.6 | |
 | Raw RNS configuration | Not planned | Would bypass validation and privacy defaults |
 
-## v0.2.0 — Visibility
+## v0.2.0 — Visibility (in progress, branch `feature/v0.2.0-observability`)
 
-- HA custom integration (HACS) with a token-authenticated local API.
-- Entities: process health, connectivity state, per-peer status, RX/TX bytes, memory.
-- Repair issues for "isolated node", "no peers reachable", "identity problem".
-- Redacted diagnostics download; identity import.
+Lightweight, privacy-first monitoring ([feasibility and architecture](research/v0.2-observability.md),
+[ADR 0006](adr/0006-local-metrics-api.md), proposed):
+
+- Optional, read-only, token-authenticated local status API (internal network only, off by
+  default), delivered to Home Assistant by Supervisor discovery.
+- HA custom integration: status, connectivity, diagnosis, per-peer connection and "connected
+  since", traffic totals and rates, known paths, relayed links (forwarding indicator), announces,
+  CPU, memory, Reticulum restarts, reconnections; HA's recorder provides history and statistics.
+- Repair issues for "isolated node", "no peers reachable" and anything that needs attention
+  (identity, options, storage, repeated failures).
+- Redacted diagnostics download; an example dashboard of native HA cards.
+- **Not** included: a forwarded-packet count (RNS exposes none through supported interfaces),
+  identity import (deferred), any control from Home Assistant, HACS publication.
 
 ## v0.3.0 — Messaging
 
@@ -132,3 +141,27 @@ All of tier A (LP-1 to LP-20), plus:
 | RG-10 | Public peer presets: only if verified (V1–V7, two independent operators, operator consent — Q-13, Q-28); otherwise none shipped | Maintainer | Not started |
 | RG-11 | Private vulnerability reporting enabled — Q-27 | Maintainer | Not started |
 | RG-12 | AI assistance disclosed; every merged change reviewed by the named human maintainer | Maintainer | Not started |
+
+---
+
+## v0.2.0 acceptance criteria
+
+Same evidence rules as v0.1.0. Container figures come from the test-only stand-in base unless
+stated otherwise. **They are not Raspberry Pi validation.**
+
+| ID | Criterion | Evidence type | Status |
+|---|---|---|---|
+| OB-1 | With default options, no API listener exists and no discovery message is sent; `config.yaml` adds only `discovery` (no `hassio_api`, `homeassistant_api`, ports or ingress) | Automated (integration, container, static `config.yaml`) | Met (automated: `test_api_is_off_by_default`; container defaults test sees only port 8099; `test_discovery_is_the_only_new_supervisor_feature`) |
+| OB-2 | With the option on, one discovery message carries host, port and token, using the Supervisor token without `hassio_api`; switching the option off withdraws it | Automated (fake Supervisor) + manual on the Pi | Automated part met (`test_end_to_end_metrics_via_discovery`, container `test_home_assistant_integration_end_to_end`, `test_discovery_withdraw`); real Supervisor pending |
+| OB-3 | The API answers only `GET /api/v1/status` with a valid bearer token: 401 otherwise, 404 for other paths, 501 for other methods; tokens ≥ 256 bits, random per start, compared in constant time | Automated | Met (`tests/unit/test_api.py`) |
+| OB-4 | Served data and logs contain no identity, destination or interface hashes, peer hosts or ports, network names, passphrases, the API token or the Supervisor token | Automated | Met (integration test asserts on the served JSON and the log) |
+| OB-5 | The Supervisor token never reaches the prepare step or Reticulum | Automated (`/proc/<pid>/environ`) | Met (integration and container tests) |
+| OB-6 | Values RNS does not provide are reported as unavailable, never zero; no forwarded-packet figure; the RNS keys read are pinned by a contract test | Automated | Met (`test_missing_values_are_unavailable_never_zero`, `test_rns_provides_every_key_meshbeacon_reads`) |
+| OB-7 | Accuracy on isolated networks: a peer shows disconnected and reconnected (reconnection counted); known paths equal the path table size; in transport mode a link between two otherwise separate endpoints appears as a relayed link | Automated (real RNS, loopback) | Met (`test_end_to_end_metrics_via_discovery`, `test_transport_mode_relays_a_link`, contract test) |
+| OB-8 | Bounded: ≤ 4 concurrent API requests, 5 s socket timeout, ≤ 8 samples per rate, ≤ 10 peers, 0 bytes of metric storage in the app; a saturated API never affects `/health` | Automated | Met (`test_concurrency_is_bounded_and_slow_clients_time_out`, `test_rate_window_is_bounded`, `test_saturated_api_never_starves_the_health_endpoint`) |
+| OB-9 | Idle memory ≤ 128 MB (RSS + swap, all app processes) with the option on | Container + physical Pi | Container met: **71.3 MiB** on, 69.2 MiB off (amd64, stand-in base); Pi pending |
+| OB-10 | Collection and serving add < 0.1 % of one core on average (idle, polled every 30 s) | Container measurement + Pi | Container met: 0.208 % on against 0.158 % off over 120 s (one sample, amd64, stand-in base); Pi pending |
+| OB-11 | The integration sets up only through discovery; rediscovery updates the token in place without a reauthentication prompt; entities carry state classes for HA's long-term statistics; unavailable values show as unknown; repair issues appear and clear; diagnostics are redacted; the example dashboard references only real entities | Automated (HA 2026.10.4 test harness) | Met (`tests/ha`, 25 tests); strict mypy clean |
+| OB-12 | The integration never imports RNS or the core; its parser accepts the core's real output without loss; enumerations match | Automated | Met (`tests/ha/test_contract.py`) |
+| OB-13 | On the reference Pi: discovered by Home Assistant, entities populate, history graphs fill, no new AppArmor denials, security rating still 8 | Manual, physical — **after** the v0.1 soak | Not started (the running installation must not be changed during the soak) |
+| OB-14 | CI green, including the Home Assistant job, AppArmor-confined container tests, gitleaks and pip-audit | CI run | Pending (first CI run on the branch) |

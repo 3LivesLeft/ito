@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0 — unreleased (in development)
+
+- **New option: "Show MeshBeacon's status in Home Assistant"** (off by default). When it is on,
+  MeshBeacon offers its status to Home Assistant over the internal network only, protected by a
+  key that changes at every start. Home Assistant then offers to add the MeshBeacon integration
+  (included in this repository), which shows status, peers, traffic, known paths, relayed links,
+  CPU, memory and restarts as sensors with history. It is read-only; nothing is sent anywhere else.
+- No new permissions: the app uses Supervisor discovery, which needs no API access. The security
+  rating is unchanged.
+- Each problem now has a stable code alongside its plain-language message, for repair issues in
+  Home Assistant.
+
 ## 0.1.2 — unreleased (local prototype)
 
 - The AppArmor profile now denies the `fsetid` capability explicitly. It was never granted; the
