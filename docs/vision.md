@@ -54,28 +54,33 @@ Over time it aims to let a household:
      without touching a terminal or editing YAML.
    - The Home Assistant integration remains an **optional enhancement**, for entities, custom
      dashboards, long-term statistics and automations. Nothing essential depends on it.
-   - This never justifies weakening security or privacy (principles 4 and 5). When the two
+   - This never justifies weakening security or privacy (principles 5 and 6). When the two
      conflict, the safe design wins and the usability gap is recorded as a defect to solve.
    - It never justifies duplicating monitoring logic or adding avoidable resource use
-     (principle 9).
-3. **Free for everyone, forever.**
-4. **Privacy by default.** Nothing is published, discovered or connected without the user's
+     (principle 10).
+3. **Consistent branding (permanent; maintainer, 18 Nov 2026).** MeshBeacon looks and reads the
+   same everywhere: app store, sidebar, interface, integration, README and documentation. It uses
+   one name, one mark, one palette and one type system, defined in [branding](branding.md). The
+   brand complements Home Assistant and follows the user's theme. It never adds external fonts,
+   CDNs, tracking, permissions or resource use, and never relies on colour alone.
+4. **Free for everyone, forever.**
+5. **Privacy by default.** Nothing is published, discovered or connected without the user's
    explicit choice.
-5. **Security by default.** Least privilege, no privileged containers, no unnecessary Home
+6. **Security by default.** Least privilege, no privileged containers, no unnecessary Home
    Assistant permissions, no public ports by default.
-6. **Reuse upstream.** Build on RNS and LXMF through their public interfaces; never copy or patch
+7. **Reuse upstream.** Build on RNS and LXMF through their public interfaces; never copy or patch
    them.
-7. **Native interoperability.** Talk to the wider ecosystem (Sideband, Ratspeak, NomadNet,
+8. **Native interoperability.** Talk to the wider ecosystem (Sideband, Ratspeak, NomadNet,
    MeshChat) because it is the same protocol — not through bridges or translations.
-8. **Good network citizenship.** Be a considerate neighbour on shared networks and shared radio
+9. **Good network citizenship.** Be a considerate neighbour on shared networks and shared radio
    spectrum.
-9. **Light on resources.** The Home Assistant host comes first. MeshBeacon must run comfortably on
+10. **Light on resources.** The Home Assistant host comes first. MeshBeacon must run comfortably on
    lower-memory devices, not just on well-equipped ones: the idle target is 128 MB or less.
-10. **Maintainable, testable and portable.** A small core that runs with or without Home
+11. **Maintainable, testable and portable.** A small core that runs with or without Home
    Assistant, tested against real, isolated Reticulum networks.
-11. **Honest.** Clear about what works, what does not, what is experimental, and how the project
+12. **Honest.** Clear about what works, what does not, what is experimental, and how the project
    is made — including the use of AI assistance.
-12. **British English** throughout documentation.
+13. **British English** throughout documentation.
 
 ## Who it is for
 

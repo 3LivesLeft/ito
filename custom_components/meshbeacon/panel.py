@@ -39,7 +39,7 @@ FRONTEND = Path(__file__).parent / "frontend"
 MODULE = "meshbeacon-panel.js"
 ELEMENT = "meshbeacon-panel"
 TITLE = "MeshBeacon"
-ICON = "mdi:access-point-network"
+ICON = "mdi:lighthouse-on"  # closest Material Design Icon to the MeshBeacon mark (docs/branding.md)
 REQUIRE_ADMIN = True
 WS_TYPE = f"{DOMAIN}/panel"
 
@@ -49,8 +49,8 @@ _STATIC_DONE = f"{DOMAIN}_static_registered"
 def _fingerprint() -> str:
     """Version tag for the module URL, so browsers never keep a stale copy after an update."""
     digest = hashlib.sha256()
-    for path in sorted(FRONTEND.glob("*.js")):
-        digest.update(path.name.encode())
+    for path in sorted(p for p in FRONTEND.rglob("*") if p.is_file()):
+        digest.update(path.relative_to(FRONTEND).as_posix().encode())
         digest.update(path.read_bytes())
     return digest.hexdigest()[:12]
 

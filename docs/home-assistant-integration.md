@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
+  <img src="../branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+</picture>
+
 # Home Assistant integration (v0.2)
 
 Status: **in development** on `feature/v0.2.0-observability` (draft PR #3). Not published. HACS
@@ -91,8 +96,12 @@ means zero.
 > proposed). If that is accepted, this panel moves into the app and the integration keeps
 > entities, dashboards, statistics and automations only.
 
-When the integration is set up, a **MeshBeacon** entry with its own icon appears in the sidebar for
-administrators. It opens MeshBeacon's own page ([ADR 0007](adr/0007-sidebar-panel.md)). It needs
+When the integration is set up, a **MeshBeacon** entry (icon `mdi:lighthouse-on`) appears in the
+sidebar for administrators. The panel uses MeshBeacon's design system ([branding](branding.md)):
+the brand mark and wordmark, bundled Inter, and accessible status colours. It follows Home
+Assistant's light or dark theme. The integration also ships its own brand images
+(`custom_components/meshbeacon/brand/`), which Home Assistant 2026.3 and later shows under
+Settings → Devices & services and HACS uses. It opens MeshBeacon's own page ([ADR 0007](adr/0007-sidebar-panel.md)). It needs
 no configuration and goes away when the integration is removed.
 
 ![The MeshBeacon panel on a desktop, light theme](images/panel-desktop-light.png)

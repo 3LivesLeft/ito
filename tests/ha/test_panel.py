@@ -29,7 +29,7 @@ async def test_sidebar_entry_is_registered_for_admins_only(hass, mock_entry, aio
     await _set_up(hass, mock_entry, aioclient_mock)
     registered = hass.data[frontend.DATA_PANELS][panel.PANEL_URL]
     assert registered.sidebar_title == "MeshBeacon"
-    assert registered.sidebar_icon == "mdi:access-point-network"
+    assert registered.sidebar_icon == "mdi:lighthouse-on"
     assert registered.require_admin is True
     custom = registered.config["_panel_custom"]
     assert custom["name"] == "meshbeacon-panel"
@@ -42,7 +42,7 @@ async def test_sidebar_entry_is_registered_for_admins_only(hass, mock_entry, aio
 async def test_module_is_served_and_holds_no_data(hass, hass_client, mock_entry, aioclient_mock):
     await _set_up(hass, mock_entry, aioclient_mock)
     client = await hass_client()
-    for name in ("meshbeacon-panel.js", "model.js"):
+    for name in ("meshbeacon-panel.js", "model.js", "tokens.js", "fonts.js", "brand-mark.js"):
         response = await client.get(f"/meshbeacon_panel/{name}")
         assert response.status == 200
         assert "javascript" in response.headers["Content-Type"]
@@ -56,6 +56,30 @@ async def test_module_is_served_and_holds_no_data(hass, hass_client, mock_entry,
         body = await response.text()
         assert '"domain": "meshbeacon"' not in body and "MeshBeaconClient" not in body, path
         assert response.status in (400, 403, 404), (path, response.status)
+
+
+async def test_bundled_fonts_are_served_locally(hass, hass_client, mock_entry, aioclient_mock):
+    await _set_up(hass, mock_entry, aioclient_mock)
+    client = await hass_client()
+    for weight in (400, 500, 600, 700):
+        response = await client.get(f"/meshbeacon_panel/fonts/inter-5.3.0/inter-latin-{weight}-normal.woff2")
+        assert response.status == 200
+        assert (await response.read())[:4] == b"wOF2"
+
+
+async def test_brand_images_are_served_by_home_assistant(hass, hass_client, mock_entry, aioclient_mock):
+    """Local brand images (custom_components/meshbeacon/brand, Home Assistant 2026.3+)."""
+    from homeassistant.setup import async_setup_component
+
+    await _set_up(hass, mock_entry, aioclient_mock)
+    assert await async_setup_component(hass, "brands", {})
+    client = await hass_client()
+    for image in ("icon.png", "dark_icon.png", "logo.png", "dark_logo.png", "icon@2x.png", "logo@2x.png"):
+        response = await client.get(f"/api/brands/integration/meshbeacon/{image}")
+        assert response.status == 200, image
+        body = await response.read()
+        assert body[:8] == b"\x89PNG\r\n\x1a\n", image
+        assert body == (Path(panel.__file__).parent / "brand" / image).read_bytes()
 
 
 async def test_websocket_maps_entities_and_peers(hass, hass_ws_client, mock_entry, aioclient_mock):
@@ -134,7 +158,7 @@ async def test_no_panel_without_a_loaded_entry(hass, mock_entry, aioclient_mock)
 
 
 def test_module_url_changes_with_the_files(tmp_path, monkeypatch):
-    for name in ("meshbeacon-panel.js", "model.js"):
+    for name in ("meshbeacon-panel.js", "model.js", "tokens.js"):
         (tmp_path / name).write_text((FRONTEND / name).read_text())
     monkeypatch.setattr(panel, "FRONTEND", tmp_path)
     before = panel._fingerprint()

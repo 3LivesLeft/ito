@@ -91,6 +91,7 @@
       };
       const hass = {
         language: "en-GB",
+        themes: { darkMode: q.get("theme") === "dark" },
         states,
         entities: { [E("status")]: { entity_id: E("status"), device_id: "dev1" } },
         devices: { dev1: { sw_version: "0.2.0" } },

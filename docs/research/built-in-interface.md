@@ -13,8 +13,8 @@ permanent principle of out-of-the-box usability ([vision](../vision.md), princip
 | R2 | A sidebar entry and supported HA authentication | Maintainer |
 | R3 | Install, configure and start within five minutes, with no terminal and no YAML | Maintainer, vision |
 | R4 | The integration remains an optional enhancement (entities, dashboards, statistics, automations) | Maintainer |
-| R5 | No duplicated monitoring logic; no unnecessary resource use | Maintainer, vision principle 9 |
-| R6 | No compromise of the existing security and privacy principles | Maintainer, vision principles 4–5, CLAUDE.md rule 4 |
+| R5 | No duplicated monitoring logic; no unnecessary resource use | Maintainer, vision principle 10 |
+| R6 | No compromise of the existing security and privacy principles | Maintainer, vision principles 5–6, CLAUDE.md rule 4 |
 
 **The v0.2 state fails R1.** The sidebar panel of [ADR 0007](../adr/0007-sidebar-panel.md) lives
 in the custom integration. The integration must be copied into `/config/custom_components` by

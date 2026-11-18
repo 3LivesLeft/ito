@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="branding/png/logo-full-dark.png">
+    <img src="branding/png/logo-full-light.png" alt="MeshBeacon: Decentralised connectivity for your home" width="600">
+  </picture>
+</p>
+
 # MeshBeacon
 
 **Decentralised connectivity for your home.**
@@ -92,3 +99,8 @@ and use in creating AI training datasets. Those conditions apply to anyone using
 ## Security
 
 Please see [SECURITY.md](SECURITY.md). Do not report vulnerabilities in public issues.
+
+## Brand
+
+The MeshBeacon name, logo, colours and typography are defined in [docs/branding.md](docs/branding.md);
+assets live in [`branding/`](branding/). Inter is bundled under the SIL Open Font License 1.1.
