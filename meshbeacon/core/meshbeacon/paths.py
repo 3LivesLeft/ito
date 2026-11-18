@@ -45,6 +45,10 @@ class Paths:
         return self.meshbeacon / "identity.backup"
 
     @property
+    def identity_pending(self) -> Path:
+        return self.meshbeacon / "identity.pending"
+
+    @property
     def identity_state(self) -> Path:
         return self.meshbeacon / "identity.json"
 

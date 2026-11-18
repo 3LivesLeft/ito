@@ -129,6 +129,10 @@ class IdentityManager:
         self._save_state(state)
 
     def _keep_replaced(self, data: bytes) -> None:
+        """Keep a copy of an identity being replaced (once: identical copies are not duplicated)."""
+        for existing in self.paths.meshbeacon.glob("identity.replaced-*"):
+            if _read(existing) == data:
+                return
         stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(self.clock()))
         target = self.paths.meshbeacon / f"identity.replaced-{stamp}"
         suffix = 0
@@ -148,6 +152,14 @@ class IdentityManager:
             fsutil.remove_stale_temp_files(directory)
 
         state = self._state()
+        if state.get("pending_replacement"):
+            # A replacement was authorised but not finished (crash): finish that same replacement,
+            # whatever the option says now, so it is applied exactly once.
+            completed = self._complete_replacement(state)
+            if completed is not None:
+                return completed
+        else:
+            self.paths.identity_pending.unlink(missing_ok=True)  # staged but never authorised
         recorded = state.get("fingerprint")
 
         if allow_replace:
@@ -200,11 +212,57 @@ class IdentityManager:
         return Result(Outcome.CREATED, "Node identity: created a new identity for this node.")
 
     def _replace(self, state: dict[str, Any]) -> Result:
-        old = _read(self.paths.identity)
-        if old:
-            self._keep_replaced(old)
+        """Replace the identity as a journalled transaction (crash-safe at every step).
+
+        1. Stage the new key (``identity.pending``).
+        2. Record the replacement as authorised in the state file — the commit point.
+        3. Keep the current identity, install the new one as primary and backup, commit the state.
+
+        A crash before step 2 leaves the original identity in use (nothing was authorised); a crash
+        after it is finished by :meth:`_complete_replacement` on the next start.
+        """
+        new = _new_identity_bytes()
+        new_identity = from_bytes(new)
+        if new_identity is None:  # pragma: no cover - _new_identity_bytes already checked
+            raise RuntimeError("RNS produced an identity that does not load")
+        fsutil.atomic_write(self.paths.identity_pending, new)
+        state["pending_replacement"] = {"fingerprint": fingerprint(new_identity)}
+        self._save_state(state)
+        completed = self._complete_replacement(state)
+        if completed is None:  # pragma: no cover - the staged key was just written and verified
+            raise RuntimeError("identity replacement could not be completed")
+        return completed
+
+    def _complete_replacement(self, state: dict[str, Any]) -> Result | None:
+        """Finish an authorised replacement; return None (after rolling back) if impossible."""
+        wanted = str((state.get("pending_replacement") or {}).get("fingerprint", ""))
+        source = None
+        for candidate in (self.paths.identity_pending, self.paths.identity, self.paths.identity_backup):
+            data = _read(candidate)
+            loaded = from_bytes(data) if data else None
+            if data and loaded is not None and fingerprint(loaded) == wanted:
+                source = data
+                break
+        if source is None:
+            # The authorised key is nowhere to be found: roll back and validate the original.
+            state.pop("pending_replacement", None)
+            self._save_state(state)
+            self.paths.identity_pending.unlink(missing_ok=True)
+            return None
+        recorded = state.get("fingerprint")
+        for candidate in (self.paths.identity, self.paths.identity_backup):
+            data = _read(candidate)
+            loaded = from_bytes(data) if data else None
+            if data and loaded is not None and fingerprint(loaded) == recorded:
+                self._keep_replaced(data)
+                break
+        fsutil.atomic_write(self.paths.identity, source)
+        fsutil.atomic_write(self.paths.identity_backup, source)
+        state["fingerprint"] = wanted
         state["replace_applied"] = True
-        self._install(_new_identity_bytes(), state)
+        state.pop("pending_replacement", None)
+        self._save_state(state)
+        self.paths.identity_pending.unlink(missing_ok=True)
         return Result(
             Outcome.REPLACED,
             "Node identity: replaced as you asked. The previous identity has been kept in the "
