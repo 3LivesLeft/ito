@@ -61,12 +61,21 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 - **Not** included: a forwarded-packet count (RNS exposes none through supported interfaces),
   identity import (deferred), any control from Home Assistant, HACS publication or releases.
 
-## v0.3.0 — Messaging
+## v0.3.0 — Messaging (research and architecture; not authorised for implementation)
 
-- LXMF send/receive; HA `notify` platform (HA composes plaintext; LXMF encrypts end to end — must
-  be documented).
-- Interoperability testing with Sideband, NomadNet, MeshChat and Ratspeak.
-- Optional propagation node with disk quota.
+Proposed in [v0.3 messaging](research/v0.3-messaging.md) and ADRs
+[0008](adr/0008-messaging-process.md)–[0012](adr/0012-optional-propagation-node.md). **Not to be
+implemented until independently reviewed and approved.**
+
+- Text messaging over unmodified LXMF in a separate, supervised process; a separate messaging
+  identity; contacts-only inbound by default.
+- Persistent, bounded queue; receipts that tell "delivered" from "stored on a node"; offline
+  delivery through a propagation node.
+- Home Assistant: notify entities per contact, a send action with a response, event entities,
+  an actionable-notification blueprint; message content never recorded by default.
+- Interoperability matrix with Sideband 2.3 and Ratspeak 1.1 (also NomadNet and MeshChat where
+  practical) on isolated networks.
+- Optional propagation node with quotas (phase 3b). Requires `rns`/`lxmf` pins of 1.6.1/1.3.1.
 
 ## v0.4.0 — Privacy and reachability
 
@@ -185,3 +194,30 @@ stated otherwise. **They are not Raspberry Pi validation.** Revised after indepe
 | OB-26 | **Layout and themes:** usable at 390 px (phone), 820 px (tablet) and 1280 px (desktop) widths in light and dark themes, with no horizontal scrolling | Preview screenshots; physical check on a phone | Sandbox met; **physical pending** (open the panel on a phone and a desktop on the Pi installation, after approval) |
 | OB-27 | **Panel cost:** history fetched at most once per chart bucket (≥ 60 s) and only while visible; re-render only when MeshBeacon's own entities change | Code review + model tests | Met (sandbox); browser CPU on a low-end phone pending |
 | OB-28 | **HACS-ready, not published:** `hacs.json` with known keys only, no release ZIP or release workflow, one integration, manifest complete, versions aligned | Automated | Met (`tests/unit/test_hacs.py`); HACS's own validation action is a maintainer step ([HACS](hacs.md)) |
+
+## v0.3.0 acceptance criteria (proposed, for review)
+
+Measured on isolated networks and on the reference Pi. "Pi" figures are release gates.
+
+| ID | Criterion | Evidence |
+|---|---|---|
+| MS-1 | With messaging off: no messaging process, no `/data/messaging/` writes, no new endpoints, memory and CPU unchanged from v0.2 (±2 MiB) | Automated + Pi |
+| MS-2 | The messaging identity is 0600, validated before every start, never logged, and independent of the transport identity (replacing either leaves the other unchanged) | Automated |
+| MS-3 | Announces carry no display name by default, and no telemetry, location or icon fields are ever sent | Automated (inspect packed announces and messages) |
+| MS-4 | Acknowledged inbound content is deleted by default; retention ≤ 30 days when chosen; `queue.db` ≤ 16 MiB under a flood | Automated |
+| MS-5 | Send → `delivered` within 30 s on a loopback direct path; the same idempotency key twice gives one message | Automated (real LXMF) |
+| MS-6 | Recipient offline: `stored_on_node` via `lxmd`, never reported as `delivered`; recipient later collects it; app restart mid-send resubmits | Automated |
+| MS-7 | Message content and titles appear in no HA database table, log (debug level), diagnostics file or bus event; the blueprint omits content by default | Automated (HA harness + recorder inspection) |
+| MS-8 | Only signature-validated messages from contacts reach HA by default; unknown or invalid senders are counted, not delivered | Automated |
+| MS-9 | "Anyone" mode enforces the stamp cost; contacts with tickets are not charged | Automated |
+| MS-10 | Inbound > 8 KiB, extra fields, invalid UTF-8 and floods above the rate limits are dropped and counted; nothing crashes | Automated (fuzz) |
+| MS-11 | No code path turns message content into an HA action; the blueprint performs only notification and reply | Code review + test |
+| MS-12 | Messaging endpoints refuse the status key, raw LXMF addresses and unknown contact IDs | Automated |
+| MS-13 | Send rate limits enforced; with a long poll held, the status API still answers within 1 s | Automated |
+| MS-14 | **Interoperability matrix** passes both ways with Sideband 2.3.x and Ratspeak 1.1.x (direct, opportunistic, propagated, stamped, offline cases) on an isolated network | Manual, recorded |
+| MS-15 | Killing or hanging the messaging process never restarts Reticulum or interrupts the status API; it recovers within bounded back-off and pauses after 5 failures in 30 min | Automated |
+| MS-16 | A corrupt `queue.db` is quarantined and a repair issue appears; transport continues | Automated |
+| MS-17 | Propagation node off by default; when on: static peers only, quota respected (≤ 64 MiB default, ≤ 25 % free space), stamps enforced | Automated |
+| MS-18 | Pi resources: messaging on, idle ≤ +40 MiB (app ≤ 160 MiB) and ≤ 0.5 % CPU added; stamp at the recipient's cost ≤ 30 s or a clear failure | Pi |
+| MS-19 | SD-card writes ≤ 1 a second sustained under normal traffic | Automated measurement |
+| MS-20 | Panel Messages tab (only when messaging is on) shows conversations and receipts, writes text only, and stores nothing in the browser | Automated + preview |

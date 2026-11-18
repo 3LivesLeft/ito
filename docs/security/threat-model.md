@@ -89,9 +89,7 @@ reference the [feasibility study](../research/feasibility.md) and
 - **v0.2 local API and integration:** implemented as T11 and T28–T37 ([ADR 0006](../adr/0006-local-metrics-api.md));
   sidebar panel as T38–T42 ([ADR 0007](../adr/0007-sidebar-panel.md)).
   Identity import is deferred beyond v0.2.
-- **v0.3 messaging:** LXMF identity 0600; no message content in logs or diagnostics; document that
-  HA composes notifications in plaintext before LXMF encrypts them; propagation node opt-in with
-  disk quota.
+- **v0.3 messaging:** proposed threats T43–T58 below (awaiting independent review, nothing implemented).
 - **v0.4 I2P / public gateway:** separate I2P router; public gateway only with RNS native filters,
   stamps enforcement, blackhole sources and a clear exposure statement.
 - **v0.5 RNode:** device access lowers isolation; validate LoRa parameters against regional rules
@@ -100,6 +98,31 @@ reference the [feasibility study](../research/feasibility.md) and
   per-command allowlist mapped to fixed HA actions (no free-form service calls, templates or
   shell); persisted replay protection; rate limiting; audit log; optional confirmation; no
   safety-critical actions by default; external design review before implementation.
+
+### 4.1 v0.3 messaging: proposed threats (status: proposed, awaiting independent review)
+
+New boundaries: **B9** remote LXMF senders → messaging process → HA automations; **B10** HA →
+app messaging API (the first write path, [ADR 0010](../adr/0010-home-assistant-messaging-interface.md)).
+Design: [v0.3 messaging](../research/v0.3-messaging.md).
+
+| ID | Boundary | STRIDE | Threat | Proposed control | Acceptance |
+|---|---|---|---|---|---|
+| T43 | B9 | E/T | **Message content used as a command** by an automation (remote control by the back door) | Content delivered as untrusted text; no command helper; blueprint never acts on content; docs say match on contact only; commands remain v0.6 | MS-11 |
+| T44 | B9 | S | **Spoofed sender** | Accept only `signature_validated` messages from contacts; hold `SOURCE_UNKNOWN` ≤ 10 min, then drop and count | MS-8 |
+| T45 | B9 | D | **Spam and floods** exhaust CPU, disk or HA | Contacts-only by default; stamps in "anyone" mode; tickets for contacts; per-sender and global rate limits; size cap; bounded stores | MS-9, MS-10 |
+| T46 | B9 | T/E | **Malicious payloads** (oversized fields, attachments, crafted UTF-8) exploit parsing in the app, the integration or the panel | Only title and content read, length-capped, validated UTF-8; other fields ignored; panel writes text only (T38) | MS-10, MS-20 |
+| T47 | B10 | E | **The send path is abused** to message arbitrary addresses | Recipients are contact IDs from the app's allow-list only; raw addresses refused | MS-12 |
+| T48 | B10 | S | **Another app uses the messaging API** | Separate 256-bit messaging key, per start, only in discovery (as T28); pinned TLS (T34) | MS-12 |
+| T49 | B10 | D | **HA or an automation loop floods sends** (airtime, stamp CPU) | 10 a minute, 100 a day, per-contact limits; stamp CPU budget | MS-13 |
+| T50 | B10 | T | **Duplicate sends** after timeouts and retries | Idempotency keys (24 h) | MS-5 |
+| T51 | B10 | I | **Status key gains messaging access** | Keys scoped separately; tests that the status key gets 401 on messaging endpoints | MS-12 |
+| T52 | B10 | D | **Long poll starves the status API** | ≤ 1 long poll; one connection slot reserved for status | MS-13 |
+| T53 | — | I | **Message content in HA's recorder, logs, diagnostics or bus history** | Unrecorded attributes; no bus event with content; never logged; diagnostics counts only | MS-7 |
+| T54 | — | I | **Content via mobile push relays** (Apple/Google) | Blueprint omits content by default and explains why | MS-7 |
+| T55 | B5 | I | **Plaintext messages at rest** in `/data/messaging/queue.db` and in app backups | Acknowledged content deleted by default; bounded retention; documented; encrypted backups recommended | MS-4 |
+| T56 | B5 | I/T | **Messaging identity theft or silent replacement** | 0600, validated before start (rule 13), never logged, separate from transport identity ([ADR 0009](../adr/0009-messaging-identity.md)) | MS-2 |
+| T57 | B1 | I | **Metadata disclosure**: recipient hash, size and timing to propagation nodes; announce correlation with the transport identity; display name | Empty display name by default; no telemetry, location or icon fields; documented limits of separation | MS-3 |
+| T58 | B5 | D | **Messaging failure disturbs transport** (crash, hang, stamp CPU, corrupt queue, full disk) | Separate process ([ADR 0008](../adr/0008-messaging-process.md)), bounded restarts, `nice`, CPU limit for stamps, quarantine of a corrupt queue | MS-15, MS-16 |
 
 ## 5. Privacy commitments
 
