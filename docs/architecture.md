@@ -1,0 +1,341 @@
+# Architecture
+
+Status: **Proposed — revised after independent review** · No application code exists yet. This
+describes the intended structure so that Phase 1 can be reviewed against it.
+
+Evidence and reasoning: [feasibility study](research/feasibility.md),
+[ADR 0001](adr/0001-networking-foundation.md), [threat model](security/threat-model.md),
+[first-run UX](ux/first-run.md).
+
+## 1. Goals that shape the architecture
+
+1. **Easy to use.** Safe defaults; a handful of plainly named options; status messages written for
+   people ([first-run UX](ux/first-run.md)).
+2. **Reuse upstream.** RNS (and later LXMF) do all protocol work. MeshBeacon configures,
+   supervises, observes and explains.
+3. **Separate the core from Home Assistant.** The core must run, and be tested, without Home
+   Assistant (and in v1.0 as standalone Docker).
+4. **Least privilege.** No host network, no HA/Supervisor API access, no extra capabilities,
+   non-root service user, custom AppArmor profile. A Supervisor security rating of 8 is a
+   **target that reflects these choices, not evidence of security**.
+5. **Fail safe and recover.** Losing connectivity, a crashed RNS process or a corrupt cache must
+   never take down Home Assistant or silently change the node's identity.
+6. **Small and readable.** A competent reviewer should be able to read the whole core in a
+   sitting.
+
+## 2. Component overview (v0.1.0)
+
+```text
+┌──────────────────────────── Home Assistant OS host ────────────────────────────┐
+│  Supervisor ── watchdog: HTTP GET → container IP:health port (every 120 s)     │
+│                                                                                │
+│  ┌──────────────── MeshBeacon app container (bridged network) ──────────────┐  │
+│  │  s6-overlay (PID 1, root)                                                │  │
+│  │   └─ init (root, once): validate options, umask 077, prepare /data,      │  │
+│  │      chown to meshbeacon user, validate identity, render RNS config      │  │
+│  │   └─ meshbeacon-core (user: meshbeacon)                                  │  │
+│  │        ├─ process supervisor (back-off, circuit breaker, guards)         │  │
+│  │        ├─ health endpoint (process health only, internal port)           │  │
+│  │        ├─ status reporter (plain-language log lines)                     │  │
+│  │        └─ RNS child process (user: meshbeacon)                           │  │
+│  │              /data/reticulum  (0700)                                     │  │
+│  └───────────────────────────────────────┬──────────────────────────────────┘  │
+└──────────────────────────────────────────┼─────────────────────────────────────┘
+                                           │ outbound TCP only
+                                           ▼
+                 user-chosen peers: verified presets and/or custom peers (none by default)
+```
+
+v0.2 adds the HA integration and a token-authenticated local API (§7); v0.1 has neither.
+
+## 3. Layers and packages
+
+| Layer | Package (proposed) | Depends on HA? | Responsibility |
+|---|---|---|---|
+| **Core** | `meshbeacon` (Python) | **No** | Settings validation; injection-safe RNS config rendering; identity management; RNS child-process supervision; health model; status reporting; resource guards. |
+| **App adapter** | `app/` (Dockerfile, `config.yaml`, s6 service definitions, `apparmor.txt`, translations, `DOCS.md`) | Yes (Supervisor) | Map `/data/options.json` → core settings; privilege drop; start core. Contains **no business logic**. |
+| **Integration** (v0.2+) | `custom_components/meshbeacon` | Yes (HA Core) | Entities, repairs, diagnostics via the core's local API. Never imports `RNS`. |
+| **Standalone** (v1.0) | `docker/` | No | Same core, configured from a file or environment variables. |
+
+Rules: the core never imports `homeassistant` or `bashio`; the integration never imports `RNS` or
+`LXMF`; all cross-layer communication uses one versioned, schema-validated interface.
+
+## 4. Core internals
+
+### 4.1 Settings validation and injection-safe configuration rendering
+
+RNS reads its configuration with a vendored **ConfigObj** parser (`RNS/vendor/configobj.py`).
+**[Verified by test]** naive string templating of user input into that format is exploitable:
+
+| Input in a "host" field | Effect when templated naively |
+|---|---|
+| `peer.example\n  [[Injected]]\n    type = AutoInterface …` | A **new interface is created** (here, LAN discovery — bypassing our privacy defaults) |
+| `a.example, b.example` | Value silently becomes a **list** |
+| `%(enable_transport)s` | ConfigObj **interpolation** — here a crash; in other cases, reading other settings |
+| `peer.example # x` | Trailing text silently treated as a comment |
+
+Building the file with ConfigObj's object API and `write()` neutralised the structural injection
+in the same test (each value stayed a single string), but **did not validate content** — the
+newline and interpolation markers survived inside the value.
+
+Therefore, defence in depth, for **every** user-controlled field (peer name, host, port, network
+name, passphrase, and any future field):
+
+1. **Supervisor schema** (first layer): `match(REGEX)`, `port`, `password`, `list(...)` types in
+   `config.yaml`, so the HA UI rejects bad input early.
+2. **Core allow-list validation** (authoritative), applied regardless of the schema:
+   - *peer name*: `^[A-Za-z0-9][A-Za-z0-9 _.-]{0,31}$` (becomes a ConfigObj section name — no
+     brackets, quotes, `#`, `=`, `%`, `$` or control characters), unique, case-insensitive;
+   - *host*: a valid DNS hostname (RFC 1123 labels, total ≤ 253, no trailing dot) **or** a valid
+     IPv4/IPv6 literal parsed with `ipaddress`; nothing else;
+   - *port*: integer 1–65535;
+   - *network name*: same rule as peer name;
+   - *passphrase*: printable UTF-8, 8–128 characters, and must not contain newline, `#`, `%`, `$`,
+     quote characters or a leading/trailing space (the exact set is to be confirmed against
+     ConfigObj's quoting rules in Phase 1; **[Open] Q-25**);
+   - reject any value containing control characters (including `\r`, `\n`, `\t`, `\0`).
+3. **Rendering only through the ConfigObj object API** (never f-strings or templates), with
+   RNS-controlled keys taken from a fixed allow-list — user input never becomes a *key*, only a
+   section name (validated) or a value (validated).
+4. **Round-trip check:** re-parse the rendered file and assert that the parsed structure equals
+   the intended structure exactly (same sections, same keys, same scalar values, no extra
+   interfaces). Refuse to start otherwise.
+5. **Tests:** a fuzz and regression suite of hostile inputs (testing strategy §4).
+
+### 4.2 Process supervision and bounded recovery
+
+See §4.5 for how this interacts with the Supervisor watchdog. In short: **every restart path is
+bounded, and no condition that a restart cannot fix is ever reported as unhealthy.**
+
+**Failure classes.** Before starting RNS, the core classifies problems:
+
+| Class | Examples | Action |
+|---|---|---|
+| **Deterministic** (a restart cannot fix it) | Invalid options; identity invalid and no valid backup; identity fingerprint mismatch; "replace identity" left switched on; `/data` below the free-space floor; RNS refuses the rendered config | **Do not start RNS.** Enter `needs_attention` immediately, with a plain-language message. No retries until the options change or the app is restarted by the user. |
+| **Transient** (may recover) | RNS child exits or crashes; memory guard restart | Restart the RNS child with exponential back-off (1 s → 5 min cap). |
+
+**Internal circuit breaker (transient failures).**
+
+1. After **5 child failures within 15 minutes**, the breaker opens and the core waits 15 minutes
+   before one more attempt (half-open).
+2. If the breaker opens **3 times without the child staying up for at least 10 minutes in
+   between**, the core stops retrying and enters `needs_attention` ("The Reticulum service keeps
+   failing; MeshBeacon has stopped trying. Restart the app after fixing the cause.").
+3. A child that stays up for 10 minutes resets all counters.
+
+Worst case before giving up: about an hour, then nothing further until the user acts.
+
+**Persistent start history (whole-app restarts).** Each core start appends a timestamp to
+`state.json`. If the app has started **5 times within 30 minutes without once reaching 10 minutes
+of stable running**, whatever caused those restarts (the Supervisor watchdog, a crash of the core
+itself, the host), the core starts in **safe mode**: it does not start RNS, reports
+`needs_attention`, and explains that it has paused after repeated restarts. Because the core stays healthy in safe
+mode, nothing restarts it, so the 30-minute window expires naturally. Safe mode is left when the
+options change (detected by a hash of the validated settings), or on the first start after the
+window has expired; the message tells the user the time after which a restart will try again.
+
+**Core process exit.** If the core itself exits, s6-overlay's `finish` script stops the container
+with a non-zero code rather than restarting the core indefinitely inside the container. Whether the
+container is then restarted is the Supervisor's decision (§4.5), and the start history above bounds
+it.
+
+**Shutdown.** `SIGTERM` is honoured within the Supervisor `timeout` (set to 20 s).
+
+### 4.3 Resource protection
+
+The Supervisor imposes no memory or CPU limits on apps (feasibility §5), so MeshBeacon limits
+itself.
+
+| Resource | Control (v0.1) | Notes |
+|---|---|---|
+| **Memory** | Memory watchdog on the RNS child counting **RSS + swap** (`VmRSS` + `VmSwap`), so swapping on a device with swap cannot hide growth: controlled restart above a ceiling (default 256 MB; idle ≈ 55 MB measured). The core itself stays small: standard library only where practical, no web framework in v0.1, no in-memory history beyond a bounded status window. Python allocator left to RNS/jemalloc defaults. | `rnstatus -j` also reports `rss`. Defaults target low-memory devices, not the 8 GB reference board |
+| **CPU** | Run RNS and core at reduced priority (`nice 10`) so HA Core always wins contention. Detect sustained high CPU (> 80 % of one core for > 10 min) and log a warning; do not kill (stamp generation legitimately spikes CPU). | No cgroup control without privileges |
+| **Storage** | Check free space on `/data` before start and hourly; refuse to start below 200 MB free, warn below 1 GB. Cap regenerable RNS directories (`cache/`, `resources/`) — clear them on start if above a size cap (default 100 MB). SQLite stays on `/data` (SSD), never tmpfs. | **[Assumption]** RNS cleans its cache periodically (Transport `clean_cache`, every 5 min) — verify bound in soak test |
+| **Logs** | RNS stdout/stderr is read by the core, **redacted** (every `<32 hex>` destination/identity hash and every hex or base64 blob of key length is replaced with `<redacted>` — RNS prints identity hashes at log level 5, verified), then forwarded to the app log with **rate limiting** (default ≤ 20 lines/s with a burst allowance; excess summarised as "N lines suppressed"). RNS log level ≤ 4 by default. RNS file logging is not used (it would rotate at 5 MB, verified `RNS/__init__.py` `LOG_MAXSIZE`, but duplicates journald). | HA OS journald provides persistence |
+| **Network** | Transport off by default. RNS's native announce cap (2 % of interface bandwidth by default) and ingress control stay at upstream defaults. Byte counters from RNS logged in the periodic status line; optional monthly data warning. | No quota *enforcement* in v0.1 — warning only (**[Open] Q-26**) |
+| **File descriptors** | `ulimits: nofile` set to a modest value (proposed 4096) in `config.yaml` | |
+| **Threads / processes** | One RNS child; no unbounded worker pools in the core | |
+
+### 4.4 Health model: process health versus network connectivity
+
+Two independent dimensions, never conflated:
+
+| Dimension | States | Drives |
+|---|---|---|
+| **Process health** | `starting` · `running` · `restarting` · `needs_attention` · `unresponsive` | Health endpoint → Supervisor watchdog |
+| **Network connectivity** | `isolated` (no peers configured) · `offline` (peers configured, none up) · `partial` (some up) · `online` (all up) | Status messages (v0.1); entities (v0.2) |
+
+**The health endpoint answers `200 OK` whenever the core's event loop is responsive** — in
+`starting`, `running`, `restarting` *and* `needs_attention`. It fails only when the core is
+`unresponsive` (the endpoint cannot be served, or the core's internal heartbeat is older than
+60 s). Rationale:
+
+- An internet outage, unreachable peers or an isolated node are connectivity states; a restart
+  cannot help, and restarts would wear the SSD.
+- `needs_attention` covers failures a restart cannot fix; reporting them as unhealthy would make
+  the Supervisor restart the app forever (§4.5).
+- A hung core *can* be fixed by a restart, which is exactly what the Supervisor watchdog is for.
+
+### 4.5 Supervisor watchdog
+
+**[Verified]** (Supervisor `e610ca8`, `supervisor/misc/tasks.py` `_watchdog_app_application`,
+`supervisor/apps/app.py` `watchdog_application`):
+
+- The app's `watchdog` URL is checked **every 120 s**; on the **second consecutive failure** the
+  Supervisor **restarts the whole app**.
+- HTTP checks go to the **container's IP on the internal port** (`{ip_address}:{port}`), so **no
+  port needs publishing** and **no API permission is needed**. A `tcp://` check is also supported.
+- Separately, if the watchdog is enabled, a container state of `failed`, `stopped` or `unhealthy`
+  triggers a restart, with throttling (`WATCHDOG_THROTTLE_MAX_CALLS = 10` per 30 minutes).
+- The watchdog is a **per-user toggle that defaults to off** (`ATTR_WATCHDOG` default `False`).
+
+**[Verified]** Neither Supervisor watchdog path stops by itself: application-check restarts
+are not throttled, and container-state restarts are rate-limited to 10 per 30 minutes
+(`JobThrottle.GROUP_RATE_LIMIT`), which bounds their *rate*, not their number
+(`_restart_after_problem`, Supervisor 2026.11.0). MeshBeacon must therefore make sure a loop
+cannot arise.
+
+**Design — how the two mechanisms fit together:**
+
+| Situation | Internal mechanism | Health endpoint | Supervisor watchdog | Can it loop? |
+|---|---|---|---|---|
+| Internet down / peers unreachable / isolated | None (connectivity state only) | 200 | No action | No |
+| RNS child crashes occasionally | Back-off restarts of the child | 200 | No action | No |
+| RNS child crash-loops | Breaker opens ≤ 3 times, then `needs_attention` | 200 | No action | No — stops after ~1 h |
+| Deterministic problem (bad identity, bad config, low disk) | `needs_attention` immediately, RNS not started | 200 | No action | No |
+| Core hangs | — | Fails | Restarts the app after 2 failed checks (~4 min) | Bounded by start history → safe mode after 5 starts in 30 min |
+| Core process exits | s6 stops the container | n/a | Container `failed` → restart (if enabled), ≤ 10 per 30 min | Bounded by start history → safe mode |
+| Host reboot | Normal start | 200 | — | Start history counts it; a 10-minute stable run resets the count |
+
+**Settings:**
+
+- Declare `watchdog: "http://[HOST]:[PORT:8099]/health"` (port fixed in Phase 1), served on the
+  container's internal interface only; the response body is minimal (`ok`) and reveals no
+  identities, peers or state details, so no authentication is needed.
+- `DOCS.md` recommends enabling the watchdog; MeshBeacon is safe with it on or off.
+- No Supervisor API permission is needed for any of this.
+
+### 4.6 Identity: crash-safe initialisation and restoration
+
+**[Verified]** facts driving this design:
+
+- RNS writes the identity with a plain `open(path, "wb")` + `write()` — no temporary file, no
+  `fsync`, no atomic rename (`RNS/Identity.py` `to_file`).
+- **RNS silently replaces a corrupt identity.** A 10-byte `transport_identity` produced
+  "Failed to load identity key" followed by "No valid Transport Identity in storage, creating…",
+  and the file was **overwritten** with a new 64-byte key (test, RNS 1.6.0).
+- RNS creates the file 0644 under the default umask.
+
+Design:
+
+1. **MeshBeacon owns identity creation.** On first start, the init step generates the identity
+   *before* RNS starts: generate with RNS's public `RNS.Identity()` API, write to a temporary
+   file in the same directory (0600), `fsync` the file, `rename` it into place, `fsync` the
+   directory. RNS then only ever *loads* it.
+2. **Validate before every start.** The init step loads the file with `RNS.Identity.from_file()`
+   in a separate short-lived process and checks it is exactly 64 bytes and loads successfully. On
+   failure, **RNS is not started**, so it cannot overwrite the file.
+3. **Keep a verified second copy** (`/data/meshbeacon/identity.backup`, 0600), written atomically
+   after first successful validation, and compare hashes at each start. If the primary is damaged
+   and the backup is valid, restore from the backup automatically and log it. If both are damaged,
+   stop with the identity-problem message ([first-run UX §5](ux/first-run.md#5-plain-language-status-messages)).
+4. **Record a fingerprint** of the identity (its public hash, never the key) in
+   `/data/meshbeacon/state.json` (0600) so MeshBeacon can detect any unexpected change between
+   starts and refuse to continue. The fingerprint is **never written to logs**; the log says only
+   "Node identity: unchanged since last start" or explains a change in words.
+5. **Explicit regeneration only** via an advanced option *"Replace identity on next start"*.
+   When used, the old identity is kept as `identity.replaced-<UTC timestamp>` (0600) for manual
+   recovery, the log says "Node identity replaced as requested; the previous identity has been
+   kept in the app's data folder" — **without any hashes** — and the option must be switched off
+   again by the user before the next restart, otherwise MeshBeacon refuses to start and explains
+   why (it cannot switch the option off itself without Supervisor API access).
+6. **Restoration**:
+   - *From a Home Assistant backup:* the normal path. `/data` (including the identity and its
+     backup copy) is restored by the Supervisor; validation (2) runs on next start.
+   - *Import from a file* (migration from another Reticulum install): deferred to v0.2, because it
+     needs a file-transfer path into `/data` (for example `app_config` mapping) that adds
+     permissions. Requirements recorded now: 64-byte raw format, validated with the RNS API,
+     confirmation shown to the user in the v0.2 integration UI (never in logs), atomic write, and
+     the imported file deleted from the shared location afterwards.
+7. **Backups:** `backup: hot`; `backup_exclude` for `reticulum/storage/cache/**` and
+   `reticulum/storage/resources/**`; `backup_pre` checkpoints SQLite. Whether a hot backup of the
+   RNS SQLite database is consistent remains feasibility Q-7; `backup: cold` is the safe fallback.
+
+### 4.7 Privilege model inside the container
+
+**[Verified]** HA base images use **s6-overlay v3**, which runs as root as PID 1 (`docker-base`
+`7d9ba08`). Docker's default capability set (which the Supervisor uses, minus `NET_RAW` and others
+in its planned reduced profile) includes `CHOWN`, `SETUID`, `SETGID`, `DAC_OVERRIDE` and `FOWNER`.
+
+Design:
+
+- A dedicated system user and group **`meshbeacon`** (fixed UID/GID, no login shell, no home
+  directory beyond `/data/meshbeacon`) is created in the image.
+- A root **init step** (s6 `cont-init`/oneshot) does only: read `/data/options.json`, validate
+  it, set `umask 077`, create `/data/meshbeacon` and `/data/reticulum`, `chown` them to
+  `meshbeacon`, repair modes (0700 dirs, 0600 files), validate the identity, and render the RNS
+  config. It writes nothing else.
+- The **core and the RNS child run as `meshbeacon`** via `s6-setuidgid`. They cannot write to
+  the image filesystem.
+- No `privileged` capabilities are requested. **[Assumption]** RNS TCP client interfaces need
+  no capabilities (no raw sockets, no privileged ports) — confirm in Phase 1 by running with all
+  capabilities dropped.
+- AppArmor: a custom profile restricting the core and RNS to `/data/**` (read/write), the Python
+  installation (read-only), and TCP/UDP network access; denying everything else.
+- "Where supported": if a future feature needs root (none in v0.1), it must be isolated in its own
+  s6 service, documented and justified in an ADR.
+
+### 4.8 Storage layout (under `/data`)
+
+```text
+/data/                      root-owned mount, always present
+  options.json              written by the Supervisor (read by init only)
+  meshbeacon/               0700 meshbeacon
+    state.json              0600 runtime state: identity fingerprint, start history
+    identity.backup         0600 verified copy of the transport identity
+  reticulum/                0700 meshbeacon   (RNS --config directory)
+    config                  0600 rendered on every start (contains rpc_key)
+    storage/
+      transport_identity    0600 created atomically by MeshBeacon
+      known_destinations.db (+ -wal, -shm)
+      cache/ resources/     regenerable, size-capped, excluded from backups
+      blackhole/ identities/
+```
+
+## 5. Networking posture
+
+- `host_network: false`; outbound TCP only. This keeps RNS's abstract Unix sockets inside the
+  container's own network namespace (feasibility §10, item 3).
+- No published ports. No TCP listener in v0.1.
+- Never rendered in v0.1: `AutoInterface`, `discover_interfaces`, `discoverable`,
+  `autoconnect_discovered_interfaces`, `publish_ifac`, `location_cmd`, I2P, RNode.
+- No default peer. Optional verified presets only ([ADR 0004](adr/0004-public-peer-presets.md)).
+- Explicit random `rpc_key` (validated hex — RNS silently falls back to the identity-derived key on
+  an invalid value) and a unique `instance_name`.
+
+## 6. Dependency and build policy
+
+- Python dependencies pinned **by version and hash**, installed with `--require-hashes`.
+- Base image pinned **by digest**.
+- Multi-arch images (`aarch64`, `amd64`) built with `home-assistant/builder` actions,
+  **Cosign-signed**, with SBOM attestations.
+- **No image is published** until the licensing obligations O1–O7 are implemented
+  ([licensing §5](research/licensing.md#5-obligations-before-publishing-images)).
+
+## 7. Evolution by version
+
+| Version | Architectural additions |
+|---|---|
+| **v0.1** | Init step, core supervisor, config renderer, identity manager, health endpoint, status reporter, resource guards, app wrapper. **Nothing else.** |
+| v0.2 | Token-authenticated local API (internal network only); HA integration (entities, repairs, diagnostics); identity import; Supervisor discovery (permission review needed — Q-11) |
+| v0.3 | LXMF service, notify platform, optional propagation node |
+| v0.4 | Optional I2P (separate router process); public-gateway investigation |
+| v0.5 | RNode via explicit device mapping |
+| v0.6 | Authenticated remote commands with allowlists and replay protection |
+| v1.0 | Standalone Docker packaging |
+
+## 8. Deliberately excluded
+
+No custom cryptography or protocol code; no cloud services, telemetry or analytics; no Docker
+socket, privileged mode or `manager`/`admin` Supervisor role; no write access to the Home
+Assistant configuration directory; no raw RNS configuration pass-through.
