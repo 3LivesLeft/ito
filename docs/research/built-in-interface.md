@@ -42,7 +42,7 @@ users (§6).
 | Real projects were bypassed when they trusted ingress headers without the source check (for example GHSA-v8q4-3m6w-r576 in Tesserae; an add-on terminal reachable by other add-ons) | **[Verified]**: [tesserae#580](https://github.com/dmellok/tesserae/pull/580), [ha-addon-claude-code#9](https://github.com/Tom-Joad/ha-addon-claude-code/pull/9) |
 | Ingress does **not** change the security rating for MeshBeacon: the +2 is for "Ingress *or* no host network and no published ports", which MeshBeacon already has. **The rating stays at 8** | **[Verified]** earlier from Supervisor source, `supervisor/apps/utils.py` `rating_security`, `e610ca8` ([feasibility](feasibility.md) §app options) |
 | The Supervisor connects to the app over **plain HTTP**. No TLS upstream is offered | **[Assumption]**, from memory of Supervisor's ingress proxy (`supervisor/api/ingress.py`). **Verify before implementing (V-1)** |
-| Whether the Supervisor forwards the user's **ingress session cookie** to the app | **[Open] (V-2)**. This matters because of §4 |
+| How the user's Home Assistant session is handled on the Supervisor → app hop | **Answered (V-2): a blocking concern**; details are withheld under responsible disclosure |
 | The app page's "Show in sidebar" switch is **off** by default for a newly installed app; "Open web UI" works without it | **[Assumption] (V-3)**. If true, the five-minute path includes one switch (§5) |
 | Ingress pages run in an iframe on HA's own origin, so the page can follow HA's theme by reading the parent document's CSS variables, and `prefers-color-scheme` otherwise | **[Assumption] (V-4)** |
 | Ingress works in the HA companion apps (iOS and Android) | **[Assumption] (V-5)**, widely used by other apps |
@@ -62,7 +62,7 @@ ingress traffic.
 | Status figures and peer names (the same as the entities) | Readable | **Only if** the ingress UI carries nothing more sensitive than the v0.2 snapshot, with no hashes, hosts, keys or tokens. That was already the bar for option D in v0.2 review, and it was rejected *for an unauthenticated listener reachable by every app*. Ingress narrows this to active spoofers only, through the source check |
 | Integrity of what the user sees | Alterable (misleading display, T33) | Accept for read-only figures; never for actions |
 | **Any action** (write, configuration change, sending a message) | Forgeable | **No.** The ingress interface is read-only. Writes stay on the pinned-TLS, key-authenticated path ([ADR 0010](../adr/0010-home-assistant-messaging-interface.md), proposed for v0.3) or in the Supervisor's own Configuration tab |
-| HA user's ingress session cookie (V-2) | If the Supervisor forwards it, it could be captured. **[Assumption]** HA ingress sessions are not tied to one app, so a captured session could open **other** apps' ingress UIs | **Blocking until V-2 is answered.** This is a general Home Assistant property, not one MeshBeacon creates, but enabling Ingress adds MeshBeacon's traffic to what can be sniffed. If the cookie is forwarded, the maintainer must decide with that fact in hand |
+| The user's Home Assistant session (V-2) | Under responsible disclosure | **Blocking.** A general Home Assistant matter, not one MeshBeacon creates; Ingress stays off ([secure interface options](secure-interface-options.md)) |
 
 **[Recommendation]** Proceed only with: read-only Ingress; the v0.2 snapshot as the only data;
 the source check enforced on the socket's peer address (never on forwarded headers); and V-1 and
@@ -126,14 +126,14 @@ A scratch script used the core's own `BoundedHTTPServer`, outside the repository
 ## 8. Validation still required before implementation
 
 > **Update (18 Nov 2026):** V-1 and V-2 are answered from Supervisor 2026.11.0 source. The hop is
-> plain HTTP, and the Ingress session travels on it. The result **blocks** ADR 0013; a read-only
-> interface is not a sufficient mitigation. Findings beyond this are under responsible
+> plain HTTP, and the review found confidentiality and integrity concerns that **block** ADR 0013;
+> a read-only interface is not a sufficient mitigation. Details are withheld under responsible
 > disclosure. See [secure interface options](secure-interface-options.md).
 
 | ID | Question | Method |
 |---|---|---|
 | V-1 | Ingress upstream protocol (HTTP only?) | Read Supervisor's ingress proxy source at a pinned commit. Not read in this session: the Supervisor repository is outside this session's repository scope, and HA's developer docs are blocked by its network policy |
-| V-2 | Is the ingress session cookie forwarded to the app? Are ingress sessions app-scoped? | Supervisor source; confirm on the Pi by logging header **names** only (never values), with approval |
+| V-2 | Session handling on the hop | Answered from source: blocking; details withheld under responsible disclosure |
 | V-3 | "Show in sidebar" default | Pi, during the hardware run, after approval |
 | V-4 | Theme following inside the iframe | Pi, browser and companion app |
 | V-5 | Companion app behaviour | Pi, phone |
