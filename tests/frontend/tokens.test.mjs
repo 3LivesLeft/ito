@@ -3,7 +3,7 @@
 // surfaces and on Home Assistant's default theme surfaces (which the panel follows).
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { test } from "node:test";
 
 import { BRAND, THEMES, baseCss, themeCss } from "../../custom_components/meshbeacon/frontend/tokens.js";
@@ -75,8 +75,13 @@ test("brand text pairs: slate on off-white and off-white on navy reach 4.5:1", (
 
 test("every --mb-* variable the interface uses is defined by the tokens", () => {
   const defined = new Set((themeCss("light") + baseCss()).match(/--mb-[a-z0-9-]+/g));
-  const panel = readFileSync(new URL("../../custom_components/meshbeacon/frontend/meshbeacon-panel.js", import.meta.url), "utf8");
-  const used = new Set(panel.match(/var\(--mb-[a-z0-9-]+/g).map((v) => v.slice(4)));
+  const root = new URL("../../custom_components/meshbeacon/frontend/", import.meta.url);
+  const code = readdirSync(root, { recursive: true })
+    .filter((n) => n.endsWith(".js") && n !== "tokens.js")
+    .map((n) => readFileSync(new URL(n, root), "utf8"))
+    .join("\n");
+  const used = new Set(code.match(/var\(--mb-[a-z0-9-]+/g).map((v) => v.slice(4)));
+  assert.ok(used.size > 20);
   for (const name of used) assert.ok(defined.has(name), `${name} is used but not defined`);
   assert.deepEqual(new Set(themeCss("dark").match(/--mb-[a-z0-9-]+/g)), new Set(themeCss("light").match(/--mb-[a-z0-9-]+/g)));
 });

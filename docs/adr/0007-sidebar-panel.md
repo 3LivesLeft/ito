@@ -1,6 +1,12 @@
 # ADR 0007: A sidebar panel served by the integration
 
-- **Status:** **Proposed; recommended for withdrawal.** The maintainer's out-of-the-box principle
+- **Status:** **Accepted as the interim dedicated interface** (maintainer, 18 Nov 2026): the
+  integration panel is retained until a secure built-in replacement is available, and it remains
+  the only dedicated interface. Its presentation code is delivery-independent
+  ([architecture §6a](../architecture.md)), so a later built-in interface reuses it. History of
+  this status: proposed, then recommended for withdrawal (below), then retained after the Ingress
+  security review.
+- **Earlier status:** **Proposed; recommended for withdrawal.** The maintainer's out-of-the-box principle
   (18 Nov 2026) requires the dedicated interface to come with the app itself, without the
   integration. [ADR 0013](0013-built-in-interface-ingress.md) proposes delivering it through
   Ingress and moving this panel's code into the app. If ADR 0013 is accepted, this ADR is

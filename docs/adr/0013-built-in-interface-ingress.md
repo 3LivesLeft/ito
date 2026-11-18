@@ -74,5 +74,5 @@ D3 seven days of bounded in-memory history; D4 admin-only. Details:
   read or alter the read-only figures on the Supervisor → app hop. This is mitigated by the source
   check, read-only operation and no secrets. Users can close the route with the Supervisor's
   `app_drop_net_raw` option.
-- If V-2 shows that the Supervisor forwards a usable session cookie over plain HTTP, this ADR
-  returns to the maintainer before any implementation.
+- V-2 was answered from source and is blocking (details under responsible disclosure). This ADR
+  returns to review only once the hop is protected upstream.

@@ -12,7 +12,7 @@ into read-only operation.
 | ID | Decision | Effect now |
 |---|---|---|
 | D1 | Read-only Ingress approved **on condition** that its security concerns are resolved | **Condition not met.** The review of Supervisor 2026.11.0 confirmed concerns that MeshBeacon cannot mitigate itself (§2). Ingress stays off |
-| D2 | Withdraw the integration panel; keep one dedicated MeshBeacon interface | Recorded. **Timing needs confirmation:** withdrawing the panel before a safe built-in interface exists would leave no dedicated interface. Proposal: withdraw it in the same release that ships the built-in interface, so there is exactly one at any time. The panel is unreleased either way |
+| D2 | Withdraw the integration panel; keep one dedicated MeshBeacon interface | **Resolved (maintainer, 18 Nov 2026): retain the integration panel until a secure built-in replacement exists.** It is the one dedicated interface. Original note: withdrawing the panel before a safe built-in interface exists would leave no dedicated interface. Proposal: withdraw it in the same release that ships the built-in interface, so there is exactly one at any time. The panel is unreleased either way |
 | D3 | Seven days of bounded, in-memory history | Recorded for the built-in interface: 24 h at 5 min plus 7 days at 1 h (≈ 120 KB), memory only |
 | D4 | Admin-only sidebar access | Recorded (`panel_admin: true`; already true for the panel) |
 | Product | Users must eventually send and receive LXMF messages from the built-in interface, without a separate integration | Ingress is **read-only for now, not permanently**. Writes and sensitive data wait for a path that meets §3 |
@@ -21,18 +21,16 @@ into read-only operation.
 
 - The Supervisor reaches an app's Ingress port over **plain HTTP** on the internal network. **[Verified]**,
   Supervisor 2026.11.0, `supervisor/api/ingress.py`.
-- On that hop, requests carry the **user's Home Assistant Ingress session**, which authenticates
-  Ingress access. **[Verified]**, same file.
+- The review found **confidentiality and integrity concerns** on that hop that go beyond
+  MeshBeacon's own data. **[Verified]** from source; details are withheld under responsible
+  disclosure.
 - The Supervisor already treats `NET_RAW` spoofing on that network as a risk (an opt-in feature
   flag removes it). It is **off by default**, and it is set through the Supervisor's options, not
   through MeshBeacon. **[Verified]**, `supervisor/docker/app.py`.
-- Ingress pages are shown in Home Assistant's own page context. **[Verified]**, frontend
-  20261028.6.
 
 **Consequences for MeshBeacon:**
-- **A read-only interface is not a sufficient mitigation.** The exposure concerns the user's
-  session and the integrity of what the page delivers, not only what MeshBeacon's endpoints
-  allow.
+- **A read-only interface is not a sufficient mitigation.** The concerns are not limited to what
+  MeshBeacon's own endpoints allow.
 - **MeshBeacon cannot fix this from inside the app.** Any protection the app adds (tokens, request
   signing, in-page encryption) would itself travel over the same unprotected hop.
 - The exposure exists for every Ingress app a user opens. Enabling MeshBeacon's Ingress would add
