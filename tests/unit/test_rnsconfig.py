@@ -94,11 +94,12 @@ def test_verify_detects_extra_section():
         rnsconfig.verify(text, rnsconfig.intended_structure(s, KEY))
 
 
-names = st.text(alphabet=st.characters(min_codepoint=32, max_codepoint=126), min_size=1, max_size=32).filter(valid_name)
+# Generate valid values directly (filtering random text discards too many inputs); the filters
+# remain only as a guard that the generators stay in step with the validators.
+names = st.from_regex(r"[A-Za-z0-9](?:[A-Za-z0-9 _.-]{0,30}[A-Za-z0-9_.-])?", fullmatch=True).filter(valid_name)
 hosts = st.from_regex(r"[a-z0-9]{1,10}(\.[a-z0-9]{1,10}){0,3}", fullmatch=True).filter(valid_host)
-phrases = st.text(alphabet=st.characters(min_codepoint=32, max_codepoint=126), min_size=1, max_size=40).filter(
-    valid_passphrase
-)
+_PC = r"[!&()*+\-./0-9:;<=>?@A-Z\[\]^_`a-z{|}~]"  # allowed passphrase characters except space
+phrases = st.from_regex(rf"{_PC}(?:[ {_PC[1:-1]}]{{0,38}}{_PC})?", fullmatch=True).filter(valid_passphrase)
 
 
 @settings(max_examples=300, deadline=None)
