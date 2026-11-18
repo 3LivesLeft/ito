@@ -288,8 +288,14 @@ Design:
 - No `privileged` capabilities are requested. **[Assumption]** RNS TCP client interfaces need
   no capabilities (no raw sockets, no privileged ports) — confirm in Phase 1 by running with all
   capabilities dropped.
-- AppArmor: a custom profile restricting the core and RNS to `/data/**` (read/write), the Python
-  installation (read-only), and TCP/UDP network access; denying everything else.
+- AppArmor: a custom profile (revised after the v0.1.0 start-up failure on the reference Pi).
+  Read access to the container's own filesystem; execution only from the image's program
+  directories and s6-overlay's run-time service directories (never from `/data` or `/tmp`); writes
+  only to `/data`, `/run` and `/tmp`; a short capability list; mount, pivot_root and ptrace
+  denied. s6-overlay starts with shell scripts (`/init` is `#!/bin/sh -e`), and an interpreter must
+  be able to read a script it runs — the 0.1.0 profile allowed only execution, so `/bin/sh` could
+  not open `/init`. **The Supervisor loads the profile only on install and on update to a new
+  version, not on Rebuild** (Supervisor 2026.11.0, `apps/app.py`), and renames it to the app slug.
 - "Where supported": if a future feature needs root (none in v0.1), it must be isolated in its own
   s6 service, documented and justified in an ADR.
 
@@ -370,4 +376,4 @@ How the design above was implemented, and decisions taken during implementation.
 | Resource guards | `nice 10`; memory guard on RSS + swap; CPU warning after 10 min above 80 % of a core; free-space floor 200 MB (warning below 1 GB); regenerable RNS cache cleared above 100 MB at start; `ulimits: nofile 4096` | `supervisor.py`, `prepare.py`, `config.yaml` |
 | Health endpoint | `GET /health` on port 8099, `200 ok` while the main loop heartbeat is < 60 s old, `503` otherwise; request logging disabled. The heartbeat is kept fresh while waiting for bounded subprocesses (the prepare step, up to 180 s, and the stop grace period), so a slow start cannot cause a Supervisor restart (PR #2 review) | `health.py`, `supervisor.py` |
 | Build | Base image pinned by multi-arch digest; runtime wheels hash-pinned and binary-only from PyPI; optional BuildKit secret `build_ca` for builds behind TLS-intercepting proxies (never stored in the image) | `Dockerfile` |
-| AppArmor | Custom profile written from the HA example; **not yet validated on an AppArmor host** (pending the reference Pi) | `apparmor.txt` |
+| AppArmor | Rewritten after the start-up failure on the Pi. Tested statically (every program the profile lets run must also be readable if it is a script) and **under real enforcement in CI** on an AppArmor-enabled runner; still to be confirmed on the Pi | `apparmor.txt`, `tests/apparmor/`, CI |

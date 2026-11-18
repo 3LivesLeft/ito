@@ -86,6 +86,19 @@ Notable tests (all passing):
 | The `integration` test marker was never applied (a `pytestmark` in `conftest.py` has no effect) | `-m integration` selected 0 tests | Marked through a collection hook: 21 tests |
 | Simplifications | — | Removed a redundant redaction pattern; simplified a status-change condition with an unreachable branch; enum comparison instead of a string |
 
+### 3.2 Reference Pi start-up failure (v0.1.0, commit `75060e3`)
+
+| Item | Finding |
+|---|---|
+| Symptom | Builds and installs on the Pi (HA OS 18.5, Supervisor 2026.11.0), then exits at once: `/bin/sh: can't open '/init': Permission denied`, exit code 2; watchdog restarts about once a second |
+| Root cause | The AppArmor profile granted `/init ix` and `/package/** ix` — execute without read. s6-overlay 3.2.3.2's `/init`, `preinit` and `stage0` are shell scripts, which `/bin/sh` must read. The HA example profile avoids this only through a blanket `file,` rule, which MeshBeacon's stricter profile had removed |
+| Why the local `/init rix` edit did not help | The Supervisor loads an app's AppArmor profile only on install and on update to a new version; **Rebuild does not reload it** (verified in Supervisor 2026.11.0). The edit was most likely never loaded. Other s6-overlay scripts would have failed next in any case |
+| Why `ha host logs` showed no denials | Not determined. `kernel` is among the default identifiers; when journald collects audit records itself they are usually filed under `audit`, which is not — an assumption to check with `ha host logs -t audit` |
+| Why tests missed it | Docker on the development host and on CI runners never applies `apparmor.txt` (only the Supervisor loads it), and the sandbox kernel has no AppArmor. The profile was untested; the roadmap said so (LP-11), but the green container tests gave false confidence |
+| Fix | Rewritten profile; version 0.1.1 so that Home Assistant offers an **Update**, which loads it |
+| Regression tests | Static profile checks (unit); inventory of every executable in the image against the profile (container); CI loads the profile into a real AppArmor kernel in enforce mode and reruns the container tests confined, plus a test that confinement is active and restrictive |
+| Restart loop | The failure happens in s6-overlay before any MeshBeacon code runs, so MeshBeacon's start-history guard cannot act. The Supervisor bounds container restarts at 10 per 30 minutes ("Rate limit exceeded" afterwards, verified). Safeguards: catch profile errors before release (above); documentation now says to enable the watchdog only after a first successful start |
+
 ## 4. Resource measurements
 
 | Measurement | Value | Conditions |
@@ -102,6 +115,6 @@ Raspberry Pi figure: **not measured** (roadmap LP-16, RG-1). The emulated aarch6
 
 ## 5. Not yet verified
 
-- AppArmor profile (no AppArmor on the sandbox host) — must be checked on the Pi in complain mode.
+- AppArmor profile on the Pi itself (CI now enforces it on an Ubuntu runner, whose kernel and AppArmor version differ from HA OS).
 - Behaviour under the real Supervisor (watchdog, backups, options UI) — the image itself is now tested on the real HA base in CI.
 - The physical Pi (maintainer); aarch64 has only been tested under emulation.

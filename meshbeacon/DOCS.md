@@ -35,9 +35,10 @@ MeshBeacon is not published yet, so you install it from a copy of its folder:
 5. Start it, then open the **Log** tab. You will see:
    *"MeshBeacon is running, but it is not connected to anyone."* — that is expected until you add
    a peer.
-6. Optional but recommended: switch on **Watchdog** on the app's Info tab. MeshBeacon is designed
-   so that the watchdog only restarts it if MeshBeacon itself stops responding — never because
-   your internet is down.
+6. After this first successful start, switch on **Watchdog** on the app's Info tab (recommended).
+   MeshBeacon is designed so that the watchdog only restarts it if MeshBeacon itself stops
+   responding — never because your internet is down. Leave it off until the first start has
+   succeeded: if the app cannot start at all, the watchdog only restarts it in quick succession.
 
 ## Connect to a peer
 

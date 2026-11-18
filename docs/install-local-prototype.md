@@ -59,8 +59,11 @@ Use **one** of the following (both are official Home Assistant apps).
    (Supervisor) for a configuration error.
 3. Select **Install**. Home Assistant builds the image on the device. On a Raspberry Pi 4 this
    takes several minutes. If the build fails, the Supervisor log shows the failing step.
-4. On the **Info** tab, leave **Start on boot** on and switch **Watchdog** on (recommended: it only
-   restarts MeshBeacon if MeshBeacon itself stops responding, never because the internet is down).
+4. On the **Info** tab, leave **Start on boot** on. Leave **Watchdog** **off** until MeshBeacon has
+   started successfully once (section 4): if the app cannot start at all, the watchdog restarts it
+   in quick succession (up to 10 times in 30 minutes) without helping. Afterwards, switch it on —
+   it only restarts MeshBeacon if MeshBeacon itself stops responding, never because the internet
+   is down.
 
 ## 4. First start (no peers)
 
@@ -107,16 +110,48 @@ Without any household identifiers (no IP addresses, hostnames, SSIDs or identity
 | Log lines from first start and after connecting | Log tab (remove hostnames before sharing) |
 | Idle memory | The app's **Info** tab shows its RAM usage; note it after about an hour. (Do not disable the SSH app's protection mode to use Docker commands for this.) |
 | "Connected" message, and reconnection after restarting the peer | Log tab |
-| AppArmor: any denials | *Settings → System → Logs*, Host log, search for `apparmor` and `meshbeacon` |
+| AppArmor: any denials | SSH terminal: `ha host logs -t kernel -n 2000 \| grep -i apparmor` and `ha host logs -t audit -n 2000 \| grep -i apparmor` (audit messages may be filed under either identifier) |
 
 ## 8. Updating or removing
 
-- **Update:** replace the contents of `<local apps folder>/meshbeacon/` with the new version, then *App store →
-  ⋮ → Check for updates* and **Rebuild** on the app page. Your node identity is kept.
+- **Update:** replace the contents of `<local apps folder>/meshbeacon/` with the new version, then
+  *App store → ⋮ → Check for updates* and select **Update** on the app page. Your node identity is
+  kept. Use **Update**, not **Rebuild**: Home Assistant (Supervisor 2026.11.0, verified in its
+  source) loads an app's AppArmor profile only on *install* and *update*, so a rebuild keeps the old
+  profile. If the version number has not changed, Home Assistant offers no update — see
+  "Updating from 0.1.0" below.
 - **Uninstall:** *Uninstall* on the app page. This **deletes the app's data, including the node
   identity**, unless you have a backup.
 - **Restore:** restore the app (or a full backup) from *Settings → System → Backups*; the identity
   is restored with it and verified on the next start.
+
+## 8a. Updating from 0.1.0 (fixes the start-up failure)
+
+Version 0.1.0 failed to start on Home Assistant OS with `/bin/sh: can't open '/init': Permission
+denied`. Version 0.1.1 fixes the AppArmor profile. Because the profile is loaded only on install
+or update, follow these steps exactly:
+
+1. On the MeshBeacon **Info** tab, make sure **Watchdog** is **off**, and **Stop** the app if it is
+   running.
+2. If you edited `apparmor.txt` on the device while diagnosing, discard that edit: the new folder
+   replaces it.
+3. Replace the whole `<local apps folder>/meshbeacon/` folder with the `meshbeacon` folder from
+   commit `<fix commit>` or later (`config.yaml` must say `version: "0.1.1"`). With the SSH
+   terminal you can check with `grep '^version' <local apps folder>/meshbeacon/config.yaml`.
+4. *Settings → Apps → App store → ⋮ → Check for updates*.
+5. Open MeshBeacon. It now shows an update to **0.1.1**. Select **Update** (not Rebuild). This
+   rebuilds the image *and* loads the new AppArmor profile.
+6. **Start** the app and open the **Log** tab. Expected within about a minute:
+   `[meshbeacon] MeshBeacon 0.1.1 starting (Reticulum 1.6.0, aarch64).`
+7. Only then switch **Watchdog** on.
+8. If it still fails, collect (without household identifiers) the app log, the Supervisor log and
+   the output of the two AppArmor commands in section 7, and report them.
+
+The 0.1.0 installation never started, so it has no node identity yet; nothing is lost.
+
+If **Update** is not offered after step 4, reload the browser page and repeat step 4. As a last
+resort, **Uninstall** and **Install** also load the profile — safe here only because a 0.1.0 install
+that never started holds no identity.
 
 ## 9. If something goes wrong
 
@@ -127,5 +162,7 @@ Without any household identifiers (no IP addresses, hostnames, SSIDs or identity
 | ✖ has paused to avoid a restart loop | Wait until the time shown, then restart, or change any option. |
 | ✖ … identity … has NOT created a new one | Restore the app from a backup (section 8). |
 | Build fails | Check the Supervisor log; a network problem during the build is the usual cause. |
+| Log shows `can't open '/init': Permission denied` | You are running the 0.1.0 AppArmor profile; follow section 8a. |
+| The app restarts every second or so | Switch **Watchdog** off, then read the app log for the cause (Home Assistant stops after 10 restarts in 30 minutes). |
 
 Report security problems privately (see `SECURITY.md`), not in public issues.
