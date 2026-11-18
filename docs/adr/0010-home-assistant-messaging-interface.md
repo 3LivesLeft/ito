@@ -38,6 +38,10 @@ by design, and must not gain one.
 
 ## Consequences
 
+- This API is one **binding** of the Messaging Service contract (ADR 0014), not the engine's
+  design. Other deliveries add their own bindings, which must meet the same protection
+  requirements.
+
 - MeshBeacon is no longer strictly read-only. The README, the app description and ADR 0006's
   "read-only" statements must change when this is approved.
 - The threat model gains B10 and T47–T52.

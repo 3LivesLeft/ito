@@ -104,7 +104,8 @@ limit: sending and receiving LXMF messages from the built-in interface remains t
 ## v0.3.0 — Messaging (research and architecture; not authorised for implementation)
 
 Proposed in [v0.3 messaging](research/v0.3-messaging.md) and ADRs
-[0008](adr/0008-messaging-process.md)–[0012](adr/0012-optional-propagation-node.md). **Not to be
+[0008](adr/0008-messaging-process.md)–[0012](adr/0012-optional-propagation-node.md) and
+[0014](adr/0014-messaging-engine-contract.md) (engine independent of any frontend). **Not to be
 implemented until independently reviewed and approved.**
 
 - Text messaging over unmodified LXMF in a separate, supervised process; a separate messaging
@@ -261,3 +262,5 @@ Measured on isolated networks and on the reference Pi. "Pi" figures are release 
 | MS-18 | Pi resources: messaging on, idle ≤ +40 MiB (app ≤ 160 MiB) and ≤ 0.5 % CPU added; stamp at the recipient's cost ≤ 30 s or a clear failure | Pi |
 | MS-19 | SD-card writes ≤ 1 a second sustained under normal traffic | Automated measurement |
 | MS-20 | Panel Messages tab (only when messaging is on) shows conversations and receipts, writes text only, and stores nothing in the browser | Automated + preview |
+| MS-21 | **Frontend independence:** the engine imports no Home Assistant, HTTP-server or UI code; bindings import no LXMF; contract tests pass against the real engine behind a fake binding (ADR 0014) | Automated |
+| MS-22 | Every binding that carries content or accepts sends meets S1–S3 (confidentiality, integrity, caller authentication), with its own tests | Automated + review |

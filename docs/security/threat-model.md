@@ -135,6 +135,7 @@ Design: [v0.3 messaging](../research/v0.3-messaging.md).
 | T55 | B5 | I | **Plaintext messages at rest** in `/data/messaging/queue.db` and in app backups | Acknowledged content deleted by default; bounded retention; documented; encrypted backups recommended | MS-4 |
 | T56 | B5 | I/T | **Messaging identity theft or silent replacement** | 0600, validated before start (rule 13), never logged, separate from transport identity ([ADR 0009](../adr/0009-messaging-identity.md)) | MS-2 |
 | T57 | B1 | I | **Metadata disclosure**: recipient hash, size and timing to propagation nodes; announce correlation with the transport identity; display name | Empty display name by default; no telemetry, location or icon fields; documented limits of separation | MS-3 |
+| T66 | B10 | I/T/E | **A new binding weakens messaging protection** (for example a delivery added for convenience whose channel lacks confidentiality, integrity or caller authentication) | Every binding must meet S1–S3 before it may carry content or accept a send; read-only is not an exception; bindings are thin and reviewed (ADR 0014) | MS-22 |
 | T58 | B5 | D | **Messaging failure disturbs transport** (crash, hang, stamp CPU, corrupt queue, full disk) | Separate process ([ADR 0008](../adr/0008-messaging-process.md)), bounded restarts, `nice`, CPU limit for stamps, quarantine of a corrupt queue | MS-15, MS-16 |
 
 ## 5. Privacy commitments

@@ -32,6 +32,9 @@ generation has a CPU time limit.
 
 ## Consequences
 
+- The process is reached only through the Messaging Service contract (ADR 0014); it contains no
+  Home Assistant or interface code.
+
 - One more process to supervise and test, and one more AppArmor path (`/data/messaging/`).
 - Prototype gate: if Q-40 shows the second process costs more than 40 MiB, revisit A with
   in-process watchdogs. That decision would come back to review.
