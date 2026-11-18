@@ -200,8 +200,19 @@ def test_rns_child_dies_with_supervisor(data, tmp_path):
     proc = subprocess.Popen([sys.executable, "-m", "meshbeacon.supervisor"], env=env, stdout=subprocess.DEVNULL)
 
     def node_pids():
-        out = subprocess.run(["pgrep", "-f", f"meshbeacon.node --config {data}"], capture_output=True, text=True)
-        return [int(p) for p in out.stdout.split()]
+        # Scan /proc directly: minimal images (such as CI's python:3.13-slim) have no pgrep.
+        wanted = ["meshbeacon.node", "--config", str(data / "reticulum")]
+        pids = []
+        for entry in Path("/proc").iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                argv = (entry / "cmdline").read_bytes().decode(errors="replace").split("\0")
+            except OSError:
+                continue
+            if all(w in argv for w in wanted):
+                pids.append(int(entry.name))
+        return pids
 
     assert wait_for(lambda: len(node_pids()) == 1, timeout=60)
     proc.kill()  # simulate a crash of the core
