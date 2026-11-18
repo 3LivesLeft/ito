@@ -86,6 +86,11 @@ means zero.
 
 ## The MeshBeacon panel
 
+> **Direction change (18 Nov 2026):** MeshBeacon's own interface is to come with the **app**,
+> through Ingress, so the integration is not needed for it ([ADR 0013](adr/0013-built-in-interface-ingress.md),
+> proposed). If that is accepted, this panel moves into the app and the integration keeps
+> entities, dashboards, statistics and automations only.
+
 When the integration is set up, a **MeshBeacon** entry with its own icon appears in the sidebar for
 administrators. It opens MeshBeacon's own page ([ADR 0007](adr/0007-sidebar-panel.md)). It needs
 no configuration and goes away when the integration is removed.

@@ -1,7 +1,11 @@
 # ADR 0007: A sidebar panel served by the integration
 
-- **Status:** **Proposed** (implemented on the v0.2 branch for review; needs maintainer approval
-  before release). It changes nothing in the app and adds no app permission.
+- **Status:** **Proposed; recommended for withdrawal.** The maintainer's out-of-the-box principle
+  (18 Nov 2026) requires the dedicated interface to come with the app itself, without the
+  integration. [ADR 0013](0013-built-in-interface-ingress.md) proposes delivering it through
+  Ingress and moving this panel's code into the app. If ADR 0013 is accepted, this ADR is
+  superseded and the integration's panel is removed before release. Until then, the
+  implementation stays on the v0.2 branch for review.
 - **Date:** 18 November 2026
 - **Evidence:** this ADR's tests (`tests/ha/test_panel.py`, `tests/frontend/model.test.mjs`),
   the real Home Assistant 2026.11.2 smoke test (`tools/ha_smoke_test.py`), and the

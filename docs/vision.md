@@ -46,24 +46,36 @@ Over time it aims to let a household:
    Reticulum within five minutes, without editing a file or understanding networking. Safe
    defaults and a few plainly explained choices beat many options. See
    [first-run UX](ux/first-run.md).
-2. **Free for everyone, forever.**
-3. **Privacy by default.** Nothing is published, discovered or connected without the user's
+2. **Works out of the box (permanent; maintainer, 18 Nov 2026).** Everything a first-time user
+   needs comes with the standard app installation:
+   - MeshBeacon's own interface, with a sidebar entry, is part of the app. It needs no separately
+     installed custom integration, no HACS and no manual dashboard configuration.
+   - A first-time user can install, configure and start MeshBeacon within **five minutes**,
+     without touching a terminal or editing YAML.
+   - The Home Assistant integration remains an **optional enhancement**, for entities, custom
+     dashboards, long-term statistics and automations. Nothing essential depends on it.
+   - This never justifies weakening security or privacy (principles 4 and 5). When the two
+     conflict, the safe design wins and the usability gap is recorded as a defect to solve.
+   - It never justifies duplicating monitoring logic or adding avoidable resource use
+     (principle 9).
+3. **Free for everyone, forever.**
+4. **Privacy by default.** Nothing is published, discovered or connected without the user's
    explicit choice.
-4. **Security by default.** Least privilege, no privileged containers, no unnecessary Home
+5. **Security by default.** Least privilege, no privileged containers, no unnecessary Home
    Assistant permissions, no public ports by default.
-5. **Reuse upstream.** Build on RNS and LXMF through their public interfaces; never copy or patch
+6. **Reuse upstream.** Build on RNS and LXMF through their public interfaces; never copy or patch
    them.
-6. **Native interoperability.** Talk to the wider ecosystem (Sideband, Ratspeak, NomadNet,
+7. **Native interoperability.** Talk to the wider ecosystem (Sideband, Ratspeak, NomadNet,
    MeshChat) because it is the same protocol — not through bridges or translations.
-7. **Good network citizenship.** Be a considerate neighbour on shared networks and shared radio
+8. **Good network citizenship.** Be a considerate neighbour on shared networks and shared radio
    spectrum.
-8. **Light on resources.** The Home Assistant host comes first. MeshBeacon must run comfortably on
+9. **Light on resources.** The Home Assistant host comes first. MeshBeacon must run comfortably on
    lower-memory devices, not just on well-equipped ones: the idle target is 128 MB or less.
-9. **Maintainable, testable and portable.** A small core that runs with or without Home
+10. **Maintainable, testable and portable.** A small core that runs with or without Home
    Assistant, tested against real, isolated Reticulum networks.
-10. **Honest.** Clear about what works, what does not, what is experimental, and how the project
+11. **Honest.** Clear about what works, what does not, what is experimental, and how the project
    is made — including the use of AI assistance.
-11. **British English** throughout documentation.
+12. **British English** throughout documentation.
 
 ## Who it is for
 
@@ -74,6 +86,7 @@ Over time it aims to let a household:
 ## Measures of success
 
 - An ordinary Home Assistant user can install MeshBeacon and have a connected, private node in
-  **five minutes or less**, without editing a configuration file — measured with real users.
+  **five minutes or less**, without editing a configuration file or opening a terminal, and can
+  see it working in MeshBeacon's own interface, measured with real users.
 - MeshBeacon never degrades the stability of the Home Assistant instance it runs on.
 - Reticulum community members regard MeshBeacon as a good citizen of the network.
