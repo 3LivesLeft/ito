@@ -1,0 +1,5 @@
+#!/bin/sh
+# Start the MeshBeacon core as the unprivileged service user (architecture §4.7).
+exec 2>&1
+umask 077
+exec /command/s6-setuidgid meshbeacon /usr/local/bin/python3 -I -m meshbeacon.supervisor

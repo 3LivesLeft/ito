@@ -90,9 +90,11 @@ name, passphrase, and any future field):
      IPv4/IPv6 literal parsed with `ipaddress`; nothing else;
    - *port*: integer 1–65535;
    - *network name*: same rule as peer name;
-   - *passphrase*: printable UTF-8, 8–128 characters, and must not contain newline, `#`, `%`, `$`,
-     quote characters or a leading/trailing space (the exact set is to be confirmed against
-     ConfigObj's quoting rules in Phase 1; **[Open] Q-25**);
+   - *passphrase*: printable **ASCII**, 1–128 characters, excluding `"`, `'`, `#`, `,`, `%`, `$`
+     and `\`, with no leading or trailing space (**Q-25 resolved in Phase 1**: with this set,
+     ConfigObj round-trips every value exactly — verified by property-based tests; 1 rather than 8
+     characters minimum so that users can join existing networks whose passphrases they do not
+     control);
    - reject any value containing control characters (including `\r`, `\n`, `\t`, `\0`).
 3. **Rendering only through the ConfigObj object API** (never f-strings or templates), with
    RNS-controlled keys taken from a fixed allow-list — user input never becomes a *key*, only a
@@ -249,6 +251,12 @@ Design:
    kept in the app's data folder" — **without any hashes** — and the option must be switched off
    again by the user before the next restart, otherwise MeshBeacon refuses to start and explains
    why (it cannot switch the option off itself without Supervisor API access).
+   **Replacement is a journalled transaction** (PR #2 review): (1) the new key is staged as
+   `identity.pending`; (2) the state file records the replacement as authorised — the commit
+   point; (3) the current identity is kept, the new one is written as primary and backup, and the
+   state is committed. A crash before (2) leaves the original in use; after (2), the next start
+   finishes *that* replacement whatever the option says, so it is applied exactly once and the
+   identity never changes silently. Verified by injecting a crash before each of the six writes.
 6. **Restoration**:
    - *From a Home Assistant backup:* the normal path. `/data` (including the identity and its
      backup copy) is restored by the Supervisor; validation (2) runs on next start.
@@ -280,8 +288,14 @@ Design:
 - No `privileged` capabilities are requested. **[Assumption]** RNS TCP client interfaces need
   no capabilities (no raw sockets, no privileged ports) — confirm in Phase 1 by running with all
   capabilities dropped.
-- AppArmor: a custom profile restricting the core and RNS to `/data/**` (read/write), the Python
-  installation (read-only), and TCP/UDP network access; denying everything else.
+- AppArmor: a custom profile (revised after the v0.1.0 start-up failure on the reference Pi).
+  Read access to the container's own filesystem; execution only from the image's program
+  directories and s6-overlay's run-time service directories (never from `/data` or `/tmp`); writes
+  only to `/data`, `/run` and `/tmp`; a short capability list; mount, pivot_root and ptrace
+  denied. s6-overlay starts with shell scripts (`/init` is `#!/bin/sh -e`), and an interpreter must
+  be able to read a script it runs — the 0.1.0 profile allowed only execution, so `/bin/sh` could
+  not open `/init`. **The Supervisor loads the profile only on install and on update to a new
+  version, not on Rebuild** (Supervisor 2026.11.0, `apps/app.py`), and renames it to the app slug.
 - "Where supported": if a future feature needs root (none in v0.1), it must be isolated in its own
   s6 service, documented and justified in an ADR.
 
@@ -310,6 +324,9 @@ Design:
 - Never rendered in v0.1: `AutoInterface`, `discover_interfaces`, `discoverable`,
   `autoconnect_discovered_interfaces`, `publish_ifac`, `location_cmd`, I2P, RNode.
 - No default peer. Optional verified presets only ([ADR 0004](adr/0004-public-peer-presets.md)).
+- **`share_instance = No`** (Phase 1): RNS opens **no local sockets and no RPC listener at all**
+  (verified: no Unix or TCP sockets in the RNS process with default options). A fresh random
+  `rpc_key` is still rendered on every start, for defence in depth.
 - Explicit random `rpc_key` (validated hex — RNS silently falls back to the identity-derived key on
   an invalid value) and a unique `instance_name`.
 
@@ -339,3 +356,24 @@ Design:
 No custom cryptography or protocol code; no cloud services, telemetry or analytics; no Docker
 socket, privileged mode or `manager`/`admin` Supervisor role; no write access to the Home
 Assistant configuration directory; no raw RNS configuration pass-through.
+
+## 9. Phase 1 implementation notes (v0.1.0)
+
+How the design above was implemented, and decisions taken during implementation.
+
+| Topic | Implementation | Where |
+|---|---|---|
+| Package layout | App folder `meshbeacon/` (Supervisor build context) containing `core/meshbeacon/` (the HA-free core), `rootfs/` (s6 scripts), `config.yaml`, `Dockerfile`, `apparmor.txt` | repository root |
+| Processes | s6-overlay PID 1 → root `cont-init` (folders and ownership only, never fails) → `meshbeacon.supervisor` as user `meshbeacon` (UID 9100) → per start: short-lived `meshbeacon.prepare`, then long-running `meshbeacon.node` | `rootfs/`, `core/meshbeacon/` |
+| RNS child (Q-12 resolved) | A thin entry point, `meshbeacon.node`, that calls `RNS.Reticulum(configdir=…)` and reports `get_interface_stats()` (names, up/down, byte counters only) as JSON lines over a dedicated pipe every 10 s | `node.py` |
+| RNS import | Only `prepare` and `node` import RNS; the long-running supervisor does not (≈ 25 MB instead of ≈ 45 MB) | |
+| Config parser | Rendering and round-trip verification use the ConfigObj copy that RNS ships (`RNS.vendor.configobj`), so verification uses exactly the parser RNS will use; no private attributes are touched | `rnsconfig.py` |
+| Identity | Created with `RNS.Identity()` / `get_private_key()`, validated with `RNS.Identity.from_bytes()` (public API). **Finding:** any 64 bytes form a valid key pair, so same-length corruption looks like a different identity; MeshBeacon therefore restores from the verified backup whenever the backup matches the recorded fingerprint | `identity.py` |
+| Orphan prevention | The RNS child asks the kernel for `SIGTERM` when the supervisor dies (`PR_SET_PDEATHSIG`); the s6 `finish` script stops the container on any crash of the core (including `SIGKILL`) instead of restarting it inside the container. Found by container test: without this, a killed core left RNS running and a second RNS started on the same storage | `procinfo.py`, `finish` |
+| Child Python | `python3 -I -u` when installed in site-packages, as in the image. `-u` is required: RNS logs with `print()`, and `-I` ignores `PYTHONUNBUFFERED`, so without it RNS output reached the log late or not at all (found by the network-isolated test run) | `supervisor.py` |
+| Timings | Back-off 1 s → 5 min; breaker 5 failures / 15 min, 15 min cool-down, give up after 3 openings; stable after 10 min; status every 10 s, stall after 120 s; start history 5 starts / 30 min | `policy.py` |
+| Logging | Every line redacted (32-hex hashes, longer hex runs, mixed-case base64 runs ≥ 43 characters, configured passphrases), truncated to 1,000 characters, and RNS output rate-limited to 20 lines/s with a burst of 100 | `logfilter.py` |
+| Resource guards | `nice 10`; memory guard on RSS + swap; CPU warning after 10 min above 80 % of a core; free-space floor 200 MB (warning below 1 GB); regenerable RNS cache cleared above 100 MB at start; `ulimits: nofile 4096` | `supervisor.py`, `prepare.py`, `config.yaml` |
+| Health endpoint | `GET /health` on port 8099, `200 ok` while the main loop heartbeat is < 60 s old, `503` otherwise; request logging disabled. The heartbeat is kept fresh while waiting for bounded subprocesses (the prepare step, up to 180 s, and the stop grace period), so a slow start cannot cause a Supervisor restart (PR #2 review) | `health.py`, `supervisor.py` |
+| Build | Base image pinned by multi-arch digest; runtime wheels hash-pinned and binary-only from PyPI; optional BuildKit secret `build_ca` for builds behind TLS-intercepting proxies (never stored in the image) | `Dockerfile` |
+| AppArmor | Rewritten after the start-up failure on the Pi. Tested statically (every program the profile lets run must also be readable if it is a script) and **under real enforcement in CI** on an AppArmor-enabled runner; still to be confirmed on the Pi | `apparmor.txt`, `tests/apparmor/`, CI |

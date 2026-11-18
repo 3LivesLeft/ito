@@ -1,0 +1,47 @@
+# Tooling configuration only. The MeshBeacon core is not published as a Python package; it is
+# copied into the app image from meshbeacon/core/.
+[project]
+name = "meshbeacon-dev"
+version = "0.1.0"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+
+[tool.pytest.ini_options]
+pythonpath = ["meshbeacon/core"]
+testpaths = ["tests"]
+markers = [
+  "integration: runs real, isolated Reticulum processes (loopback only)",
+  "slow: long-running test",
+  "container: needs Docker and a built image",
+]
+addopts = "-ra --strict-markers"
+filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+src = ["meshbeacon/core", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "N", "A", "C4", "SIM", "RUF", "PL"]
+ignore = [
+  "S603",    # subprocess without shell: all commands are fixed argument lists
+  "S104",    # health endpoint binds inside the container namespace on purpose
+  "PLR2004", # magic values in tests and thresholds
+  "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  "RUF001", "RUF002", "RUF003", # typographic characters in plain-language messages are intended
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S108", "S311", "S607", "PLC0415", "PLW1510"]
+"meshbeacon/core/meshbeacon/**" = ["PLC0415"]  # RNS is imported lazily on purpose
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["meshbeacon/core/meshbeacon"]
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["RNS", "RNS.*"]
+ignore_missing_imports = true

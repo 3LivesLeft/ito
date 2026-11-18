@@ -1,0 +1,83 @@
+#include <tunables/global>
+
+# MeshBeacon AppArmor profile.
+#
+# The Supervisor renames the profile to the app's slug (for a local app: local_meshbeacon) and
+# loads it only when the app is INSTALLED or UPDATED to a new version — not on Rebuild (verified in
+# Supervisor 2026.11.0). See docs/install-local-prototype.md for updating an existing install.
+#
+# Design (architecture §4.7), revised after the v0.1.0 startup failure on the reference Pi:
+# - Read access to the container's own filesystem is allowed. s6-overlay starts with shell and
+#   execline SCRIPTS (/init is '#!/bin/sh -e'), and an interpreter must be able to READ a script
+#   it executes; the previous profile granted only 'ix' on them, so /bin/sh could not open /init.
+# - Execution is allowed only from the image's program directories and s6-overlay's run-time
+#   service directories — never from /data or /tmp.
+# - Writes are allowed only to /data (app data), /run (s6-overlay state) and /tmp.
+# - Only the capabilities the root init step and s6-overlay need; mount and ptrace are denied.
+#
+# Enforcement is tested in CI on an AppArmor-enabled runner (tests/container, MESHBEACON_APPARMOR).
+profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # Capabilities: root init step (ownership and permissions under /data) and s6-overlay
+  # (dropping to the service user, signalling its children).
+  capability chown,
+  capability fowner,
+  capability dac_override,
+  capability setuid,
+  capability setgid,
+  capability kill,
+  # Not granted, and denied explicitly so that it is not logged: root's chmod of a file whose group
+  # it is not in (the init step, after handing /data to the service user) makes the kernel check
+  # fsetid only to decide whether to keep a setgid bit, which MeshBeacon never sets. Without this
+  # rule every start logged three harmless denials (seen in CI under enforcement).
+  deny capability fsetid,
+
+  # Signals within the container (s6 supervision tree) and from the container runtime (stop).
+  signal (send, receive) peer=@{profile_name},
+  signal (receive) peer=unconfined,
+
+  # Read the container's own filesystem (scripts must be readable to be interpreted).
+  / r,
+  /** r,
+
+  # Execute: s6-overlay, the shell and system tools, Python, and MeshBeacon's s6 scripts.
+  /init ix,
+  /bin/** ix,
+  /sbin/** ix,
+  /usr/bin/** ix,
+  /usr/sbin/** ix,
+  /usr/local/bin/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/s6-overlay/** ix,
+  /etc/cont-init.d/** ix,
+  /etc/cont-finish.d/** ix,
+  /etc/services.d/** ix,
+  /run/{s6,s6-rc*,service}/** ix,
+
+  # Shared libraries and Python extension modules.
+  /lib/** mr,
+  /usr/lib/** mr,
+  /usr/local/lib/** mr,
+
+  # Writable locations.
+  /data/ rw,
+  /data/** rwk,
+  /run/{,**} rwk,
+  /tmp/{,**} rwk,
+  /dev/tty rw,
+
+  # Outbound TCP to user-configured peers, DNS lookups, the internal health endpoint, and the
+  # local sockets and pipes used by s6-overlay.
+  network inet stream,
+  network inet6 stream,
+  network inet dgram,
+  network inet6 dgram,
+  network unix,
+
+  deny mount,
+  deny umount,
+  deny pivot_root,
+  deny ptrace (trace),
+}

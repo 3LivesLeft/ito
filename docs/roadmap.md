@@ -93,26 +93,26 @@ Status values: *Not started* · *In progress* · *Met (evidence: …)* · *Not m
 
 | ID | Criterion | Evidence type | Status |
 |---|---|---|---|
-| LP-1 | App builds for `amd64` and `aarch64` in CI | CI run | Not started |
-| LP-2 | Installs as a **local app** on the reference Pi (HA OS 18.5, `aarch64`) and starts — *maintainer-run, physical* | Manual record | Not started |
-| LP-3 | With default options: no outbound connections; isolated-node warning in the log | Automated container test + manual check on the Pi | Not started |
-| LP-4 | Connects to a **manually configured** peer, logs a plain "connected" message, reconnects after the peer restarts | Automated isolated-network test + manual check on the Pi | Not started |
-| LP-5 | Transport mode off by default; can be switched on and off | Automated test | Not started |
-| LP-6 | Identity: atomic creation; validation before every RNS start; restore from verified backup; refuse silent regeneration; explicit replacement keeps the old identity | Automated tests (testing strategy §4.3) | Not started |
-| LP-7 | Interrupted initialisation never leaves a partial identity (≥ 1,000 randomised kills) | Automated test | Not started |
-| LP-8 | Independent random `rpc_key`, validated before use | Automated test | Not started |
-| LP-9 | Hostile-input suite passes; rendered config is structurally exact | Automated tests (testing strategy §4.2) | Not started |
-| LP-10 | Files 0600 / directories 0700; core and RNS run as non-root `meshbeacon` | Automated container test | Not started |
-| LP-11 | `config.yaml` requests no host network, ports, Supervisor/Core API, `auth_api`, devices, extra capabilities, `full_access` or Docker API; AppArmor profile present | Automated lint of `config.yaml` | Not started |
-| LP-12 | Recovery is bounded: back-off, breaker, `needs_attention`, start-history safe mode; health stays 200 for connectivity and deterministic failures | Automated tests (testing strategy §5) | Not started |
-| LP-13 | Connectivity status is reported separately from process health | Automated test | Not started |
-| LP-14 | No key material, RPC key, passphrase, token or identity/destination hash in logs at any offered level | Automated log assertions | Not started |
-| LP-15 | Log forwarding is rate-limited; storage guard and memory guard work | Automated tests | Not started |
-| LP-16 | Idle memory ≤ 128 MB (RSS + swap, all app processes) in CI on amd64 and under QEMU aarch64 | CI measurement | Not started |
-| LP-17 | Low-memory profile L1–L2 (256 MB limit, no swap) | CI | Not started |
-| LP-18 | CI green: lint, type check, unit, integration, container security, dependency vulnerability scan, secret scan, licence check, SBOM generation | CI run | Not started |
-| LP-19 | CI makes no connection to public Reticulum peers (isolated network only) | CI configuration review + network-policy test | Not started |
-| LP-20 | `DOCS.md`: install as a local app, configure a peer, transport mode, privacy, backups contain the private key, restore, experimental status | Review | Not started |
+| LP-1 | App builds for `amd64` and `aarch64` in CI | CI run | Met (CI run 10, commit `59c1f22`: both images built against the pinned HA base image; aarch64 under QEMU) |
+| LP-2 | Installs as a **local app** on the reference Pi (HA OS 18.5, `aarch64`) and starts — *maintainer-run, physical* | Manual record | **Met (start-up)** — 0.1.1 installed as a local app and started on the reference Pi (HA OS 18.5, Supervisor 2026.11.0, aarch64) under its AppArmor profile, 18 Nov 2026: s6-overlay, root init and core started; identity created; isolated-node warning shown. (0.1.0 had failed at start-up — see Phase 1 results §3.2.) Peer connection on the Pi is LP-4 |
+| LP-3 | With default options: no outbound connections; isolated-node warning in the log | Automated container test + manual check on the Pi | Automated part met (container test `test_defaults_non_root_permissions_health_and_no_connections`; integration test: no sockets at all in the RNS process); manual Pi check pending |
+| LP-4 | Connects to a **manually configured** peer, logs a plain "connected" message, reconnects after the peer restarts | Automated isolated-network test + manual check on the Pi | Automated part met (`test_connects_reconnects_without_restarting`, container `test_connects_to_peer_on_internal_network`); manual Pi check pending |
+| LP-5 | Transport mode off by default; can be switched on and off | Automated test | Met (automated: default in `config.yaml` and settings; transport on/off rendering tests) |
+| LP-6 | Identity: atomic creation; validation before every RNS start; restore from verified backup; refuse silent regeneration; explicit replacement keeps the old identity | Automated tests (testing strategy §4.3) | Met (automated: `test_identity.py`; the whole replacement transaction is crash-tested by injecting a failure before each write, `test_identity_replacement.py`) |
+| LP-7 | Interrupted initialisation never leaves a partial identity (≥ 1,000 randomised kills) | Automated test | Met (automated: 1,000 randomised kills of the atomic-write primitive; 30 randomised kills of the real first-start step) |
+| LP-8 | Independent random `rpc_key`, validated before use | Automated test | Met (automated) |
+| LP-9 | Hostile-input suite passes; rendered config is structurally exact | Automated tests (testing strategy §4.2) | Met (automated: hostile-input regressions and property-based fuzzing) |
+| LP-10 | Files 0600 / directories 0700; core and RNS run as non-root `meshbeacon` | Automated container test | Met (container tests on the real HA base image in CI, amd64 and emulated aarch64) |
+| LP-11 | `config.yaml` requests no host network, ports, Supervisor/Core API, `auth_api`, devices, extra capabilities, `full_access` or Docker API; AppArmor profile present | Automated lint of `config.yaml` | Met — `config.yaml` (static test); AppArmor profile tested statically, **under enforcement in CI** (amd64 runner) and **in use on the reference Pi** (0.1.1 started confined by `local_meshbeacon`) |
+| LP-12 | Recovery is bounded: back-off, breaker, `needs_attention`, start-history safe mode; health stays 200 for connectivity and deterministic failures | Automated tests (testing strategy §5) | Met (automated: policy unit tests, crash-loop/stall/safe-mode integration tests, container crash test); slow or timed-out preparation keeps health at 200 |
+| LP-13 | Connectivity status is reported separately from process health | Automated test | Met (automated) |
+| LP-14 | No key material, RPC key, passphrase, token or identity/destination hash in logs at any offered level | Automated log assertions | Met (automated: detailed log level with transport on, passphrase and IFAC; RNS output contained hashes and they were redacted) |
+| LP-15 | Log forwarding is rate-limited; storage guard and memory guard work | Automated tests | Met (automated: rate limiter, memory guard, storage floor, cache cap) |
+| LP-16 | Idle memory ≤ 128 MB (RSS + swap, all app processes) in CI on amd64 and under QEMU aarch64 | CI measurement | Partly met — amd64 **65.2 MiB** in CI (native, real HA base). aarch64 under QEMU read **130.3 MiB**, which includes emulator overhead and is not a valid measurement; the physical Pi figure (RG-1) decides this criterion |
+| LP-17 | Low-memory profile L1–L2 (256 MB limit, no swap) | CI | Met — L1 and L2 (amd64 container, 256 MB limit, no swap: 3.26 MB of announces delivered, app peak 68.1 MiB, no OOM kill; also as an isolated integration test). Not run under QEMU (too slow to be meaningful); L3 (24 h) is release gate RG-3 |
+| LP-18 | CI green: lint, type check, unit, integration, container security, dependency vulnerability scan, secret scan, licence check, SBOM generation | CI run | Met (CI run 10: lint, mypy, shellcheck, hadolint, isolated tests, container tests on both architectures, licence check over a real SBOM, image scan with no critical findings, pip-audit, gitleaks) |
+| LP-19 | CI makes no connection to public Reticulum peers (isolated network only) | CI configuration review + network-policy test | Met (CI runs the suite in a container with `--network none`; container tests use an internal Docker network) |
+| LP-20 | `DOCS.md`: install as a local app, configure a peer, transport mode, privacy, backups contain the private key, restore, experimental status | Review | Drafted (`meshbeacon/DOCS.md`); maintainer review pending |
 
 ### Tier B — Public release gates (before publishing images or announcing a release)
 

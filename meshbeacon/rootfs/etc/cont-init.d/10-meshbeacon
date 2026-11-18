@@ -1,0 +1,21 @@
+#!/bin/sh
+# Root initialisation (architecture §4.7): only prepares MeshBeacon's data folders and hands them
+# to the unprivileged `meshbeacon` user. It never fails the container: if something here goes
+# wrong, the core reports it in plain language instead (ADR 0005 — no restart loops).
+umask 077
+for dir in /data/meshbeacon /data/reticulum /data/reticulum/storage; do
+    mkdir -p "$dir" 2>/dev/null || echo "[meshbeacon] warning: could not create $dir"
+done
+chown -R meshbeacon:meshbeacon /data/meshbeacon /data/reticulum 2>/dev/null \
+    || echo "[meshbeacon] warning: could not set ownership of the data folders"
+chmod 0700 /data/meshbeacon /data/reticulum /data/reticulum/storage 2>/dev/null || true
+# options.json is written by the Supervisor; the service user only needs to read it.
+if [ -f /data/options.json ]; then
+    if chgrp meshbeacon /data/options.json 2>/dev/null; then
+        chmod 0640 /data/options.json 2>/dev/null || true
+    fi
+fi
+if chgrp meshbeacon /data 2>/dev/null; then
+    chmod 0750 /data 2>/dev/null || true
+fi
+exit 0

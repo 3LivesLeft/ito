@@ -149,7 +149,7 @@ tested separately in CI and before release:
 | ID | Test | Pass criteria |
 |---|---|---|
 | L1 | Container started with `--memory=256m --memory-swap=256m` (no swap), both architectures (aarch64 under QEMU in CI) | Starts, renders config, connects to an isolated test peer |
-| L2 | L1 plus a bounded local announce flood against a transport-enabled instance | No out-of-memory kill; memory guard restarts, if any, are logged and recover |
+| L2 | L1 plus a bounded local announce flood against a transport-enabled instance: flooder (3,000 destinations) → peer with announce cap and ingress control **disabled** → MeshBeacon (`tests/integration/test_flood.py`, container `test_low_memory_announce_flood`) | No out-of-memory kill; memory guard restarts, if any, are logged and recover |
 | L3 | L1 with transport on for 24 h on the isolated test network (release check, not every push) | No out-of-memory kill; RSS + swap stays below the 256 MB guard |
 | L4 | Idle measurement in CI (amd64 and aarch64) | RSS + swap of all app processes ≤ 128 MB; a regression of more than 10 % against the previous release fails the build |
 

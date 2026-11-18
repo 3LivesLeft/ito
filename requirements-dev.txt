@@ -1,0 +1,10 @@
+# Development and CI tooling, pinned by version. Runtime dependencies are hash-pinned separately
+# in meshbeacon/requirements.txt.
+rns==1.6.0
+pytest==9.0.1
+hypothesis==6.170.15
+ruff==0.17.5
+mypy==2.4.1
+pip-audit==2.10.0
+pyyaml==6.0.3
+shellcheck-py==0.11.0.1

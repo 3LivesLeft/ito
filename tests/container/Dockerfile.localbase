@@ -1,0 +1,11 @@
+# TEST-ONLY stand-in for ghcr.io/home-assistant/base-python:3.13-alpine3.24, for sandboxes that
+# cannot pull from ghcr.io. It mirrors what MeshBeacon relies on: CPython 3.13 on Alpine 3.24,
+# s6-overlay 3.2.3.2 (checksum-verified before it is copied in by tests/container/build_localbase.sh)
+# and the same S6_* settings. CI and real installs use the pinned HA base image; results obtained
+# with this stand-in are labelled as such.
+FROM python:3.13-alpine3.24
+ARG TARGETARCH
+COPY rootfs-${TARGETARCH}/ /
+ENV LANG=C.UTF-8 S6_BEHAVIOUR_IF_STAGE2_FAILS=2 S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
+    S6_CMD_WAIT_FOR_SERVICES=1 S6_SERVICES_READYTIME=50
+ENTRYPOINT ["/init"]

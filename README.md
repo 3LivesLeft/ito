@@ -7,9 +7,10 @@ MeshBeacon is a free, open-source, privacy-first, decentralised communications g
 [Reticulum](https://github.com/markqvist/Reticulum) reference implementation.
 
 > [!WARNING]
-> **Experimental — do not depend on this yet.** MeshBeacon is in **Phase 0 (research and
-> design)**. There is no installable software in this repository. The documents here describe
-> what we intend to build and why, and are published for review.
+> **Experimental — do not depend on this yet.** MeshBeacon is in **Phase 1**: a v0.1.0 local
+> prototype that you can build and install as a local Home Assistant app
+> ([`meshbeacon/DOCS.md`](meshbeacon/DOCS.md)). No images or releases are published. Physical
+> Raspberry Pi validation is still pending ([results so far](docs/testing/phase1-results.md)).
 
 ## What it will do
 
@@ -44,6 +45,9 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [Licensing research](docs/research/licensing.md) | Licence decision, dependency compatibility, AI-training condition, publication obligations |
 | [Threat model](docs/security/threat-model.md) | Assets, threats and controls |
 | [Testing strategy](docs/testing/strategy.md) | How we will test against isolated Reticulum networks |
+| [Phase 1 results](docs/testing/phase1-results.md) | What has been verified so far, and what has not |
+| [App documentation](meshbeacon/DOCS.md) | Using the local prototype |
+| [Installing the local prototype](docs/install-local-prototype.md) | Step-by-step on Home Assistant OS, without published images |
 | [First-run UX](docs/ux/first-run.md) | The five-minute setup path and configuration design |
 | [Naming research](docs/research/naming.md) | The existing "MeshBeacon" project and trademark checks |
 | [Public peer presets](docs/research/public-peers.md) | Optional public entry points and how they are verified |

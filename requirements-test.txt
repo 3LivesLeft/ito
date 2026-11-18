@@ -1,0 +1,6 @@
+# Minimal set for running the test suite in a network-isolated container (no tools that need
+# network access at run time).
+rns==1.6.0
+pytest==9.0.1
+hypothesis==6.170.15
+pyyaml==6.0.3

@@ -1,0 +1,15 @@
+MeshBeacon
+Copyright 2026 The MeshBeacon contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+MeshBeacon is designed to run alongside, and its container images include,
+third-party software distributed under its own licences. In particular:
+
+  Reticulum (RNS): Copyright (c) 2016-2026 Mark Qvist
+  LXMF:            Copyright (c) 2020-2026 Mark Qvist
+  Both licensed under the Reticulum License, which is not an OSI-approved
+  open-source licence and includes conditions on use. See
+  THIRD_PARTY_NOTICES (to be generated before any image is published).
+
+This repository contains no source code from Reticulum or LXMF.
