@@ -160,8 +160,13 @@ def test_connects_to_peer_on_internal_network(run, network, tmp_path):
         "/cfg",
     )
     try:
-        c = run({**DEFAULTS, "peers": [{"name": "Test peer", "host": peer, "port": 4242}]})
+        c = run({**DEFAULTS, "log_level": "detailed", "peers": [{"name": "Test peer", "host": peer, "port": 4242}]})
         assert wait_for(lambda: "Connected to Test peer" in c.logs(), timeout=90), c.logs()
+        # Reticulum's own output reaches the app log promptly (unbuffered) and is redacted.
+        assert wait_for(lambda: "[reticulum]" in c.logs(), timeout=30), c.logs()
+        import re
+
+        assert not re.search(r"(?<![0-9a-f])[0-9a-f]{32}(?![0-9a-f])", c.logs())
     finally:
         sh("docker", "rm", "-f", peer, check=False)
 

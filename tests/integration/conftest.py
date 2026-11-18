@@ -122,7 +122,7 @@ class Runner:
             out=self.out,
             health_host="127.0.0.1",
             health_port=0,
-            python=[sys.executable, "-m"],
+            python=[sys.executable],
             node_module=node_module,
         )
         self._stop = threading.Event()

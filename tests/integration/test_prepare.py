@@ -5,6 +5,7 @@ import stat
 import subprocess
 import sys
 
+import pytest
 from RNS.vendor.configobj import ConfigObj
 
 from .conftest import write_options
@@ -89,3 +90,53 @@ def test_oversized_cache_cleared(data):
     r, _ = run_prepare(data)
     assert r["ok"] and not (cache / "big").exists()
     assert any("cache" in m for m in r["info"])
+
+
+def test_storage_floor_stops_before_identity(data, monkeypatch):
+    import shutil as _shutil
+
+    from meshbeacon import prepare as prep
+    from meshbeacon.paths import Paths
+
+    write_options(data)
+    usage = _shutil.disk_usage(data)
+    monkeypatch.setattr(prep.shutil, "disk_usage", lambda _p: usage._replace(free=100 * 1024 * 1024))
+    r = prep.prepare(Paths(data), mode="start")
+    assert not r.ok and "200 MB" in r.attention[0]
+    assert not (data / "reticulum" / "storage" / "transport_identity").exists()
+    monkeypatch.setattr(prep.shutil, "disk_usage", lambda _p: usage._replace(free=500 * 1024 * 1024))
+    r = prep.prepare(Paths(data), mode="start")
+    assert r.ok and any("below 1 GB" in w for w in r.warnings)
+
+
+@pytest.mark.slow
+def test_interrupted_first_start_never_breaks_identity(tmp_path):
+    """Kill the real prepare step at random points during a first start (30 times); the next start
+    must always succeed, with a complete identity that is never silently replaced afterwards."""
+    import random
+    import signal
+    import time
+
+    rng = random.Random(42)
+    for i in range(30):
+        data = tmp_path / f"d{i}"
+        data.mkdir()
+        write_options(data)
+        env = dict(os.environ, MESHBEACON_DATA=str(data))
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "meshbeacon.prepare", "--mode", "start", "--result", str(tmp_path / f"r{i}")],
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        time.sleep(rng.uniform(0.05, 1.5))
+        proc.send_signal(signal.SIGKILL)
+        proc.wait()
+        ident = data / "reticulum" / "storage" / "transport_identity"
+        if ident.exists():
+            assert len(ident.read_bytes()) == 64, f"partial identity after kill {i}"
+        before = ident.read_bytes() if ident.exists() else None
+        r, _ = run_prepare(data)
+        assert r["ok"], (i, r)
+        if before is not None:
+            assert ident.read_bytes() == before, "identity replaced after an interrupted start"

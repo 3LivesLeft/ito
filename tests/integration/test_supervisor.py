@@ -138,7 +138,10 @@ def test_safe_mode_after_repeated_app_starts(data, runner_factory):
     assert r.sup.child is None and r.health() == 200
 
 
-def test_detailed_logs_contain_no_secrets_or_hashes(data, peer, runner_factory):
+def test_detailed_logs_contain_no_secrets_or_hashes(data, peer, runner_factory, monkeypatch):
+    # Without PYTHONUNBUFFERED (as in the app image, where -I ignores it) RNS output must still
+    # arrive promptly: regression test for block-buffered child output.
+    monkeypatch.delenv("PYTHONUNBUFFERED", raising=False)
     secret = "correct horse battery"
     write_options(
         data,

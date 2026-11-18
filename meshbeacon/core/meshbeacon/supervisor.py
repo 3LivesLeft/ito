@@ -85,7 +85,13 @@ def default_python() -> list[str]:
     import sysconfig
 
     installed = Path(__file__).resolve().is_relative_to(Path(sysconfig.get_paths()["purelib"]).resolve())
-    return [sys.executable, "-I", "-m"] if installed else [sys.executable, "-m"]
+    return [sys.executable, "-I"] if installed else [sys.executable]
+
+
+def module_command(python: list[str], module: str) -> list[str]:
+    # -u: RNS logs with print(); without it, output to our pipe would be block-buffered (and -I
+    # ignores PYTHONUNBUFFERED), delaying log lines or losing them if the process crashes.
+    return [*python, "-u", "-m", module]
 
 
 class Supervisor:
@@ -214,7 +220,7 @@ class Supervisor:
         result_path.unlink(missing_ok=True)
         try:
             proc = subprocess.run(
-                [*self.python, "meshbeacon.prepare", "--mode", mode, "--result", str(result_path)],
+                [*module_command(self.python, "meshbeacon.prepare"), "--mode", mode, "--result", str(result_path)],
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -254,8 +260,7 @@ class Supervisor:
     def start_child(self) -> None:
         read_fd, write_fd = os.pipe()
         cmd = [
-            *self.python,
-            self.node_module,
+            *module_command(self.python, self.node_module),
             "--config",
             str(self.paths.reticulum),
             "--status-fd",
