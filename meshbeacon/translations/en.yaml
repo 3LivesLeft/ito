@@ -36,6 +36,7 @@ configuration:
     description: >-
       Off by default. On: Home Assistant offers to add the MeshBeacon integration, which shows
       your node's status, peers, traffic and resource use as sensors with history. The status
-      is shared only with Home Assistant, over its internal network, protected by a key that
-      changes every time the app starts. Nothing is sent anywhere else, and Home Assistant
-      cannot control your node through it.
+      is shared only with Home Assistant, over its internal network, encrypted and protected
+      by a key that changes every time the app starts. Nothing is sent anywhere else, and Home
+      Assistant cannot control your node through it. You also need to install the MeshBeacon
+      integration in Home Assistant once (see the Documentation tab).

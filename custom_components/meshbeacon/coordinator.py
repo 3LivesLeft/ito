@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Polls MeshBeacon's status every 30 seconds and keeps repair issues in step with it."""
+"""Polls MeshBeacon's status every 60 seconds and keeps repair issues in step with it."""
 
 from __future__ import annotations
 
