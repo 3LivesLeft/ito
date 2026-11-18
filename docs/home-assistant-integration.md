@@ -1,7 +1,7 @@
 # Home Assistant integration (v0.2)
 
-Status: **in development** on `feature/v0.2.0-observability` (draft PR #3). Not published (no
-HACS release). Design and security review: [v0.2 feasibility, architecture and security](research/v0.2-observability.md),
+Status: **in development** on `feature/v0.2.0-observability` (draft PR #3). Not published. HACS
+compatibility is prepared but not offered ([HACS](hacs.md)). Design and security review: [v0.2 feasibility, architecture and security](research/v0.2-observability.md),
 [ADR 0006](adr/0006-local-metrics-api.md). Hardware test: [v0.2 hardware acceptance](testing/v0.2-hardware-acceptance.md).
 
 ## What it is
@@ -33,7 +33,10 @@ Nothing else needs configuring:
 **To remove it:** switch the option off and restart the app, then delete the integration under
 Devices & services, and optionally its folder.
 
-> Do not install this on the reference Pi while the v0.1 stability test is running.
+Once it is added, **MeshBeacon appears in the sidebar** for administrators (see below).
+
+Initial physical results on the reference Pi: [v0.2 physical results](testing/v0.2-physical-results.md)
+(initial readings, not final acceptance).
 
 ## Entities
 
@@ -81,11 +84,44 @@ means zero.
 | MeshBeacon cannot reach its peers | No peer reachable for 10 minutes |
 | MeshBeacon needs your attention | MeshBeacon has stopped Reticulum until a cause is fixed; the app's message is shown |
 
-## Dashboard
+## The MeshBeacon panel
+
+When the integration is set up, a **MeshBeacon** entry with its own icon appears in the sidebar for
+administrators. It opens MeshBeacon's own page ([ADR 0007](adr/0007-sidebar-panel.md)). It needs
+no configuration and goes away when the integration is removed.
+
+![The MeshBeacon panel on a desktop, light theme](images/panel-desktop-light.png)
+
+<img src="images/panel-phone-dark.png" alt="The MeshBeacon panel on a phone, dark theme" width="260">
+
+*Preview with sample data matching the first physical readings (`tools/panel_preview.html`). The
+panel was also checked inside a real Home Assistant 2026.11.2.*
+
+| Tab | Shows |
+|---|---|
+| **Overview** | Connectivity (colour-coded: green online, amber partly connected, red offline, grey isolated or unknown), status and transport; large figures for peers connected, known paths, links relayed, data received and sent, processor and memory use, and how long Reticulum has been running; traffic, processor and memory history (6 h, 24 h, 7 days); a card for each peer |
+| **Diagnostics** | Version, status, problem, Reticulum running, transport mode, start times, restarts, memory, and the detailed sensors you have enabled |
+
+- It works on phones, tablets and desktops and follows your Home Assistant theme, light or dark.
+- It shows clear states while loading, when the app is not responding (values return by
+  themselves), when history is not available (the History integration or recorder is off), and if
+  Home Assistant cannot load MeshBeacon's details.
+- **Everything comes from Home Assistant**: live values from the entities, history from Home
+  Assistant's recorder. The page stores nothing, contacts nothing outside Home Assistant, and
+  loads no code from the internet.
+- Sensors that are off by default are simply not shown. Enable one (Settings → Devices & services
+  → MeshBeacon) and it appears in the panel.
+- "Known paths" shows a short note at **2,048**: that is Reticulum trimming paths it has never used,
+  which is normal on a busy network ([why](research/known-paths.md)).
+
+To preview the panel without Home Assistant (sample data, no network), serve the repository on
+loopback and open `tools/panel_preview.html`. Instructions are at the top of that file.
+
+## Example dashboard (optional)
 
 [`home-assistant/dashboard.yaml`](home-assistant/dashboard.yaml) is an example dashboard built only
 from Home Assistant's own cards (tiles, history graphs, statistics graphs), using only entities
-that are on by default.
+that are on by default. Use it if you prefer native cards to the panel.
 
 ## Storage used in Home Assistant
 
@@ -97,6 +133,9 @@ any entity.
 ## Privacy and security
 
 - **Read-only.** There is no endpoint that changes anything.
+- **Panel.** Administrators only. Its files contain no data (values arrive over Home Assistant's
+  logged-in connection), and it writes every value as plain text, so a peer name cannot inject
+  anything into the page.
 - **Private.** The status stays on Home Assistant's internal network, over HTTPS with a certificate
   that changes at every app start. Home Assistant checks it against the fingerprint it received
   through the Supervisor, so other apps cannot read or alter it. No port is published, and nothing

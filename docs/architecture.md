@@ -344,7 +344,7 @@ Design:
 | Version | Architectural additions |
 |---|---|
 | **v0.1** | Init step, core supervisor, config renderer, identity manager, health endpoint, status reporter, resource guards, app wrapper. **Nothing else.** |
-| v0.2 | **In progress** ([v0.2 design](research/v0.2-observability.md), [ADR 0006](adr/0006-local-metrics-api.md)): opt-in, read-only, token-authenticated status API on internal port 8100; Supervisor discovery (verified: needs no `hassio_api`, Q-11); HA integration (entities, repairs, diagnostics); metrics computed only in `core/meshbeacon/metrics.py`. Identity import deferred |
+| v0.2 | **In progress** ([v0.2 design](research/v0.2-observability.md), [ADR 0006](adr/0006-local-metrics-api.md)): opt-in, read-only, token-authenticated status API on internal port 8100; Supervisor discovery (verified: needs no `hassio_api`, Q-11); HA integration (entities, repairs, diagnostics); metrics computed only in `core/meshbeacon/metrics.py`; a sidebar panel served by the integration ([ADR 0007](adr/0007-sidebar-panel.md)): one plain JS module, live values from HA entities, history from HA's recorder, admin-only, no app-side change. Identity import deferred |
 | v0.3 | LXMF service, notify platform, optional propagation node |
 | v0.4 | Optional I2P (separate router process); public-gateway investigation |
 | v0.5 | RNode via explicit device mapping |

@@ -33,6 +33,7 @@ reference the [feasibility study](../research/feasibility.md) and
  [Supervisor: watchdog, backups] ──B5── /data, health endpoint
  [Other apps on host] ──B4── namespaces, abstract sockets
  [HA Core + integration (v0.2)] ──B2── local API
+ [Browser: HA frontend + MeshBeacon panel (v0.2, ADR 0007)] ──B8── HA websocket (logged in)
  [CI, registry, PyPI, AI tools] ──B6── source and image build
 ```
 
@@ -75,11 +76,18 @@ reference the [feasibility study](../research/feasibility.md) and
 | **T34** | B2 | I/T/S | **Interception or impersonation on the internal network.** Apps keep `NET_RAW` unless the Supervisor's `app_drop_net_raw` flag is on (verified, default off), so an app can ARP-spoof and read or alter plain HTTP | TLS 1.3; throwaway certificate per start; fingerprint delivered by discovery and pinned before the token is sent | Implemented (v0.2) |
 | **T35** | B2 | S/T | **Discovery spoofing**: another app declares the `meshbeacon` service to redirect the integration or capture credentials | Only MeshBeacon slugs; host must be the sending app's own hostname; fingerprint required; entries keyed by the slug the Supervisor sets; a look-alike needs confirmation naming app and slug | Implemented (v0.2); residual RR-3 |
 | **T36** | B5 | D | **Monitoring failure disturbs Reticulum** | Every metrics call, snapshot and discovery step isolated from the supervision loop (a defect of this kind was found and fixed in review) | Implemented (v0.2) |
+| **T37** | B2 | D/T | **Truncated or oversized status response**: one stream read returns only what has arrived, so a fragmented reply was rejected, and an oversized one was misreported (found in the v0.2 review) | `read_bounded()` reads until end of stream, never more than 256 KiB + 1 byte, and refuses a declared oversize before reading; identity encoding; 10 s deadline. Tested over real TLS with 1-byte pieces, chunked, length-less, exact-limit, oversize and truncated replies | Implemented (v0.2, `tests/ha/test_client_reading.py`) |
+| **T38** | B8 | T/E | **Script injection through peer names or messages** in the panel (a peer name is user-chosen and travels through the app) | Every value written with `textContent`, SVG built element by element; a test forbids `innerHTML`, `eval` and similar in the panel's files; preview checked with a hostile name | Implemented (v0.2) |
+| **T39** | B8 | I | **Panel exposes data to the wrong users or to anyone on the LAN** | Panel and its websocket command are admin-only; the command returns only entity IDs and peer names; values travel only over HA's logged-in websocket; the static files (fetchable without login, as all HA frontend files are) hold no data, which a test checks | Implemented (v0.2) |
+| **T40** | B8 | I | **Third-party code or CDN requests** in the panel (tracking, supply chain) | Plain module, no dependencies, no build step; a test fails on any external URL, `fetch`, `XMLHttpRequest` or dynamic remote import | Implemented (v0.2) |
+| **T41** | B8 | I/D | **A second history store** (browser storage) or extra load on HA from the panel | No browser storage (tested); history only from HA's recorder, fetched at most once per chart bucket (≥ 60 s) and only while the page is visible | Implemented (v0.2) |
+| **T42** | B8 | T | **Static path serves more than intended** (for example the integration's other files) | Only `custom_components/meshbeacon/frontend/` is mapped; traversal attempts return 400/403/404 (tested) | Implemented (v0.2) |
 | **T25** | B6 | — | **AI-tool data use**: RNS source given to an AI tool whose provider trains on inputs would risk breaching the Reticulum License's AI condition | Project rules in licensing §6.4: training opted out; documentation rather than source; no datasets | Planned (process control) |
 
 ## 4. Later versions (outline)
 
-- **v0.2 local API and integration:** implemented as T11 and T28–T33 ([ADR 0006](../adr/0006-local-metrics-api.md)).
+- **v0.2 local API and integration:** implemented as T11 and T28–T37 ([ADR 0006](../adr/0006-local-metrics-api.md));
+  sidebar panel as T38–T42 ([ADR 0007](../adr/0007-sidebar-panel.md)).
   Identity import is deferred beyond v0.2.
 - **v0.3 messaging:** LXMF identity 0600; no message content in logs or diagnostics; document that
   HA composes notifications in plaintext before LXMF encrypts them; propagation node opt-in with

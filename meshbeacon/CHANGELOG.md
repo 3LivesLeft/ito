@@ -15,6 +15,16 @@
 - The watchdog's health check is now protected against slow or flooding clients.
 - Each problem now has a stable code alongside its plain-language message, for repair issues in
   Home Assistant.
+- **MeshBeacon in the sidebar.** Once the integration is added, administrators get a MeshBeacon
+  entry in Home Assistant's sidebar: connectivity at a glance, large figures, traffic, processor
+  and memory history, a card for each peer, and a Diagnostics tab. It follows your theme (light or
+  dark), works on phones, tablets and desktops, and uses only Home Assistant's own data and
+  history. Nothing to configure, and no code loaded from the internet.
+- **Fix:** the integration could occasionally reject a valid status reply that arrived in several
+  pieces. It now reads the whole reply, still with a size limit.
+- "Known paths" stopping at 2,048 is normal on a busy network: Reticulum trims paths it has never
+  used. The panel explains this.
+- The integration is ready for HACS, but is not offered through it yet.
 
 ## 0.1.2 — unreleased (local prototype)
 

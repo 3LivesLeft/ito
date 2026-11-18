@@ -44,7 +44,7 @@ Explicitly **out of scope** for v0.1.0 (moved or deferred):
 ## v0.2.0 — Visibility (in progress, branch `feature/v0.2.0-observability`)
 
 Lightweight, privacy-first monitoring ([feasibility and architecture](research/v0.2-observability.md),
-[ADR 0006](adr/0006-local-metrics-api.md), proposed):
+[ADR 0006](adr/0006-local-metrics-api.md), accepted 18 Nov 2026):
 
 - Optional, read-only, token-authenticated local status API (internal network only, off by
   default), delivered to Home Assistant by Supervisor discovery.
@@ -54,8 +54,12 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 - Repair issues for "isolated node", "no peers reachable" and anything that needs attention
   (identity, options, storage, repeated failures).
 - Redacted diagnostics download; an example dashboard of native HA cards.
+- A **MeshBeacon sidebar panel** served by the integration ([ADR 0007](adr/0007-sidebar-panel.md),
+  proposed): Overview and Diagnostics tabs, history from HA's recorder, admin-only, no third-party
+  code.
+- HACS compatibility **prepared, not published** ([HACS](hacs.md)).
 - **Not** included: a forwarded-packet count (RNS exposes none through supported interfaces),
-  identity import (deferred), any control from Home Assistant, HACS publication.
+  identity import (deferred), any control from Home Assistant, HACS publication or releases.
 
 ## v0.3.0 — Messaging
 
@@ -154,19 +158,19 @@ stated otherwise. **They are not Raspberry Pi validation.** Revised after indepe
 | ID | Criterion | Evidence type | Status |
 |---|---|---|---|
 | OB-1 | With default options, no API listener exists and no discovery message is sent; `config.yaml` adds only `discovery` (no `hassio_api`, `homeassistant_api`, ports or ingress). The option stays off by default permanently | Automated (integration, container, static `config.yaml`) | Met (automated) |
-| OB-2 | With the option on, one discovery message carries host, port, token and certificate fingerprint, using the Supervisor token without `hassio_api`; switching the option off withdraws it | Automated (fake Supervisor) + Pi | Automated part met; real Supervisor pending (hardware C2–C3, D5) |
+| OB-2 | With the option on, one discovery message carries host, port, token and certificate fingerprint, using the Supervisor token without `hassio_api`; switching the option off withdraws it | Automated (fake Supervisor) + Pi | Automated part met; real Supervisor **indicated** on the Pi (integration set up, 18 Nov); C2–C3, D5 pending |
 | OB-3 | The API serves only `GET /api/v1/status`, **over TLS 1.3 only**, with a valid bearer token: 401 otherwise, 404 for other paths, 501 for other methods. Tokens ≥ 256 bits and certificates new at every start; constant-time comparison; plain HTTP not served | Automated | Met (`tests/unit/test_api.py`, `test_status_api_is_https_only_with_a_fresh_pinned_certificate`) |
 | OB-4 | Served data and logs contain no identity, destination or interface hashes, peer hosts or ports, network names, passphrases, API token or Supervisor token | Automated | Met |
 | OB-5 | The Supervisor token never reaches the prepare step, the certificate step or Reticulum | Automated (`/proc/<pid>/environ`) | Met (integration and container tests) |
 | OB-6 | Values RNS does not provide are reported as unavailable, never zero; no forwarded-packet figure; the RNS keys read are pinned by a contract test | Automated | Met |
 | OB-7 | Accuracy on isolated networks: disconnect and reconnection counted; known paths equal the path table size; a relayed link appears in transport mode | Automated (real RNS, loopback) | Met |
 | OB-8 | Bounded: API ≤ 4 connections, 5 s inactivity timeout **and 10 s absolute deadline**; `/health` on its own server, ≤ 16 connections, 5 s deadline; ≤ 8 samples per rate; ≤ 10 peers; 0 bytes of metric storage | Automated | Met (trickling-client, stalled-handshake, health-bounds and rate-window tests) |
-| OB-9 | Idle memory ≤ 128 MB (RSS + swap, all app processes) with the option on | Container + Pi | Container met: **70.8 MiB** on, 67.8 MiB off; Pi pending (hardware B6, E1) |
+| OB-9 | Idle memory ≤ 128 MB (RSS + swap, all app processes) with the option on | Container + Pi | Container met: **70.8 MiB** on, 67.8 MiB off; Pi **78 MiB at 7 minutes** (initial, [physical results](testing/v0.2-physical-results.md)); 1-hour reading pending (B6, E1) |
 | OB-10 | Collection and serving add < 0.1 % of one core on average | Container + Pi | Container met (see results); Pi pending (E1) |
 | OB-11 | Integration: set up only through discovery; rediscovery updates key and fingerprint without reauthentication; state classes for long-term statistics; unavailable → unknown; repairs appear and clear; redacted diagnostics; dashboard references only real, enabled-by-default entities | Automated (HA 2026.10.4 harness) | Met (`tests/ha`, 48 tests) |
 | OB-12 | The integration never imports RNS or the core; its parser accepts the core's real output; enumerations match | Automated | Met |
-| OB-13 | On the reference Pi: discovered, entities populate, history fills, no new AppArmor denials, rating still 8 | Manual, physical — **after** the v0.1 soak | Not started |
-| OB-14 | CI green, including both Home Assistant jobs, AppArmor-confined container tests, gitleaks and pip-audit | CI run | See PR #3 |
+| OB-13 | On the reference Pi: discovered, entities populate, history fills, no new AppArmor denials, rating still 8 | Manual, physical — after the v0.1 soak (ended early with maintainer approval) | **In progress**: discovered and entities populate on the Pi ([initial results](testing/v0.2-physical-results.md)); history, AppArmor and rating not yet recorded |
+| OB-14 | CI green, including both Home Assistant jobs, AppArmor-confined container tests, gitleaks and pip-audit | CI run | Met for head `ac2a2cc` (14 checks, independently confirmed); to be re-run for this branch's later commits |
 | OB-15 | **Anti-spoofing:** discovery from a non-MeshBeacon slug, pointing anywhere other than the sending app's own hostname, or without a fingerprint, is refused, both in the config flow and in self-healing; a look-alike cannot change the real entry | Automated | Met (`tests/ha/test_security.py`) |
 | OB-16 | **No key leaks** in app logs, HA logs (debug level), exceptions, flow listings or diagnostics, under every failure mode | Automated | Met |
 | OB-17 | **Recovery without restart:** discovery succeeds after the Supervisor fails at first, is down at start, or restarts later; a missed rotation push heals within 5 minutes; repeated rotation and switching off and on work; stale keys are refused | Automated + Pi | Automated part met (`test_monitoring_reliability.py`, `test_security.py`); Pi pending (D1–D6) |
@@ -174,3 +178,10 @@ stated otherwise. **They are not Raspberry Pi validation.** Revised after indepe
 | OB-19 | **Floods:** 30 s of hostile traffic on both ports leaves every watchdog check answered, Reticulum connected and not restarted, and core threads and memory bounded | Automated (slow) | Met (`test_sustained_flood_and_slow_clients`) |
 | OB-20 | **Recorder budget:** ≤ 2 MB/day of recorder growth, worst case, with defaults | Automated measurement + Pi | Measured about 1.9 MB/day (HA harness, file-backed SQLite); Pi pending (E3) |
 | OB-21 | **Reference release:** the integration loads and populates entities on **Home Assistant 2026.11.2**, with strict typing against that release | CI (`home-assistant-release` job) | Met locally (`tools/ha_smoke_test.py`); CI see PR #3 |
+| OB-22 | **Complete, bounded reads:** status responses split into any number of TLS records, TCP segments or HTTP chunks are read in full; more than 256 KiB is refused (declared or not) without buffering the excess; a truncated reply is a connection error, never partial data | Automated (real TLS on 127.0.0.1) | Met (`tests/ha/test_client_reading.py`; 9 of its tests fail against the previous single read) |
+| OB-23 | **Sidebar panel:** a "MeshBeacon" sidebar entry with its own icon appears when the integration loads and goes when it unloads, for administrators only, with no configuration; the websocket command refuses non-admins | Automated (HA harness) + HA 2026.11.2 smoke | Met (`tests/ha/test_panel.py`; smoke test checks route and module) |
+| OB-24 | **No third-party code or duplicate storage:** the panel's files contain no external URLs, `fetch`, `XMLHttpRequest`, `innerHTML`, `eval` or browser storage; history only from HA's recorder; static path serves only the frontend folder and no data | Automated | Met (`tests/frontend/model.test.mjs`, `tests/ha/test_panel.py`) |
+| OB-25 | **States:** loading, not connected, error with retry, app unavailable, history unavailable and no history yet are each shown distinctly; unavailable values show as "—", never zero | Automated (model) + preview screenshots | Met in sandbox (model tests; `tools/panel_preview.html` scenarios) |
+| OB-26 | **Layout and themes:** usable at 390 px (phone), 820 px (tablet) and 1280 px (desktop) widths in light and dark themes, with no horizontal scrolling | Preview screenshots; physical check on a phone | Sandbox met; **physical pending** (open the panel on a phone and a desktop on the Pi installation, after approval) |
+| OB-27 | **Panel cost:** history fetched at most once per chart bucket (≥ 60 s) and only while visible; re-render only when MeshBeacon's own entities change | Code review + model tests | Met (sandbox); browser CPU on a low-end phone pending |
+| OB-28 | **HACS-ready, not published:** `hacs.json` with known keys only, no release ZIP or release workflow, one integration, manifest complete, versions aligned | Automated | Met (`tests/unit/test_hacs.py`); HACS's own validation action is a maintainer step ([HACS](hacs.md)) |
