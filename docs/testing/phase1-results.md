@@ -61,6 +61,8 @@ Notable tests (all passing):
 | Killing the core left the RNS child running; s6 then started a second core and a second RNS on the same storage | Container test | `PR_SET_PDEATHSIG` in the child; `finish` stops the container on any crash |
 | RNS output was block-buffered because `-I` ignores `PYTHONUNBUFFERED` | Network-isolated test run (the sandbox itself sets `PYTHONUNBUFFERED`) | Start every child with `-u`; regression tests in integration and container suites |
 | Long file paths were redacted as if they were base64 | Integration output | Redact base64 runs only when they mix upper case, lower case and digits |
+| The pinned HA base image ships zlib 1.3.2 (CVE-2026-4738, critical) and older krb5-libs and libexpat with high-severity CVEs | First CI image scan | Upgrade those packages in the Dockerfile with explicit minimum versions (zlib ≥ 1.4-r0, krb5-libs ≥ 1.22.3-r0, libexpat ≥ 2.10.0-r0); remove when the base image catches up. Remaining high-severity findings without an Alpine fix (OpenSSL 3.5.9, SQLite 3.53.4, Go stdlib in tempio, CPython 3.13.18) are tracked for the next base-image refresh |
+| CI shellcheck (older) flagged `A && B \|\| C`; CI image lacked `pgrep`; licence check flagged base-image packages without SPDX metadata | First CI run | Explicit `if` blocks and pinned shellcheck; `/proc` scan in the test; reviewed licences recorded in `tools/check_licences.py` |
 
 ## 4. Resource measurements
 

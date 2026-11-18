@@ -12,6 +12,15 @@ ENV \
     PIP_NO_CACHE_DIR=1 \
     MESHBEACON_DATA=/data
 
+# Security updates for base-image packages that the pinned HA base image predates, with explicit
+# minimum versions so the build fails rather than silently shipping a vulnerable version. Found by
+# the CI image scan (18 Nov 2026): zlib CVE-2026-4738 (critical), krb5-libs and libexpat (high).
+# Drop these lines once the HA base image includes the fixes; then refresh the base digest.
+RUN apk add --no-cache --upgrade \
+        "zlib>=1.4-r0" \
+        "krb5-libs>=1.22.3-r0" \
+        "libexpat>=2.10.0-r0"
+
 # Hash-pinned, binary-only install of the unmodified Reticulum reference implementation and its
 # dependencies, from PyPI only.
 # An optional build secret `build_ca` lets builds run behind a TLS-intercepting proxy; it is never
