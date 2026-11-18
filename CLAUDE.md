@@ -42,6 +42,9 @@ application code. Do not start Phase 1 work until the maintainer explicitly appr
     files.
 14. **No external connections by default**, and never tie the Supervisor health endpoint to
     internet connectivity.
+15. **Never commit household-specific identifiers** — private or public IP addresses, Tailscale
+    addresses or node names, MAC addresses, hostnames, SSIDs, HA URLs or Reticulum identity hashes
+    from the maintainer's or anyone's installation. Use placeholders such as `<lan-ip>`.
 
 ## Product principles to keep in mind
 
@@ -72,7 +75,8 @@ docs/research/naming.md            the existing "MeshBeacon" project; trademarks
 docs/research/public-peers.md      optional public peer presets and verification
 docs/ux/first-run.md               five-minute setup path; option and message design
 docs/security/threat-model.md      assets, threats (T-n), controls
-docs/testing/strategy.md           isolated-network testing approach
+docs/testing/strategy.md           isolated-network and reference-environment testing
+docs/testing/reference-environment.md  maintainer's reference device (no household identifiers)
 docs/adr/NNNN-*.md                 architecture decision records
 ```
 

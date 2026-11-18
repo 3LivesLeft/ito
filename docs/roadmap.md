@@ -82,8 +82,8 @@ published RNS-upgrade policy.
 
 ### Install and ease of use
 
-1. Installs from a repository URL on HA OS on a Raspberry Pi 4B (aarch64) and on amd64, and
-   starts without errors.
+1. Installs from a repository URL on the reference device (Raspberry Pi 4B, HA OS 18.5,
+   `aarch64`) and on an amd64 HA OS test machine, and starts without errors.
 2. **Timed first-run test:** at least three people new to Reticulum reach a connected node on a
    fresh install with a median time of **≤ 5 minutes** and nobody over 10 minutes, using only the
    UI and `DOCS.md` ([first-run UX §7](ux/first-run.md#7-measuring-ease-of-use)).
@@ -132,8 +132,10 @@ published RNS-upgrade policy.
 ### Resources
 
 20. Idle memory of the whole app ≤ 128 MB on aarch64.
-21. 72-hour soak on the Pi 4B (transport off, then on) shows no monotonic memory growth, bounded
-    `/data` growth and bounded log volume.
+21. On the [reference environment](testing/reference-environment.md): baseline R1–R4,
+    compatibility C1–C10 (Tailscale, AdGuard Home, Matter Server), soaks S1–S3 (including **≥ 7
+    days with transport on**), internet-outage O1–O5, power-outage P1–P5 and backup/restore B1–B6
+    all pass ([testing strategy §6](testing/strategy.md#6-reference-environment-testing-before-each-release)).
 22. Under a local announce flood in test, logs remain rate-limited and HA stays responsive.
 
 ### Supply chain and licensing

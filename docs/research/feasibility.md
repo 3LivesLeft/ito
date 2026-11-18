@@ -45,6 +45,7 @@ below is retained, with corrections where noted.
 | Non-root service user, configuration-injection prevention, resource guards, health vs connectivity, crash-safe identity, watchdog behaviour | [architecture §4](../architecture.md#4-core-internals) |
 | New verified findings: RNS silently replaces a corrupt identity (§7.1); naive config templating is injectable (architecture §4.1); Supervisor watchdog semantics (architecture §4.5); `rns` wheel ships no licence file (licensing §3.1) | as noted |
 | v0.1.0 scope narrowed | [roadmap](../roadmap.md) |
+| Reference environment confirmed (Q-5 resolved); compatibility, soak, outage, power and backup test plans | [reference environment](../testing/reference-environment.md), [testing strategy §6](../testing/strategy.md#6-reference-environment-testing-before-each-release) |
 | Security rating 8 treated as a target, not proof | [threat model](../security/threat-model.md) |
 
 ## 1. Upstream revisions reviewed
@@ -271,8 +272,13 @@ rating is a **target, not proof of security** (threat model, preamble).
   `linux/arm64` corresponds to HA's `aarch64`.
 - **[Assumption]** No ARM-specific behaviour in RNS for TCP-only use. RNode/serial (v0.5) adds
   USB-serial driver questions on HA OS that are not covered here.
-- **[Open] Q-5** Confirm the target Raspberry Pi 4B runs a 64-bit HA OS (32-bit `armv7` is no
-  longer an accepted `arch` value, so a 32-bit install could not run the app at all).
+- **[Verified — resolved Q-5]** The maintainer has confirmed the reference device: Raspberry Pi 4B,
+  machine type `rpi4-64`, **`aarch64`**, **Home Assistant OS 18.5**, Core 2026.11.2, Supervisor
+  2026.11.0 (healthy, supported). This is a 64-bit HA OS installation on one of the two
+  architectures the Supervisor accepts, so no 32-bit build is needed. Details, co-installed apps
+  and open items: [reference environment](../testing/reference-environment.md).
+- **[Verified]** Supervisor 2026.11.0 has the same watchdog interval and security-rating logic as
+  the commit reviewed in §1 (reference environment §1).
 
 ## 7. Persistent identity, backups and recovery (research item 6)
 
@@ -331,8 +337,10 @@ the first write can produce exactly this state. Design response: architecture §
 
 ## 8. CGNAT and connectivity options (research item 7)
 
-The target uplink is 5G broadband, likely behind carrier-grade NAT (CGNAT): **outbound connections
-work; unsolicited inbound connections do not.**
+The target uplink is 5G broadband, likely behind carrier-grade NAT (CGNAT; unconfirmed — Q-32):
+**outbound connections work; unsolicited inbound connections do not.** On the reference device the
+default network interface is **Wi-Fi**, not Ethernet as originally assumed (Q-31); Wi-Fi drops are
+treated as connectivity events, not failures.
 
 | Option | Works behind CGNAT? | Privacy | Notes |
 |---|---|---|---|
@@ -382,7 +390,8 @@ note. **[Open] Q-9** — the first-run experience without a default remote needs
 **[Assumption]** On aarch64 the figure will be similar. Memory will grow with path-table and
 announce-table size on a transport node connected to a busy network; the 1.6.0 changelog claims
 ~50% memory reduction for long-running transport nodes and introduces path-table culling. Not
-measured here. **[Open] Q-10**: soak-test on the Pi 4B for at least 72 hours on a real network.
+measured here. **[Open] Q-10**: soak-test on the reference Pi 4B — 72 hours with transport off and at least
+7 days with transport on ([testing strategy §6.3](../testing/strategy.md#63-soak-tests)).
 
 ### 9.2 CPU
 
@@ -539,7 +548,7 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-2 | Collaborate with N2K RNS Gateway rather than compete? | Open — maintainer, before Phase 1 |
 | Q-3 | Keep the "MeshBeacon" name? | **Resolved, conditionally:** keep, with disambiguation and rename triggers ([ADR 0003](../adr/0003-name.md)) |
 | Q-4 | Which Supervisor identifiers (`app_config` vs `addon_config`) apply on the target? | Open — Phase 1 |
-| Q-5 | Confirm target HA OS is 64-bit, its version, and RAM | Open — maintainer |
+| Q-5 | Confirm target HA installation type and architecture | **Resolved:** HA OS 18.5 on `aarch64` (`rpi4-64`) — RAM split out as Q-30 |
 | Q-6 | Do all RPC clients honour a configured `rpc_key`? | Open — Phase 1 |
 | Q-7 | Hot backup consistency of SQLite WAL while RNS runs | Open — Phase 1 test; `backup: cold` fallback |
 | Q-8 | Can a bridged-network app use the HA Tailscale app's tailnet? | Open — Phase 1 test on device |
@@ -564,6 +573,10 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-27 | Is GitHub private vulnerability reporting enabled on the repository? | Open — maintainer (could not be checked from the research environment) |
 | Q-28 | Will Ratspeak (and a second operator) agree to being listed as presets? | Open — maintainer |
 | Q-29 | Courtesy contact with the existing MeshBeacon maintainers — outcome | Open — maintainer, before first image |
+| Q-30 | Confirm the reference device's RAM (believed 8 GB) | Open — maintainer |
+| Q-31 | Will the reference device move from Wi-Fi to Ethernet? | Open — maintainer; tests run on Wi-Fi meanwhile |
+| Q-32 | Is the reference 5G connection behind CGNAT? | Open — maintainer |
+| Q-33 | Does AdGuard Home serve DNS for apps on the reference device, and with which blocklists? | Open — maintainer; test C5–C8 |
 
 ## 15. Risks
 

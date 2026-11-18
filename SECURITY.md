@@ -68,6 +68,12 @@ These are design requirements. See the [threat model](docs/security/threat-model
 The Home Assistant **security rating** shown for the app is a useful signal about its declared
 permissions, but it is **not proof of security**.
 
+## Other apps on the same Home Assistant
+
+Apps with elevated privileges — for example an SSH or terminal app with its *protection mode*
+disabled — can access other apps' data, including MeshBeacon's identity. Keep protection mode
+enabled unless you need it off.
+
 ## Handling your Reticulum identity
 
 Your node's identity is a private key stored in the app's `/data` directory. Anyone who obtains it

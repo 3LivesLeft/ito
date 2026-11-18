@@ -29,6 +29,8 @@ contributions right now are reviews of, and corrections to, the documents in [`d
 7. **Tests are part of the change.** See the [testing strategy](docs/testing/strategy.md). Tests
    must never connect to live Reticulum networks or a live Home Assistant instance.
 8. **British English** in documentation, comments and user-facing text.
+   Never include household-specific identifiers (IP or Tailscale addresses, hostnames, SSIDs,
+   identity hashes) in issues, logs or test records — use placeholders such as `<lan-ip>`.
 9. **Keep it small.** Prefer readable code over clever code; the core should stay reviewable in a
    sitting.
 

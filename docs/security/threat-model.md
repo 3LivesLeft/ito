@@ -64,6 +64,8 @@ reference the [feasibility study](../research/feasibility.md) and
 | **T22** | B1 | S | **Tampered or incorrect preset data** (wrong host/port) | Presets reviewed in pull requests, verified V1–V7 before each release, shipped inside the signed image | Planned |
 | T23 | B1 | T | Malicious peer exploits an RNS parsing bug | Track RNS releases; container hardening limits blast radius | Accepted residual risk |
 | T24 | — | — | Upstream RNS unmaintained or slow to fix (mirror-only — **verified**) | Release monitoring; compatibility tests; ADR 0001 review triggers | Accepted residual risk |
+| **T26** | B4 | I/E | **High-privilege co-installed apps** (e.g. an SSH/terminal app with protection mode disabled) can reach the Docker daemon and read any app's `/data`, including the identity (**[Assumption]**) | Outside MeshBeacon's control: documented in `DOCS.md` and SECURITY.md; recommend keeping protection mode enabled | Accepted residual risk (documented) |
+| **T27** | B1 | I/D | **DNS resolver** (e.g. AdGuard Home) logs peer lookups or blocks a peer hostname | Document; plain "cannot resolve" message with no restart loop; reference tests C5–C8 | Planned |
 | **T25** | B6 | — | **AI-tool data use**: RNS source given to an AI tool whose provider trains on inputs would risk breaching the Reticulum License's AI condition | Project rules in licensing §6.4: training opted out; documentation rather than source; no datasets | Planned (process control) |
 
 ## 4. Later versions (outline)
