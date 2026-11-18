@@ -88,7 +88,7 @@ jobs:
           MESHBEACON_EMULATED: ${{ matrix.emulated }}
         run: python -m pytest -m container tests/container -s -p no:cacheprovider
       - name: Load the AppArmor profile into the runner's kernel (enforce mode)
-        if: matrix.arch == 'amd64'
+        if: (success() || failure()) && matrix.arch == 'amd64'
         run: |
           sudo aa-status --enabled
           # The Supervisor renames the profile to the app slug; here it is renamed for CI.
@@ -96,12 +96,19 @@ jobs:
           sudo apparmor_parser --replace --write-cache "$RUNNER_TEMP/meshbeacon-ci"
           sudo aa-status | grep -q meshbeacon-ci
       - name: Container tests confined by the MeshBeacon AppArmor profile
-        if: matrix.arch == 'amd64'
+        # Run even if the unconfined tests failed, so profile problems are always reported.
+        if: (success() || failure()) && matrix.arch == 'amd64'
         env:
           MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
           MESHBEACON_EMULATED: ${{ matrix.emulated }}
           MESHBEACON_APPARMOR: meshbeacon-ci
-        run: python -m pytest -m container tests/container -s -p no:cacheprovider
+        run: |
+          python -m pytest -m container tests/container -s -p no:cacheprovider -x \
+            -k "not covers_every_program" || {
+            echo "--- logs of the last MeshBeacon container ---"
+            docker ps -a --format '{{.Names}}' | grep '^mb-' | tail -1 | xargs -r docker logs | tail -40
+            exit 1
+          }
       - name: AppArmor denials (for diagnosis)
         if: always() && matrix.arch == 'amd64'
         run: sudo journalctl -k --no-pager | grep -E 'apparmor="(DENIED|ALLOWED)".*meshbeacon-ci' | tail -100 || true
