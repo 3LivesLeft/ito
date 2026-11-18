@@ -51,6 +51,18 @@ Notable tests (all passing):
 - **Logs:** at the detailed level with transport on and an IFAC passphrase, no passphrase, RPC key,
   private key or 32-hex hash appears; RNS did print hashes and they were redacted.
 
+### 2.1 CI on the real HA base image (run 10, commit `59c1f22`)
+
+| Job | Result |
+|---|---|
+| Lint and type check (ruff, mypy --strict, shellcheck, hadolint) | Pass |
+| Unit and isolated-network integration tests (`--network none`) | Pass (185 tests) |
+| Container tests, amd64 (native) | 8 passed; idle memory **65.2 MiB** |
+| Container tests, aarch64 (QEMU — **not** physical Pi validation) | 8 passed; memory read **130.3 MiB**, inflated by emulator overhead, so not a valid measurement |
+| SBOM (86 packages) and licence allow-list | Pass |
+| Image vulnerability scan (fail on critical) | Pass — no critical findings; 32 lower-severity findings remain, none with an Alpine fix that is not applied |
+| pip-audit, gitleaks | Pass |
+
 ## 3. Defects found and fixed during verification
 
 | Finding | How found | Fix |
@@ -69,17 +81,17 @@ Notable tests (all passing):
 | Measurement | Value | Conditions |
 |---|---|---|
 | Idle memory, whole app (RSS + swap of all `meshbeacon` processes) | **68.7 MiB** (core ≈ 25 MiB + Reticulum ≈ 44 MiB) | Container, amd64, stand-in base, no peers, after ~35 s |
+| Same, in CI on the real HA base image | **65.2 MiB** amd64 (native); 130.3 MiB aarch64 under QEMU (emulator overhead — not valid) | CI run 10 |
 | `docker stats` memory (cgroup) | 43.7 MiB | Same container |
 | Idle CPU | ≈ 0.1 % | Same container |
 | Starts under a hard 256 MB limit with no swap | Yes | Container test L1 |
 | Image size | 117 MB uncompressed | Stand-in base; the HA base will differ |
 
-aarch64 and Raspberry Pi figures: **not measured** (roadmap LP-16, RG-1).
+Raspberry Pi figure: **not measured** (roadmap LP-16, RG-1). The emulated aarch64 reading is above the target only because of QEMU's overhead; that is an assumption until the physical measurement confirms it.
 
 ## 5. Not yet verified
 
 - AppArmor profile (no AppArmor on the sandbox host) — must be checked on the Pi in complain mode.
-- Behaviour under the real HA base image and Supervisor (watchdog, backups, options UI).
-- aarch64 image build and tests (CI, emulated) and the physical Pi (maintainer).
+- Behaviour under the real Supervisor (watchdog, backups, options UI) — the image itself is now tested on the real HA base in CI.
+- The physical Pi (maintainer); aarch64 has only been tested under emulation.
 - Low-memory profile L2 (announce flood under the limit) — test not yet written.
-- SBOM licence check against a real SBOM; image vulnerability scan; gitleaks; hadolint (CI).
