@@ -97,6 +97,8 @@ Notable tests (all passing):
 | Why tests missed it | Docker on the development host and on CI runners never applies `apparmor.txt` (only the Supervisor loads it), and the sandbox kernel has no AppArmor. The profile was untested; the roadmap said so (LP-11), but the green container tests gave false confidence |
 | Fix | Rewritten profile; version 0.1.1 so that Home Assistant offers an **Update**, which loads it |
 | Regression tests | Static profile checks (unit); inventory of every executable in the image against the profile (container); CI loads the profile into a real AppArmor kernel in enforce mode and reruns the container tests confined, plus a test that confinement is active and restrictive |
+| Confirmation on the Pi | After 0.1.0 with the maintainer's `/init rix` edit, the kernel log showed the next denial, `preinit` (requested `r`) — exactly as predicted. With the folder replaced by 0.1.1 and the app reinstalled, the app **started** on the Pi: s6-overlay, `cont-init` (exit 0) and the core (`MeshBeacon 0.1.1 starting (Reticulum 1.6.0, aarch64)`), identity created, isolated-node warning shown |
+| Confirmation in CI | The 0.1.1 profile loaded into an Ubuntu runner's kernel in enforce mode; the container tests passed confined by it, including the confinement test |
 | Restart loop | The failure happens in s6-overlay before any MeshBeacon code runs, so MeshBeacon's start-history guard cannot act. The Supervisor bounds container restarts at 10 per 30 minutes ("Rate limit exceeded" afterwards, verified). Safeguards: catch profile errors before release (above); documentation now says to enable the watchdog only after a first successful start |
 
 ## 4. Resource measurements
@@ -115,6 +117,6 @@ Raspberry Pi figure: **not measured** (roadmap LP-16, RG-1). The emulated aarch6
 
 ## 5. Not yet verified
 
-- AppArmor profile on the Pi itself (CI now enforces it on an Ubuntu runner, whose kernel and AppArmor version differ from HA OS).
+- AppArmor on the Pi over a longer run (start-up is confirmed; check for denials after connecting a peer and enabling transport).
 - Behaviour under the real Supervisor (watchdog, backups, options UI) — the image itself is now tested on the real HA base in CI.
 - The physical Pi (maintainer); aarch64 has only been tested under emulation.
