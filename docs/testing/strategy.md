@@ -56,24 +56,78 @@ Topologies to cover:
 
 ## 4. Security tests (mandatory)
 
-- Identity, config and token files are `0600`; directories `0700` — after first start, after
-  restart and after an RNS-initiated rewrite.
-- No private key bytes (hex or base64 of the 64-byte identity) and no tokens appear in any log,
-  diagnostics output or API response (grep-based assertion).
-- Rendered RNS config never contains `AutoInterface`, `discoverable`, `discover_interfaces`,
-  `autoconnect_discovered_interfaces`, `publish_ifac`, or `location_cmd` unless the corresponding
-  opt-in is set (and in v0.1, never).
-- Missing/corrupt identity with prior state → refuses to start with a clear message.
-- Container: runs without extra capabilities; no published ports; local API rejects missing or
-  wrong tokens.
-- Invalid `rpc_key` is rejected by MeshBeacon before RNS sees it (RNS would silently fall back).
+### 4.1 Files, secrets and privileges
 
-## 5. Resilience tests
+- Identity, config and state files are `0600`; directories `0700`, owned by `meshbeacon` — after
+  first start, after restart and after RNS has run.
+- The core and RNS processes run as the `meshbeacon` user (assert UID/GID from `/proc`); the image
+  works with **all** capabilities dropped (`--cap-drop ALL`) apart from those the root init step
+  needs (`CHOWN`, `SETUID`, `SETGID`, `DAC_OVERRIDE`, `FOWNER` — to be minimised in Phase 1).
+- No private key bytes (hex or base64 of the 64-byte identity), RPC key, passphrase or token
+  appears in any log at any offered log level (grep-based assertion over captured output).
+- Invalid `rpc_key` values are rejected by MeshBeacon before RNS sees them (RNS would silently fall
+  back — verified).
+- Container: no published ports; no host network; health endpoint reveals no identities or peers.
 
-- Kill the RNS child: core restarts it with back-off; health reports correctly.
-- Repeated crash loop: circuit breaker opens; app stays up and reports `unhealthy`.
-- Simulated internet loss (drop the server): state goes `degraded`, no restart storm.
+### 4.2 Configuration injection (hostile-input suite)
+
+Run every user-controlled field (peer name, host, port, network name, passphrase, preset names)
+through both the Supervisor-schema layer and the core validator with a corpus including:
+
+| Class | Examples |
+|---|---|
+| Structure | `\n`, `\r\n`, `\r`, `[[x]]`, `[x]`, `]]`, `=`, leading/trailing spaces |
+| ConfigObj syntax | `,` (list), `#` (comment), `'`, `"`, `"""`, `\\` |
+| Interpolation | `%(enable_transport)s`, `$enable_transport`, `${x}` |
+| Control and encoding | `\0`, `\t`, `\x1b`, Unicode line/paragraph separators (U+2028/9), right-to-left override, homoglyph hostnames, over-long values |
+| Hostnames | `localhost`, trailing dot, empty label, 254+ characters, IPv6 with zone ID, IP with port appended |
+
+Assertions:
+
+1. Every hostile value is **rejected** with a clear message, *or* (for passphrases, where a wider
+   character set is allowed) rendered so that the re-parsed config is **structurally identical** to
+   the intended one: same sections, same keys, single scalar string values, no interpolation.
+2. The rendered file **never** contains a section or key that was not in the intended structure —
+   in particular never `AutoInterface`, `discoverable`, `discover_interfaces`,
+   `autoconnect_discovered_interfaces`, `publish_ifac` or `location_cmd`.
+3. Property-based fuzzing (e.g. Hypothesis) of the renderer with arbitrary Unicode strings
+   maintains assertion 2 for every input that passes validation.
+
+Phase 0 reproduced the naive-templating injection with RNS's vendored ConfigObj (architecture
+§4.1); that reproduction becomes the first regression test.
+
+### 4.3 Identity integrity
+
+| Scenario | Expected |
+|---|---|
+| First start | Identity created atomically (temp file + `fsync` + rename), 0600, backup copy written, hash recorded |
+| Truncated / zero-length / random-bytes identity, valid backup | Restored from backup; logged; RNS starts with the original hash |
+| Truncated identity, no valid backup | RNS **not started**; identity-problem message; file left untouched for manual recovery |
+| Identity hash differs from recorded hash | Refuse to start; explain |
+| Kill the init step at random points during first creation (repeat ≥ 1,000 times) | Never a partial identity at the final path |
+| "Replace identity" option | New identity; old and new hashes logged; option resets itself |
+| HA backup → wipe → restore | Same identity hash |
+
+Phase 0 verified that RNS itself overwrites a corrupt identity (architecture §4.6); a test asserts
+MeshBeacon never lets RNS start in that state.
+
+## 5. Resilience and resource tests
+
+- Kill the RNS child: core restarts it with back-off; process health goes `restarting` →
+  `running`.
+- Crash loop: circuit breaker opens after the configured failures; app stays up; health endpoint
+  reports failure only in that state.
+- **Connectivity is not health:** drop the peer / remove the default route → connectivity
+  `offline`; the health endpoint keeps returning success; no Supervisor restart (simulate the
+  watchdog poll in test).
+- Isolated node (no peers): warning logged at start and at most every 6 hours; no outbound
+  connection attempts.
 - Memory guard: a test hook raises reported RSS above the ceiling → controlled restart.
+- CPU: processes run with the configured niceness.
+- Storage: fill a test `/data` to below the thresholds → warning / refusal as designed; oversized
+  `cache/` cleared on start.
+- Logs: a local announce flood or a debug-level RNS produces at most the configured rate; a
+  "lines suppressed" summary appears.
 - `SIGTERM` honoured within the Supervisor timeout.
 
 ## 6. Hardware and soak testing (before each release)
@@ -86,6 +140,14 @@ On the target Raspberry Pi 4B (HA OS, aarch64, SSD, Ethernet, 5G/CGNAT):
 - Power-cut/UPS test: identity and SQLite state survive; clean recovery.
 - HA backup and restore (hot): identity preserved; node address unchanged.
 - Network loss and recovery (unplug Ethernet / disable 5G).
+- Timed first-run usability test with people new to Reticulum (first-run UX §7).
+
+### 6.1 Public peer verification (manual, release-time only)
+
+Presets are verified by the maintainer against live infrastructure using checks V1–V7 in
+[public peer presets §3](../research/public-peers.md#3-interoperability-and-verification-requirements).
+These are the **only** tests that touch public networks, they are never run in CI, and their
+results are recorded in the repository with date, RNS version and tester.
 
 ## 7. Supply-chain checks in CI
 
@@ -97,5 +159,5 @@ On the target Raspberry Pi 4B (HA OS, aarch64, SSD, Ethernet, 5G/CGNAT):
 
 ## 8. Coverage targets
 
-- Core: ≥ 90 % line coverage, 100 % of config rendering and permission code paths.
+- Core: ≥ 90 % line coverage, 100 % of validation, config rendering, identity and permission code paths.
 - Every bug fix lands with a regression test.

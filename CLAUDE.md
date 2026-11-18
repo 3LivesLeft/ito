@@ -25,13 +25,30 @@ application code. Do not start Phase 1 work until the maintainer explicitly appr
 6. **Never connect to live Reticulum networks or public entry points**, and never deploy to a
    live Home Assistant instance. Tests use isolated networks only (see
    [docs/testing/strategy.md](docs/testing/strategy.md)).
-7. **Do not add or change the project licence** — it is a pending maintainer decision.
+7. **The licence is Apache-2.0** ([ADR 0002](docs/adr/0002-licence.md)). Do not change it, and
+   do not add material that cannot be licensed under it.
 8. **Do not merge to `main`** and do not push to branches other than the one you were asked to
    use. Open pull requests only when asked.
 9. **Disclose provenance honestly.** Do not strip or hide AI attribution. Keep commit authorship
    as configured.
 10. **Do not post to upstream Home Assistant / Open Home Foundation projects** — their AI policy
     forbids autonomous agent contributions.
+11. **Never build or publish datasets, corpora or bulk copies of RNS/LXMF material.** Prefer RNS's
+    documentation and public API over its source; when source must be read to verify behaviour,
+    cite file and revision and do not reproduce it (Reticulum License AI condition — licensing §6).
+12. **Never render RNS configuration by string templating.** Validate every user field against an
+    allow-list and use ConfigObj's object API, then round-trip-check the result.
+13. **Never let RNS start with an unvalidated identity** — RNS silently replaces corrupt identity
+    files.
+14. **No external connections by default**, and never tie the Supervisor health endpoint to
+    internet connectivity.
+
+## Product principles to keep in mind
+
+- Ease of use is a core principle: a non-technical user connected within five minutes. Prefer
+  safe defaults and plain-language messages over options.
+- v0.1.0 is deliberately small (see [docs/roadmap.md](docs/roadmap.md)): no dashboards, LXMF, I2P,
+  LoRa, remote automation, TCP listener or raw config.
 
 ## Writing conventions
 
@@ -45,12 +62,15 @@ application code. Do not start Phase 1 work until the maintainer explicitly appr
 ## Repository map
 
 ```text
-README.md, CONTRIBUTING.md, SECURITY.md, CLAUDE.md
+README.md, CONTRIBUTING.md, SECURITY.md, CLAUDE.md, LICENSE, NOTICE
 docs/vision.md                     why, principles
 docs/architecture.md               proposed structure (core vs HA adapters)
 docs/roadmap.md                    versions + v0.1.0 acceptance criteria
 docs/research/feasibility.md       Phase 0 research, open questions (Q-n), risks (R-n)
-docs/research/licensing.md         licence analysis (no licence chosen)
+docs/research/licensing.md         licence analysis (Apache-2.0 chosen; obligations)
+docs/research/naming.md            the existing "MeshBeacon" project; trademarks
+docs/research/public-peers.md      optional public peer presets and verification
+docs/ux/first-run.md               five-minute setup path; option and message design
 docs/security/threat-model.md      assets, threats (T-n), controls
 docs/testing/strategy.md           isolated-network testing approach
 docs/adr/NNNN-*.md                 architecture decision records

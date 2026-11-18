@@ -4,7 +4,7 @@
 - **Date:** 18 November 2026
 - **Deciders:** MeshBeacon maintainer
 - **Evidence:** [Feasibility study §2](../research/feasibility.md#2-reticulum-versus-rathole-research-item-1),
-  [Licensing §4](../research/licensing.md#4-compatibility-analysis-for-meshbeacons-own-licence)
+  [Licensing §3.3](../research/licensing.md#33-compatibility-conclusion)
 
 ## Context
 

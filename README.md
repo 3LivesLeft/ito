@@ -24,10 +24,12 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 
 ## Principles in brief
 
+- Easy to use: connected within five minutes, no configuration files.
 - Completely free; no commercialisation, telemetry, analytics or advertising.
 - No mandatory third-party cloud services.
-- Private and secure by default: no host networking, no public ports, no automatic discovery or
-  publication, no unnecessary Home Assistant permissions.
+- Private and secure by default: no external connections until you choose a peer, no host
+  networking, no public ports, no automatic discovery or publication, no unnecessary Home
+  Assistant permissions.
 - Uses the unmodified Reticulum reference implementation; implements no protocol or cryptography
   of its own.
 
@@ -39,10 +41,16 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [Architecture](docs/architecture.md) | Proposed structure and boundaries |
 | [Roadmap](docs/roadmap.md) | Provisional versions and v0.1.0 acceptance criteria |
 | [Feasibility study](docs/research/feasibility.md) | Phase 0 research with verified facts, assumptions and open questions |
-| [Licensing research](docs/research/licensing.md) | Upstream licences and options for MeshBeacon |
+| [Licensing research](docs/research/licensing.md) | Licence decision, dependency compatibility, AI-training condition, publication obligations |
 | [Threat model](docs/security/threat-model.md) | Assets, threats and controls |
 | [Testing strategy](docs/testing/strategy.md) | How we will test against isolated Reticulum networks |
+| [First-run UX](docs/ux/first-run.md) | The five-minute setup path and configuration design |
+| [Naming research](docs/research/naming.md) | The existing "MeshBeacon" project and trademark checks |
+| [Public peer presets](docs/research/public-peers.md) | Optional public entry points and how they are verified |
 | [ADR 0001](docs/adr/0001-networking-foundation.md) | Build on RNS directly, not on Rathole |
+| [ADR 0002](docs/adr/0002-licence.md) | Apache-2.0 for MeshBeacon's own work |
+| [ADR 0003](docs/adr/0003-name.md) | Keep the name, with disambiguation |
+| [ADR 0004](docs/adr/0004-public-peer-presets.md) | Optional verified presets; no default connection |
 
 ## Credits
 
@@ -53,7 +61,9 @@ MeshBeacon builds on the work of others:
   and contributors.
 
 MeshBeacon is an independent project and is not affiliated with or endorsed by the Reticulum
-project, Home Assistant, the Open Home Foundation or Ratspeak.
+project, Home Assistant, the Open Home Foundation or Ratspeak. It is also **not affiliated with the
+MeshBeacon disaster-response project** ([meshbeacon.org](https://meshbeacon.org)), which is an
+unrelated project with the same name.
 
 ## How this project is made
 
@@ -65,8 +75,14 @@ history. They are subject to the maintainer's review before they are accepted. S
 
 ## Licence
 
-**Not yet chosen.** A licence will be selected after the [licensing research](docs/research/licensing.md)
-has been reviewed. Until then, no licence is granted.
+MeshBeacon's own code and documentation are licensed under the
+[Apache License, Version 2.0](LICENSE) ([ADR 0002](docs/adr/0002-licence.md)).
+
+Its container images (none published yet) will also contain third-party components under their
+own licences. In particular, **Reticulum and LXMF are licensed under the Reticulum License, which
+is not an OSI-approved open-source licence**: it forbids use in systems designed to harm people
+and use in creating AI training datasets. Those conditions apply to anyone using the image. See
+[NOTICE](NOTICE) and the [licensing research](docs/research/licensing.md).
 
 ## Security
 

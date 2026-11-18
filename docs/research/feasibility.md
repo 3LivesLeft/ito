@@ -31,6 +31,22 @@ the Home Assistant developer documentation were instead read from their source r
 revisions recorded below. **All findings require review by a human maintainer before they are
 relied on.** See §10.1 for why provenance matters particularly in the Reticulum ecosystem.
 
+## 0. Review amendments (18 November 2026)
+
+Following independent review, the following were added or changed. The original Phase 0 text
+below is retained, with corrections where noted.
+
+| Topic | Where |
+|---|---|
+| Licence decided (Apache-2.0); dependency compatibility; AI-training analysis; publication obligations | [licensing.md](licensing.md), [ADR 0002](../adr/0002-licence.md) |
+| Deeper investigation of the existing MeshBeacon organisation; trademark checks; name retained with conditions | [naming.md](naming.md), [ADR 0003](../adr/0003-name.md) |
+| Ease of use as a core principle; five-minute first run | [first-run UX](../ux/first-run.md) |
+| Optional public peer presets (Ratspeak Ruby, Emerald, Diamond as candidates) | [public-peers.md](public-peers.md), [ADR 0004](../adr/0004-public-peer-presets.md) |
+| Non-root service user, configuration-injection prevention, resource guards, health vs connectivity, crash-safe identity, watchdog behaviour | [architecture §4](../architecture.md#4-core-internals) |
+| New verified findings: RNS silently replaces a corrupt identity (§7.1); naive config templating is injectable (architecture §4.1); Supervisor watchdog semantics (architecture §4.5); `rns` wheel ships no licence file (licensing §3.1) | as noted |
+| v0.1.0 scope narrowed | [roadmap](../roadmap.md) |
+| Security rating 8 treated as a target, not proof | [threat model](../security/threat-model.md) |
+
 ## 1. Upstream revisions reviewed
 
 | Project | Source | Version / revision | Date | Licence (verified) |
@@ -105,7 +121,7 @@ These cover most of the *protective* purpose Rathole was written for, without mo
 | Integration method | Public API, config file, RPC | Monkeypatches private internals |
 | Upgrade safety | Normal semver-ish releases | Breaks silently on RNS internal changes |
 | Privacy defaults | No discovery/autoconnect by default (verified, §8) | Registry over HTTPS; enables transport in client mode |
-| Licence fit | Reticulum License (permissive + conditions) | GPL-3.0 combined with Reticulum License — see licensing §4 |
+| Licence fit | Reticulum License (permissive + conditions) | GPL-3.0 combined with Reticulum License — see licensing §3.3 |
 | Protective features | Native filters, stamps, blackholes (1.6.x) | Additional heuristic filters, reputation, TUI |
 
 **[Recommendation]** The preliminary preference **is upheld**: build directly on RNS and do not
@@ -141,7 +157,7 @@ Summarised here; full analysis in [licensing.md](licensing.md).
 - **[Verified]** Rathole and RNode firmware are GPL-3.0.
 - **[Recommendation]** MeshBeacon depends on RNS/LXMF as unmodified PyPI packages, ships their
   licence text in the container image, and copies no upstream source into this repository.
-- **[Open] Q-1** Choice of MeshBeacon's own licence (deliberately not made in Phase 0).
+- **[Decision]** (review amendments) MeshBeacon's own code is Apache-2.0 — see [ADR 0002](../adr/0002-licence.md).
 
 ## 4. Competing projects and naming (research item 3)
 
@@ -179,7 +195,8 @@ effort in a small ecosystem has a real cost. **[Open] Q-2.**
 
 **[Recommendation]** Treat the name as **at risk**. Decide before the first public release, while
 renaming is cheap. Options: keep the name with clear disambiguation; or rename (for example a name
-that signals Home Assistant + Reticulum). **[Open] Q-3.**
+that signals Home Assistant + Reticulum). *(Review amendments: investigated further in
+[naming.md](naming.md); name retained with conditions — [ADR 0003](../adr/0003-name.md).)*
 
 ## 5. Home Assistant app packaging (research item 4)
 
@@ -238,7 +255,8 @@ watchdog: "tcp://[HOST]:[PORT:…]"   # internal health endpoint, to be designed
 This should reach the maximum Supervisor security rating of **8**: 5 +1 custom AppArmor profile
 +2 no ports/host network = 8, and the function clamps to `max(min(8, rating), 1)` (verified), so
 signing adds no further points but is still required for supply-chain integrity. Any later opt-in
-(device access, a published port) lowers it. **[Assumption]** — confirm on a real Supervisor.
+(device access, a published port) lowers it. **[Assumption]** — confirm on a real Supervisor. The
+rating is a **target, not proof of security** (threat model, preamble).
 
 ## 6. ARM64 and AMD64 compatibility (research item 5)
 
@@ -279,6 +297,12 @@ signing adds no further points but is still required for supply-chain integrity.
 **[Verified by test]** Started under the default umask, RNS 1.6.0 created `transport_identity`
 with mode **0644** (world-readable) and the storage directories 0755.
 
+**[Verified by test, review amendments]** RNS **silently replaces a corrupt identity**. With a
+10-byte random `transport_identity`, `rnsd` 1.6.0 logged "Failed to load identity key …" and "No
+valid Transport Identity in storage, creating…", and overwrote the file with a new 64-byte key.
+`Identity.to_file()` writes in place (no temporary file, `fsync` or rename), so a power cut during
+the first write can produce exactly this state. Design response: architecture §4.6.
+
 ### 7.2 Recommendations
 
 - **[Recommendation]** Put the RNS config directory under `/data/reticulum` (always mapped and
@@ -302,7 +326,8 @@ with mode **0644** (world-readable) and the storage directories 0755.
 - **[Recommendation]** Recovery: on corrupt or missing identity, **do not silently generate a new
   one** if one previously existed (that would change the node's address and break contacts);
   stop with a clear error unless the user explicitly opts to regenerate. A first-ever start may
-  generate one.
+  generate one. Because RNS itself would regenerate (above), MeshBeacon must validate the identity
+  *before* starting RNS — see architecture §4.6.
 
 ## 8. CGNAT and connectivity options (research item 7)
 
@@ -333,7 +358,8 @@ using the RNS default. It **never** enables `AutoInterface`, `discoverable`, `di
 `autoconnect_discovered_interfaces`, `publish_ifac` or `location_cmd` unless the user explicitly
 opts in (and v0.1 exposes none of them).
 
-**[Recommendation]** Ship **no default remote**. The manual uses
+**[Recommendation]** Ship **no default remote**. *(Review amendments: optional, verified presets
+are now planned — see [public-peers.md](public-peers.md) and ADR 0004.)* The manual uses
 `amsterdam.connect.reticulum.network` in examples and Rathole uses `rns.ratspeak.org:4242`, but
 connecting by default would leak the user's IP to a third party and violate "no automatic
 connection to untrusted interfaces". Documentation may list well-known entry points with a privacy
@@ -505,38 +531,56 @@ logs. Whether to launch `rnsd` itself or a thin Python entry point that instanti
 
 ## 14. Unresolved questions
 
-| ID | Question | Owner / when |
+Status as of the review amendments (18 November 2026). Resolved items are kept for traceability.
+
+| ID | Question | Status / owner |
 |---|---|---|
-| Q-1 | Which licence for MeshBeacon's own code? | Maintainer, before any code |
-| Q-2 | Collaborate with N2K RNS Gateway rather than compete? | Maintainer, before Phase 1 |
-| Q-3 | Keep the "MeshBeacon" name given the existing MeshBeacon organisation? | Maintainer, before first release |
-| Q-4 | Which Supervisor identifiers (`app_config` vs `addon_config`) apply on the target? | Phase 1 |
-| Q-5 | Confirm target HA OS is 64-bit, its version, and RAM | Maintainer |
-| Q-6 | Do all RPC clients honour a configured `rpc_key`? | Phase 1 (source review + test) |
-| Q-7 | Hot backup consistency of SQLite WAL while RNS runs | Phase 1 test |
-| Q-8 | Can a bridged-network app use the HA Tailscale app's tailnet? | Phase 1 test on device |
-| Q-9 | First-run UX with no default remote | Phase 1 design |
-| Q-10 | Long-run memory/CPU on Pi 4B on a real network | Phase 1 soak test |
-| Q-11 | Permissions needed to publish Supervisor discovery | v0.2 |
-| Q-12 | Launch `rnsd` vs a thin Python entry point | Phase 1 |
-| Q-13 | Interoperability of Python RNS 1.6.x with Ratspeak (Rust `rsReticulum`) — claimed by the ecosystem, **not verified** | v0.3 test |
-| Q-14 | How will MeshBeacon track RNS security fixes given the upstream mirror model? | Maintainer |
-| Q-15 | Does MeshBeacon's use of an AI assistant raise any concern under the Reticulum License's AI-training condition? Our reading: no — the condition concerns creating training datasets, and nothing here does — but the maintainer should form their own view | Maintainer |
-| Q-16 | Stamp enforcement in RNS 1.6.2: pin policy and upgrade timing | Phase 1 |
-| Q-17 | Source-offer approach for GPL components (e.g. BusyBox) in the base image — see licensing §5 | Maintainer |
-| Q-18 | Home Assistant brand-guideline constraints on icon and naming | Maintainer |
+| Q-1 | Licence for MeshBeacon's own code | **Resolved:** Apache-2.0 ([ADR 0002](../adr/0002-licence.md)) |
+| Q-2 | Collaborate with N2K RNS Gateway rather than compete? | Open — maintainer, before Phase 1 |
+| Q-3 | Keep the "MeshBeacon" name? | **Resolved, conditionally:** keep, with disambiguation and rename triggers ([ADR 0003](../adr/0003-name.md)) |
+| Q-4 | Which Supervisor identifiers (`app_config` vs `addon_config`) apply on the target? | Open — Phase 1 |
+| Q-5 | Confirm target HA OS is 64-bit, its version, and RAM | Open — maintainer |
+| Q-6 | Do all RPC clients honour a configured `rpc_key`? | Open — Phase 1 |
+| Q-7 | Hot backup consistency of SQLite WAL while RNS runs | Open — Phase 1 test; `backup: cold` fallback |
+| Q-8 | Can a bridged-network app use the HA Tailscale app's tailnet? | Open — Phase 1 test on device |
+| Q-9 | First-run UX with no default remote | **Resolved in design:** [first-run UX](../ux/first-run.md), [ADR 0004](../adr/0004-public-peer-presets.md) |
+| Q-10 | Long-run memory/CPU on Pi 4B on a real network | Open — Phase 1 soak test |
+| Q-11 | Permissions needed to publish Supervisor discovery | Open — v0.2 |
+| Q-12 | Launch `rnsd` vs a thin Python entry point | Open — Phase 1 |
+| Q-13 | Interoperability of Python RNS 1.6.x with Ratspeak servers and apps (Rust `rsReticulum`) | Open — preset verification V3–V5 (maintainer, live) |
+| Q-14 | How will MeshBeacon track RNS security fixes given the mirror-only upstream? | Open — maintainer |
+| Q-15 | Confirm the data-use (training) setting of the AI tool account used for Phase 0 | Narrowed — maintainer ([licensing §6.4](licensing.md#64-rules-adopted)) |
+| Q-16 | Stamp enforcement in RNS 1.6.2: pin policy and upgrade timing | Open — Phase 1 |
+| Q-17 | GPL corresponding-source approach for base-image components | Recommendation made ([licensing §5.1](licensing.md#51-gpl-corresponding-source)); expert confirmation wanted |
+| Q-18 | Home Assistant brand-guideline constraints on icon and naming | Open — maintainer |
+| Q-19 | Confirm base-image component licences from a generated SBOM | Open — Phase 1 CI |
+| Q-20 | Copyright line wording in `NOTICE` | Open — maintainer (currently "The MeshBeacon contributors") |
+| Q-21 | App slug (e.g. `meshbeacon_ha`) — effectively permanent once published | Open — maintainer, before first image |
+| Q-22 | Replacement tagline that does not echo the other MeshBeacon project | Open — maintainer |
+| Q-23 | Official trademark register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) | Open — maintainer, before first image |
+| Q-24 | Does `discover_interfaces` (receive-only) transmit anything about the local node? | Open — post-v0.1 |
+| Q-25 | Exact passphrase character set that ConfigObj quotes safely | Open — Phase 1 test |
+| Q-26 | Should a data budget ever be *enforced* (not just warned about)? | Open — post-v0.1 |
+| Q-27 | Is GitHub private vulnerability reporting enabled on the repository? | Open — maintainer (could not be checked from the research environment) |
+| Q-28 | Will Ratspeak (and a second operator) agree to being listed as presets? | Open — maintainer |
+| Q-29 | Courtesy contact with the existing MeshBeacon maintainers — outcome | Open — maintainer, before first image |
 
 ## 15. Risks
 
 | ID | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| R-1 | RNS upstream single maintainer / mirror-only / no issue tracker | High | High | Pin exact versions; integrate only via public API; maintain a compatibility test suite against each new RNS release; keep the core thin so another stack could be swapped in. |
-| R-2 | Name conflict with existing MeshBeacon organisation | High | Medium | Decide Q-3 before release. |
-| R-3 | Licence incompatibility (GPL code, CC BY-NC-SA code, field-of-use conditions) | Medium | High | No upstream code copied; licence review before Phase 1; SBOM. |
-| R-4 | Community rejection over AI-assisted provenance | Medium | High | Open disclosure, human accountability, experimental labelling (§10.1). |
+| R-1 | RNS upstream single maintainer / mirror-only / no issue tracker | High | High | Pin exact versions; integrate only via public API; compatibility test suite against each new RNS release; thin core. |
+| R-2 | Name confusion with the existing MeshBeacon organisation | High | Medium | ADR 0003 conditions and rename triggers; Q-21–Q-23, Q-29. |
+| R-3 | Licence non-compliance in published images (missing notices, GPL source) | Medium | High | No image published until licensing O1–O7 are in CI; SBOM; licence allow-list. |
+| R-4 | Community rejection over AI-assisted provenance | Medium | High | Open disclosure, human accountability, experimental labelling (§10.1); AI-tool rules (licensing §6.4). |
 | R-5 | Breaking protocol change (stamp enforcement in 1.6.2) | High | Medium | Track RNS releases; integration tests across versions; clear upgrade notes. |
-| R-6 | Resource exhaustion on the HA host | Low–Medium | High | Self-imposed memory watchdog; transport off by default; soak tests. |
-| R-7 | Private key exposure via file permissions, backups or logs | Medium | High | §7.2 controls; log filtering; secret scanning. |
-| R-8 | Users enable transport and incur bandwidth/abuse on 5G | Medium | Medium | Off by default; visible counters; documentation. |
+| R-6 | Resource exhaustion on the HA host | Low–Medium | High | Memory, CPU-priority, storage and log guards (architecture §4.3); soak tests. |
+| R-7 | Private key exposure via permissions, backups or logs | Medium | High | §7.2 controls; non-root user; log redaction; secret scanning. |
+| R-8 | Users enable transport and incur bandwidth/abuse on 5G | Medium | Medium | Off by default; plain explanation; counters and optional warning. |
 | R-9 | Duplicated effort with an existing competitor | Medium | Low–Medium | Q-2. |
 | R-10 | HA platform changes (add-on→app renames, builder migration) | Medium | Low | Follow HA developer blog; pin base images. |
+| R-11 | **Silent identity loss** — RNS overwrites corrupt identities (verified) | Medium | High | MeshBeacon-owned atomic creation, pre-start validation, verified backup copy (architecture §4.6). |
+| R-12 | **Configuration injection** via user fields (verified exploitable with naive templating) | Medium (if mishandled) | High | Architecture §4.1 layered validation; hostile-input suite. |
+| R-13 | **Five-minute target missed** without verified presets | Medium | Medium | Clear docs for adding a peer; timed user test in acceptance; verify ≥ 2 operators early. |
+| R-14 | **Preset operator dependency or failure** | Medium | Medium | ≥ 2 independent operators; presets as data; custom peers always available (ADR 0004). |
+| R-15 | **Watchdog restart loops** if health reflects connectivity | Low (by design) | Medium | Health = process health only (architecture §4.4). |
