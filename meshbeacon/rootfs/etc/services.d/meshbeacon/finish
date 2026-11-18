@@ -1,0 +1,15 @@
+#!/bin/sh
+# Called by s6 when the MeshBeacon core exits: $1 is the exit code (256 if killed by a signal) and
+# $2 the signal number. A clean stop (exit 0, or SIGTERM during shutdown) is normal. Anything else
+# is a crash: stop the container instead of restarting the core in a loop inside it. Whether the
+# app is restarted is then the Supervisor's decision, bounded by MeshBeacon's start history
+# (ADR 0005). The Reticulum child dies with the core (PR_SET_PDEATHSIG), so none is left behind.
+code="${1:-0}"
+sig="${2:-0}"
+if [ "$code" -eq 0 ] || { [ "$code" -eq 256 ] && [ "$sig" -eq 15 ]; }; then
+    exit 0
+fi
+echo "[meshbeacon] MeshBeacon stopped unexpectedly (exit code $code, signal $sig); stopping the app."
+if [ "$code" -eq 256 ]; then code=$((128 + sig)); fi
+echo "$code" > /run/s6-linux-init-container-results/exitcode
+exec /run/s6/basedir/bin/halt

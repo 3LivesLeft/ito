@@ -1,0 +1,16 @@
+# Runtime dependencies for the MeshBeacon app image, pinned by version AND hash.
+# Installed with: pip install --require-hashes --no-deps --only-binary=:all:
+# Only the wheels for linux/aarch64 and linux/amd64 (musllinux, CPython 3.13) are listed.
+# rns is the unmodified Reticulum reference implementation (Reticulum License).
+rns==1.6.0 \
+    --hash=sha256:fcf2d07eebafea7e56a94542bd74646e451b0f33bb3efb5f914bbbba38b39f36
+cryptography==50.0.2 \
+    --hash=sha256:25784ce8b9621c90c643efb9e1e2162ab3b0224cae446ad5e70e7fcb1ce18b51 \
+    --hash=sha256:85d0d9a31b9098e98534226d5686b47264b95e62ce459dc2e62fdfc809f9fe93
+cffi==2.1.1 \
+    --hash=sha256:a2d7755bef5a12ed488f4ef1f1b69ee9191d7396083b755a5d2295f6edb4768b \
+    --hash=sha256:e0bcb7e0f677f543555d2adff3bf19c05f66cdb4796e5ff602442ab2fe3c4ef7
+pycparser==3.12 \
+    --hash=sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e
+pyserial==3.5 \
+    --hash=sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0
