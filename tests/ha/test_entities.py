@@ -80,7 +80,7 @@ async def test_new_peers_are_added_and_removed_peers_become_unavailable(
     two["peers"] = [dict(two["peers"][0], name="Ruby")]
     aioclient_mock.clear_requests()
     aioclient_mock.get(URL, json=two)
-    freezer.tick(timedelta(seconds=31))
+    freezer.tick(timedelta(seconds=61))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert hass.states.get(eid(hass, "binary_sensor", "peer_ruby_connected")).state == STATE_ON
@@ -94,7 +94,7 @@ async def test_app_restart_new_key_makes_entities_unavailable_not_reauth(
     await setup(hass, mock_entry)
     aioclient_mock.clear_requests()
     aioclient_mock.get(URL, status=401)
-    freezer.tick(timedelta(seconds=31))
+    freezer.tick(timedelta(seconds=61))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert hass.states.get(eid(hass, "sensor", "status")).state == STATE_UNAVAILABLE
@@ -114,7 +114,7 @@ async def test_repair_issues(hass, mock_entry, aioclient_mock, freezer: FrozenDa
     async def poll(data):
         aioclient_mock.clear_requests()
         aioclient_mock.get(URL, json=data)
-        freezer.tick(timedelta(seconds=31))
+        freezer.tick(timedelta(seconds=61))
         async_fire_time_changed(hass)
         await hass.async_block_till_done()
 
@@ -126,7 +126,7 @@ async def test_repair_issues(hass, mock_entry, aioclient_mock, freezer: FrozenDa
     await poll(unreachable)
     assert registry.async_get_issue(DOMAIN, "isolated") is None
     assert registry.async_get_issue(DOMAIN, "peers_unreachable") is None  # within the 10-minute grace
-    for _ in range(21):
+    for _ in range(11):
         await poll(unreachable)
     assert registry.async_get_issue(DOMAIN, "peers_unreachable") is not None
     await poll(snapshot())

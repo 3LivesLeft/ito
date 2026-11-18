@@ -2,10 +2,10 @@
 # It is a view of the integration's entities, not a second monitoring implementation: history and
 # statistics come from Home Assistant's recorder.
 #
-# Use: Settings → Dashboards → Add dashboard → "New dashboard from scratch" → ⋮ → Edit dashboard →
-# ⋮ → Raw configuration editor, and paste this file. Entity IDs assume the default names; if you
-# renamed the device or entities, adjust them. For each peer, copy the "Peer" card and replace
-# "emerald" with the peer's name in lower case (spaces become underscores).
+# Use: Settings → Dashboards → Add dashboard → "New dashboard from scratch" → open it → ⋮ → Edit
+# dashboard → ⋮ → Raw configuration editor, and paste this file. Entity IDs assume the default names.
+# For each peer, copy the "Peer" card and replace "emerald" with the peer's name in lower case
+# (spaces become underscores). Only entities that are enabled by default are used here.
 title: MeshBeacon
 views:
   - title: Overview
@@ -27,14 +27,19 @@ views:
           type: entities
           title: What needs attention
           entities:
-            - sensor.meshbeacon_diagnosis
+            - sensor.meshbeacon_problem_details
       - type: glance
         title: Network
         entities:
           - entity: sensor.meshbeacon_peers_connected
           - entity: sensor.meshbeacon_known_paths
-          - entity: sensor.meshbeacon_relayed_links
+          - entity: sensor.meshbeacon_links_relayed_for_others
           - entity: binary_sensor.meshbeacon_transport_mode
+      - type: markdown
+        content: >-
+          **Links relayed for others** counts connections that other Reticulum users are making
+          *through* your node in transport mode. It shows that your node is helping the network;
+          it is not a count of forwarded packets, which Reticulum does not report.
       - type: history-graph
         title: Traffic (last 24 hours)
         hours_to_show: 24
@@ -49,8 +54,8 @@ views:
         stat_types:
           - change
         entities:
-          - entity: sensor.meshbeacon_received
-          - entity: sensor.meshbeacon_sent
+          - entity: sensor.meshbeacon_data_received
+          - entity: sensor.meshbeacon_data_sent
       - type: history-graph
         title: Peers connected
         hours_to_show: 72
@@ -59,24 +64,20 @@ views:
       - type: entities
         title: Node
         entities:
-          - entity: binary_sensor.meshbeacon_reticulum
+          - entity: binary_sensor.meshbeacon_reticulum_running
           - entity: sensor.meshbeacon_reticulum_started
           - entity: sensor.meshbeacon_app_started
           - entity: sensor.meshbeacon_reticulum_restarts
-          - entity: sensor.meshbeacon_announces_received
-          - entity: sensor.meshbeacon_announces_sent
       - type: history-graph
         title: Resources (last 24 hours)
         hours_to_show: 24
         entities:
-          - entity: sensor.meshbeacon_memory
-          - entity: sensor.meshbeacon_cpu
+          - entity: sensor.meshbeacon_memory_use
+          - entity: sensor.meshbeacon_processor_use
       # Peer card (one per peer):
       - type: entities
         title: Peer Emerald
         entities:
           - entity: binary_sensor.meshbeacon_emerald_connected
           - entity: sensor.meshbeacon_emerald_connected_since
-          - entity: sensor.meshbeacon_emerald_received
-          - entity: sensor.meshbeacon_emerald_sent
           - entity: sensor.meshbeacon_emerald_reconnections

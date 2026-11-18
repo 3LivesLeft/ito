@@ -3,7 +3,7 @@
     "step": {
       "hassio_confirm": {
         "title": "MeshBeacon",
-        "description": "Add MeshBeacon to show your Reticulum node's status, peers, traffic and resource use in Home Assistant. This is read-only: Home Assistant cannot control the node through it."
+        "description": "Add MeshBeacon to show your Reticulum node's status, peers, traffic and resource use in Home Assistant. This is read-only: Home Assistant cannot control the node through it.\n\nDiscovered from the app **{app}** (`{slug}`). Only add it if you installed that app."
       }
     },
     "error": {
@@ -12,13 +12,13 @@
     "abort": {
       "already_configured": "MeshBeacon is already set up.",
       "discovery_only": "MeshBeacon is added automatically. In the MeshBeacon app's Configuration tab, switch on \"Show MeshBeacon's status in Home Assistant\" and restart the app.",
-      "invalid_discovery": "The MeshBeacon app sent details that could not be used. Restart the app; if this repeats, please report it."
+      "invalid_discovery": "The details sent by the app could not be used, so nothing was set up. If this was the MeshBeacon app, restart it; if this repeats, please report it."
     }
   },
   "entity": {
     "binary_sensor": {
       "reticulum_running": {
-        "name": "Reticulum"
+        "name": "Reticulum running"
       },
       "transport_mode": {
         "name": "Transport mode"
@@ -51,7 +51,7 @@
         }
       },
       "problem": {
-        "name": "Diagnosis",
+        "name": "Problem details",
         "state": {
           "none": "None",
           "isolated": "Not connected to anyone",
@@ -82,10 +82,10 @@
         "name": "Peers configured"
       },
       "received": {
-        "name": "Received"
+        "name": "Data received"
       },
       "sent": {
-        "name": "Sent"
+        "name": "Data sent"
       },
       "receive_rate": {
         "name": "Receive rate"
@@ -94,16 +94,16 @@
         "name": "Send rate"
       },
       "packets_received": {
-        "name": "Packets received (including own)"
+        "name": "Packets received (all traffic)"
       },
       "packets_sent": {
-        "name": "Packets sent (including own)"
+        "name": "Packets sent (all traffic)"
       },
       "known_paths": {
         "name": "Known paths"
       },
       "relayed_links": {
-        "name": "Relayed links"
+        "name": "Links relayed for others"
       },
       "announces_received": {
         "name": "Announces received"
@@ -112,16 +112,16 @@
         "name": "Announces sent"
       },
       "memory": {
-        "name": "Memory"
+        "name": "Memory use"
       },
       "core_memory": {
-        "name": "Memory (MeshBeacon core)"
+        "name": "Memory use (MeshBeacon core)"
       },
       "reticulum_memory": {
-        "name": "Memory (Reticulum)"
+        "name": "Memory use (Reticulum)"
       },
       "cpu": {
-        "name": "CPU"
+        "name": "Processor use"
       },
       "restarts": {
         "name": "Reticulum restarts"
@@ -133,10 +133,10 @@
         "name": "{peer} connected since"
       },
       "peer_received": {
-        "name": "{peer} received"
+        "name": "{peer} data received"
       },
       "peer_sent": {
-        "name": "{peer} sent"
+        "name": "{peer} data sent"
       },
       "peer_receive_rate": {
         "name": "{peer} receive rate"

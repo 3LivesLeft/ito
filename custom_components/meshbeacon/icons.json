@@ -1,0 +1,107 @@
+{
+  "entity": {
+    "sensor": {
+      "status": {
+        "default": "mdi:access-point-network"
+      },
+      "connectivity": {
+        "default": "mdi:lan-connect"
+      },
+      "problem": {
+        "default": "mdi:stethoscope"
+      },
+      "app_started": {
+        "default": "mdi:clock-start"
+      },
+      "reticulum_started": {
+        "default": "mdi:clock-start"
+      },
+      "peers_connected": {
+        "default": "mdi:account-network"
+      },
+      "peers_configured": {
+        "default": "mdi:account-cog"
+      },
+      "received": {
+        "default": "mdi:download-network"
+      },
+      "sent": {
+        "default": "mdi:upload-network"
+      },
+      "receive_rate": {
+        "default": "mdi:download"
+      },
+      "send_rate": {
+        "default": "mdi:upload"
+      },
+      "packets_received": {
+        "default": "mdi:package-down"
+      },
+      "packets_sent": {
+        "default": "mdi:package-up"
+      },
+      "known_paths": {
+        "default": "mdi:map-marker-path"
+      },
+      "relayed_links": {
+        "default": "mdi:transit-connection-variant"
+      },
+      "announces_received": {
+        "default": "mdi:bullhorn-outline"
+      },
+      "announces_sent": {
+        "default": "mdi:bullhorn"
+      },
+      "memory": {
+        "default": "mdi:memory"
+      },
+      "core_memory": {
+        "default": "mdi:memory"
+      },
+      "reticulum_memory": {
+        "default": "mdi:memory"
+      },
+      "cpu": {
+        "default": "mdi:cpu-64-bit"
+      },
+      "restarts": {
+        "default": "mdi:restart"
+      },
+      "memory_restarts": {
+        "default": "mdi:restart-alert"
+      },
+      "peer_connected_since": {
+        "default": "mdi:clock-check-outline"
+      },
+      "peer_received": {
+        "default": "mdi:download-network"
+      },
+      "peer_sent": {
+        "default": "mdi:upload-network"
+      },
+      "peer_receive_rate": {
+        "default": "mdi:download"
+      },
+      "peer_send_rate": {
+        "default": "mdi:upload"
+      },
+      "peer_announces_received": {
+        "default": "mdi:bullhorn-outline"
+      },
+      "peer_announces_sent": {
+        "default": "mdi:bullhorn"
+      },
+      "peer_reconnections": {
+        "default": "mdi:connection"
+      }
+    },
+    "binary_sensor": {
+      "reticulum_running": {
+        "default": "mdi:play-circle"
+      },
+      "transport_mode": {
+        "default": "mdi:transit-transfer"
+      }
+    }
+  }
+}

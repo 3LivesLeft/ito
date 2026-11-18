@@ -71,6 +71,20 @@ jobs:
           python -m pytest tests/ha -p no:cacheprovider
           -o "pythonpath=meshbeacon/core ." -o asyncio_mode=auto
 
+  home-assistant-release:
+    name: Home Assistant 2026.11.2 (reference release) smoke test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.14" }
+      - run: pip install -r requirements-ha-smoke.txt
+      - name: Type check against this release
+        run: mypy --strict --python-version 3.14 custom_components/meshbeacon
+      - name: Real Home Assistant with the integration and a fake status API (127.0.0.1 only)
+        run: python tools/ha_smoke_test.py --hass-python "$(command -v python)" --seconds 200
+
   container:
     name: Container tests (${{ matrix.arch }})
     runs-on: ubuntu-24.04

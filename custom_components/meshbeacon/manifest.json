@@ -1,7 +1,12 @@
 {
   "domain": "meshbeacon",
   "name": "MeshBeacon",
-  "codeowners": ["@3LivesLeft"],
+  "after_dependencies": [
+    "hassio"
+  ],
+  "codeowners": [
+    "@3LivesLeft"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/3LivesLeft/meshbeacon/blob/main/docs/home-assistant-integration.md",

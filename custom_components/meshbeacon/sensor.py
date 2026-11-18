@@ -86,6 +86,18 @@ def merge(*parts: Options) -> Options:
     return merged
 
 
+def _round(value: float | None, step: float) -> float | None:
+    """Round to a meaningful step, so the recorder stores a new row only for a real change."""
+    return None if value is None else round(round(value / step) * step, 6)
+
+
+def _mib(value: int | None) -> int | None:
+    return None if value is None else round(value / MIB) * MIB
+
+
+MIB = 1024 * 1024
+OFF = False  # entity_registry_enabled_default for high-churn detail (recorder load, v0.2 review)
+
 NODE_SENSORS: tuple[NodeSensor, ...] = (
     NodeSensor(key="status", device_class=SensorDeviceClass.ENUM, options=list(STATES), value_fn=lambda s: s.state),
     NodeSensor(
@@ -107,29 +119,46 @@ NODE_SENSORS: tuple[NodeSensor, ...] = (
     NodeSensor(key="peers_configured", value_fn=lambda s: s.peers_configured, **merge(GAUGE, DIAG)),
     NodeSensor(key="received", value_fn=lambda s: s.rx_bytes, **BYTES),
     NodeSensor(key="sent", value_fn=lambda s: s.tx_bytes, **BYTES),
-    NodeSensor(key="receive_rate", value_fn=lambda s: s.rx_rate, **RATE),
-    NodeSensor(key="send_rate", value_fn=lambda s: s.tx_rate, **RATE),
-    NodeSensor(key="packets_received", value_fn=lambda s: s.packets_rx, **merge(COUNT, DIAG)),
-    NodeSensor(key="packets_sent", value_fn=lambda s: s.packets_tx, **merge(COUNT, DIAG)),
+    NodeSensor(key="receive_rate", value_fn=lambda s: _round(s.rx_rate, 1), **RATE),
+    NodeSensor(key="send_rate", value_fn=lambda s: _round(s.tx_rate, 1), **RATE),
+    NodeSensor(
+        key="packets_received",
+        value_fn=lambda s: s.packets_rx,
+        entity_registry_enabled_default=OFF,
+        **merge(COUNT, DIAG),
+    ),
+    NodeSensor(
+        key="packets_sent", value_fn=lambda s: s.packets_tx, entity_registry_enabled_default=OFF, **merge(COUNT, DIAG)
+    ),
     NodeSensor(key="known_paths", value_fn=lambda s: s.paths, **GAUGE),
     NodeSensor(key="relayed_links", value_fn=lambda s: s.relayed_links, **GAUGE),
-    NodeSensor(key="announces_received", value_fn=lambda s: s.announces_rx, **merge(COUNT, DIAG)),
-    NodeSensor(key="announces_sent", value_fn=lambda s: s.announces_tx, **merge(COUNT, DIAG)),
-    NodeSensor(key="memory", value_fn=lambda s: s.memory_bytes, **MEMORY),
     NodeSensor(
-        key="core_memory", value_fn=lambda s: s.core_memory_bytes, entity_registry_enabled_default=False, **MEMORY
+        key="announces_received",
+        value_fn=lambda s: s.announces_rx,
+        entity_registry_enabled_default=OFF,
+        **merge(COUNT, DIAG),
+    ),
+    NodeSensor(
+        key="announces_sent",
+        value_fn=lambda s: s.announces_tx,
+        entity_registry_enabled_default=OFF,
+        **merge(COUNT, DIAG),
+    ),
+    NodeSensor(key="memory", value_fn=lambda s: _mib(s.memory_bytes), **MEMORY),
+    NodeSensor(
+        key="core_memory", value_fn=lambda s: _mib(s.core_memory_bytes), entity_registry_enabled_default=OFF, **MEMORY
     ),
     NodeSensor(
         key="reticulum_memory",
-        value_fn=lambda s: s.reticulum_memory_bytes,
-        entity_registry_enabled_default=False,
+        value_fn=lambda s: _mib(s.reticulum_memory_bytes),
+        entity_registry_enabled_default=OFF,
         **MEMORY,
     ),
     NodeSensor(
         key="cpu",
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=1,
-        value_fn=lambda s: s.cpu_percent,
+        value_fn=lambda s: _round(s.cpu_percent, 0.1),
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -139,13 +168,34 @@ NODE_SENSORS: tuple[NodeSensor, ...] = (
 
 PEER_SENSORS: tuple[PeerSensor, ...] = (
     PeerSensor(key="connected_since", value_fn=lambda p: _ts(p.connected_since), **TIMESTAMP),
-    PeerSensor(key="received", value_fn=lambda p: p.rx_bytes, **BYTES),
-    PeerSensor(key="sent", value_fn=lambda p: p.tx_bytes, **BYTES),
-    PeerSensor(key="receive_rate", value_fn=lambda p: p.rx_rate, **merge(RATE, DIAG)),
-    PeerSensor(key="send_rate", value_fn=lambda p: p.tx_rate, **merge(RATE, DIAG)),
-    PeerSensor(key="announces_received", value_fn=lambda p: p.announces_rx, **merge(COUNT, DIAG)),
-    PeerSensor(key="announces_sent", value_fn=lambda p: p.announces_tx, **merge(COUNT, DIAG)),
     PeerSensor(key="reconnections", value_fn=lambda p: p.reconnections, **merge(COUNT, DIAG)),
+    # Per-peer traffic detail: off by default (each changes at every update); enable when needed.
+    PeerSensor(key="received", value_fn=lambda p: p.rx_bytes, entity_registry_enabled_default=OFF, **BYTES),
+    PeerSensor(key="sent", value_fn=lambda p: p.tx_bytes, entity_registry_enabled_default=OFF, **BYTES),
+    PeerSensor(
+        key="receive_rate",
+        value_fn=lambda p: _round(p.rx_rate, 1),
+        entity_registry_enabled_default=OFF,
+        **merge(RATE, DIAG),
+    ),
+    PeerSensor(
+        key="send_rate",
+        value_fn=lambda p: _round(p.tx_rate, 1),
+        entity_registry_enabled_default=OFF,
+        **merge(RATE, DIAG),
+    ),
+    PeerSensor(
+        key="announces_received",
+        value_fn=lambda p: p.announces_rx,
+        entity_registry_enabled_default=OFF,
+        **merge(COUNT, DIAG),
+    ),
+    PeerSensor(
+        key="announces_sent",
+        value_fn=lambda p: p.announces_tx,
+        entity_registry_enabled_default=OFF,
+        **merge(COUNT, DIAG),
+    ),
 )
 
 

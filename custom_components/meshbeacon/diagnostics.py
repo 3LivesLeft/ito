@@ -18,14 +18,14 @@ TO_REDACT = {CONF_TOKEN, CONF_HOST}
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: MeshBeaconConfigEntry) -> dict[str, Any]:
-    coordinator = entry.runtime_data
+    coordinator = getattr(entry, "runtime_data", None)  # absent if set-up has not completed
     status: dict[str, Any] | None = None
-    if coordinator.data is not None:
+    if coordinator is not None and coordinator.data is not None:
         data = coordinator.data
         peers = tuple(replace(p, name=f"peer {i + 1}") for i, p in enumerate(data.peers))
         status = asdict(replace(data, peers=peers, message="**REDACTED**" if data.message else None))
     return {
         "entry": async_redact_data(dict(entry.data), TO_REDACT),
-        "last_update_success": coordinator.last_update_success,
+        "last_update_success": None if coordinator is None else coordinator.last_update_success,
         "status": status,
     }

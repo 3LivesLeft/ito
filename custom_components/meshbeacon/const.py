@@ -8,7 +8,8 @@ from typing import Final
 
 DOMAIN: Final = "meshbeacon"
 MANUFACTURER: Final = "MeshBeacon"
-SCAN_INTERVAL: Final = timedelta(seconds=30)
+# 60 s matches the app's 60 s rate window and keeps recorder growth small (v0.2 review).
+SCAN_INTERVAL: Final = timedelta(seconds=60)
 REQUEST_TIMEOUT: Final = 10
 SCHEMA_VERSION: Final = 1
 
@@ -39,3 +40,4 @@ ISSUE_ISOLATED: Final = "isolated"
 ISSUE_UNREACHABLE: Final = "peers_unreachable"
 ISSUE_ATTENTION: Final = "needs_attention"
 UNREACHABLE_GRACE: Final = timedelta(minutes=10)  # short outages do not raise a repair issue
+REFRESH_INTERVAL: Final = timedelta(minutes=5)  # at most one key refresh from the Supervisor
