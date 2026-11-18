@@ -1,9 +1,6 @@
 # Vision
 
-> **Stay connected. With or without the internet.**
->
-> *(Working tagline. It is close to the pitch of an unrelated project with the same name, so a
-> replacement is under consideration — see [ADR 0003](adr/0003-name.md).)*
+> **Decentralised connectivity for your home.**
 
 ## The problem
 

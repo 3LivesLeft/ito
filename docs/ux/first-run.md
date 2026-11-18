@@ -71,7 +71,10 @@ detail on the next line.
 | Peers configured, none reachable | ⚠ "MeshBeacon is running, but cannot reach any of your peers. Check your internet connection. It will keep trying automatically." |
 | Some peers up | "Connected to 1 of 2 peers (Emerald). Your node is online." |
 | Recovering | "The Reticulum service stopped unexpectedly and has been restarted (attempt 2)." |
-| Circuit breaker open | ✖ "The Reticulum service keeps failing. MeshBeacon has stopped retrying for 15 minutes. See the lines above for the cause." |
+| Breaker open (temporary) | ⚠ "The Reticulum service keeps failing. MeshBeacon will try again in 15 minutes. See the lines above for the cause." |
+| Gave up after repeated failures | ✖ "The Reticulum service keeps failing, so MeshBeacon has stopped trying. Fix the cause shown above, then restart the app." |
+| Safe mode after repeated app restarts | ✖ "MeshBeacon has been restarted many times in a short period, so it has paused. Restart it after 14:35, or change any option to try again now." |
+| Identity replaced as requested | "Your node's identity was replaced as you asked. The previous identity has been kept in the app's data folder. Switch off *Replace identity* before the next restart." |
 | Identity problem | ✖ "Your node's identity file is damaged. MeshBeacon has **not** created a new one, because that would change your node's address. To restore from backup, see the documentation; to start fresh, turn on *Advanced: replace identity*." |
 
 **[Verified] limitation:** without `homeassistant_api` or `hassio_api` (which v0.1 deliberately

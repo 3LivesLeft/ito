@@ -31,7 +31,20 @@ the Home Assistant developer documentation were instead read from their source r
 revisions recorded below. **All findings require review by a human maintainer before they are
 relied on.** See §10.1 for why provenance matters particularly in the Reticulum ecosystem.
 
-## 0. Review amendments (18 November 2026)
+## 0. Final decisions before Phase 1 (18 November 2026)
+
+| Decision | Value |
+|---|---|
+| Name / slug / tagline | MeshBeacon · `meshbeacon` · "Decentralised connectivity for your home." |
+| Licence | Apache-2.0 for original code and documentation |
+| AI training | Disabled on the maintainer's ChatGPT and Claude accounts (Q-15) |
+| Reference hardware | Raspberry Pi 4B, 8 GB, `aarch64`, HA OS 18.5 |
+| N2K collaboration | Deferred until a working prototype exists (Q-2) |
+| Release gates | Trademark checks, external project contact, public peer verification and distribution compliance gate **public release**, not local development (roadmap tier B) |
+| Recovery | Bounded internal recovery that cannot loop with the Supervisor watchdog (architecture §4.2, §4.5; ADR 0005) |
+| Logging | No identity or destination hashes in logs, including during identity replacement |
+
+## 0.1 Review amendments (18 November 2026)
 
 Following independent review, the following were added or changed. The original Phase 0 text
 below is retained, with corrections where noted.
@@ -545,7 +558,7 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | ID | Question | Status / owner |
 |---|---|---|
 | Q-1 | Licence for MeshBeacon's own code | **Resolved:** Apache-2.0 ([ADR 0002](../adr/0002-licence.md)) |
-| Q-2 | Collaborate with N2K RNS Gateway rather than compete? | Open — maintainer, before Phase 1 |
+| Q-2 | Collaborate with N2K RNS Gateway rather than compete? | **Deferred** by the maintainer until a working MeshBeacon prototype exists |
 | Q-3 | Keep the "MeshBeacon" name? | **Resolved, conditionally:** keep, with disambiguation and rename triggers ([ADR 0003](../adr/0003-name.md)) |
 | Q-4 | Which Supervisor identifiers (`app_config` vs `addon_config`) apply on the target? | Open — Phase 1 |
 | Q-5 | Confirm target HA installation type and architecture | **Resolved:** HA OS 18.5 on `aarch64` (`rpi4-64`) — RAM split out as Q-30 |
@@ -556,23 +569,23 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-10 | Long-run memory/CPU on Pi 4B on a real network | Open — Phase 1 soak test |
 | Q-11 | Permissions needed to publish Supervisor discovery | Open — v0.2 |
 | Q-12 | Launch `rnsd` vs a thin Python entry point | Open — Phase 1 |
-| Q-13 | Interoperability of Python RNS 1.6.x with Ratspeak servers and apps (Rust `rsReticulum`) | Open — preset verification V3–V5 (maintainer, live) |
+| Q-13 | Interoperability of Python RNS 1.6.x with Ratspeak servers and apps (Rust `rsReticulum`) | Open — **public release gate** (RG-10); not a local development blocker |
 | Q-14 | How will MeshBeacon track RNS security fixes given the mirror-only upstream? | Open — maintainer |
-| Q-15 | Confirm the data-use (training) setting of the AI tool account used for Phase 0 | Narrowed — maintainer ([licensing §6.4](licensing.md#64-rules-adopted)) |
+| Q-15 | AI tool accounts' training setting | **Resolved:** training disabled on the maintainer's ChatGPT and Claude accounts |
 | Q-16 | Stamp enforcement in RNS 1.6.2: pin policy and upgrade timing | Open — Phase 1 |
-| Q-17 | GPL corresponding-source approach for base-image components | Recommendation made ([licensing §5.1](licensing.md#51-gpl-corresponding-source)); expert confirmation wanted |
+| Q-17 | GPL corresponding-source approach for base-image components | Recommendation made ([licensing §5.1](licensing.md#51-gpl-corresponding-source)); **public release gate** (RG-7) |
 | Q-18 | Home Assistant brand-guideline constraints on icon and naming | Open — maintainer |
-| Q-19 | Confirm base-image component licences from a generated SBOM | Open — Phase 1 CI |
+| Q-19 | Confirm base-image component licences from a generated SBOM | Open — SBOM in Phase 1 CI; **public release gate** (RG-7) |
 | Q-20 | Copyright line wording in `NOTICE` | Open — maintainer (currently "The MeshBeacon contributors") |
-| Q-21 | App slug (e.g. `meshbeacon_ha`) — effectively permanent once published | Open — maintainer, before first image |
-| Q-22 | Replacement tagline that does not echo the other MeshBeacon project | Open — maintainer |
-| Q-23 | Official trademark register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) | Open — maintainer, before first image |
+| Q-21 | App slug | **Resolved:** `meshbeacon` |
+| Q-22 | Tagline | **Resolved:** "Decentralised connectivity for your home." |
+| Q-23 | Official trademark register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) | Open — **public release gate** (RG-8) |
 | Q-24 | Does `discover_interfaces` (receive-only) transmit anything about the local node? | Open — post-v0.1 |
 | Q-25 | Exact passphrase character set that ConfigObj quotes safely | Open — Phase 1 test |
 | Q-26 | Should a data budget ever be *enforced* (not just warned about)? | Open — post-v0.1 |
-| Q-27 | Is GitHub private vulnerability reporting enabled on the repository? | Open — maintainer (could not be checked from the research environment) |
-| Q-28 | Will Ratspeak (and a second operator) agree to being listed as presets? | Open — maintainer |
-| Q-29 | Courtesy contact with the existing MeshBeacon maintainers — outcome | Open — maintainer, before first image |
+| Q-27 | Is GitHub private vulnerability reporting enabled? | Open — **public release gate** (RG-11) |
+| Q-28 | Will Ratspeak (and a second operator) agree to being listed as presets? | Open — **public release gate** (RG-10) |
+| Q-29 | Courtesy contact with the existing MeshBeacon maintainers — outcome | Open — **public release gate** (RG-9) |
 | Q-30 | Confirm the reference device's RAM | **Resolved:** 8 GB model, 7.6 GiB usable, 2.5 GiB swap ([reference environment](../testing/reference-environment.md)) |
 | Q-34 | Is a lower-memory physical device (e.g. a 1–2 GB Raspberry Pi) available for occasional release testing, in addition to the enforced-limit container test? | Open — maintainer |
 | Q-31 | Will the reference device move from Wi-Fi to Ethernet? | Open — maintainer; tests run on Wi-Fi meanwhile |

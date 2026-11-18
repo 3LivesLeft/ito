@@ -63,8 +63,11 @@ Topologies to cover:
 - The core and RNS processes run as the `meshbeacon` user (assert UID/GID from `/proc`); the image
   works with **all** capabilities dropped (`--cap-drop ALL`) apart from those the root init step
   needs (`CHOWN`, `SETUID`, `SETGID`, `DAC_OVERRIDE`, `FOWNER` — to be minimised in Phase 1).
-- No private key bytes (hex or base64 of the 64-byte identity), RPC key, passphrase or token
-  appears in any log at any offered log level (grep-based assertion over captured output).
+- No private key bytes (hex or base64 of the 64-byte identity), RPC key, passphrase, token **or
+  identity/destination hash** appears in any log at any offered log level — including during
+  first start, backup restoration and explicit identity replacement, and including RNS's own
+  output at its most detailed offered level (grep-based assertion over captured output for the
+  known values and for any 32-hex-character hash).
 - Invalid `rpc_key` values are rejected by MeshBeacon before RNS sees them (RNS would silently fall
   back — verified).
 - Container: no published ports; no host network; health endpoint reveals no identities or peers.
@@ -100,12 +103,12 @@ Phase 0 reproduced the naive-templating injection with RNS's vendored ConfigObj 
 
 | Scenario | Expected |
 |---|---|
-| First start | Identity created atomically (temp file + `fsync` + rename), 0600, backup copy written, hash recorded |
-| Truncated / zero-length / random-bytes identity, valid backup | Restored from backup; logged; RNS starts with the original hash |
+| First start | Identity created atomically (temp file + `fsync` + rename), 0600, backup copy written, fingerprint recorded in `state.json` (not in logs) |
+| Truncated / zero-length / random-bytes identity, valid backup | Restored from backup; restoration logged in words; RNS starts with the original identity (fingerprint matches) |
 | Truncated identity, no valid backup | RNS **not started**; identity-problem message; file left untouched for manual recovery |
-| Identity hash differs from recorded hash | Refuse to start; explain |
+| Identity fingerprint differs from the recorded one | `needs_attention`; RNS not started; explained |
 | Kill the init step at random points during first creation (repeat ≥ 1,000 times) | Never a partial identity at the final path |
-| "Replace identity" option | New identity; old and new hashes logged; option resets itself |
+| "Replace identity" option | New identity; previous one kept as `identity.replaced-<timestamp>`; log message contains **no** hashes; a restart with the option still on is refused with an explanation |
 | HA backup → wipe → restore | Same identity hash |
 
 Phase 0 verified that RNS itself overwrites a corrupt identity (architecture §4.6); a test asserts
@@ -115,8 +118,16 @@ MeshBeacon never lets RNS start in that state.
 
 - Kill the RNS child: core restarts it with back-off; process health goes `restarting` →
   `running`.
-- Crash loop: circuit breaker opens after the configured failures; app stays up; health endpoint
-  reports failure only in that state.
+- Crash loop: breaker opens after 5 failures in 15 min; after 3 openings without a stable 10-minute
+  run the core enters `needs_attention`; the health endpoint **keeps returning 200** throughout
+  (time is simulated in tests).
+- Deterministic failures (invalid identity with no backup, fingerprint mismatch, low disk, invalid
+  options): RNS never started, `needs_attention` immediately, health 200, no retries.
+- Start history: 5 core starts within 30 min without a stable run → safe mode; safe mode left
+  after an options change or once the window has expired.
+- Core hang (test hook stops the heartbeat): health endpoint fails; a simulated Supervisor
+  watchdog restart follows; repeated hangs end in safe mode, not an endless loop.
+- Core exit: s6 `finish` stops the container with a non-zero code (container test).
 - **Connectivity is not health:** drop the peer / remove the default route → connectivity
   `offline`; the health endpoint keeps returning success; no Supervisor restart (simulate the
   watchdog poll in test).

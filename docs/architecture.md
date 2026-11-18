@@ -102,12 +102,44 @@ name, passphrase, and any future field):
    interfaces). Refuse to start otherwise.
 5. **Tests:** a fuzz and regression suite of hostile inputs (testing strategy §4).
 
-### 4.2 Process supervision
+### 4.2 Process supervision and bounded recovery
 
-- RNS runs as a **child process** of the core, as the unprivileged `meshbeacon` user.
-- Restart policy: exponential back-off (1 s → 5 min cap); **circuit breaker** after 5 failures in
-  15 minutes, retrying after 15 minutes. The app itself stays running and reports the state.
-- Graceful shutdown on `SIGTERM` within the Supervisor `timeout` (set to 20 s).
+See §4.5 for how this interacts with the Supervisor watchdog. In short: **every restart path is
+bounded, and no condition that a restart cannot fix is ever reported as unhealthy.**
+
+**Failure classes.** Before starting RNS, the core classifies problems:
+
+| Class | Examples | Action |
+|---|---|---|
+| **Deterministic** (a restart cannot fix it) | Invalid options; identity invalid and no valid backup; identity fingerprint mismatch; "replace identity" left switched on; `/data` below the free-space floor; RNS refuses the rendered config | **Do not start RNS.** Enter `needs_attention` immediately, with a plain-language message. No retries until the options change or the app is restarted by the user. |
+| **Transient** (may recover) | RNS child exits or crashes; memory guard restart | Restart the RNS child with exponential back-off (1 s → 5 min cap). |
+
+**Internal circuit breaker (transient failures).**
+
+1. After **5 child failures within 15 minutes**, the breaker opens and the core waits 15 minutes
+   before one more attempt (half-open).
+2. If the breaker opens **3 times without the child staying up for at least 10 minutes in
+   between**, the core stops retrying and enters `needs_attention` ("The Reticulum service keeps
+   failing; MeshBeacon has stopped trying. Restart the app after fixing the cause.").
+3. A child that stays up for 10 minutes resets all counters.
+
+Worst case before giving up: about an hour, then nothing further until the user acts.
+
+**Persistent start history (whole-app restarts).** Each core start appends a timestamp to
+`state.json`. If the app has started **5 times within 30 minutes without once reaching 10 minutes
+of stable running**, whatever caused those restarts (the Supervisor watchdog, a crash of the core
+itself, the host), the core starts in **safe mode**: it does not start RNS, reports
+`needs_attention`, and explains that it has paused after repeated restarts. Because the core stays healthy in safe
+mode, nothing restarts it, so the 30-minute window expires naturally. Safe mode is left when the
+options change (detected by a hash of the validated settings), or on the first start after the
+window has expired; the message tells the user the time after which a restart will try again.
+
+**Core process exit.** If the core itself exits, s6-overlay's `finish` script stops the container
+with a non-zero code rather than restarting the core indefinitely inside the container. Whether the
+container is then restarted is the Supervisor's decision (§4.5), and the start history above bounds
+it.
+
+**Shutdown.** `SIGTERM` is honoured within the Supervisor `timeout` (set to 20 s).
 
 ### 4.3 Resource protection
 
@@ -119,7 +151,7 @@ itself.
 | **Memory** | Memory watchdog on the RNS child counting **RSS + swap** (`VmRSS` + `VmSwap`), so swapping on a device with swap cannot hide growth: controlled restart above a ceiling (default 256 MB; idle ≈ 55 MB measured). The core itself stays small: standard library only where practical, no web framework in v0.1, no in-memory history beyond a bounded status window. Python allocator left to RNS/jemalloc defaults. | `rnstatus -j` also reports `rss`. Defaults target low-memory devices, not the 8 GB reference board |
 | **CPU** | Run RNS and core at reduced priority (`nice 10`) so HA Core always wins contention. Detect sustained high CPU (> 80 % of one core for > 10 min) and log a warning; do not kill (stamp generation legitimately spikes CPU). | No cgroup control without privileges |
 | **Storage** | Check free space on `/data` before start and hourly; refuse to start below 200 MB free, warn below 1 GB. Cap regenerable RNS directories (`cache/`, `resources/`) — clear them on start if above a size cap (default 100 MB). SQLite stays on `/data` (SSD), never tmpfs. | **[Assumption]** RNS cleans its cache periodically (Transport `clean_cache`, every 5 min) — verify bound in soak test |
-| **Logs** | RNS stdout/stderr is read by the core and forwarded to the app log with **rate limiting** (default ≤ 20 lines/s with a burst allowance; excess summarised as "N lines suppressed"). RNS log level ≤ 4 by default. RNS file logging is not used (it would rotate at 5 MB, verified `RNS/__init__.py` `LOG_MAXSIZE`, but duplicates journald). | HA OS journald provides persistence |
+| **Logs** | RNS stdout/stderr is read by the core, **redacted** (every `<32 hex>` destination/identity hash and every hex or base64 blob of key length is replaced with `<redacted>` — RNS prints identity hashes at log level 5, verified), then forwarded to the app log with **rate limiting** (default ≤ 20 lines/s with a burst allowance; excess summarised as "N lines suppressed"). RNS log level ≤ 4 by default. RNS file logging is not used (it would rotate at 5 MB, verified `RNS/__init__.py` `LOG_MAXSIZE`, but duplicates journald). | HA OS journald provides persistence |
 | **Network** | Transport off by default. RNS's native announce cap (2 % of interface bandwidth by default) and ingress control stay at upstream defaults. Byte counters from RNS logged in the periodic status line; optional monthly data warning. | No quota *enforcement* in v0.1 — warning only (**[Open] Q-26**) |
 | **File descriptors** | `ulimits: nofile` set to a modest value (proposed 4096) in `config.yaml` | |
 | **Threads / processes** | One RNS child; no unbounded worker pools in the core | |
@@ -130,13 +162,19 @@ Two independent dimensions, never conflated:
 
 | Dimension | States | Drives |
 |---|---|---|
-| **Process health** | `starting` · `running` · `restarting` · `failed` (circuit breaker open) | Health endpoint → Supervisor watchdog |
+| **Process health** | `starting` · `running` · `restarting` · `needs_attention` · `unresponsive` | Health endpoint → Supervisor watchdog |
 | **Network connectivity** | `isolated` (no peers configured) · `offline` (peers configured, none up) · `partial` (some up) · `online` (all up) | Status messages (v0.1); entities (v0.2) |
 
-The **health endpoint returns success whenever the core is running and the RNS child is running
-or is being restarted within its back-off policy.** It does *not* fail when the internet is down,
-when peers are unreachable, or when the node is isolated — otherwise an internet outage would make
-the Supervisor restart the app repeatedly, which cannot help and wears the SSD.
+**The health endpoint answers `200 OK` whenever the core's event loop is responsive** — in
+`starting`, `running`, `restarting` *and* `needs_attention`. It fails only when the core is
+`unresponsive` (the endpoint cannot be served, or the core's internal heartbeat is older than
+60 s). Rationale:
+
+- An internet outage, unreachable peers or an isolated node are connectivity states; a restart
+  cannot help, and restarts would wear the SSD.
+- `needs_attention` covers failures a restart cannot fix; reporting them as unhealthy would make
+  the Supervisor restart the app forever (§4.5).
+- A hung core *can* be fixed by a restart, which is exactly what the Supervisor watchdog is for.
 
 ### 4.5 Supervisor watchdog
 
@@ -151,13 +189,31 @@ the Supervisor restart the app repeatedly, which cannot help and wears the SSD.
   triggers a restart, with throttling (`WATCHDOG_THROTTLE_MAX_CALLS = 10` per 30 minutes).
 - The watchdog is a **per-user toggle that defaults to off** (`ATTR_WATCHDOG` default `False`).
 
-**[Recommendation]**
+**[Verified]** Neither Supervisor watchdog path stops by itself: application-check restarts
+are not throttled, and container-state restarts are rate-limited to 10 per 30 minutes
+(`JobThrottle.GROUP_RATE_LIMIT`), which bounds their *rate*, not their number
+(`_restart_after_problem`, Supervisor 2026.11.0). MeshBeacon must therefore make sure a loop
+cannot arise.
 
-- Declare `watchdog: "http://[HOST]:[PORT:8099]/health"` (port to be fixed in Phase 1), served by
-  the core on the container's internal interface only; responds `200` with a minimal body (no
-  identities, no peer details) and never needs authentication because it reveals nothing.
-- The core's own supervisor handles RNS restarts; the Supervisor watchdog is the **last resort**
-  for a hung core. Recommend users enable it in `DOCS.md`.
+**Design — how the two mechanisms fit together:**
+
+| Situation | Internal mechanism | Health endpoint | Supervisor watchdog | Can it loop? |
+|---|---|---|---|---|
+| Internet down / peers unreachable / isolated | None (connectivity state only) | 200 | No action | No |
+| RNS child crashes occasionally | Back-off restarts of the child | 200 | No action | No |
+| RNS child crash-loops | Breaker opens ≤ 3 times, then `needs_attention` | 200 | No action | No — stops after ~1 h |
+| Deterministic problem (bad identity, bad config, low disk) | `needs_attention` immediately, RNS not started | 200 | No action | No |
+| Core hangs | — | Fails | Restarts the app after 2 failed checks (~4 min) | Bounded by start history → safe mode after 5 starts in 30 min |
+| Core process exits | s6 stops the container | n/a | Container `failed` → restart (if enabled), ≤ 10 per 30 min | Bounded by start history → safe mode |
+| Host reboot | Normal start | 200 | — | Start history counts it; a 10-minute stable run resets the count |
+
+**Settings:**
+
+- Declare `watchdog: "http://[HOST]:[PORT:8099]/health"` (port fixed in Phase 1), served on the
+  container's internal interface only; the response body is minimal (`ok`) and reveals no
+  identities, peers or state details, so no authentication is needed.
+- `DOCS.md` recommends enabling the watchdog; MeshBeacon is safe with it on or off.
+- No Supervisor API permission is needed for any of this.
 
 ### 4.6 Identity: crash-safe initialisation and restoration
 
@@ -183,18 +239,24 @@ Design:
    after first successful validation, and compare hashes at each start. If the primary is damaged
    and the backup is valid, restore from the backup automatically and log it. If both are damaged,
    stop with the identity-problem message ([first-run UX §5](ux/first-run.md#5-plain-language-status-messages)).
-4. **Record the identity hash** (not the key) in `/data/meshbeacon/state.json` so MeshBeacon can
-   detect any unexpected change between starts and refuse to continue.
-5. **Explicit regeneration only** via an advanced option *"Replace identity on next start"*,
-   which resets itself after use and logs the old and new hashes.
+4. **Record a fingerprint** of the identity (its public hash, never the key) in
+   `/data/meshbeacon/state.json` (0600) so MeshBeacon can detect any unexpected change between
+   starts and refuse to continue. The fingerprint is **never written to logs**; the log says only
+   "Node identity: unchanged since last start" or explains a change in words.
+5. **Explicit regeneration only** via an advanced option *"Replace identity on next start"*.
+   When used, the old identity is kept as `identity.replaced-<UTC timestamp>` (0600) for manual
+   recovery, the log says "Node identity replaced as requested; the previous identity has been
+   kept in the app's data folder" — **without any hashes** — and the option must be switched off
+   again by the user before the next restart, otherwise MeshBeacon refuses to start and explains
+   why (it cannot switch the option off itself without Supervisor API access).
 6. **Restoration**:
    - *From a Home Assistant backup:* the normal path. `/data` (including the identity and its
      backup copy) is restored by the Supervisor; validation (2) runs on next start.
    - *Import from a file* (migration from another Reticulum install): deferred to v0.2, because it
      needs a file-transfer path into `/data` (for example `app_config` mapping) that adds
-     permissions. Requirements recorded now: 64-byte raw format, validated with the RNS API, show
-     the resulting identity hash in the log for the user to confirm, atomic write, and the
-     imported file deleted from the shared location afterwards.
+     permissions. Requirements recorded now: 64-byte raw format, validated with the RNS API,
+     confirmation shown to the user in the v0.2 integration UI (never in logs), atomic write, and
+     the imported file deleted from the shared location afterwards.
 7. **Backups:** `backup: hot`; `backup_exclude` for `reticulum/storage/cache/**` and
    `reticulum/storage/resources/**`; `backup_pre` checkpoints SQLite. Whether a hot backup of the
    RNS SQLite database is consistent remains feasibility Q-7; `backup: cold` is the safe fallback.
@@ -229,7 +291,7 @@ Design:
 /data/                      root-owned mount, always present
   options.json              written by the Supervisor (read by init only)
   meshbeacon/               0700 meshbeacon
-    state.json              0600 non-secret runtime state, identity hash
+    state.json              0600 runtime state: identity fingerprint, start history
     identity.backup         0600 verified copy of the transport identity
   reticulum/                0700 meshbeacon   (RNS --config directory)
     config                  0600 rendered on every start (contains rpc_key)

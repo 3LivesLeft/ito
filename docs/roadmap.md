@@ -2,7 +2,7 @@
 
 Status: **Provisional — revised after independent review.** Every item remains open to challenge.
 
-## Phase 0 — Research and foundations (this phase)
+## Phase 0 — Research and foundations (complete once PR #1 is merged)
 
 Documentation only. **Exit:** maintainer approval of PR #1, including the review amendments
 (licence Apache-2.0, name retained with conditions, presets policy, security clarifications,
@@ -78,81 +78,57 @@ published RNS-upgrade policy.
 
 ---
 
-## v0.1.0 acceptance criteria (revised)
+## v0.1.0 acceptance criteria
 
-### Install and ease of use
+There are two tiers. **Local prototype criteria** (tier A, `LP-n`) define the first working milestone: a
+locally built MeshBeacon running on the maintainer's Raspberry Pi and connecting to a manually
+configured peer. **Public release gates** (tier B, `RG-n`) must *also* be met before any image is
+published or a release is announced. A criterion is marked complete only with evidence (test
+output, log extract with identifiers removed, or a signed-off manual test record). **Emulated
+aarch64 (QEMU) results never count as physical Raspberry Pi validation.**
 
-1. Installs from a repository URL on the reference device (Raspberry Pi 4B, HA OS 18.5,
-   `aarch64`) and on an amd64 HA OS test machine, and starts without errors.
-2. **Timed first-run test:** at least three people new to Reticulum reach a connected node on a
-   fresh install with a median time of **≤ 5 minutes** and nobody over 10 minutes, using only the
-   UI and `DOCS.md` ([first-run UX §7](ux/first-run.md#7-measuring-ease-of-use)).
-3. All options have plain-language labels and descriptions; transport mode and public peers
-   include the agreed explanations.
+Status values: *Not started* · *In progress* · *Met (evidence: …)* · *Not met*.
 
-### Behaviour
+### Tier A — Local prototype (Phase 1 milestone)
 
-4. With no peers configured, the app makes **no outbound connections** (verified by packet capture
-   or a network policy in test) and logs the isolated-node warning, repeated at most every 6 hours.
-5. With a custom peer, it connects, logs a plain "connected" message, and reconnects automatically
-   after the peer restarts or the internet drops.
-6. With presets: only presets that passed verification V1–V7 within 30 days of the release are
-   offered, from at least two independent operators; otherwise none are offered.
-7. Transport mode can be switched on and off; default off.
-8. Internet loss changes the *connectivity* state only; the health endpoint stays healthy and the
-   Supervisor does **not** restart the app.
-9. Killing the RNS child causes automatic restart with back-off; repeated failures open the circuit
-   breaker without restarting Home Assistant.
+| ID | Criterion | Evidence type | Status |
+|---|---|---|---|
+| LP-1 | App builds for `amd64` and `aarch64` in CI | CI run | Not started |
+| LP-2 | Installs as a **local app** on the reference Pi (HA OS 18.5, `aarch64`) and starts — *maintainer-run, physical* | Manual record | Not started |
+| LP-3 | With default options: no outbound connections; isolated-node warning in the log | Automated container test + manual check on the Pi | Not started |
+| LP-4 | Connects to a **manually configured** peer, logs a plain "connected" message, reconnects after the peer restarts | Automated isolated-network test + manual check on the Pi | Not started |
+| LP-5 | Transport mode off by default; can be switched on and off | Automated test | Not started |
+| LP-6 | Identity: atomic creation; validation before every RNS start; restore from verified backup; refuse silent regeneration; explicit replacement keeps the old identity | Automated tests (testing strategy §4.3) | Not started |
+| LP-7 | Interrupted initialisation never leaves a partial identity (≥ 1,000 randomised kills) | Automated test | Not started |
+| LP-8 | Independent random `rpc_key`, validated before use | Automated test | Not started |
+| LP-9 | Hostile-input suite passes; rendered config is structurally exact | Automated tests (testing strategy §4.2) | Not started |
+| LP-10 | Files 0600 / directories 0700; core and RNS run as non-root `meshbeacon` | Automated container test | Not started |
+| LP-11 | `config.yaml` requests no host network, ports, Supervisor/Core API, `auth_api`, devices, extra capabilities, `full_access` or Docker API; AppArmor profile present | Automated lint of `config.yaml` | Not started |
+| LP-12 | Recovery is bounded: back-off, breaker, `needs_attention`, start-history safe mode; health stays 200 for connectivity and deterministic failures | Automated tests (testing strategy §5) | Not started |
+| LP-13 | Connectivity status is reported separately from process health | Automated test | Not started |
+| LP-14 | No key material, RPC key, passphrase, token or identity/destination hash in logs at any offered level | Automated log assertions | Not started |
+| LP-15 | Log forwarding is rate-limited; storage guard and memory guard work | Automated tests | Not started |
+| LP-16 | Idle memory ≤ 128 MB (RSS + swap, all app processes) in CI on amd64 and under QEMU aarch64 | CI measurement | Not started |
+| LP-17 | Low-memory profile L1–L2 (256 MB limit, no swap) | CI | Not started |
+| LP-18 | CI green: lint, type check, unit, integration, container security, dependency vulnerability scan, secret scan, licence check, SBOM generation | CI run | Not started |
+| LP-19 | CI makes no connection to public Reticulum peers (isolated network only) | CI configuration review + network-policy test | Not started |
+| LP-20 | `DOCS.md`: install as a local app, configure a peer, transport mode, privacy, backups contain the private key, restore, experimental status | Review | Not started |
 
-### Identity
+### Tier B — Public release gates (before publishing images or announcing a release)
 
-10. The stored identity persists across restart, update, HA reboot and hot backup/restore
-    (identity hash unchanged).
-11. A corrupt or truncated identity is never replaced silently: the app restores from its verified
-    backup copy if valid, otherwise refuses to start with the identity-problem message.
-12. Power cut during first start (simulated by killing init mid-write) never leaves a partially
-    written identity in place.
+All of tier A (LP-1 to LP-20), plus:
 
-### Security
-
-13. `config.yaml` requests no `host_network`, `hassio_api`, `homeassistant_api`, `auth_api`,
-    `privileged`, `full_access`, `docker_api`, devices or published ports; a custom AppArmor
-    profile is present. The Supervisor security rating is **8**, recorded as a target met — not as
-    evidence of security.
-14. The core and RNS run as the non-root `meshbeacon` user; the root init step does only the
-    documented actions.
-15. Identity, rendered config and state files are `0600`; directories `0700`.
-16. The rendered RNS config never contains `AutoInterface`, discovery, auto-connect,
-    `publish_ifac` or `location_cmd`.
-17. The hostile-input suite passes: no user input can add, remove or rename sections or keys, or
-    trigger interpolation, in the rendered config.
-18. No key material, RPC key or passphrase appears in logs at any offered log level.
-19. Private vulnerability reporting is enabled on the repository.
-
-### Resources
-
-20. Idle memory of the whole app **≤ 128 MB** on aarch64, measured as RSS + swap of all app
-    processes after 1 hour, on the reference device — retained even though the reference board has
-    8 GB.
-21. **Low-memory profile:** with the container limited to 256 MB of memory and no swap, the app
-    starts, connects, survives a local announce flood test and runs 24 hours with transport on
-    without being killed for lack of memory (testing strategy §5.1).
-22. On the [reference environment](testing/reference-environment.md): baseline R1–R4,
-    compatibility C1–C10 (Tailscale, AdGuard Home, Matter Server), soaks S1–S3 (including **≥ 7
-    days with transport on**), internet-outage O1–O5, power-outage P1–P5 and backup/restore B1–B6
-    all pass ([testing strategy §6](testing/strategy.md#6-reference-environment-testing-before-each-release)).
-23. Under a local announce flood in test, logs remain rate-limited and HA stays responsive.
-
-### Supply chain and licensing
-
-24. Dependencies hash-pinned; base image digest-pinned; image Cosign-signed; SBOM published.
-25. `THIRD_PARTY_NOTICES` (including the full Reticulum License text) and the GPL source bundle are
-    published with the image (licensing O1–O7).
-26. CI green: lint, unit, isolated integration, container tests on both architectures, secret
-    scanning, vulnerability scanning, licence allow-list.
-
-### Documentation and provenance
-
-27. `DOCS.md` covers: what the app does, privacy of public peers, transport mode, backups contain
-    the private key, how to restore, experimental status, Reticulum License conditions.
-28. AI assistance disclosed; every merged change reviewed by the named human maintainer.
+| ID | Gate | Owner | Status |
+|---|---|---|---|
+| RG-1 | Idle memory ≤ 128 MB measured **on the physical reference Pi** after 1 h | Maintainer | Not started |
+| RG-2 | Reference-environment tests R1–R4, C1–C10, S1–S4 (including ≥ 7 days with transport on), O1–O5, P1–P5, B1–B6 pass on the physical Pi | Maintainer | Not started |
+| RG-3 | Low-memory profile L3 (24 h, transport on) | CI / maintainer | Not started |
+| RG-4 | Timed first-run test: median ≤ 5 min, nobody over 10 min, ≥ 3 people new to Reticulum | Maintainer | Not started |
+| RG-5 | Supervisor security rating 8 shown for the published app — recorded as a target met, **not** as evidence of security | Maintainer | Not started |
+| RG-6 | Image Cosign-signed; SBOM attested; dependencies hash-pinned; base image digest-pinned | CI | Not started |
+| RG-7 | Distribution compliance: `THIRD_PARTY_NOTICES` with full Reticulum License text; GPL corresponding-source bundle; licence allow-list (licensing O1–O7; Q-17, Q-19) | Maintainer + CI | Not started |
+| RG-8 | Trademark register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) — Q-23 | Maintainer | Not started |
+| RG-9 | Courtesy contact with the existing MeshBeacon project; outcome recorded — Q-29 | Maintainer | Not started |
+| RG-10 | Public peer presets: only if verified (V1–V7, two independent operators, operator consent — Q-13, Q-28); otherwise none shipped | Maintainer | Not started |
+| RG-11 | Private vulnerability reporting enabled — Q-27 | Maintainer | Not started |
+| RG-12 | AI assistance disclosed; every merged change reviewed by the named human maintainer | Maintainer | Not started |

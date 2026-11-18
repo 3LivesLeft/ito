@@ -7,8 +7,10 @@ see [CONTRIBUTING.md](CONTRIBUTING.md), which takes precedence over this file.
 
 MeshBeacon is a free, privacy-first Home Assistant app (formerly "add-on") that runs the
 **unmodified** Reticulum reference implementation (RNS, and later LXMF) and surfaces it in Home
-Assistant. It is currently in **Phase 0: research and documentation only**. There is no
-application code. Do not start Phase 1 work until the maintainer explicitly approves it.
+Assistant. Phase 0 (research and design) is complete. **Phase 1 (v0.1.0 foundation) is authorised** on
+branch `feature/v0.1.0-foundation`, starting after PR #1 is merged. Do not begin v0.2.0 work
+without approval. Never publish images, create releases, connect to live public Reticulum
+infrastructure or deploy to the maintainer's Home Assistant without explicit approval.
 
 ## Hard rules
 
@@ -20,7 +22,8 @@ application code. Do not start Phase 1 work until the maintainer explicitly appr
 4. **Never weaken security defaults** (host network, ports, Supervisor/Core API access,
    capabilities, AppArmor, discovery, auto-connect, publishing of addresses or locations,
    telemetry) without an ADR approved by the maintainer.
-5. **Never log, print, commit or echo private keys, RPC keys or tokens.** Do not create or commit
+5. **Never log, print, commit or echo private keys, RPC keys, tokens or identity/destination
+   hashes** (not even during identity replacement). Do not create or commit
    real identity files; tests generate throwaway identities in temporary directories.
 6. **Never connect to live Reticulum networks or public entry points**, and never deploy to a
    live Home Assistant instance. Tests use isolated networks only (see
@@ -40,8 +43,8 @@ application code. Do not start Phase 1 work until the maintainer explicitly appr
     allow-list and use ConfigObj's object API, then round-trip-check the result.
 13. **Never let RNS start with an unvalidated identity** — RNS silently replaces corrupt identity
     files.
-14. **No external connections by default**, and never tie the Supervisor health endpoint to
-    internet connectivity.
+14. **No external connections by default.** The health endpoint fails only when the core is
+    unresponsive — never for connectivity or `needs_attention` states (ADR 0005).
 15. **Never commit household-specific identifiers** — private or public IP addresses, Tailscale
     addresses or node names, MAC addresses, hostnames, SSIDs, HA URLs or Reticulum identity hashes
     from the maintainer's or anyone's installation. Use placeholders such as `<lan-ip>`.

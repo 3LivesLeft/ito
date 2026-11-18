@@ -1,6 +1,6 @@
 # MeshBeacon
 
-**Stay connected. With or without the internet.**
+**Decentralised connectivity for your home.**
 
 MeshBeacon is a free, open-source, privacy-first, decentralised communications gateway for
 [Home Assistant](https://www.home-assistant.io/), powered by the
@@ -51,6 +51,7 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [ADR 0002](docs/adr/0002-licence.md) | Apache-2.0 for MeshBeacon's own work |
 | [ADR 0003](docs/adr/0003-name.md) | Keep the name, with disambiguation |
 | [ADR 0004](docs/adr/0004-public-peer-presets.md) | Optional verified presets; no default connection |
+| [ADR 0005](docs/adr/0005-bounded-recovery.md) | Bounded recovery that cannot loop with the Supervisor watchdog |
 
 ## Credits
 

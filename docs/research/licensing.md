@@ -189,11 +189,9 @@ same document was itself produced with machine assistance and says so.
 4. Never produce or publish datasets, embeddings or corpora containing RNS or LXMF material.
 5. A named human maintainer reviews, understands and answers for every merged change.
 
-**[Open] Q-15 (narrowed)** The Phase 0 research had an AI assistant read RNS source in a
-sandboxed session. Whether that session's data may be used for model training depends on the
-account type and data-use setting of the account that ran it, which this project cannot verify
-from inside the session. **The maintainer should confirm the setting** for the account used, and
-record the confirmation here.
+**[Decision] Q-15 resolved.** The maintainer has confirmed that AI model training is **disabled**
+on both AI accounts used for this project (ChatGPT and Claude). Contributors remain responsible
+for their own tools' settings (rule 2).
 
 ### 6.5 Copyright in AI-generated material
 
@@ -217,7 +215,7 @@ See [naming research](naming.md) and [ADR 0003](../adr/0003-name.md).
 
 | ID | Question |
 |---|---|
-| Q-15 | Maintainer to confirm the AI tool account's data-use (training) setting for the Phase 0 session |
-| Q-17 | Confirm the GPL corresponding-source approach (§5.1), ideally with expert review |
-| Q-19 | Confirm all base-image component licences from a generated SBOM (§3.2 is an assumption) |
+| Q-15 | **Resolved:** training disabled on the maintainer's ChatGPT and Claude accounts |
+| Q-17 | Confirm the GPL corresponding-source approach (§5.1) — **public release gate** (roadmap RG-7) |
+| Q-19 | Confirm all base-image component licences from a generated SBOM — **public release gate** (RG-7); SBOM generated in CI from Phase 1 |
 | Q-20 | Copyright line: "Copyright 2026 The MeshBeacon contributors" or the maintainer's name? |

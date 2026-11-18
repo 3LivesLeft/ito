@@ -33,7 +33,7 @@ name** (our repository's first commit is from November 2026).
 | Dimension | MeshBeacon (existing) | MeshBeacon (this project) | Overlap |
 |---|---|---|---|
 | Problem space | Communications when infrastructure fails (disaster response) | Communications with or without the internet (households) | **High** |
-| Pitch | "keeps working even when the internet doesn't" (org profile) | "Stay connected. With or without the internet." | **Very high** |
+| Pitch | "keeps working even when the internet doesn't" (org profile) | Former working tagline "Stay connected. With or without the internet." — replaced by "Decentralised connectivity for your home." | **Very high** |
 | Radio | LoRa via ClusterDuck Protocol | LoRa via RNode (v0.5) | Medium |
 | Protocol | ClusterDuck / MQTT / Cursor-on-Target | Reticulum / LXMF | None |
 | Platform | Self-hosted Docker, OpenWrt, mobile app, TAK | Home Assistant app | Low |
@@ -90,13 +90,13 @@ any of the triggers below as a compelling reason to rename:
    MeshBeacon maintainers (for example through their Discord or GitHub) to tell them about this
    project and ask whether they object. Record the outcome.
 2. **Always disambiguate.** Present the name as *"MeshBeacon for Home Assistant"* in the app
-   store, README title, HACS listing and image labels; HA slug `meshbeacon_ha` or similar
-   (**[Open] Q-21**).
+   store, README title, HACS listing and image labels. **[Decision]** app slug `meshbeacon`
+   (Q-21 resolved).
 3. **Change the tagline** so that it does not echo the existing project's pitch.
-   **[Open] Q-22** (for example: *"Reticulum for Home Assistant — private, resilient, local-first"*).
+   **[Decision]** "Decentralised connectivity for your home." (Q-22 resolved).
 4. **Distinct visual identity.** Do not use a logo resembling theirs.
 5. **Search the official registers** (UK IPO, EUIPO, WIPO, USPTO, MyIPO) before v0.1.0 is
-   published. **[Open] Q-23.**
+   published. **[Open] Q-23 — public release gate** (roadmap RG-8).
 6. **Credit and link.** README carries a one-line note: *"Not affiliated with the MeshBeacon
    disaster-response project (meshbeacon.org)."*
 
