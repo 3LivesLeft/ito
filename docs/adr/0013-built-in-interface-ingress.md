@@ -20,7 +20,7 @@ and charts". This ADR shows how to avoid that, and sets the security conditions.
 ## Decision (proposed)
 
 1. **Ingress.** `config.yaml` gains `ingress: true`, `ingress_port: 8097` (not 8099, which is the
-   watchdog's health port), `panel_icon: mdi:access-point-network`, `panel_title: MeshBeacon` and
+   watchdog's health port), `panel_icon: mdi:lighthouse-on` (the brand icon, [branding](../branding.md)), `panel_title: MeshBeacon` and
    `panel_admin: true`. **No other permission changes.** The security rating stays at 8
    (verified rating rule).
 2. **Listener.** The core serves the UI with the existing `BoundedHTTPServer`, which is always on.

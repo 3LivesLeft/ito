@@ -166,7 +166,7 @@ test("tabs come from the route path, defaulting to the overview", () => {
 });
 
 test("frontend files make no external requests and never use innerHTML", () => {
-  for (const name of readdirSync(FRONTEND)) {
+  for (const name of readdirSync(FRONTEND).filter((n) => n.endsWith(".js"))) {
     const source = readFileSync(new URL(name, FRONTEND), "utf8");
     const urls = (source.match(/https?:\/\/[^\s"'`)]+/g) || []).filter((u) => u !== "http://www.w3.org/2000/svg");
     assert.deepEqual(urls, [], `${name} refers to ${urls}`);
@@ -174,4 +174,19 @@ test("frontend files make no external requests and never use innerHTML", () => {
     assert.doesNotMatch(source, /\bfetch\(|XMLHttpRequest|WebSocket\(|import\(\s*["'`]https?:/, name);
     assert.doesNotMatch(source, /localStorage|sessionStorage|indexedDB/, name); // no second history store
   }
+});
+
+test("the frontend folder holds only code and the bundled Inter font with its licence", () => {
+  const top = readdirSync(FRONTEND).sort();
+  assert.deepEqual(top, ["brand-mark.js", "fonts", "fonts.js", "meshbeacon-panel.js", "model.js", "tokens.js"]);
+  const fonts = readdirSync(new URL("fonts/inter-5.3.0/", FRONTEND)).sort();
+  assert.deepEqual(fonts, [
+    "OFL.txt",
+    "inter-latin-400-normal.woff2",
+    "inter-latin-500-normal.woff2",
+    "inter-latin-600-normal.woff2",
+    "inter-latin-700-normal.woff2",
+  ]);
+  const licence = readFileSync(new URL("fonts/inter-5.3.0/OFL.txt", FRONTEND), "utf8");
+  assert.match(licence, /SIL Open Font License, Version 1\.1/);
 });

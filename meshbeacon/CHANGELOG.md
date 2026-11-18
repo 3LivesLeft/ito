@@ -25,6 +25,11 @@
 - "Known paths" stopping at 2,048 is normal on a busy network: Reticulum trims paths it has never
   used. The panel explains this.
 - The integration is ready for HACS, but is not offered through it yet.
+- **New look.** MeshBeacon has its own logo, app icon and colours, used in the app store, on
+  the app page, in the sidebar (lighthouse icon), in its panel and under Devices & services. The
+  panel follows your light or dark theme, uses the Inter typeface bundled with it (nothing is
+  loaded from the internet), and meets WCAG 2.2 AA contrast. Status is never shown by colour
+  alone.
 
 ## 0.1.2 — unreleased (local prototype)
 

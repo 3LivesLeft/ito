@@ -30,6 +30,9 @@ import {
   tabFromPath,
   unit,
 } from "./model.js";
+import { MARKS } from "./brand-mark.js";
+import { loadFonts } from "./fonts.js";
+import { baseCss, themeCss } from "./tokens.js";
 
 const BUCKETS = 120;
 const CHART_W = 600;
@@ -59,138 +62,170 @@ function s(tag, attrs = {}) {
   return el;
 }
 
+/** The MeshBeacon mark, built element by element from generated geometry (no markup parsed). */
+function brandMark(size = "small", label = null) {
+  const svg = s("svg", { viewBox: "0 0 256 256", focusable: "false" });
+  if (label) {
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", label);
+  } else svg.setAttribute("aria-hidden", "true");
+  for (const [tag, cls, attrs] of MARKS[size]) svg.append(s(tag, { ...attrs, class: `mk-${cls}` }));
+  return svg;
+}
+
+// A distinct shape per state, so status never depends on colour alone (WCAG 1.4.1).
+const STATUS_SHAPES = {
+  online: "M7 12.5l3.2 3.2L17 9", // tick
+  partial: "M12 7v6M12 16.5v.5", // exclamation
+  offline: "M8 8l8 8M16 8l-8 8", // cross
+  isolated: "M7 12h10", // dash
+  unknown: "M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.4M12 16.5v.5", // question mark
+};
+
+function statusMark(state, available, label) {
+  const svg = s("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", focusable: "false" });
+  svg.append(
+    s("path", {
+      d: STATUS_SHAPES[available ? state : "unknown"] || STATUS_SHAPES.unknown,
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "2.4",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round",
+    }),
+  );
+  return h("div", { class: "status-mark", role: "img", "aria-label": label }, svg);
+}
+
 function icon(name) {
   return customElements.get("ha-icon") ? h("ha-icon", { icon: name, "aria-hidden": "true" }) : null;
 }
 
 const STYLE = `
 :host {
-  --mb-bg: var(--primary-background-color, #f5f6f8);
-  --mb-card: var(--ha-card-background, var(--card-background-color, #fff));
-  --mb-text: var(--primary-text-color, #1c1d21);
-  --mb-muted: var(--secondary-text-color, #5f6368);
-  --mb-line: var(--divider-color, rgba(0, 0, 0, 0.12));
-  --mb-good: var(--success-color, #2e7d32);
-  --mb-warn: var(--warning-color, #ed6c02);
-  --mb-bad: var(--error-color, #d32f2f);
-  --mb-info: var(--info-color, #0288d1);
-  --mb-neutral: var(--disabled-text-color, #8a8d93);
-  --mb-rx: var(--primary-color, #03a9f4);
-  --mb-tx: var(--accent-color, #ff9800);
-  --mb-radius: var(--ha-card-border-radius, 12px);
+  ${baseCss()}
+  ${themeCss("light")}
   display: block;
   min-height: 100vh;
   background: var(--mb-bg);
   color: var(--mb-text);
-  font-family: var(--ha-font-family-body, var(--paper-font-body1_-_font-family, system-ui, sans-serif));
+  font-family: var(--mb-font);
+  font-weight: 400;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-@media (prefers-color-scheme: dark) {
-  :host(:not([data-theme="light"])) {
-    --mb-bg: var(--primary-background-color, #111318);
-    --mb-card: var(--ha-card-background, var(--card-background-color, #1c1f26));
-    --mb-text: var(--primary-text-color, #e8eaed);
-    --mb-muted: var(--secondary-text-color, #a0a4ab);
-    --mb-line: var(--divider-color, rgba(255, 255, 255, 0.12));
-  }
-}
+:host([data-theme="dark"]) { ${themeCss("dark")} }
+@media (prefers-color-scheme: dark) { :host(:not([data-theme])) { ${themeCss("dark")} } }
 * { box-sizing: border-box; }
+/* Brand header: mark, wordmark, navigation. Surfaces follow the Home Assistant theme. */
 header {
   position: sticky; top: 0; z-index: 2;
-  display: flex; align-items: center; gap: 8px;
-  height: var(--header-height, 56px); padding: 0 16px;
-  background: var(--app-header-background-color, var(--mb-card));
-  color: var(--app-header-text-color, var(--mb-text));
-  border-bottom: var(--app-header-border-bottom, 1px solid var(--mb-line));
-}
-header h1 { font-size: 20px; font-weight: 400; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-header select { font: inherit; color: inherit; background: transparent; border: 1px solid var(--mb-line); border-radius: 8px; padding: 4px 8px; }
-nav[role="tablist"] {
-  display: flex; gap: 4px; padding: 0 16px; overflow-x: auto;
-  background: var(--app-header-background-color, var(--mb-card));
+  display: flex; align-items: center; gap: var(--mb-space-md);
+  min-height: var(--header-height, 56px); padding: 0 var(--mb-space-lg);
+  background: var(--mb-surface);
   border-bottom: 1px solid var(--mb-line);
 }
+.brand { display: flex; align-items: center; gap: var(--mb-space-sm); flex: 1; min-width: 0; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.brand svg { width: 32px; height: 32px; flex: none; }
+.brand .beacon { color: var(--mb-accent-text); }
+header select { font: inherit; font-size: 14px; color: inherit; background: var(--mb-surface); border: 1px solid var(--mb-line); border-radius: var(--mb-radius-sm); padding: 6px 8px; min-height: 32px; }
+nav[role="tablist"] {
+  display: flex; gap: var(--mb-space-xs); padding: 0 var(--mb-space-lg); overflow-x: auto;
+  background: var(--mb-surface); border-bottom: 1px solid var(--mb-line);
+}
 nav button {
-  font: inherit; font-size: 14px; font-weight: 500; letter-spacing: 0.02em;
-  color: var(--app-header-text-color, var(--mb-muted)); opacity: 0.75;
+  font: inherit; font-size: 14px; font-weight: 500; color: var(--mb-muted);
   background: none; border: 0; border-bottom: 2px solid transparent;
-  padding: 12px 12px 10px; cursor: pointer;
+  padding: 12px var(--mb-space-md) 10px; min-height: 44px; cursor: pointer;
 }
-nav button[aria-selected="true"] { opacity: 1; border-bottom-color: var(--app-header-text-color, var(--mb-rx)); }
-nav button:focus-visible, .seg button:focus-visible, .btn:focus-visible { outline: 2px solid var(--mb-rx); outline-offset: 2px; }
-main { max-width: 1280px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
-@media (min-width: 870px) { main { padding: 24px; gap: 20px; } }
+nav button:hover { color: var(--mb-text); }
+nav button[aria-selected="true"] { color: var(--mb-accent-text); border-bottom-color: var(--mb-accent); }
+:focus-visible { outline: 2px solid var(--mb-accent); outline-offset: 2px; border-radius: 4px; }
+main { max-width: 1280px; margin: 0 auto; padding: var(--mb-space-lg); display: grid; gap: var(--mb-space-lg); }
+@media (min-width: 870px) { main { padding: var(--mb-space-xl); gap: 20px; } }
 .card {
-  background: var(--mb-card); border-radius: var(--mb-radius);
-  border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--mb-line));
-  box-shadow: var(--ha-card-box-shadow, none);
-  padding: 16px;
+  background: var(--mb-surface); border-radius: var(--mb-radius-md);
+  border: 1px solid var(--mb-line);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: var(--mb-space-lg);
 }
-.card h2 { font-size: 16px; font-weight: 500; margin: 0; }
+h2 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.005em; }
 .muted { color: var(--mb-muted); }
-.small { font-size: 13px; line-height: 1.45; }
-.hero { display: grid; gap: 16px; grid-template-columns: auto 1fr; align-items: center; }
-.ring { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
-  background: color-mix(in srgb, var(--tone) 16%, transparent); }
-.ring::after { content: ""; width: 26px; height: 26px; border-radius: 50%; background: var(--tone);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--tone) 28%, transparent); }
-.hero .title { font-size: 24px; font-weight: 500; margin: 0 0 4px; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.small { font-size: 13px; line-height: 1.5; }
+[data-tone="good"] { --tone: var(--mb-good); --tone-text: var(--mb-good-text); }
+[data-tone="warn"] { --tone: var(--mb-warn); --tone-text: var(--mb-warn-text); }
+[data-tone="bad"] { --tone: var(--mb-bad); --tone-text: var(--mb-bad-text); }
+[data-tone="info"] { --tone: var(--mb-info); --tone-text: var(--mb-info-text); }
+[data-tone="neutral"] { --tone: var(--mb-neutral); --tone-text: var(--mb-neutral-text); }
+/* Connectivity hero: colour plus a written state and an icon shape, never colour alone. */
+.hero { display: grid; gap: var(--mb-space-lg); grid-template-columns: auto 1fr; align-items: center; border-left: 4px solid var(--tone); }
+.status-mark { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--tone) 14%, transparent); color: var(--tone-text); }
+.status-mark svg { width: 30px; height: 30px; }
+.hero .title { font-size: 24px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.01em; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--mb-space-sm); margin-top: 10px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;
-  padding: 4px 10px; border-radius: 999px; color: var(--tone, var(--mb-muted));
-  background: color-mix(in srgb, var(--tone, var(--mb-neutral)) 14%, transparent); }
+  padding: 3px 10px; border-radius: var(--mb-radius-pill); color: var(--tone-text, var(--mb-muted));
+  background: color-mix(in srgb, var(--tone, var(--mb-neutral)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone, var(--mb-neutral)) 30%, transparent); }
 .chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--tone, var(--mb-neutral)); }
-[data-tone="good"] { --tone: var(--mb-good); }
-[data-tone="warn"] { --tone: var(--mb-warn); }
-[data-tone="bad"] { --tone: var(--mb-bad); }
-[data-tone="info"] { --tone: var(--mb-info); }
-[data-tone="neutral"] { --tone: var(--mb-neutral); }
-.tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-@media (min-width: 870px) { .tiles { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; } }
+.tiles { display: grid; gap: var(--mb-space-md); grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+@media (min-width: 870px) { .tiles { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--mb-space-lg); } }
 .tile { display: flex; flex-direction: column; gap: 6px; min-height: 112px; }
-.tile .label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--mb-muted); }
-.tile .label ha-icon { --mdc-icon-size: 18px; color: var(--state-icon-color, var(--mb-muted)); }
-.value { font-size: 34px; line-height: 1.1; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; overflow-wrap: anywhere; }
-.value .u { font-size: 16px; font-weight: 400; color: var(--mb-muted); margin-left: 4px; }
-.charts { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+.tile .label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--mb-muted); }
+.tile .label ha-icon { --mdc-icon-size: 18px; color: var(--mb-accent-text); }
+.value { font-size: 34px; line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.value .u { font-size: 16px; font-weight: 500; color: var(--mb-muted); margin-left: 4px; letter-spacing: 0; }
+.charts { display: grid; gap: var(--mb-space-lg); grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
 .charts .wide { grid-column: 1 / -1; }
-.chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.legend { display: flex; gap: 12px; font-size: 13px; color: var(--mb-muted); font-variant-numeric: tabular-nums; }
-.legend span::before { content: ""; display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--c); }
+.chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--mb-space-sm); flex-wrap: wrap; margin-bottom: var(--mb-space-sm); }
+.legend { display: flex; gap: var(--mb-space-md); font-size: 13px; color: var(--mb-muted); font-variant-numeric: tabular-nums; }
+.legend span::before { content: ""; display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--c); }
 .plot { position: relative; }
 .plot svg { display: block; width: 100%; height: 150px; overflow: visible; touch-action: pan-y; }
 .plot .grid { stroke: var(--mb-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .plot .line { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-.plot .area { opacity: 0.14; }
+.plot .area { opacity: 0.12; }
 .plot .dot { fill: none; stroke-width: 7; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .plot .cursor { visibility: hidden; stroke: var(--mb-muted); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 3 3; }
 .axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--mb-muted); margin-top: 6px; }
-.ymax { position: absolute; top: -2px; right: 0; font-size: 12px; color: var(--mb-muted); background: var(--mb-card); padding: 0 0 0 4px; }
-.empty { display: grid; place-items: center; height: 150px; text-align: center; color: var(--mb-muted); font-size: 14px; padding: 0 16px; }
-.seg { display: inline-flex; border: 1px solid var(--mb-line); border-radius: 999px; overflow: hidden; }
-.seg button { font: inherit; font-size: 13px; color: var(--mb-muted); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
-.seg button[aria-pressed="true"] { color: var(--mb-text); background: color-mix(in srgb, var(--mb-rx) 16%, transparent); font-weight: 500; }
-.section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.section-head h2 { font-size: 18px; font-weight: 500; margin: 0; }
-.peers { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.ymax { position: absolute; top: -2px; right: 0; font-size: 12px; color: var(--mb-muted); background: var(--mb-surface); padding: 0 0 0 4px; }
+.empty { display: grid; place-items: center; height: 150px; text-align: center; color: var(--mb-muted); font-size: 14px; padding: 0 var(--mb-space-lg); }
+.seg { display: inline-flex; border: 1px solid var(--mb-line); border-radius: var(--mb-radius-pill); overflow: hidden; background: var(--mb-surface); }
+.seg button { font: inherit; font-size: 13px; font-weight: 500; color: var(--mb-muted); background: none; border: 0; padding: 6px 14px; min-height: 32px; cursor: pointer; }
+.seg button[aria-pressed="true"] { color: var(--mb-accent-text); background: color-mix(in srgb, var(--mb-accent) 14%, transparent); }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--mb-space-md); flex-wrap: wrap; }
+.section-head h2 { font-size: 18px; }
+.peers { display: grid; gap: var(--mb-space-md); grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .peer { display: grid; gap: 10px; border-left: 4px solid var(--tone); }
-.peer .name { font-size: 17px; font-weight: 500; overflow-wrap: anywhere; }
-.peer dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; font-size: 14px; }
+.peer .name { font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+dl { margin: 0; }
+.peer dl { display: grid; grid-template-columns: 1fr auto; gap: 4px var(--mb-space-md); font-size: 14px; }
 .peer dt { color: var(--mb-muted); }
-.peer dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.banner { display: flex; gap: 12px; align-items: flex-start; border-left: 4px solid var(--tone); }
-.banner strong { display: block; margin-bottom: 2px; }
-.rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin: 0; }
+.peer dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.banner { display: flex; gap: var(--mb-space-md); align-items: flex-start; border-left: 4px solid var(--tone); }
+.banner strong { display: block; margin-bottom: 2px; font-weight: 600; }
+.rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
 .rows dt, .rows dd { padding: 10px 0; border-bottom: 1px solid var(--mb-line); margin: 0; font-size: 14px; }
-.rows dd { text-align: right; font-variant-numeric: tabular-nums; padding-left: 12px; }
+.rows dt { color: var(--mb-muted); }
+.rows dd { text-align: right; font-variant-numeric: tabular-nums; padding-left: var(--mb-space-md); font-weight: 500; }
 .rows dt:last-of-type, .rows dd:last-of-type { border-bottom: 0; }
-.btn { font: inherit; font-weight: 500; color: var(--text-primary-color, #fff); background: var(--mb-rx); border: 0; border-radius: 999px; padding: 8px 18px; cursor: pointer; }
-.skeleton { background: linear-gradient(90deg, var(--mb-line) 0%, color-mix(in srgb, var(--mb-line) 40%, transparent) 50%, var(--mb-line) 100%);
-  background-size: 200% 100%; animation: shimmer 1.4s infinite linear; border-radius: 8px; }
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
-.center { max-width: 560px; margin: 48px auto; text-align: center; display: grid; gap: 12px; justify-items: center; }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.btn { font: inherit; font-weight: 600; color: var(--mb-on-accent); background: var(--mb-accent-text); border: 0; border-radius: var(--mb-radius-pill); padding: 10px 20px; min-height: 44px; cursor: pointer; }
+:host([data-theme="dark"]) .btn { background: var(--mb-accent); }
+.skeleton { background: color-mix(in srgb, var(--mb-line) 70%, transparent); border-radius: var(--mb-radius-md); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } * { scroll-behavior: auto !important; transition: none !important; } }
+.center { max-width: 560px; margin: 48px auto; text-align: center; display: grid; gap: var(--mb-space-md); justify-items: center; padding: var(--mb-space-xxl) var(--mb-space-xl); }
+.center .art { width: 96px; height: 96px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Brand mark, coloured by tokens so it follows the theme. */
+.mk-ring, .mk-wave { fill: none; stroke: var(--mb-accent); stroke-linecap: round; }
+.mk-tower { fill: var(--mb-text); }
+.mk-lamp { fill: #F59E0B; }
+.mk-hillback { fill: color-mix(in srgb, var(--mb-accent) 8%, var(--mb-surface)); stroke: var(--mb-accent); stroke-linejoin: round; }
+.mk-hill { fill: color-mix(in srgb, var(--mb-accent) 16%, var(--mb-surface)); stroke: var(--mb-accent); stroke-linejoin: round; }
+.mk-link { fill: none; stroke: var(--mb-accent); stroke-linecap: round; stroke-linejoin: round; }
+.mk-node { fill: var(--mb-text); stroke: var(--mb-accent); }
 `;
 
 class MeshBeaconPanel extends HTMLElement {
@@ -214,6 +249,10 @@ class MeshBeaconPanel extends HTMLElement {
   set hass(hass) {
     const first = !this._hass;
     this._hass = hass;
+    // Follow Home Assistant's own light/dark choice; without it, the device preference applies.
+    const dark = hass && hass.themes ? hass.themes.darkMode : undefined;
+    if (typeof dark === "boolean") this.setAttribute("data-theme", dark ? "dark" : "light");
+    else this.removeAttribute("data-theme");
     if (first) this._load();
     else if (this._changed()) this._render();
     this._maybeRefreshHistory();
@@ -237,6 +276,7 @@ class MeshBeaconPanel extends HTMLElement {
   }
 
   connectedCallback() {
+    loadFonts();
     document.addEventListener("visibilitychange", this._onVisible);
     this._timer = setInterval(() => !document.hidden && this._refresh(), 30_000);
     if (this._hass) this._render();
@@ -452,7 +492,8 @@ class MeshBeaconPanel extends HTMLElement {
         this._nodes.map((n, i) => h("option", { value: String(i), selected: i === this._nodeIndex, text: `${n.title} (${n.app})` })),
       );
     }
-    return h("header", {}, menu, h("h1", { text: "MeshBeacon" }), picker);
+    const brand = h("h1", { class: "brand" }, brandMark("small"), h("span", {}, "Mesh", h("span", { class: "beacon", text: "Beacon" })));
+    return h("header", {}, menu, brand, picker);
   }
 
   _tabs() {
@@ -491,6 +532,7 @@ class MeshBeaconPanel extends HTMLElement {
       h(
         "div",
         { class: "card center", role: "alert" },
+        h("div", { class: "art" }, brandMark("full")),
         h("h2", { text: "MeshBeacon could not be loaded" }),
         h("p", {
           class: "muted small",
@@ -509,6 +551,7 @@ class MeshBeaconPanel extends HTMLElement {
       h(
         "div",
         { class: "card center" },
+        h("div", { class: "art" }, brandMark("full")),
         h("h2", { text: "MeshBeacon is not connected yet" }),
         h("p", {
           class: "muted small",
@@ -586,7 +629,7 @@ class MeshBeaconPanel extends HTMLElement {
     return h(
       "section",
       { class: "card hero", "data-tone": tone, "aria-label": "Connectivity" },
-      h("div", { class: "ring", role: "img", "aria-label": `Connectivity: ${this._label("connectivity", conn)}` }),
+      statusMark(connKey, isAvailable(conn), `Connectivity: ${this._label("connectivity", conn)}`),
       h(
         "div",
         {},
@@ -742,13 +785,13 @@ class MeshBeaconPanel extends HTMLElement {
       this._chart(
         "Network traffic",
         [
-          { label: "↓ Receive", id: e.receive_rate, color: "var(--mb-rx)" },
-          { label: "↑ Send", id: e.send_rate, color: "var(--mb-tx)" },
+          { label: "↓ Receive", id: e.receive_rate, color: "var(--mb-series-1)" },
+          { label: "↑ Send", id: e.send_rate, color: "var(--mb-series-2)" },
         ],
         { wide: true, digits: 2 },
       ),
-      this._chart("Processor use", [{ id: e.cpu, color: "var(--mb-info)" }], { unit: "%", digits: 1, floor: 1 }),
-      this._chart("Memory use", [{ id: e.memory, color: "var(--mb-good)" }], { digits: 0 }),
+      this._chart("Processor use", [{ id: e.cpu, color: "var(--mb-series-1)" }], { unit: "%", digits: 1, floor: 1 }),
+      this._chart("Memory use", [{ id: e.memory, color: "var(--mb-series-2)" }], { digits: 0 }),
     ].filter(Boolean);
     if (!charts.length) return null;
     return h(
