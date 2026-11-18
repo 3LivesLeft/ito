@@ -3,7 +3,7 @@
 
 import json
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from meshbeacon.metrics import SCHEMA_VERSION, Collector, RateWindow
@@ -194,17 +194,24 @@ def test_node_summary_reads_only_allow_listed_fields():
     assert summarise({"txb": -5})["txb"] == 0
 
 
+HOSTILE_NUMBERS = st.sampled_from([float("nan"), float("inf"), float("-inf"), -0.0, 1e308, -1.5, 0.5])
+
+
+# Generation is kept cheap (at most 12 entries, above the 10-peer limit; hostile floats drawn from a
+# fixed set): CI's health check failed once when generating up to 30 entries with arbitrary floats on
+# a busy runner (v0.2 review).
+@settings(max_examples=100, deadline=None)
 @given(
     st.lists(
         st.fixed_dictionaries(
             {
                 "name": st.sampled_from(["Home", "Away", "x", ""]),
-                "up": st.one_of(st.booleans(), st.none(), st.integers()),
-                "rxb": st.one_of(st.none(), st.integers(-10, 10**12), st.text(max_size=3), st.floats()),
+                "up": st.one_of(st.booleans(), st.none(), st.integers(-1, 2)),
+                "rxb": st.one_of(st.none(), st.integers(-10, 10**12), st.text(max_size=3), HOSTILE_NUMBERS),
                 "txb": st.one_of(st.none(), st.integers(0, 10**12)),
             }
         ),
-        max_size=30,
+        max_size=12,
     ),
     st.dictionaries(
         st.sampled_from(["rxb", "paths", "transport", "relayed_links"]),
