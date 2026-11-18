@@ -24,7 +24,13 @@ REPO = Path(__file__).resolve().parents[2]
 CORE = REPO / "meshbeacon" / "core"
 os.environ["PYTHONPATH"] = os.pathsep.join([str(CORE), str(REPO)])
 
-pytestmark = pytest.mark.integration
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    # A module-level pytestmark in a conftest has no effect, so mark this directory's tests here.
+    here = Path(__file__).parent
+    for item in items:
+        if here in Path(str(item.fspath)).parents:
+            item.add_marker(pytest.mark.integration)
 
 
 def free_port() -> int:
@@ -43,9 +49,15 @@ def wait_for(predicate, timeout=30.0, interval=0.1):
 
 
 class TestPeer:
-    """A separate rnsd acting as the 'manually configured peer' (loopback only)."""
+    """A separate rnsd acting as the 'manually configured peer' (loopback only).
 
-    def __init__(self, base: Path, port: int) -> None:
+    ``forward_everything`` disables the peer's own announce cap and ingress control, to simulate a
+    peer that passes a flood straight on to MeshBeacon (L2 announce-flood test).
+    """
+
+    __test__ = False  # a helper, not a test class
+
+    def __init__(self, base: Path, port: int, forward_everything: bool = False) -> None:
         self.dir = base / "peer"
         self.dir.mkdir(parents=True, exist_ok=True)
         self.port = port
@@ -53,6 +65,7 @@ class TestPeer:
             "[reticulum]\n  enable_transport = Yes\n  share_instance = No\n[logging]\n  loglevel = 2\n"
             "[interfaces]\n  [[Test server]]\n    type = TCPServerInterface\n    enabled = yes\n"
             f"    listen_ip = 127.0.0.1\n    listen_port = {port}\n"
+            + ("    announce_cap = 100\n    ingress_control = No\n" if forward_everything else "")
         )
         self.proc: subprocess.Popen[bytes] | None = None
 
@@ -113,7 +126,13 @@ FAST = Timings(
 
 
 class Runner:
-    def __init__(self, data: Path, timings: Timings = FAST, node_module: str = "meshbeacon.node") -> None:
+    def __init__(
+        self,
+        data: Path,
+        timings: Timings = FAST,
+        node_module: str = "meshbeacon.node",
+        prepare_module: str = "meshbeacon.prepare",
+    ) -> None:
         self.paths = Paths(data)
         self.out = Output()
         self.sup = Supervisor(
@@ -124,6 +143,7 @@ class Runner:
             health_port=0,
             python=[sys.executable],
             node_module=node_module,
+            prepare_module=prepare_module,
         )
         self._stop = threading.Event()
         self.thread = threading.Thread(target=self._run, daemon=True)

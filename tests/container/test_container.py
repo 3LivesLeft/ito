@@ -206,3 +206,93 @@ def test_invalid_options_need_attention_and_stay_healthy(run):
     assert c.running()
     assert c.exec("wget", "-qO-", "http://127.0.0.1:8099/health").strip() == "ok"
     assert "meshbeacon.node" not in c.exec("ps", "-o", "args")
+
+
+@pytest.mark.skipif(EMULATED, reason="flood under QEMU emulation is too slow to be meaningful")
+def test_low_memory_announce_flood(run, network, tmp_path):
+    """L2: transport on, 256 MB hard limit with no swap, flood forwarded by a peer that applies no
+    announce cap or ingress control. MeshBeacon must not be killed for lack of memory."""
+    repo = Path(__file__).resolve().parents[2]
+    peer_dir = tmp_path / "peer"
+    peer_dir.mkdir()
+    (peer_dir / "config").write_text(
+        "[reticulum]\n  enable_transport = Yes\n  share_instance = Yes\n  instance_name = floodpeer\n"
+        "[logging]\n  loglevel = 2\n[interfaces]\n  [[srv]]\n    type = TCPServerInterface\n    enabled = yes\n"
+        "    listen_ip = 0.0.0.0\n    listen_port = 4242\n    announce_cap = 100\n    ingress_control = No\n"
+    )
+    peer = f"mbpeer-{uuid.uuid4().hex[:6]}"
+    flooder = f"mbflood-{uuid.uuid4().hex[:6]}"
+    sh(
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        peer,
+        "--network",
+        network,
+        "-v",
+        f"{peer_dir}:/cfg",
+        "--entrypoint",
+        "python3",
+        IMAGE,
+        "-I",
+        "-m",
+        "RNS.Utilities.rnsd",
+        "--config",
+        "/cfg",
+    )
+    try:
+        c = run(
+            {
+                **DEFAULTS,
+                "transport": True,
+                "log_level": "detailed",
+                "memory_limit_mb": 160,
+                "peers": [{"name": "Flood peer", "host": peer, "port": 4242}],
+            },
+            "--memory=256m",
+            "--memory-swap=256m",
+        )
+        assert wait_for(lambda: "Connected to Flood peer" in c.logs(), timeout=90), c.logs()
+        sh(
+            "docker",
+            "run",
+            "-d",
+            "--name",
+            flooder,
+            "--network",
+            network,
+            "-v",
+            f"{repo / 'tests' / 'integration' / 'flood.py'}:/flood.py:ro",
+            "--entrypoint",
+            "python3",
+            IMAGE,
+            "-I",
+            "/flood.py",
+            "/tmp/flooder",
+            peer,
+            "4242",
+            "3000",
+            "40",
+        )
+        peak_kb = 0
+        end = time.monotonic() + 55
+        while time.monotonic() < end:
+            out = c.exec(
+                "sh", "-c", "for p in $(pgrep -u meshbeacon); do grep -E '^(VmRSS|VmSwap)' /proc/$p/status; done"
+            )
+            peak_kb = max(peak_kb, sum(int(line.split()[1]) for line in out.splitlines()))
+            time.sleep(2)
+        stats = json.loads(
+            sh("docker", "exec", peer, "python3", "-I", "-m", "RNS.Utilities.rnstatus", "--config", "/cfg", "-j")
+        )
+        print(f"flood container test: peer sent {stats['txb']} bytes; peak app memory {peak_kb / 1024:.1f} MiB")
+        assert stats["txb"] > 1_000_000, "the flood did not reach MeshBeacon"
+        assert c.running()
+        assert sh("docker", "inspect", "-f", "{{.State.OOMKilled}}", c.name).strip() == "false"
+        assert "stopped unexpectedly" not in c.logs()
+        assert c.exec("wget", "-qO-", "http://127.0.0.1:8099/health").strip() == "ok"
+        assert peak_kb < 256 * 1024
+    finally:
+        sh("docker", "rm", "-f", flooder, check=False)
+        sh("docker", "rm", "-f", peer, check=False)
