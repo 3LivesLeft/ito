@@ -218,3 +218,34 @@ def test_rns_child_dies_with_supervisor(data, tmp_path):
     proc.kill()  # simulate a crash of the core
     proc.wait()
     assert wait_for(lambda: node_pids() == [], timeout=20), "orphaned Reticulum process survived"
+
+
+def test_slow_preparation_keeps_health_ok(data, runner_factory, monkeypatch):
+    """A prepare step slower than the heartbeat limit must not make the health check fail, or the
+    Supervisor watchdog would restart the app while it is simply starting up (review item 2)."""
+    monkeypatch.setenv("FAKE_PREPARE_SLEEP", "6")
+    write_options(data)
+    timings = Timings(**{**FAST.__dict__, "heartbeat_max_age": 2.0})
+    r = runner_factory(data, prepare_module="tests.integration.fake_prepare", timings=timings)
+    codes = []
+    deadline = time.monotonic() + 7
+    while time.monotonic() < deadline:
+        codes.append(r.health())
+        time.sleep(0.5)
+    assert set(codes) == {200}, codes
+    assert wait_for(lambda: r.sup.child is not None, timeout=30)
+
+
+def test_preparation_timeout_needs_attention_without_unhealthy(data, runner_factory, monkeypatch):
+    monkeypatch.setenv("FAKE_PREPARE_SLEEP", "30")
+    write_options(data)
+    timings = Timings(**{**FAST.__dict__, "heartbeat_max_age": 2.0, "prepare_timeout": 3.0})
+    r = runner_factory(data, prepare_module="tests.integration.fake_prepare", timings=timings)
+    codes = []
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        codes.append(r.health())
+        time.sleep(0.5)
+    assert set(codes) == {200}, codes
+    assert wait_for(lambda: r.out.has("could not finish preparing"), timeout=10), r.out.text()
+    assert r.sup.child is None and r.health() == 200

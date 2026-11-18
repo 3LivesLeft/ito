@@ -12,10 +12,8 @@ REDACTED = "<redacted>"
 
 # RNS prints identity/destination hashes as <32 hex characters> (prettyhexrep). Redact those, any
 # longer hex run (keys) and long base64 runs (keys encoded as base64).
-_PATTERNS = (
-    re.compile(r"<[0-9A-Fa-f]{32}>"),
-    re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{32,}(?![0-9A-Fa-f])"),
-)
+# Any run of 32+ hex digits: covers RNS's <hash> form as well as bare hashes and keys.
+_PATTERNS = (re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{32,}(?![0-9A-Fa-f])"),)
 _BASE64 = re.compile(r"(?<![A-Za-z0-9+/])[A-Za-z0-9+/]{43,}={0,2}")
 
 

@@ -20,7 +20,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from . import fsutil, rnsconfig
-from .identity import IdentityManager
+from .identity import IdentityManager, Outcome
 from .paths import Paths
 from .settings import Settings, ValidationError, parse_options
 
@@ -95,7 +95,7 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
     result.identity = outcome.outcome.value
     if not outcome.ok:
         return result.fail(outcome.message)
-    if mode == "start" or outcome.outcome.value != "unchanged":
+    if mode == "start" or outcome.outcome is not Outcome.UNCHANGED:
         result.info.append(outcome.message)
 
     cap_regenerable(paths, result)

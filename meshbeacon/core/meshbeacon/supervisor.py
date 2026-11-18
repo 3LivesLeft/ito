@@ -17,6 +17,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from collections import deque
 from collections.abc import Callable
@@ -105,6 +106,7 @@ class Supervisor:
         health_port: int = 8099,
         python: list[str] | None = None,
         node_module: str = "meshbeacon.node",
+        prepare_module: str = "meshbeacon.prepare",
         clock: Callable[[], float] = time.monotonic,
         wall: Callable[[], float] = time.time,
     ) -> None:
@@ -113,6 +115,7 @@ class Supervisor:
         self.out = out or sys.stdout
         self.python = python or default_python()
         self.node_module = node_module
+        self.prepare_module = prepare_module
         self.clock = clock
         self.wall = wall
         self.heartbeat = Heartbeat(clock)
@@ -215,22 +218,41 @@ class Supervisor:
         env["MESHBEACON_OPTIONS"] = str(self.paths.options)
         return env
 
+    def wait_responsive(self, proc: subprocess.Popen[bytes], timeout: float) -> bool:
+        """Wait for ``proc`` while keeping the heartbeat fresh; False if it ran out of time.
+
+        Waiting for a bounded subprocess is not "unresponsive", so the Supervisor watchdog must not
+        see a stale heartbeat while it happens (review item 2).
+        """
+        deadline = self.clock() + timeout
+        while True:
+            self.heartbeat.beat()
+            try:
+                proc.wait(timeout=0.5)
+                return True
+            except subprocess.TimeoutExpired:
+                if self.clock() >= deadline:
+                    return False
+
     def run_prepare(self, mode: str) -> dict[str, Any] | None:
         result_path = self.paths.prepare_result
         result_path.unlink(missing_ok=True)
-        try:
-            proc = subprocess.run(
-                [*module_command(self.python, "meshbeacon.prepare"), "--mode", mode, "--result", str(result_path)],
+        with tempfile.TemporaryFile() as output:  # a file, so a chatty child can never block on a pipe
+            proc = subprocess.Popen(
+                [*module_command(self.python, self.prepare_module), "--mode", mode, "--result", str(result_path)],
                 stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
+                stdout=output,
                 stderr=subprocess.STDOUT,
                 env=self.child_env(),
-                timeout=180,
-                check=False,
             )
-            for line in proc.stdout.decode("utf-8", "replace").splitlines()[:200]:
+            finished = self.wait_responsive(proc, self.t.prepare_timeout)
+            if not finished:
+                proc.kill()
+                proc.wait()
+            output.seek(0)
+            for line in output.read(256 * 1024).decode("utf-8", "replace").splitlines()[:200]:
                 self.forward("prepare", line)
-        except subprocess.TimeoutExpired:
+        if not finished:
             return None
         value = fsutil.read_json(result_path)
         result_path.unlink(missing_ok=True)
@@ -307,9 +329,7 @@ class Supervisor:
             return
         if child.proc.poll() is None:
             child.proc.terminate()
-            try:
-                child.proc.wait(timeout=self.t.stop_grace)
-            except subprocess.TimeoutExpired:
+            if not self.wait_responsive(child.proc, self.t.stop_grace):
                 child.proc.kill()
                 child.proc.wait()
         self._drain(child)
@@ -360,8 +380,8 @@ class Supervisor:
         if not isinstance(status, dict) or self.settings is None:
             return
         snap = evaluate(tuple(p.name for p in self.settings.peers), status)
-        changed = self.snapshot is None or snap.state is not self.snapshot.state or snap.up != self.snapshot.up
-        if changed and (snap.state is not Connectivity.ISOLATED or self.snapshot is None):
+        # Announce changes only. (With no peers, boot has already reported the isolated state.)
+        if self.snapshot is None or snap.state is not self.snapshot.state or snap.up != self.snapshot.up:
             self.say(describe(snap))
         self.snapshot = snap
 

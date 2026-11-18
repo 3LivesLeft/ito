@@ -25,6 +25,7 @@ class Timings:
     status_stall: float = 120.0
     heartbeat_max_age: float = 60.0
     stop_grace: float = 10.0
+    prepare_timeout: float = 180.0
     report_interval: float = 30 * 60
     isolated_reminder: float = 6 * 60 * 60
     attention_reminder: float = 6 * 60 * 60
