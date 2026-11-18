@@ -31,7 +31,7 @@ Recorded: 18 November 2026 · Branch `feature/v0.2.0-observability`
 | shellcheck (run script) | Pass |
 | Unit + isolated real-RNS integration tests, slow tests included | **226 passed** |
 | Home Assistant integration tests (`tests/ha`) | **25 passed** |
-| Container tests (amd64, stand-in base, unconfined) | **12 passed**, 1 skipped (AppArmor confinement: needs an AppArmor kernel; runs in CI) |
+| Container tests (amd64, stand-in base, unconfined; image rebuilt from the final code) | **11 passed**, 1 skipped (AppArmor confinement: needs an AppArmor kernel; runs in CI) |
 | gitleaks 8.30.0 (`dir` scan of the branch) | No leaks found |
 | pip-audit | **Not run here** (the sandbox cannot resolve packages for it); runtime requirements are unchanged from PR #2; CI runs it |
 | AppArmor under enforcement, hadolint, SBOM and licence check, image scan, aarch64 | **Not run here**; CI only |
@@ -40,9 +40,9 @@ Recorded: 18 November 2026 · Branch `feature/v0.2.0-observability`
 
 | Measurement | Integration off | Integration on |
 |---|---|---|
-| Idle memory, RSS + swap of all app processes | 69.2 MiB | **71.3 MiB** |
+| Idle memory, RSS + swap of all app processes | 69.2 MiB | **70.9–71.3 MiB** (two runs) |
 | CPU over 120 s, idle, API polled every 30 s | 0.158 % of one core | 0.208 % of one core |
-| Announce flood (L2, 256 MB limit, no swap, transport on) | Peak 70.4 MiB, no OOM kill | — |
+| Announce flood (L2, 256 MB limit, no swap, transport on) | Peak 70.3–70.4 MiB, no OOM kill | — |
 
 ## Defects found during development
 
