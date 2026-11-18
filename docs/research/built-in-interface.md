@@ -125,6 +125,11 @@ A scratch script used the core's own `BoundedHTTPServer`, outside the repository
 
 ## 8. Validation still required before implementation
 
+> **Update (18 Nov 2026):** V-1 and V-2 are answered from Supervisor 2026.11.0 source. The hop is
+> plain HTTP, and the Ingress session travels on it. The result **blocks** ADR 0013; a read-only
+> interface is not a sufficient mitigation. Findings beyond this are under responsible
+> disclosure. See [secure interface options](secure-interface-options.md).
+
 | ID | Question | Method |
 |---|---|---|
 | V-1 | Ingress upstream protocol (HTTP only?) | Read Supervisor's ingress proxy source at a pinned commit. Not read in this session: the Supervisor repository is outside this session's repository scope, and HA's developer docs are blocked by its network policy |
