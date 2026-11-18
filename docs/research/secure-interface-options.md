@@ -12,7 +12,7 @@ into read-only operation.
 | ID | Decision | Effect now |
 |---|---|---|
 | D1 | Read-only Ingress approved **on condition** that its security concerns are resolved | **Condition not met.** The review of Supervisor 2026.11.0 confirmed concerns that MeshBeacon cannot mitigate itself (§2). Ingress stays off |
-| D2 | Withdraw the integration panel; keep one dedicated MeshBeacon interface | Recorded. **Timing needs confirmation:** withdrawing the panel before a safe built-in interface exists would leave no dedicated interface. Proposal: withdraw it in the same release that ships the built-in interface, so there is exactly one at any time. The panel is unreleased either way |
+| D2 | Withdraw the integration panel; keep one dedicated MeshBeacon interface | **Resolved (maintainer, 18 Nov 2026): retain the integration panel until a secure built-in replacement exists.** It is the one dedicated interface. Original note: withdrawing the panel before a safe built-in interface exists would leave no dedicated interface. Proposal: withdraw it in the same release that ships the built-in interface, so there is exactly one at any time. The panel is unreleased either way |
 | D3 | Seven days of bounded, in-memory history | Recorded for the built-in interface: 24 h at 5 min plus 7 days at 1 h (≈ 120 KB), memory only |
 | D4 | Admin-only sidebar access | Recorded (`panel_admin: true`; already true for the panel) |
 | Product | Users must eventually send and receive LXMF messages from the built-in interface, without a separate integration | Ingress is **read-only for now, not permanently**. Writes and sensitive data wait for a path that meets §3 |

@@ -10,8 +10,8 @@ MeshBeacon is a free, privacy-first Home Assistant app (formerly "add-on") that 
 Assistant. Phase 0 (research and design) is complete. **Phase 1 (v0.1.0 foundation) is authorised** on
 branch `feature/v0.1.0-foundation` (PR #2). **v0.2.0 (monitoring and observability) is authorised**
 on branch `feature/v0.2.0-observability` (draft PR #3), based on PR #2's reviewed head `192db5f`;
-ADR 0006 is accepted, and its option stays off by default permanently. ADR 0007 (sidebar panel) is
-proposed. HACS is prepared, not published. v0.3.0 is in research and architecture only (no
+ADR 0006 is accepted, and its option stays off by default permanently. ADR 0007 (integration sidebar panel) is accepted as the interim
+dedicated interface; Ingress (ADR 0013) is blocked. HACS is prepared, not published. v0.3.0 is in research and architecture only (no
 implementation until independently reviewed). LXMF, LoRa, I2P and remote control remain out of scope. Never publish images, create releases, connect to live public Reticulum
 infrastructure or deploy to the maintainer's Home Assistant without explicit approval.
 
@@ -115,6 +115,8 @@ docs/home-assistant-integration.md  v0.2 integration: set-up, entities, panel, d
 docs/hacs.md                       HACS compatibility (prepared, not published)
 docs/research/known-paths.md       why "Known paths" reads 2,048 (RNS unused-path target)
 docs/testing/v0.2-physical-results.md  initial physical readings (not final acceptance)
+docs/testing/v0.2-acceptance-review.md  open criteria, CI status, risks, simplest installation
+docs/getting-started.md            tester guide: app, then the optional sidebar integration
 custom_components/meshbeacon/       v0.2 Home Assistant integration
 custom_components/meshbeacon/frontend/  interface (ADR 0007): plain JS, no dependencies; layers in
                                    docs/architecture.md §6a: sources/ (data), ui/ (presentation),
