@@ -22,6 +22,9 @@ IMAGE = os.environ.get("MESHBEACON_IMAGE", "")
 # overhead, so timings are stretched and the memory figure is recorded but not asserted. Emulated
 # results are never physical Raspberry Pi validation (roadmap RG-1, RG-2).
 EMULATED = os.environ.get("MESHBEACON_EMULATED") == "1"
+# Name of an AppArmor profile, built from meshbeacon/apparmor.txt and loaded into the host kernel,
+# to run MeshBeacon containers under (CI on an AppArmor-enabled runner). Empty: unconfined.
+APPARMOR = os.environ.get("MESHBEACON_APPARMOR", "")
 SCALE = 4 if EMULATED else 1
 pytestmark = [
     pytest.mark.container,
@@ -73,7 +76,8 @@ def run(tmp_path, network):
         data.mkdir()
         (data / "options.json").write_text(json.dumps(options))
         cname = name or f"mb-{uuid.uuid4().hex[:8]}"
-        sh("docker", "run", "-d", "--name", cname, "--network", network, "-v", f"{data}:/data", *extra, IMAGE)
+        confine = ["--security-opt", f"apparmor={APPARMOR}"] if APPARMOR else []
+        sh("docker", "run", "-d", "--name", cname, "--network", network, "-v", f"{data}:/data", *confine, *extra, IMAGE)
         started.append(cname)
         c = Container(cname, data)
         assert wait_for(lambda: "[meshbeacon]" in c.logs()), c.logs()
@@ -296,3 +300,72 @@ def test_low_memory_announce_flood(run, network, tmp_path):
     finally:
         sh("docker", "rm", "-f", flooder, check=False)
         sh("docker", "rm", "-f", peer, check=False)
+
+
+INVENTORY = r"""
+import json, os, stat
+out = {}
+for top in ("/init", "/bin", "/sbin", "/usr/bin", "/usr/sbin", "/usr/local/bin", "/package", "/command", "/etc"):
+    paths = [top] if os.path.isfile(top) else [os.path.join(d, f) for d, _, fs in os.walk(top) for f in fs]
+    for p in paths:
+        try:
+            st = os.stat(p)
+        except OSError:
+            continue
+        if not stat.S_ISREG(st.st_mode) or not st.st_mode & 0o111:
+            continue
+        real = os.path.realpath(p)
+        with open(real, "rb") as f:
+            head = f.read(128)
+        interp = head[2:].split(b"\n")[0].split()[0].decode() if head.startswith(b"#!") else None
+        out[real] = interp
+print(json.dumps(out))
+"""
+
+
+def test_apparmor_profile_covers_every_program_in_the_image():
+    """Static check against the real image (no AppArmor kernel needed): every program the profile
+    allows to run can actually be run — scripts must also be readable, and their interpreters
+    executable. This is the check that would have caught the v0.1.0 '/init' startup failure."""
+    from tests.apparmor.rules import load
+
+    profile = load(Path(__file__).resolve().parents[2] / "meshbeacon" / "apparmor.txt")
+    inventory = json.loads(sh("docker", "run", "--rm", "--entrypoint", "python3", IMAGE, "-I", "-c", INVENTORY))
+    must_run = [
+        "/init",
+        "/etc/cont-init.d/10-meshbeacon",
+        "/etc/services.d/meshbeacon/run",
+        "/etc/services.d/meshbeacon/finish",
+    ]
+    must_run += [p for p in inventory if "/s6-overlay" in p and "/libexec/" in p]
+    for path in must_run:
+        assert path in inventory, f"{path} missing from the image"
+        assert profile.can_exec(path), f"{path} cannot be executed under the profile"
+    problems = []
+    for path, interpreter in inventory.items():
+        if not profile.can_exec(path) or interpreter is None:
+            continue
+        if not profile.can_read(path):
+            problems.append(f"{path}: script without read permission")
+        target = os.path.realpath(interpreter) if not interpreter.startswith("/") else interpreter
+        if not profile.can_exec(target) and not profile.can_exec(interpreter):
+            problems.append(f"{path}: interpreter {interpreter} not executable")
+    assert not problems, "\n".join(problems[:40])
+
+
+@pytest.mark.skipif(not APPARMOR, reason="needs MESHBEACON_APPARMOR (an AppArmor-enabled host)")
+def test_apparmor_confinement_is_active_and_restrictive(run):
+    c = run(DEFAULTS)
+    assert wait_for(lambda: "not connected to anyone" in c.logs()), c.logs()
+    assert c.exec("cat", "/proc/1/attr/current").strip() == f"{APPARMOR} (enforce)"
+    # Writes outside the permitted locations are refused, even for root inside the container.
+    blocked = subprocess.run(
+        ["docker", "exec", c.name, "sh", "-c", "echo x > /usr/local/lib/mb-test"], capture_output=True
+    )
+    assert blocked.returncode != 0
+    assert subprocess.run(["docker", "exec", c.name, "sh", "-c", "echo x > /tmp/mb-test"]).returncode == 0
+    # Nothing may be executed from app data.
+    c.exec("cp", "/bin/busybox", "/data/mb-busybox")
+    denied = subprocess.run(["docker", "exec", c.name, "/data/mb-busybox", "true"], capture_output=True)
+    assert denied.returncode != 0
+    c.exec("rm", "-f", "/data/mb-busybox")
