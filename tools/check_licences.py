@@ -42,6 +42,7 @@ ALLOWED = {
     "bzip2-1.0.6",
     # Weak copyleft (separate components; source obligations handled by the source bundle, RG-7)
     "MPL-2.0",
+    "LGPL-2.0-or-later",
     "LGPL-2.1-only",
     "LGPL-2.1-or-later",
     "LGPL-3.0-or-later",
@@ -54,21 +55,48 @@ ALLOWED = {
     "GCC-exception-3.1",
     # Reviewed non-OSI licence (ADR 0002): Reticulum and LXMF
     "LicenseRef-Reticulum",
+    "LicenseRef-Public-Domain",
 }
-# Names of packages whose metadata does not carry an SPDX expression, with their reviewed licence.
+# Packages whose SBOM entry carries no usable SPDX expression, with the licence recorded on review
+# (first CI SBOM, 18 November 2026). Entries marked "confirm" are taken from the projects' published
+# licences and must be confirmed against the exact upstream versions before public release (RG-7).
 REVIEWED = {
     "rns": "LicenseRef-Reticulum",
     "lxmf": "LicenseRef-Reticulum",
-    "pyserial": "BSD-3-Clause",
+    "pyserial": "BSD-3-Clause",  # verified from the 3.5 sdist LICENSE.txt
     "meshbeacon": "Apache-2.0",
+    "python": "PSF-2.0",  # CPython built from source by the HA base image
+    ".python-rundeps": "NONE-META",  # Alpine virtual package: a dependency list, no content
+    "simple launcher": "BSD-3-Clause",  # distlib's Windows launchers vendored inside pip; confirm
+    # Go modules compiled into tempio (Apache-2.0, Home Assistant) in the base image; confirm
+    "github.com/home-assistant/tempio": "Apache-2.0",
+    "dario.cat/mergo": "BSD-3-Clause",
+    "github.com/masterminds/goutils": "Apache-2.0",
+    "github.com/masterminds/semver/v3": "MIT",
+    "github.com/masterminds/sprig/v3": "MIT",
+    "github.com/google/uuid": "BSD-3-Clause",
+    "github.com/huandu/xstrings": "MIT",
+    "github.com/mitchellh/copystructure": "MIT",
+    "github.com/mitchellh/reflectwalk": "MIT",
+    "github.com/shopspring/decimal": "MIT",
+    "github.com/spf13/cast": "MIT",
+    "golang.org/x/crypto": "BSD-3-Clause",
 }
-ALIASES = {"Reticulum License": "LicenseRef-Reticulum", "BSD": "BSD-3-Clause", "PSF": "PSF-2.0"}
+ALIASES = {
+    "Reticulum License": "LicenseRef-Reticulum",
+    "LicenseRef-Reticulum-License": "LicenseRef-Reticulum",
+    "BSD": "BSD-3-Clause",
+    "LicenseRef-BSD": "BSD-3-Clause",  # pyserial: 3-clause text verified
+    "PSF": "PSF-2.0",
+}
+# Syft sometimes turns the operators in an Alpine licence string into LicenseRef tokens.
+IGNORED_TOKENS = {"AND", "OR", "WITH", "LicenseRef-AND", "LicenseRef-OR"}
 TOKEN = re.compile(r"[A-Za-z0-9.+\-]+(?:-[A-Za-z0-9.+]+)*")
 
 
 def identifiers(expression: str) -> set[str]:
     expression = ALIASES.get(expression.strip(), expression)
-    ids = {t for t in TOKEN.findall(expression) if t not in {"AND", "OR", "WITH"}}
+    ids = {t for t in TOKEN.findall(expression) if t not in IGNORED_TOKENS}
     return {ALIASES.get(i, i) for i in ids}
 
 
@@ -87,6 +115,8 @@ def check(sbom: dict) -> list[str]:
         if pkg.get("SPDXID") == "SPDXRef-DOCUMENT" or name in ("", "/"):
             continue
         expr = package_licence(pkg)
+        if expr == "NONE-META":
+            continue
         if not expr:
             problems.append(f"{name} {pkg.get('versionInfo', '')}: no licence information")
             continue

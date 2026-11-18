@@ -37,3 +37,32 @@ def test_unknown_and_disallowed_fail():
         )
     )
     assert len(problems) == 3
+
+
+def test_first_ci_sbom_findings_resolved_by_review():
+    """Entries seen in the first CI SBOM of the HA base image (18 November 2026)."""
+    assert (
+        cl.check(
+            sbom(
+                {"name": ".python-rundeps", "licenseDeclared": "NOASSERTION"},
+                {"name": "Simple Launcher", "licenseDeclared": "NOASSERTION"},
+                {"name": "github.com/Masterminds/semver/v3", "licenseDeclared": "NOASSERTION"},
+                {"name": "keyutils-libs", "licenseDeclared": "LGPL-2.0-or-later"},
+                {"name": "pyserial", "licenseDeclared": "LicenseRef-BSD"},
+                {"name": "python", "licenseDeclared": "NOASSERTION"},
+                {"name": "rns", "licenseDeclared": "LicenseRef-Reticulum-License"},
+                {"name": "tzdata", "licenseDeclared": "LicenseRef-Public-Domain"},
+                {"name": "xz", "licenseDeclared": "0BSD AND LicenseRef-AND LicenseRef-Public-Domain"},
+            )
+        )
+        == []
+    )
+
+
+def test_new_unreviewed_go_module_still_fails():
+    assert cl.check(sbom({"name": "github.com/example/unknown", "licenseDeclared": "NOASSERTION"}))
+
+
+def test_new_strong_copyleft_or_nc_still_fails():
+    assert cl.check(sbom({"name": "x", "licenseDeclared": "AGPL-3.0-only"}))
+    assert cl.check(sbom({"name": "y", "licenseDeclared": "LicenseRef-Unknown-Thing"}))

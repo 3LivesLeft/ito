@@ -217,5 +217,5 @@ See [naming research](naming.md) and [ADR 0003](../adr/0003-name.md).
 |---|---|
 | Q-15 | **Resolved:** training disabled on the maintainer's ChatGPT and Claude accounts |
 | Q-17 | Confirm the GPL corresponding-source approach (§5.1) — **public release gate** (roadmap RG-7) |
-| Q-19 | Confirm all base-image component licences from a generated SBOM — **public release gate** (RG-7); SBOM generated in CI from Phase 1 |
+| Q-19 | Confirm all base-image component licences from a generated SBOM — **public release gate** (RG-7). First CI SBOM (18 Nov 2026, 86 packages): no incompatible licence found; 27 entries lacked usable metadata or used non-standard names and are recorded as reviewed in `tools/check_licences.py` (Go modules in tempio, pip's vendored launchers, CPython, two LGPL-2.0-or-later libraries). Entries marked *confirm* there still need checking against upstream |
 | Q-20 | Copyright line: "Copyright 2026 The MeshBeacon contributors" or the maintainer's name? |
