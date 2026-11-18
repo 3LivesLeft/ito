@@ -107,11 +107,13 @@ def main() -> int:
             text=True,
             check=True,
         ).stdout.strip()
-        proc = subprocess.Popen(
-            [args.hass_python, "-m", "homeassistant", "-c", str(config), "--skip-pip"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        output = Path(tmp) / "hass.out"
+        with output.open("wb") as out:
+            proc = subprocess.Popen(
+                [args.hass_python, "-m", "homeassistant", "-c", str(config), "--skip-pip"],
+                stdout=out,
+                stderr=subprocess.STDOUT,
+            )
         time.sleep(args.seconds)
         proc.terminate()
         try:
@@ -120,15 +122,21 @@ def main() -> int:
             proc.kill()
         server.shutdown()
         log = "\n".join(p.read_text() for p in sorted(config.glob("home-assistant.log*")))
-        db = sqlite3.connect(config / "home-assistant_v2.db")
-        rows = db.execute(
-            "select m.entity_id, s.state from states s join states_meta m on s.metadata_id = m.metadata_id "
-            "where m.entity_id like '%meshbeacon%' group by m.entity_id"
-        ).fetchall()
+        try:
+            db = sqlite3.connect(config / "home-assistant_v2.db")
+            rows = db.execute(
+                "select m.entity_id, s.state from states s join states_meta m on s.metadata_id = m.metadata_id "
+                "where m.entity_id like '%meshbeacon%' group by m.entity_id"
+            ).fetchall()
+            db.close()
+        except sqlite3.Error as exc:
+            rows = []
+            print(f"recorder database unusable: {exc}")
         states = dict(rows)
-        db.close()
-        entities = json.loads((config / ".storage" / "core.entity_registry").read_text())["data"]["entities"]
+        registry = config / ".storage" / "core.entity_registry"
+        entities = json.loads(registry.read_text())["data"]["entities"] if registry.exists() else []
         ours = [e for e in entities if e["platform"] == "meshbeacon"]
+        hass_output = output.read_text(errors="replace")
     problems = []
     polls = sum(calls)
     if polls < max(2, args.seconds // 60 - 1):
@@ -157,6 +165,11 @@ def main() -> int:
     )
     for problem in problems:
         print(f"FAIL: {problem}")
+    if problems:  # enough context to diagnose a failure in CI
+        print("--- Home Assistant output (last 60 lines) ---")
+        print("\n".join(hass_output.splitlines()[-60:]))
+        print("--- Home Assistant log: errors and warnings ---")
+        print("\n".join(line[:300] for line in log.splitlines() if " ERROR " in line or " WARNING " in line))
     return 1 if problems else 0
 
 
