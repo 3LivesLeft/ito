@@ -29,7 +29,7 @@ Recorded: 18 November 2026 · Branch `feature/v0.2.0-observability`
 | mypy `--strict`, core (16 modules, Python 3.13) | Pass |
 | mypy `--strict`, integration (9 modules, Python 3.14, against HA's types) | Pass |
 | shellcheck (run script) | Pass |
-| Unit + isolated real-RNS integration tests, slow tests included | **226 passed** |
+| Unit + isolated real-RNS integration tests, slow tests included | **227 passed** |
 | Home Assistant integration tests (`tests/ha`) | **25 passed** |
 | Container tests (amd64, stand-in base, unconfined; image rebuilt from the final code) | **11 passed**, 1 skipped (AppArmor confinement: needs an AppArmor kernel; runs in CI) |
 | gitleaks 8.30.0 (`dir` scan of the branch) | No leaks found |
