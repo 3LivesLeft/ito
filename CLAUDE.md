@@ -83,7 +83,22 @@ docs/testing/reference-environment.md  maintainer's reference device (no househo
 docs/adr/NNNN-*.md                 architecture decision records
 ```
 
-## When Phase 1 is approved (for reference, not yet)
+## Developing (Phase 1)
+
+```sh
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/ruff check meshbeacon/core tests tools && .venv/bin/ruff format --check meshbeacon/core tests tools
+.venv/bin/mypy
+.venv/bin/pytest -m "not container"            # unit + isolated-network integration (loopback only)
+docker buildx build --load -t meshbeacon:dev meshbeacon
+MESHBEACON_IMAGE=meshbeacon:dev .venv/bin/pytest -m container tests/container
+```
+
+Layout: `meshbeacon/` is the app folder (Supervisor build context); `meshbeacon/core/meshbeacon/`
+is the HA-free core; only `prepare.py` and `node.py` import RNS. Child processes are started with
+`python -u` (RNS logs with `print()`).
+
+## Rules carried over from Phase 0
 
 - Core package must not import Home Assistant; the HA integration must not import `RNS`.
 - Pin Python dependencies by hash; pin base images by digest.

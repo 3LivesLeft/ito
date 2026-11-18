@@ -560,15 +560,15 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-1 | Licence for MeshBeacon's own code | **Resolved:** Apache-2.0 ([ADR 0002](../adr/0002-licence.md)) |
 | Q-2 | Collaborate with N2K RNS Gateway rather than compete? | **Deferred** by the maintainer until a working MeshBeacon prototype exists |
 | Q-3 | Keep the "MeshBeacon" name? | **Resolved, conditionally:** keep, with disambiguation and rename triggers ([ADR 0003](../adr/0003-name.md)) |
-| Q-4 | Which Supervisor identifiers (`app_config` vs `addon_config`) apply on the target? | Open — Phase 1 |
+| Q-4 | Which Supervisor identifiers (`app_config` vs `addon_config`) apply on the target? | **Moot for v0.1:** the app maps no folders (`/data` is always mapped). Revisit if a mapping is ever added |
 | Q-5 | Confirm target HA installation type and architecture | **Resolved:** HA OS 18.5 on `aarch64` (`rpi4-64`) — RAM split out as Q-30 |
-| Q-6 | Do all RPC clients honour a configured `rpc_key`? | Open — Phase 1 |
+| Q-6 | Do all RPC clients honour a configured `rpc_key`? | **Moot for v0.1:** `share_instance = No`, so RNS opens no RPC listener (verified); a random `rpc_key` is still rendered. Revisit in v0.3 if a shared instance is needed |
 | Q-7 | Hot backup consistency of SQLite WAL while RNS runs | Open — Phase 1 test; `backup: cold` fallback |
 | Q-8 | Can a bridged-network app use the HA Tailscale app's tailnet? | Open — Phase 1 test on device |
 | Q-9 | First-run UX with no default remote | **Resolved in design:** [first-run UX](../ux/first-run.md), [ADR 0004](../adr/0004-public-peer-presets.md) |
 | Q-10 | Long-run memory/CPU on Pi 4B on a real network | Open — Phase 1 soak test |
 | Q-11 | Permissions needed to publish Supervisor discovery | Open — v0.2 |
-| Q-12 | Launch `rnsd` vs a thin Python entry point | Open — Phase 1 |
+| Q-12 | Launch `rnsd` vs a thin Python entry point | **Resolved (Phase 1):** thin entry point `meshbeacon.node` using the public `RNS.Reticulum` API (architecture §9) |
 | Q-13 | Interoperability of Python RNS 1.6.x with Ratspeak servers and apps (Rust `rsReticulum`) | Open — **public release gate** (RG-10); not a local development blocker |
 | Q-14 | How will MeshBeacon track RNS security fixes given the mirror-only upstream? | Open — maintainer |
 | Q-15 | AI tool accounts' training setting | **Resolved:** training disabled on the maintainer's ChatGPT and Claude accounts |
@@ -581,7 +581,7 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-22 | Tagline | **Resolved:** "Decentralised connectivity for your home." |
 | Q-23 | Official trademark register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) | Open — **public release gate** (RG-8) |
 | Q-24 | Does `discover_interfaces` (receive-only) transmit anything about the local node? | Open — post-v0.1 |
-| Q-25 | Exact passphrase character set that ConfigObj quotes safely | Open — Phase 1 test |
+| Q-25 | Exact passphrase character set that ConfigObj quotes safely | **Resolved (Phase 1):** printable ASCII 1–128, excluding `" ' # , % $ \` and leading/trailing spaces; verified by property-based round-trip tests |
 | Q-26 | Should a data budget ever be *enforced* (not just warned about)? | Open — post-v0.1 |
 | Q-27 | Is GitHub private vulnerability reporting enabled? | Open — **public release gate** (RG-11) |
 | Q-28 | Will Ratspeak (and a second operator) agree to being listed as presets? | Open — **public release gate** (RG-10) |
