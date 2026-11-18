@@ -1,0 +1,172 @@
+{
+  "config": {
+    "step": {
+      "hassio_confirm": {
+        "title": "MeshBeacon",
+        "description": "Add MeshBeacon to show your Reticulum node's status, peers, traffic and resource use in Home Assistant. This is read-only: Home Assistant cannot control the node through it."
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the MeshBeacon app. Check that it is running, then try again."
+    },
+    "abort": {
+      "already_configured": "MeshBeacon is already set up.",
+      "discovery_only": "MeshBeacon is added automatically. In the MeshBeacon app's Configuration tab, switch on \"Show MeshBeacon's status in Home Assistant\" and restart the app.",
+      "invalid_discovery": "The MeshBeacon app sent details that could not be used. Restart the app; if this repeats, please report it."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "reticulum_running": {
+        "name": "Reticulum"
+      },
+      "transport_mode": {
+        "name": "Transport mode"
+      },
+      "problem_detected": {
+        "name": "Problem"
+      },
+      "peer_connected": {
+        "name": "{peer} connected"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "starting": "Starting",
+          "running": "Running",
+          "restarting": "Restarting",
+          "needs_attention": "Needs attention"
+        }
+      },
+      "connectivity": {
+        "name": "Connectivity",
+        "state": {
+          "isolated": "Isolated",
+          "offline": "Offline",
+          "partial": "Partly connected",
+          "online": "Online",
+          "unknown": "Unknown"
+        }
+      },
+      "problem": {
+        "name": "Diagnosis",
+        "state": {
+          "none": "None",
+          "isolated": "Not connected to anyone",
+          "peers_unreachable": "Cannot reach any peer",
+          "some_peers_unreachable": "Some peers unreachable",
+          "reticulum_restarting": "Reticulum restarting",
+          "reticulum_failing": "Reticulum keeps failing",
+          "restart_loop_paused": "Paused after repeated restarts",
+          "options": "Options need correcting",
+          "storage": "Storage low",
+          "identity": "Identity problem",
+          "configuration": "Configuration problem",
+          "data_folder": "Data folder problem",
+          "preparation_failed": "Preparation failed",
+          "unexpected": "Unexpected problem"
+        }
+      },
+      "app_started": {
+        "name": "App started"
+      },
+      "reticulum_started": {
+        "name": "Reticulum started"
+      },
+      "peers_connected": {
+        "name": "Peers connected"
+      },
+      "peers_configured": {
+        "name": "Peers configured"
+      },
+      "received": {
+        "name": "Received"
+      },
+      "sent": {
+        "name": "Sent"
+      },
+      "receive_rate": {
+        "name": "Receive rate"
+      },
+      "send_rate": {
+        "name": "Send rate"
+      },
+      "packets_received": {
+        "name": "Packets received (including own)"
+      },
+      "packets_sent": {
+        "name": "Packets sent (including own)"
+      },
+      "known_paths": {
+        "name": "Known paths"
+      },
+      "relayed_links": {
+        "name": "Relayed links"
+      },
+      "announces_received": {
+        "name": "Announces received"
+      },
+      "announces_sent": {
+        "name": "Announces sent"
+      },
+      "memory": {
+        "name": "Memory"
+      },
+      "core_memory": {
+        "name": "Memory (MeshBeacon core)"
+      },
+      "reticulum_memory": {
+        "name": "Memory (Reticulum)"
+      },
+      "cpu": {
+        "name": "CPU"
+      },
+      "restarts": {
+        "name": "Reticulum restarts"
+      },
+      "memory_restarts": {
+        "name": "Memory-limit restarts"
+      },
+      "peer_connected_since": {
+        "name": "{peer} connected since"
+      },
+      "peer_received": {
+        "name": "{peer} received"
+      },
+      "peer_sent": {
+        "name": "{peer} sent"
+      },
+      "peer_receive_rate": {
+        "name": "{peer} receive rate"
+      },
+      "peer_send_rate": {
+        "name": "{peer} send rate"
+      },
+      "peer_announces_received": {
+        "name": "{peer} announces received"
+      },
+      "peer_announces_sent": {
+        "name": "{peer} announces sent"
+      },
+      "peer_reconnections": {
+        "name": "{peer} reconnections"
+      }
+    }
+  },
+  "issues": {
+    "isolated": {
+      "title": "MeshBeacon is not connected to anyone",
+      "description": "Your MeshBeacon node is running, but no peers are configured, so it is not part of any Reticulum network. Add a peer in the MeshBeacon app's Configuration tab."
+    },
+    "peers_unreachable": {
+      "title": "MeshBeacon cannot reach its peers",
+      "description": "For at least 10 minutes, MeshBeacon has not been able to reach any of its configured peers. Check your internet connection and the peer details in the app's Configuration tab. MeshBeacon keeps trying automatically."
+    },
+    "needs_attention": {
+      "title": "MeshBeacon needs your attention",
+      "description": "MeshBeacon has stopped the Reticulum service until the cause is fixed:\n\n{message}\n\nSee the MeshBeacon app's Log tab for details."
+    }
+  }
+}

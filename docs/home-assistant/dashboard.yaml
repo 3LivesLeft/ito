@@ -1,0 +1,82 @@
+# MeshBeacon overview: an example dashboard built only from Home Assistant's own cards.
+# It is a view of the integration's entities, not a second monitoring implementation: history and
+# statistics come from Home Assistant's recorder.
+#
+# Use: Settings → Dashboards → Add dashboard → "New dashboard from scratch" → ⋮ → Edit dashboard →
+# ⋮ → Raw configuration editor, and paste this file. Entity IDs assume the default names; if you
+# renamed the device or entities, adjust them. For each peer, copy the "Peer" card and replace
+# "emerald" with the peer's name in lower case (spaces become underscores).
+title: MeshBeacon
+views:
+  - title: Overview
+    path: meshbeacon
+    icon: mdi:access-point-network
+    cards:
+      - type: tile
+        entity: sensor.meshbeacon_status
+      - type: tile
+        entity: sensor.meshbeacon_connectivity
+      - type: tile
+        entity: binary_sensor.meshbeacon_problem
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: binary_sensor.meshbeacon_problem
+            state: "on"
+        card:
+          type: entities
+          title: What needs attention
+          entities:
+            - sensor.meshbeacon_diagnosis
+      - type: glance
+        title: Network
+        entities:
+          - entity: sensor.meshbeacon_peers_connected
+          - entity: sensor.meshbeacon_known_paths
+          - entity: sensor.meshbeacon_relayed_links
+          - entity: binary_sensor.meshbeacon_transport_mode
+      - type: history-graph
+        title: Traffic (last 24 hours)
+        hours_to_show: 24
+        entities:
+          - entity: sensor.meshbeacon_receive_rate
+          - entity: sensor.meshbeacon_send_rate
+      - type: statistics-graph
+        title: Data per day
+        period: day
+        days_to_show: 30
+        chart_type: bar
+        stat_types:
+          - change
+        entities:
+          - entity: sensor.meshbeacon_received
+          - entity: sensor.meshbeacon_sent
+      - type: history-graph
+        title: Peers connected
+        hours_to_show: 72
+        entities:
+          - entity: sensor.meshbeacon_peers_connected
+      - type: entities
+        title: Node
+        entities:
+          - entity: binary_sensor.meshbeacon_reticulum
+          - entity: sensor.meshbeacon_reticulum_started
+          - entity: sensor.meshbeacon_app_started
+          - entity: sensor.meshbeacon_reticulum_restarts
+          - entity: sensor.meshbeacon_announces_received
+          - entity: sensor.meshbeacon_announces_sent
+      - type: history-graph
+        title: Resources (last 24 hours)
+        hours_to_show: 24
+        entities:
+          - entity: sensor.meshbeacon_memory
+          - entity: sensor.meshbeacon_cpu
+      # Peer card (one per peer):
+      - type: entities
+        title: Peer Emerald
+        entities:
+          - entity: binary_sensor.meshbeacon_emerald_connected
+          - entity: sensor.meshbeacon_emerald_connected_since
+          - entity: sensor.meshbeacon_emerald_received
+          - entity: sensor.meshbeacon_emerald_sent
+          - entity: sensor.meshbeacon_emerald_reconnections

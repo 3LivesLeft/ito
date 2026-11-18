@@ -20,7 +20,7 @@ filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
 [tool.ruff]
 line-length = 120
 target-version = "py313"
-src = ["meshbeacon/core", "tests"]
+src = ["meshbeacon/core", "tests", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "N", "A", "C4", "SIM", "RUF", "PL"]
