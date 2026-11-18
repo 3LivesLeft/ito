@@ -114,7 +114,10 @@ def main() -> int:
                 stdout=out,
                 stderr=subprocess.STDOUT,
             )
-        time.sleep(args.seconds)
+        deadline = time.monotonic() + args.seconds
+        while time.monotonic() < deadline and proc.poll() is None:
+            time.sleep(1)
+        exited_early = proc.poll() is not None
         proc.terminate()
         try:
             proc.wait(60)
@@ -138,6 +141,8 @@ def main() -> int:
         ours = [e for e in entities if e["platform"] == "meshbeacon"]
         hass_output = output.read_text(errors="replace")
     problems = []
+    if exited_early:
+        problems.append(f"Home Assistant exited early (code {proc.returncode})")
     polls = sum(calls)
     if polls < max(2, args.seconds // 60 - 1):
         problems.append(f"only {polls} successful polls in {args.seconds} s")

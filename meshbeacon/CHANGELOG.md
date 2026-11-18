@@ -7,8 +7,12 @@
   key that changes at every start. Home Assistant then offers to add the MeshBeacon integration
   (included in this repository), which shows status, peers, traffic, known paths, relayed links,
   CPU, memory and restarts as sensors with history. It is read-only; nothing is sent anywhere else.
+- The status is sent over HTTPS, with a certificate that changes at every start and that Home
+  Assistant checks, so other apps on the internal network cannot read or alter it.
 - No new permissions: the app uses Supervisor discovery, which needs no API access. The security
   rating is unchanged.
+- If the Supervisor cannot be reached, MeshBeacon keeps trying by itself; no restart needed.
+- The watchdog's health check is now protected against slow or flooding clients.
 - Each problem now has a stable code alongside its plain-language message, for repair issues in
   Home Assistant.
 

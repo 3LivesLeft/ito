@@ -1,6 +1,6 @@
 # v0.2.0 (monitoring and observability): verification results
 
-Recorded: 18 November 2026 · Branch `feature/v0.2.0-observability`
+Recorded: 18 November 2026 · Branch `feature/v0.2.0-observability` · Revised after independent review (§ Review round)
 
 ## Branch dependency
 
@@ -58,3 +58,63 @@ Recorded: 18 November 2026 · Branch `feature/v0.2.0-observability`
 
 - Against the real Supervisor and Home Assistant on the reference Pi (OB-2, OB-9, OB-10, OB-13). This must wait until the v0.1 soak has finished.
 - aarch64, AppArmor enforcement with the new listener, and the real HA base image: CI (OB-14).
+
+## Review round (independent review, 18 November 2026)
+
+Decisions recorded: PR #2 stays merged. ADR 0006 is accepted in principle, subject to this
+security review. The integration stays off by default permanently. PR #3 stays draft. The
+running Pi stays untouched.
+
+### Changes made
+
+| Area | Change |
+|---|---|
+| Transport security | HTTPS (TLS 1.3) with a throwaway certificate per start, pinned by its fingerprint from discovery. Prompted by the finding that apps keep `NET_RAW`, so ARP spoofing is possible |
+| Discovery | Anti-spoofing: MeshBeacon slug, the sending app's own hostname, fingerprint required. Retries for ever with back-off; refreshed every 6 h. The integration heals a missed key rotation from the Supervisor |
+| Bounds | Absolute per-connection deadline (API 10 s, health 5 s); `/health` server bounded to 16; client errors counted, not printed |
+| Isolation | Every metrics call isolated from the supervision loop (**defect found**: an exception in the collector's update stopped the loop) |
+| Recorder | Polling 60 s; high-churn entities off by default; rounding |
+| Names | "Data received/sent", "Links relayed for others", "Processor use", "Memory use", "Problem details", "Reticulum running"; icons |
+| Verification | Real Home Assistant 2026.11.2 smoke test (`tools/ha_smoke_test.py`) and CI job |
+
+### Results (sandbox; CI on PR #3)
+
+| Suite | Result |
+|---|---|
+| Unit + isolated real-RNS integration tests (Python 3.13, slow included) | **238 passed** |
+| Home Assistant harness tests (HA 2026.10.4) | **48 passed** |
+| mypy `--strict` (core; integration against HA 2026.10.4 **and 2026.11.2**) | Pass |
+| Real Home Assistant **2026.11.2** smoke test (pinned HTTPS, fake API) | Pass: 35 entities registered, 12 disabled by default, 23 recorded; polls every 60 s; no MeshBeacon errors; key absent from HA's log |
+| Container tests (amd64, stand-in base, image rebuilt from the final code) | **11 passed**, 1 skipped (AppArmor confinement: CI only) |
+
+### Measurements (amd64 container, stand-in base — not Pi validation)
+
+| Measurement | Integration off | Integration on (TLS, polled every 60 s) |
+|---|---|---|
+| Idle memory, RSS + swap of all app processes | 67.8–69.0 MiB | **70.8–71.7 MiB** |
+| CPU over 300 s | 0.157 % of one core | **0.177 %** (+0.02 %) |
+| 30 s flood with slow clients on both ports (integration test) | — | Watchdog 30/30 answered; Reticulum not restarted and still connected; core threads 6 → 36 at peak; core RSS +2 MiB |
+| Recorder, worst case (every value changing) | — | ~6 rows per poll; ~1.9 MB/day; ~19 MB over 10 days (was ~15 rows per poll and ~8.3 MB/day at 30 s with everything on) |
+
+### Defects and findings
+
+| Finding | How found | Fix |
+|---|---|---|
+| An exception inside the metrics collector stopped the supervisor loop | New isolation test | All metrics calls isolated |
+| Plain HTTP on the internal network was interceptable: apps keep `NET_RAW` by default (Supervisor `e610ca8`). The earlier design note that sniffing needs control of the host was **wrong** | Source review | Pinned HTTPS |
+| An app declaring the `meshbeacon` service could have redirected the integration to any host | Review | Slug, host and fingerprint checks |
+| A trickling client could hold an API slot indefinitely (inactivity timeout only) | Review | Absolute deadline |
+| Discovery gave up after three attempts | Review | Retries for ever, then refreshes |
+| The server printed a traceback when a client dropped, so a hostile client could flood the log | Unit test | Errors counted, not printed |
+| Diagnostics failed for an entry that had not finished setting up | HA test | Handled |
+| The test harness (2026.10.4) cannot load HA 2026.11.2 | Attempted | A real-HA smoke test instead |
+| Home Assistant refuses to run outside a virtual environment, so the first CI smoke run failed | CI | Run it in a venv; the script now stops at once if HA exits |
+
+### Still not verified
+
+On the reference Pi, after the v0.1 soak, using the [hardware acceptance checklist](v0.2-hardware-acceptance.md):
+- the real Supervisor's discovery;
+- memory and CPU on aarch64;
+- AppArmor with TLS and the certificate subprocess (CI checks these on amd64 under enforcement);
+- recorder growth over a day;
+- a non-zero "Links relayed for others" on the live network.

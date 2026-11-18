@@ -79,11 +79,12 @@ jobs:
         with: { persist-credentials: false }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.14" }
-      - run: pip install -r requirements-ha-smoke.txt
+      - name: Install Home Assistant in a virtual environment (it refuses to run outside one)
+        run: python -m venv "$RUNNER_TEMP/ha" && "$RUNNER_TEMP/ha/bin/pip" install -r requirements-ha-smoke.txt
       - name: Type check against this release
-        run: mypy --strict --python-version 3.14 custom_components/meshbeacon
+        run: '"$RUNNER_TEMP/ha/bin/mypy" --strict --python-version 3.14 custom_components/meshbeacon'
       - name: Real Home Assistant with the integration and a fake status API (127.0.0.1 only)
-        run: python tools/ha_smoke_test.py --hass-python "$(command -v python)" --seconds 200
+        run: '"$RUNNER_TEMP/ha/bin/python" tools/ha_smoke_test.py --hass-python "$RUNNER_TEMP/ha/bin/python" --seconds 200'
 
   container:
     name: Container tests (${{ matrix.arch }})
