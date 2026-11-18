@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
+  <img src="../branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+</picture>
+
 # Roadmap
 
 Status: **Provisional — revised after independent review.** Every item remains open to challenge.
