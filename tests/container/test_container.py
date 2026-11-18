@@ -364,9 +364,14 @@ def test_apparmor_confinement_is_active_and_restrictive(run):
     )
     assert blocked.returncode != 0
     assert subprocess.run(["docker", "exec", c.name, "sh", "-c", "echo x > /tmp/mb-test"]).returncode == 0
-    # Nothing may be executed from app data.
+    # Nothing may be executed from app data. The program must be started from a confined shell:
+    # `docker exec` starts its own first program from the unconfined runtime and attaches the
+    # profile as that program starts, so the profile's execute rules never apply to it (an earlier
+    # version of this test passed only because busybox, renamed, found no applet to run).
     c.exec("cp", "/bin/busybox", "/data/mb-busybox")
-    denied = subprocess.run(["docker", "exec", c.name, "/data/mb-busybox", "true"], capture_output=True, text=True)
-    assert denied.returncode != 0
+    denied = subprocess.run(
+        ["docker", "exec", c.name, "sh", "-c", "/data/mb-busybox true"], capture_output=True, text=True
+    )
+    assert denied.returncode == 126, denied
     assert "permission denied" in (denied.stdout + denied.stderr).lower(), denied
     c.exec("rm", "-f", "/data/mb-busybox")
