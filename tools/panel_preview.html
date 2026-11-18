@@ -7,6 +7,8 @@
     http://127.0.0.1:8765/tools/panel_preview.html?scenario=ok&theme=dark
   Scenarios: ok, busy (2,048 paths), problem, unavailable, loading, error, empty, nohistory.
   Add &hostile=1 to give a peer a script-like name: it must appear as plain text.
+  Add &source=snapshot to render the same views from a core status snapshot (schema 1) through
+  sources/snapshot.js instead of Home Assistant: the delivery-independence check.
   The sample values are the initial physical Raspberry Pi readings from v0.2.0 (seven minutes).
 -->
 <html lang="en-GB">
@@ -35,6 +37,9 @@
   <body>
     <script type="module">
       import "../custom_components/meshbeacon/frontend/meshbeacon-panel.js";
+      import { SnapshotSource } from "../custom_components/meshbeacon/frontend/sources/snapshot.js";
+      import { InterfaceController } from "../custom_components/meshbeacon/frontend/ui/controller.js";
+      import { loadFonts } from "../custom_components/meshbeacon/frontend/fonts.js";
 
       const q = new URLSearchParams(location.search);
       const scenario = q.get("scenario") || "ok";
@@ -116,12 +121,66 @@
           return {};
         },
       };
+      if (q.get("source") === "snapshot") {
+        // Second delivery: the same views fed by the core's schema-1 snapshot (no Home Assistant).
+        const sec = (msAgo) => (now - msAgo) / 1000;
+        const snapshot = {
+          schema: 1, generated_at: now / 1000,
+          app: { version: "0.2.0", rns_version: "1.6.0", arch: "aarch64",
+                 state: scenario === "problem" ? "needs_attention" : "running",
+                 connectivity: scenario === "problem" ? "partial" : "online",
+                 problem: scenario === "problem" ? "some_peers_unreachable" : "none", message: null, started_at: sec(7.5 * 60e3) },
+          node: { running: true, started_at: sec(7 * 60e3), transport_enabled: true, restarts: 0, memory_restarts: 0 },
+          network: { peers_configured: 2, peers_connected: scenario === "problem" ? 1 : 2, rx_bytes: 280000, tx_bytes: 120000,
+                     rx_rate: 700, tx_rate: 300, packets_rx: 900, packets_tx: 800, paths: busy ? 2048 : 1312, relayed_links: 0,
+                     announces_rx: 300, announces_tx: 20 },
+          peers: [
+            { name: "Emerald", connected: true, connected_since: sec(7 * 60e3), rx_bytes: 200000, tx_bytes: 90000, rx_rate: 500, tx_rate: 200, announces_rx: 200, announces_tx: 10, reconnections: 0 },
+            { name: "Quartz", connected: scenario !== "problem", connected_since: scenario === "problem" ? null : sec(3 * 3600e3), rx_bytes: 80000, tx_bytes: 30000, rx_rate: 200, tx_rate: 100, announces_rx: 100, announces_tx: 10, reconnections: 3 },
+          ],
+          resources: { memory_bytes: 78 * 2 ** 20, core_memory_bytes: 21 * 2 ** 20, reticulum_memory_bytes: 57 * 2 ** 20, cpu_percent: 1.8 },
+        };
+        const series = (base, wobble) => {
+          const out = [];
+          for (let t = now - 7 * 24 * 3600e3; t <= now; t += 5 * 60e3) out.push({ t, v: Math.max(0, base + wobble * Math.sin(t / 7e6)) });
+          return out;
+        };
+        const source = new SnapshotSource({
+          history: async () => (scenario === "nohistory" ? Promise.reject(new Error("none")) : {
+            receive_rate: series(0.7, 0.4), send_rate: series(0.3, 0.2), cpu: series(1.8, 0.6), memory: series(76, 2),
+          }),
+        });
+        source.update(scenario === "unavailable" ? null : snapshot);
+        if (scenario === "unavailable") { source.update(snapshot); source.update(null); }
+        const host = document.createElement("div");
+        if (q.get("theme") === "dark") host.setAttribute("data-theme", "dark"); else host.setAttribute("data-theme", "light");
+        document.body.append(host);
+        loadFonts();
+        const ui = new InterfaceController({
+          root: host.attachShadow({ mode: "open" }),
+          source,
+          copy: {
+            unavailable: "MeshBeacon's core is not answering. Values reappear automatically.",
+            problemHint: "Details and suggested steps are in the MeshBeacon app's log.",
+            historyUnavailable: "History is not available.",
+            historyEmpty: "No history yet. It builds up while the app runs (kept in memory for 7 days).",
+            diagnosticsNote: null,
+            ranges: ["6h", "24h", "7d"],
+            notSetUp: { title: "MeshBeacon is starting", lines: ["Waiting for the first report."] },
+            loadError: (reason) => ({ title: "MeshBeacon could not be loaded", lines: [`Reason: ${reason}`] }),
+          },
+        });
+        ui.tab = q.get("tab") || "overview";
+        ui.render();
+        ui.loadHistory(true);
+      } else {
       const panel = document.createElement("meshbeacon-panel");
       panel.narrow = innerWidth < 870;
       panel.panel = { url_path: "meshbeacon" };
       panel.route = { path: q.get("tab") ? `/${q.get("tab")}` : "" };
       panel.hass = hass;
       document.body.append(panel);
+      }
     </script>
   </body>
 </html>

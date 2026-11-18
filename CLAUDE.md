@@ -116,7 +116,9 @@ docs/hacs.md                       HACS compatibility (prepared, not published)
 docs/research/known-paths.md       why "Known paths" reads 2,048 (RNS unused-path target)
 docs/testing/v0.2-physical-results.md  initial physical readings (not final acceptance)
 custom_components/meshbeacon/       v0.2 Home Assistant integration
-custom_components/meshbeacon/frontend/  sidebar panel (ADR 0007): plain JS, no dependencies
+custom_components/meshbeacon/frontend/  interface (ADR 0007): plain JS, no dependencies; layers in
+                                   docs/architecture.md §6a: sources/ (data), ui/ (presentation),
+                                   meshbeacon-panel.js (delivery shell for the integration panel)
 tests/frontend/                    panel unit tests (`node --test tests/frontend/model.test.mjs`)
 tools/panel_preview.html           panel preview with sample data (loopback only)
 hacs.json                          HACS metadata (no release workflow)
@@ -142,7 +144,10 @@ python -m pytest tests/ha -o "pythonpath=meshbeacon/core ." -o asyncio_mode=auto
 v0.2: `custom_components/meshbeacon/` is the HA integration (never imports RNS or the core; talks
 only to `GET /api/v1/status`, schema 1). The sidebar panel (ADR 0007) reads only HA entities and
 HA's recorder: no third-party JS, no CDN, no `innerHTML`, no browser storage (tests enforce this).
-The HA test harness needs `home-assistant-frontend` (in `requirements-ha-test.txt`). Metrics are computed only in `core/meshbeacon/metrics.py`;
+The HA test harness needs `home-assistant-frontend` (in `requirements-ha-test.txt`).
+Keep the interface layers separate: views read only the view-data contract (`model.js`
+NODE_KEYS/PEER_KEYS); only `sources/` knows where data comes from; only the delivery shell knows
+its host. Metrics are computed only in `core/meshbeacon/metrics.py`;
 read only allow-listed RNS counters and report anything unavailable as `null`, never as zero.
 
 Layout: `meshbeacon/` is the app folder (Supervisor build context); `meshbeacon/core/meshbeacon/`

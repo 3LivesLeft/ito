@@ -133,6 +133,10 @@ Assistant's default light and dark surfaces.
 
 ### 6.1 Tokens
 
+Code layout (see [architecture §6a](architecture.md)): `ui/components.js` (the components
+below), `ui/views.js` (Overview, Diagnostics), `ui/controller.js` (tabs, history, rendering),
+`ui/style.js` (styles). The same modules serve every delivery.
+
 `custom_components/meshbeacon/frontend/tokens.js` is the single source for the interface. Views
 use only `--mb-*` custom properties, never raw values. A test fails if a view uses a variable
 that the tokens do not define.

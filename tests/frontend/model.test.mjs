@@ -166,7 +166,9 @@ test("tabs come from the route path, defaulting to the overview", () => {
 });
 
 test("frontend files make no external requests and never use innerHTML", () => {
-  for (const name of readdirSync(FRONTEND).filter((n) => n.endsWith(".js"))) {
+  const files = readdirSync(FRONTEND, { recursive: true }).filter((n) => n.endsWith(".js"));
+  assert.ok(files.length >= 10, files.join());
+  for (const name of files) {
     const source = readFileSync(new URL(name, FRONTEND), "utf8");
     const urls = (source.match(/https?:\/\/[^\s"'`)]+/g) || []).filter((u) => u !== "http://www.w3.org/2000/svg");
     assert.deepEqual(urls, [], `${name} refers to ${urls}`);
@@ -178,7 +180,9 @@ test("frontend files make no external requests and never use innerHTML", () => {
 
 test("the frontend folder holds only code and the bundled Inter font with its licence", () => {
   const top = readdirSync(FRONTEND).sort();
-  assert.deepEqual(top, ["brand-mark.js", "fonts", "fonts.js", "meshbeacon-panel.js", "model.js", "tokens.js"]);
+  assert.deepEqual(top, ["brand-mark.js", "fonts", "fonts.js", "meshbeacon-panel.js", "model.js", "sources", "tokens.js", "ui"]);
+  assert.deepEqual(readdirSync(new URL("sources/", FRONTEND)).sort(), ["hass.js", "snapshot.js"]);
+  assert.deepEqual(readdirSync(new URL("ui/", FRONTEND)).sort(), ["components.js", "controller.js", "dom.js", "style.js", "views.js"]);
   const fonts = readdirSync(new URL("fonts/inter-5.3.0/", FRONTEND)).sort();
   assert.deepEqual(fonts, [
     "OFL.txt",

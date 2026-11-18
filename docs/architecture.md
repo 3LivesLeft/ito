@@ -339,6 +339,38 @@ Design:
 - **No image is published** until the licensing obligations O1–O7 are implemented
   ([licensing §5](research/licensing.md#5-obligations-before-publishing-images)).
 
+## 6a. Interface layers (v0.2; maintainer requirement, 18 Nov 2026)
+
+The core, the secure API, the presentation and the delivery mechanism are maintained
+independently. Each layer depends only on the one below through a versioned contract, so a new
+delivery (the built-in interface, once a secure one exists) or a new feature (LXMF messaging,
+I2P, LoRa) adds a part without reworking the others.
+
+```text
+ delivery     meshbeacon-panel.js (integration panel, today) | future built-in interface (ADR 0013, blocked)
+                     │ chooses a source, supplies chrome (menu button, routing) and wording
+ presentation ui/controller.js · ui/views.js · ui/components.js · ui/style.js · ui/dom.js · tokens.js
+                     │ reads only the view-data contract (model.js NODE_KEYS / PEER_KEYS / HISTORY_KEYS)
+ data sources sources/hass.js (HA entities + recorder) | sources/snapshot.js (core snapshot + history provider)
+                     │
+ secure API   GET /api/v1/status, schema 1, pinned TLS (ADR 0006) → integration entities
+                     │
+ core         metrics.py (the only metrics implementation), supervisor, RNS child
+```
+
+| Layer | Contract | Rules (enforced by tests) |
+|---|---|---|
+| Core | Status snapshot, schema 1 | Metrics computed only in `metrics.py` |
+| Secure API | `GET /api/v1/status` | Pinned TLS, token, read-only (ADR 0006); messaging adds its own scoped API (ADR 0010, proposed) |
+| Data sources | `reading(key)`, `has`, `peers`, `peerState`, `availability`, `version`, `history` | No DOM (`tests/frontend/sources.test.mjs`); both sources return complete readings for every key |
+| Presentation | Components and views take plain values or a source | No Home Assistant objects, network or storage (`sources.test.mjs`); only design tokens (`tokens.test.mjs`); `textContent` only |
+| Delivery | Wires a source, the controller and host chrome | The only place that knows its host (Home Assistant today) |
+
+`tools/panel_preview.html?source=snapshot` renders the same views from a schema-1 snapshot
+through `sources/snapshot.js`, with no Home Assistant. It shows that the presentation does not
+depend on the delivery. The built-in interface's remaining needs are a secure delivery and the
+seven-day memory-only history (decision D3), not new presentation code.
+
 ## 7. Evolution by version
 
 | Version | Architectural additions |

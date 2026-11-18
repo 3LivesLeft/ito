@@ -42,7 +42,20 @@ async def test_sidebar_entry_is_registered_for_admins_only(hass, mock_entry, aio
 async def test_module_is_served_and_holds_no_data(hass, hass_client, mock_entry, aioclient_mock):
     await _set_up(hass, mock_entry, aioclient_mock)
     client = await hass_client()
-    for name in ("meshbeacon-panel.js", "model.js", "tokens.js", "fonts.js", "brand-mark.js"):
+    for name in (
+        "meshbeacon-panel.js",
+        "model.js",
+        "tokens.js",
+        "fonts.js",
+        "brand-mark.js",
+        "ui/controller.js",
+        "ui/views.js",
+        "ui/components.js",
+        "ui/style.js",
+        "ui/dom.js",
+        "sources/hass.js",
+        "sources/snapshot.js",
+    ):
         response = await client.get(f"/meshbeacon_panel/{name}")
         assert response.status == 200
         assert "javascript" in response.headers["Content-Type"]

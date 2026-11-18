@@ -27,6 +27,44 @@ export const LABELS = {
   },
 };
 
+LABELS.problem = {
+  none: "None",
+  isolated: "Not connected to anyone",
+  peers_unreachable: "Cannot reach any peer",
+  some_peers_unreachable: "Some peers unreachable",
+  reticulum_restarting: "Reticulum restarting",
+  reticulum_failing: "Reticulum keeps failing",
+  restart_loop_paused: "Paused after repeated restarts",
+  options: "Options need correcting",
+  storage: "Storage low",
+  identity: "Identity problem",
+  configuration: "Configuration problem",
+  data_folder: "Data folder problem",
+  preparation_failed: "Preparation failed",
+  unexpected: "Unexpected problem",
+};
+
+/**
+ * The view-data contract (docs/architecture.md, "Interface layers"). Every data source offers
+ * readings under these keys, which are the integration's entity keys and map one to one onto the
+ * core's status snapshot (schema 1). Views use only these keys, never a source's internals.
+ */
+export const NODE_KEYS = Object.freeze([
+  "status", "connectivity", "problem", "problem_detected", "reticulum_running", "transport_mode",
+  "app_started", "reticulum_started", "peers_connected", "peers_configured", "received", "sent",
+  "receive_rate", "send_rate", "packets_received", "packets_sent", "known_paths", "relayed_links",
+  "announces_received", "announces_sent", "memory", "core_memory", "reticulum_memory", "cpu",
+  "restarts", "memory_restarts",
+]);
+export const PEER_KEYS = Object.freeze([
+  "connected", "connected_since", "reconnections", "received", "sent", "receive_rate", "send_rate",
+  "announces_received", "announces_sent",
+]);
+export const HISTORY_KEYS = Object.freeze(["receive_rate", "send_rate", "cpu", "memory"]);
+
+/** A reading that is absent: the source has no such value (for example a disabled sensor). */
+export const ABSENT = Object.freeze({ available: false, known: false, state: null, value: null, unit: "", digits: null, label: null, time: null });
+
 export const CONNECTIVITY_TEXT = {
   online: "Connected to every configured peer.",
   partial: "Connected to some peers. The others are being retried automatically.",

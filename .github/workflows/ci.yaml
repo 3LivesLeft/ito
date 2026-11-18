@@ -33,7 +33,7 @@ jobs:
       - run: ruff format --check meshbeacon/core custom_components tests tools
       - run: mypy
       - name: Panel and design-token tests, including WCAG contrast (Node's built-in runner; no packages)
-        run: node --test tests/frontend/model.test.mjs tests/frontend/tokens.test.mjs
+        run: node --test tests/frontend/*.test.mjs
       - name: Shell scripts
         run: shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/meshbeacon/run meshbeacon/rootfs/etc/services.d/meshbeacon/finish tests/container/build_localbase.sh
       - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
