@@ -251,6 +251,12 @@ Design:
    kept in the app's data folder" — **without any hashes** — and the option must be switched off
    again by the user before the next restart, otherwise MeshBeacon refuses to start and explains
    why (it cannot switch the option off itself without Supervisor API access).
+   **Replacement is a journalled transaction** (PR #2 review): (1) the new key is staged as
+   `identity.pending`; (2) the state file records the replacement as authorised — the commit
+   point; (3) the current identity is kept, the new one is written as primary and backup, and the
+   state is committed. A crash before (2) leaves the original in use; after (2), the next start
+   finishes *that* replacement whatever the option says, so it is applied exactly once and the
+   identity never changes silently. Verified by injecting a crash before each of the six writes.
 6. **Restoration**:
    - *From a Home Assistant backup:* the normal path. `/data` (including the identity and its
      backup copy) is restored by the Supervisor; validation (2) runs on next start.
@@ -362,6 +368,6 @@ How the design above was implemented, and decisions taken during implementation.
 | Timings | Back-off 1 s → 5 min; breaker 5 failures / 15 min, 15 min cool-down, give up after 3 openings; stable after 10 min; status every 10 s, stall after 120 s; start history 5 starts / 30 min | `policy.py` |
 | Logging | Every line redacted (32-hex hashes, longer hex runs, mixed-case base64 runs ≥ 43 characters, configured passphrases), truncated to 1,000 characters, and RNS output rate-limited to 20 lines/s with a burst of 100 | `logfilter.py` |
 | Resource guards | `nice 10`; memory guard on RSS + swap; CPU warning after 10 min above 80 % of a core; free-space floor 200 MB (warning below 1 GB); regenerable RNS cache cleared above 100 MB at start; `ulimits: nofile 4096` | `supervisor.py`, `prepare.py`, `config.yaml` |
-| Health endpoint | `GET /health` on port 8099, `200 ok` while the main loop heartbeat is < 60 s old, `503` otherwise; request logging disabled | `health.py` |
+| Health endpoint | `GET /health` on port 8099, `200 ok` while the main loop heartbeat is < 60 s old, `503` otherwise; request logging disabled. The heartbeat is kept fresh while waiting for bounded subprocesses (the prepare step, up to 180 s, and the stop grace period), so a slow start cannot cause a Supervisor restart (PR #2 review) | `health.py`, `supervisor.py` |
 | Build | Base image pinned by multi-arch digest; runtime wheels hash-pinned and binary-only from PyPI; optional BuildKit secret `build_ca` for builds behind TLS-intercepting proxies (never stored in the image) | `Dockerfile` |
 | AppArmor | Custom profile written from the HA example; **not yet validated on an AppArmor host** (pending the reference Pi) | `apparmor.txt` |

@@ -46,7 +46,8 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [Threat model](docs/security/threat-model.md) | Assets, threats and controls |
 | [Testing strategy](docs/testing/strategy.md) | How we will test against isolated Reticulum networks |
 | [Phase 1 results](docs/testing/phase1-results.md) | What has been verified so far, and what has not |
-| [App documentation](meshbeacon/DOCS.md) | Installing and using the local prototype |
+| [App documentation](meshbeacon/DOCS.md) | Using the local prototype |
+| [Installing the local prototype](docs/install-local-prototype.md) | Step-by-step on Home Assistant OS, without published images |
 | [First-run UX](docs/ux/first-run.md) | The five-minute setup path and configuration design |
 | [Naming research](docs/research/naming.md) | The existing "MeshBeacon" project and trademark checks |
 | [Public peer presets](docs/research/public-peers.md) | Optional public entry points and how they are verified |

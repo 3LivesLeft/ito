@@ -76,6 +76,16 @@ Notable tests (all passing):
 | The pinned HA base image ships zlib 1.3.2 (CVE-2026-4738, critical) and older krb5-libs and libexpat with high-severity CVEs | First CI image scan | Upgrade those packages in the Dockerfile with explicit minimum versions (zlib ≥ 1.4-r0, krb5-libs ≥ 1.22.3-r0, libexpat ≥ 2.10.0-r0); remove when the base image catches up. Remaining high-severity findings without an Alpine fix (OpenSSL 3.5.9, SQLite 3.53.4, Go stdlib in tempio, CPython 3.13.18) are tracked for the next base-image refresh |
 | CI shellcheck (older) flagged `A && B \|\| C`; CI image lacked `pgrep`; licence check flagged base-image packages without SPDX metadata | First CI run | Explicit `if` blocks and pinned shellcheck; `/proc` scan in the test; reviewed licences recorded in `tools/check_licences.py` |
 
+### 3.1 Review findings (independent review of PR #2)
+
+| Finding | Evidence before the fix | Fix and evidence after |
+|---|---|---|
+| Interrupted identity **replacement** could end in needs_attention (crash after the new key reached primary and backup but before the state file; option then switched off), or generate a second new identity instead of finishing the first | New test `test_identity_replacement.py` failed 2 of 3 | Journalled replacement with a commit point; crash injected before each of the 6 writes, restarted with the option on and off: never needs_attention, never a silent change, never applied twice, original always kept — passes |
+| The heartbeat was not refreshed during the prepare step (up to 180 s), so a slow start could make the health check fail and the Supervisor restart the app | `test_slow_preparation_keeps_health_ok` saw `503` | Wait for subprocesses while refreshing the heartbeat; prepare output goes to a temporary file. Health stays `200` through a slow and a timed-out preparation |
+| L2 announce-flood test missing | — | Added (integration and container). With default RNS protections on the peer, only ≈ 2.5 kB reached MeshBeacon, so the test peer disables its announce cap and ingress control to forward everything: 3.1–3.3 MB delivered; Reticulum peak 42 MiB (integration), whole app 68.1 MiB under a 256 MB no-swap limit (container); logs within the rate limit; health `200` |
+| The `integration` test marker was never applied (a `pytestmark` in `conftest.py` has no effect) | `-m integration` selected 0 tests | Marked through a collection hook: 21 tests |
+| Simplifications | — | Removed a redundant redaction pattern; simplified a status-change condition with an unreachable branch; enum comparison instead of a string |
+
 ## 4. Resource measurements
 
 | Measurement | Value | Conditions |
@@ -85,6 +95,7 @@ Notable tests (all passing):
 | `docker stats` memory (cgroup) | 43.7 MiB | Same container |
 | Idle CPU | ≈ 0.1 % | Same container |
 | Starts under a hard 256 MB limit with no swap | Yes | Container test L1 |
+| Announce flood under a hard 256 MB limit with no swap (L2) | App peak **68.1 MiB**; no OOM kill; 3.26 MB of announces delivered | Container, amd64, stand-in base (CI repeats on the HA base) |
 | Image size | 117 MB uncompressed | Stand-in base; the HA base will differ |
 
 Raspberry Pi figure: **not measured** (roadmap LP-16, RG-1). The emulated aarch64 reading is above the target only because of QEMU's overhead; that is an assumption until the physical measurement confirms it.
@@ -94,4 +105,3 @@ Raspberry Pi figure: **not measured** (roadmap LP-16, RG-1). The emulated aarch6
 - AppArmor profile (no AppArmor on the sandbox host) — must be checked on the Pi in complain mode.
 - Behaviour under the real Supervisor (watchdog, backups, options UI) — the image itself is now tested on the real HA base in CI.
 - The physical Pi (maintainer); aarch64 has only been tested under emulation.
-- Low-memory profile L2 (announce flood under the limit) — test not yet written.

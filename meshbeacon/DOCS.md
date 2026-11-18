@@ -24,9 +24,10 @@ It does not yet show entities or dashboards in Home Assistant, send messages, or
 MeshBeacon is not published yet, so you install it from a copy of its folder:
 
 1. Install the **Samba share** or **Advanced SSH & Web Terminal** app if you have neither.
-2. Copy the `meshbeacon` folder from this repository into the `addons` folder on your Home
-   Assistant device (it appears as `/addons` over SSH, or the **addons** share over Samba), so
-   that you have `/addons/meshbeacon/config.yaml`.
+2. Copy the `meshbeacon` folder from this repository into the local apps folder on your Home
+   Assistant device. Depending on the Samba or SSH app's version it appears as `/local_apps` or
+   `/addons` (the same folder), so that you have `…/meshbeacon/config.yaml`. Step-by-step
+   instructions: `docs/install-local-prototype.md` in the repository.
 3. Go to **Settings → Apps → App store**, open the ⋮ menu and choose **Check for updates**.
 4. **MeshBeacon** appears under **Local apps**. Open it and select **Install**. Home Assistant
    builds it on your device; on a Raspberry Pi 4 this takes a few minutes and needs an internet
@@ -109,7 +110,7 @@ does not restart it pointlessly.
 
 ## Resource use
 
-MeshBeacon is designed to be light: about 70 MB of memory when idle (measured in a container on
+MeshBeacon is designed to be light: about 65–70 MB of memory when idle (measured in containers on
 x86-64; Raspberry Pi measurement pending). It runs Reticulum at low priority, restarts it if it uses
 more memory than the limit you set (default 256 MB), limits how much it writes to the log, and stops
 Reticulum if free storage falls below 200 MB.
