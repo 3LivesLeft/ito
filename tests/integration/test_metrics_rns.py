@@ -13,13 +13,9 @@ import json
 import re
 import subprocess
 import sys
-import threading
 import urllib.error
 import urllib.request
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-
-import pytest
 
 from meshbeacon.node import INTERFACE_COUNTERS, NODE_COUNTERS
 
@@ -27,47 +23,6 @@ from .conftest import free_port, wait_for, write_options
 
 SUPERVISOR_TOKEN = "test-supervisor-token-" + "x" * 20
 HEX32 = re.compile(r"[0-9a-f]{32}")
-
-
-class FakeSupervisor:
-    """Accepts discovery messages like the real Supervisor (POST /discovery) on 127.0.0.1."""
-
-    def __init__(self) -> None:
-        self.messages: list[dict] = []
-        self.auth: list[str | None] = []
-        outer = self
-
-        class Handler(BaseHTTPRequestHandler):
-            def do_POST(self) -> None:
-                outer.auth.append(self.headers.get("Authorization"))
-                body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
-                outer.messages.append(json.loads(body))
-                reply = json.dumps({"result": "ok", "data": {"uuid": "abc123"}}).encode()
-                self.send_response(200)
-                self.send_header("Content-Length", str(len(reply)))
-                self.end_headers()
-                self.wfile.write(reply)
-
-            def log_message(self, *args) -> None:
-                pass
-
-        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
-
-    @property
-    def url(self) -> str:
-        return f"http://127.0.0.1:{self.httpd.server_address[1]}"
-
-    def close(self) -> None:
-        self.httpd.shutdown()
-        self.httpd.server_close()
-
-
-@pytest.fixture
-def supervisor():
-    s = FakeSupervisor()
-    yield s
-    s.close()
 
 
 def fetch(port: int, token: str | None):
@@ -81,12 +36,16 @@ def fetch(port: int, token: str | None):
         return exc.code, None
 
 
+FAST_DISCOVERY = {"retry_initial": 0.2, "retry_max": 1.0, "reannounce": 2.0}
+
+
 def start_runner(runner_factory, data, supervisor, **kw):
     return runner_factory(
         data,
         supervisor_token=SUPERVISOR_TOKEN,
         supervisor_url=supervisor.url,
         hostname=lambda: "local-meshbeacon",
+        discovery_timing=FAST_DISCOVERY,
         **kw,
     )
 

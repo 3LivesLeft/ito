@@ -153,7 +153,7 @@ class FakeSupervisor:
 
 def test_discovery_announces_and_remembers_uuid(tmp_path):
     fake = FakeSupervisor()
-    d = Discovery("sup-token", tmp_path / "discovery.json", opener=fake, sleep=lambda _s: None)
+    d = Discovery("sup-token", tmp_path / "discovery.json", opener=fake)
     assert d.announce("local-meshbeacon", 8100, "api-token")
     req = fake.requests[0]
     assert req.full_url == "http://supervisor/discovery" and req.get_method() == "POST"
@@ -166,14 +166,43 @@ def test_discovery_announces_and_remembers_uuid(tmp_path):
     assert "api-token" not in (tmp_path / "discovery.json").read_text()  # the API token is never on disk
 
 
-def test_discovery_retries_then_gives_up(tmp_path):
-    sleeps = []
-    fake = FakeSupervisor(fail=5)
-    d = Discovery("t", tmp_path / "d.json", opener=fake, sleep=sleeps.append, attempts=3)
-    assert d.announce("h", 1, "x") is False
-    assert len(fake.requests) == 3 and len(sleeps) == 2
-    fake = FakeSupervisor(fail=1)
-    assert Discovery("t", tmp_path / "d.json", opener=fake, sleep=sleeps.append).announce("h", 1, "x")
+def test_discovery_keeps_trying_until_the_supervisor_answers(tmp_path):
+    """Recovery without a MeshBeacon restart (v0.2 review): back-off, then success, then refresh."""
+    fake = FakeSupervisor(fail=4)
+    stop = threading.Event()
+    results = []
+
+    def record(ok):
+        results.append(ok)
+        if len(results) == 6:
+            stop.set()
+
+    d = Discovery("t", tmp_path / "d.json", opener=fake)
+    thread = threading.Thread(
+        target=d.keep_announced,
+        args=("h", 1, "x", stop, record),
+        kwargs={"retry_initial": 0.01, "retry_max": 0.04, "reannounce": 0.01},
+    )
+    thread.start()
+    thread.join(10)
+    assert not thread.is_alive()
+    assert results == [False, False, False, False, True, True]  # refreshes keep going after success
+    assert all(json.loads(r.data)["config"]["token"] == "x" for r in fake.requests)
+
+
+def test_discovery_back_off_is_capped_and_stops_promptly(tmp_path):
+    waits = []
+
+    class Stop(threading.Event):
+        def wait(self, timeout=None):
+            waits.append(timeout)
+            if len(waits) >= 8:
+                self.set()
+            return self.is_set()
+
+    d = Discovery("t", tmp_path / "d.json", opener=FakeSupervisor(fail=100))
+    d.keep_announced("h", 1, "x", Stop(), lambda ok: None, retry_initial=30, retry_max=900)
+    assert waits == [30, 60, 120, 240, 480, 900, 900, 900]
 
 
 def test_discovery_withdraw(tmp_path):
@@ -193,3 +222,59 @@ def test_discovery_withdraw(tmp_path):
     state.write_text('{"uuid": "abc"}')
     assert not Discovery("t", state, opener=FakeSupervisor(delete_error=500)).withdraw()
     assert state.exists()
+
+
+def test_absolute_deadline_ends_trickling_clients(monkeypatch):
+    """A client that sends one byte just inside the inactivity timeout cannot hold a slot for ever."""
+    store = StatusStore(new_token())
+    srv = ApiServer(store, "127.0.0.1", 0, max_concurrent=1, deadline=1.0)
+    srv.start()
+    try:
+        s = socket.create_connection(("127.0.0.1", srv.port))
+        start = time.monotonic()
+        closed = False
+        for _ in range(40):
+            try:
+                s.sendall(b"G")
+            except OSError:
+                closed = True
+                break
+            time.sleep(0.1)
+            s.setblocking(False)
+            try:
+                if s.recv(1) == b"":
+                    closed = True
+                    break
+            except BlockingIOError:
+                pass
+            finally:
+                s.setblocking(True)
+        assert closed and time.monotonic() - start < 3
+        s.close()
+        store.publish({})
+
+        def released():
+            try:
+                return get(srv.port, headers={"Authorization": "Bearer nope"})[0] == 401
+            except OSError:
+                return False
+
+        assert any(released() or time.sleep(0.1) for _ in range(30))  # the slot is released
+    finally:
+        srv.stop()
+
+
+def test_health_server_is_bounded_but_serves_the_watchdog():
+    from meshbeacon.health import HEALTH_DEADLINE, HEALTH_MAX_CONCURRENT, HealthServer, Heartbeat
+
+    srv = HealthServer(Heartbeat(), "127.0.0.1", 0, 60)
+    srv.start()
+    try:
+        assert srv.httpd.slots._initial_value == HEALTH_MAX_CONCURRENT
+        assert srv.httpd.deadline == HEALTH_DEADLINE
+        idle = [socket.create_connection(("127.0.0.1", srv.port)) for _ in range(HEALTH_MAX_CONCURRENT - 2)]
+        assert get(srv.port, "/health")[0] == 200  # spare capacity for the Supervisor's check
+        for s in idle:
+            s.close()
+    finally:
+        srv.stop()

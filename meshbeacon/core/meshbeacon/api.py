@@ -7,7 +7,7 @@
 * One endpoint, ``GET /api/v1/status``, which serves a snapshot that the core has already built.
   There are no write or control endpoints.
 * Bounded: at most ``MAX_CONCURRENT`` requests at a time (others are closed at once), a socket
-  timeout, GET only, no request bodies.
+  inactivity timeout, an absolute per-connection deadline, GET only, no request bodies.
 * The bearer token is 256 random bits, created in memory at every start, compared in constant
   time, never written to disk and never logged. It reaches Home Assistant only through Supervisor
   discovery, which only Home Assistant Core can read.
@@ -15,26 +15,31 @@
 
 from __future__ import annotations
 
+import contextlib
 import hmac
 import json
 import secrets
 import socket
 import threading
-import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 
 from . import fsutil
+from .httpserver import BoundedHTTPServer
 
 API_PATH = "/api/v1/status"
 DISCOVERY_SERVICE = "meshbeacon"
 SUPERVISOR_URL = "http://supervisor"
 MAX_CONCURRENT = 4
-SOCKET_TIMEOUT = 5.0
+SOCKET_TIMEOUT = 5.0  # longest silence from a client
+REQUEST_DEADLINE = 10.0  # longest a connection may last, however it trickles
+REANNOUNCE_INTERVAL = 6 * 3600.0  # re-send the (unchanged) discovery message; the Supervisor ignores duplicates
+RETRY_INITIAL = 30.0
+RETRY_MAX = 15 * 60.0
 
 
 def new_token() -> str:
@@ -80,7 +85,7 @@ def make_handler(store: StatusStore) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         server_version = "MeshBeacon"
         sys_version = ""
-        timeout = SOCKET_TIMEOUT
+        timeout = SOCKET_TIMEOUT  # read when the handler class is made, so tests can shorten it
 
         def do_GET(self) -> None:
             if self.path != API_PATH:
@@ -108,35 +113,18 @@ def make_handler(store: StatusStore) -> type[BaseHTTPRequestHandler]:
     return Handler
 
 
-class BoundedHTTPServer(ThreadingHTTPServer):
-    """A threading HTTP server that serves at most ``max_concurrent`` connections at a time."""
-
-    daemon_threads = True
-
-    def __init__(self, address: tuple[str, int], handler: type[BaseHTTPRequestHandler], max_concurrent: int) -> None:
-        self.slots = threading.BoundedSemaphore(max_concurrent)
-        super().__init__(address, handler)
-
-    def process_request(self, request: Any, client_address: Any) -> None:
-        if not self.slots.acquire(blocking=False):
-            self.shutdown_request(request)  # busy: close at once rather than queue
-            return
-        try:
-            super().process_request(request, client_address)
-        except Exception:
-            self.slots.release()
-            raise
-
-    def process_request_thread(self, request: Any, client_address: Any) -> None:
-        try:
-            super().process_request_thread(request, client_address)
-        finally:
-            self.slots.release()
-
-
 class ApiServer:
-    def __init__(self, store: StatusStore, host: str, port: int, max_concurrent: int = MAX_CONCURRENT) -> None:
-        self.httpd = BoundedHTTPServer((host, port), make_handler(store), max_concurrent)
+    def __init__(
+        self,
+        store: StatusStore,
+        host: str,
+        port: int,
+        max_concurrent: int = MAX_CONCURRENT,
+        deadline: float = REQUEST_DEADLINE,
+    ) -> None:
+        self.httpd = BoundedHTTPServer(
+            (host, port), make_handler(store), max_concurrent=max_concurrent, deadline=deadline
+        )
         self.thread = threading.Thread(target=self.httpd.serve_forever, name="api", daemon=True)
 
     @property
@@ -173,19 +161,13 @@ class Discovery:
         *,
         base_url: str = SUPERVISOR_URL,
         opener: Opener = _open,
-        attempts: int = 3,
         timeout: float = 10.0,
-        backoff: float = 5.0,
-        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self._supervisor_token = supervisor_token
         self.state_path = state_path
         self.base_url = base_url
         self.opener = opener
-        self.attempts = attempts
         self.timeout = timeout
-        self.backoff = backoff
-        self.sleep = sleep
 
     def _request(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         data = None if payload is None else json.dumps(payload).encode()
@@ -201,18 +183,46 @@ class Discovery:
         return value if isinstance(value, dict) else {}
 
     def announce(self, host: str, port: int, api_token: str) -> bool:
+        """One attempt to send (or refresh) the discovery message."""
         payload = {"service": DISCOVERY_SERVICE, "config": {"host": host, "port": port, "token": api_token}}
-        for attempt in range(self.attempts):
-            try:
-                reply = self._request("POST", "/discovery", payload)
-                uuid = (reply.get("data") or {}).get("uuid")
-                if isinstance(uuid, str):
-                    fsutil.atomic_write_json(self.state_path, {"uuid": uuid})
-                return True
-            except (OSError, ValueError, urllib.error.URLError):
-                if attempt + 1 < self.attempts:
-                    self.sleep(self.backoff * (attempt + 1))
-        return False
+        try:
+            reply = self._request("POST", "/discovery", payload)
+        except (OSError, ValueError, urllib.error.URLError):
+            return False
+        uuid = (reply.get("data") or {}).get("uuid")
+        if isinstance(uuid, str):
+            with contextlib.suppress(OSError):
+                fsutil.atomic_write_json(self.state_path, {"uuid": uuid})
+        return True
+
+    def keep_announced(
+        self,
+        host: str,
+        port: int,
+        api_token: str,
+        stop: threading.Event,
+        on_result: Callable[[bool], None],
+        *,
+        retry_initial: float = RETRY_INITIAL,
+        retry_max: float = RETRY_MAX,
+        reannounce: float = REANNOUNCE_INTERVAL,
+    ) -> None:
+        """Announce until it succeeds, with back-off, then refresh it now and then — for ever.
+
+        Recovers by itself from a Supervisor that is restarting or briefly unreachable, without a
+        restart of MeshBeacon. Refreshing re-sends the same message; the Supervisor ignores an exact
+        duplicate, so Home Assistant is not disturbed.
+        """
+        delay = retry_initial
+        while not stop.is_set():
+            ok = self.announce(host, port, api_token)
+            on_result(ok)
+            if ok:
+                delay = retry_initial
+                stop.wait(reannounce)
+            else:
+                stop.wait(delay)
+                delay = min(delay * 2, retry_max)
 
     def withdraw(self) -> bool:
         """Remove a previously sent message, if one was recorded. True if nothing remains to do."""

@@ -12,7 +12,15 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Callable
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
+
+from .httpserver import BoundedHTTPServer
+
+# Bounds (v0.2 security review). Generous enough that the Supervisor's check, every 120 s, is served
+# even while another client misbehaves; small enough that a flood cannot exhaust threads or memory.
+HEALTH_MAX_CONCURRENT = 16
+HEALTH_SOCKET_TIMEOUT = 5.0
+HEALTH_DEADLINE = 5.0
 
 
 class Heartbeat:
@@ -34,6 +42,7 @@ def make_handler(heartbeat: Heartbeat, max_age: float) -> type[BaseHTTPRequestHa
     class Handler(BaseHTTPRequestHandler):
         server_version = "MeshBeacon"
         sys_version = ""
+        timeout = HEALTH_SOCKET_TIMEOUT
 
         def do_GET(self) -> None:
             if self.path != "/health":
@@ -59,8 +68,12 @@ def make_handler(heartbeat: Heartbeat, max_age: float) -> type[BaseHTTPRequestHa
 
 class HealthServer:
     def __init__(self, heartbeat: Heartbeat, host: str, port: int, max_age: float) -> None:
-        self.httpd = ThreadingHTTPServer((host, port), make_handler(heartbeat, max_age))
-        self.httpd.daemon_threads = True
+        self.httpd = BoundedHTTPServer(
+            (host, port),
+            make_handler(heartbeat, max_age),
+            max_concurrent=HEALTH_MAX_CONCURRENT,
+            deadline=HEALTH_DEADLINE,
+        )
         self.thread = threading.Thread(target=self.httpd.serve_forever, name="health", daemon=True)
 
     @property

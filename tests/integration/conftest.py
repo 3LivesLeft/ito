@@ -12,6 +12,7 @@ import subprocess
 import sys
 import threading
 import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -160,6 +161,7 @@ class Runner:
                 self.sup.step(0.2)
         finally:
             self.sup.stop_child()
+            self.sup.discovery_stop.set()
             if self.sup.api_server is not None:
                 self.sup.api_server.stop()
             self.sup.health.stop()
@@ -214,3 +216,85 @@ def runner_factory():
     yield make
     for r in runners:
         r.stop()
+
+
+class FakeSupervisor:
+    """Accepts discovery messages like the real Supervisor (POST and DELETE /discovery) on 127.0.0.1.
+
+    ``failures`` makes the next N requests fail with 503; ``down()``/``up()`` simulate a Supervisor
+    restart (connections refused while down).
+    """
+
+    def __init__(self) -> None:
+        self.messages: list[dict] = []
+        self.deleted: list[str] = []
+        self.auth: list[str | None] = []
+        self.failures = 0
+        self.attempts = 0
+        self._port = 0
+        self.httpd: ThreadingHTTPServer | None = None
+        self.up()
+
+    def _handler(self):
+        outer = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def _fail(self) -> bool:
+                outer.attempts += 1
+                if outer.failures > 0:
+                    outer.failures -= 1
+                    self.send_response(503)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return True
+                return False
+
+            def do_POST(self) -> None:
+                body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+                if self._fail():
+                    return
+                outer.auth.append(self.headers.get("Authorization"))
+                outer.messages.append(json.loads(body))
+                reply = json.dumps({"result": "ok", "data": {"uuid": "abc123"}}).encode()
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(reply)))
+                self.end_headers()
+                self.wfile.write(reply)
+
+            def do_DELETE(self) -> None:
+                if self._fail():
+                    return
+                outer.deleted.append(self.path)
+                self.send_response(200)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
+            def log_message(self, *args) -> None:
+                pass
+
+        return Handler
+
+    def up(self) -> None:
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", self._port), self._handler())
+        self._port = self.httpd.server_address[1]
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+
+    def down(self) -> None:
+        if self.httpd is not None:
+            self.httpd.shutdown()
+            self.httpd.server_close()
+            self.httpd = None
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self._port}"
+
+    def close(self) -> None:
+        self.down()
+
+
+@pytest.fixture
+def supervisor():
+    s = FakeSupervisor()
+    yield s
+    s.close()

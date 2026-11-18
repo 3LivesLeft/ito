@@ -52,8 +52,19 @@ MSG_API_STARTED = (
     "internal network only, protected by a key that changes at every start."
 )
 MSG_DISCOVERY_FAILED = (
-    "⚠ MeshBeacon could not tell Home Assistant about its status interface. The node works "
-    "normally; restart the app to try again."
+    "⚠ MeshBeacon could not reach the Home Assistant Supervisor to share its status. The node works "
+    "normally, and MeshBeacon will keep trying by itself."
+)
+MSG_DISCOVERY_OK = (
+    "Home Assistant has been told about MeshBeacon's status. In Home Assistant, open Settings → "
+    'Devices & services and add "MeshBeacon" when it is shown as discovered. If it is not shown, '
+    "install the MeshBeacon integration first and restart Home Assistant (see the app's "
+    "Documentation tab)."
+)
+MSG_DISCOVERY_RECOVERED = "Home Assistant can now see MeshBeacon's status again."
+MSG_MONITORING_ERROR = (
+    "⚠ MeshBeacon's status reporting for Home Assistant hit an unexpected problem ({name}). "
+    "Reticulum is not affected. If this repeats, please report it."
 )
 # Problem codes shown in Home Assistant (docs/research/v0.2-observability.md §1). Keep in step with
 # custom_components/meshbeacon/const.py PROBLEMS.
@@ -154,6 +165,7 @@ class Supervisor:
         supervisor_token: str | None = None,
         supervisor_url: str | None = None,
         hostname: Callable[[], str] = container_hostname,
+        discovery_timing: dict[str, float] | None = None,
     ) -> None:
         self.paths = paths
         self.t = timings or Timings()
@@ -188,7 +200,10 @@ class Supervisor:
         self._supervisor_token = supervisor_token
         self.supervisor_url = supervisor_url
         self.hostname = hostname
-        self.discovery_result: bool | None = None
+        self.discovery_results: list[bool] = []  # appended by the discovery thread
+        self.discovery_ok: bool | None = None
+        self.discovery_stop = threading.Event()
+        self.discovery_timing = discovery_timing or {}  # shorter back-off in tests only
 
     # -- output ------------------------------------------------------------------------------
     def say(self, message: str) -> None:
@@ -235,7 +250,7 @@ class Supervisor:
             self.settings = None
         if self.settings is not None:
             self.redact = Redactor(self.settings.secrets)
-            self.collector.configure(tuple(p.name for p in self.settings.peers))
+            self.monitor(self.collector.configure, tuple(p.name for p in self.settings.peers))
 
     def startup_report(self) -> None:
         try:
@@ -377,7 +392,7 @@ class Supervisor:
         self.policy.attempt_started()
         self.cpu_samples.clear()
         self.state = "running"
-        self.collector.child_started()
+        self.monitor(self.collector.child_started)
         self.publish()
 
     def _close_child_fds(self, child: Child) -> None:
@@ -393,7 +408,7 @@ class Supervisor:
         child, self.child = self.child, None
         if child is None:
             return
-        self.collector.child_stopped()
+        self.monitor(self.collector.child_stopped)
         if child.proc.poll() is None:
             child.proc.terminate()
             if not self.wait_responsive(child.proc, self.t.stop_grace):
@@ -420,7 +435,7 @@ class Supervisor:
         if self.policy.gave_up:
             self.enter_attention([MSG_GAVE_UP], "reticulum_failing")
             return
-        self.collector.record_failure(memory=memory)
+        self.monitor(self.collector.record_failure, memory=memory)
         self.publish()
         self.next_attempt = self.policy.next_start(now)
         if self.policy.breaker_open:
@@ -448,7 +463,7 @@ class Supervisor:
             return
         if not isinstance(status, dict) or self.settings is None:
             return
-        self.collector.update(status)
+        self.monitor(self.collector.update, status)
         snap = evaluate(tuple(p.name for p in self.settings.peers), status)
         # Announce changes only. (With no peers, boot has already reported the isolated state.)
         if self.snapshot is None or snap.state is not self.snapshot.state or snap.up != self.snapshot.up:
@@ -492,7 +507,8 @@ class Supervisor:
             return
         cpu = procinfo.cpu_seconds(child.proc.pid)
         core_cpu = procinfo.cpu_seconds(os.getpid())
-        self.collector.resources(
+        self.monitor(
+            self.collector.resources,
             procinfo.memory_bytes(os.getpid()),
             mem,
             None if cpu is None or core_cpu is None else cpu + core_cpu,
@@ -612,23 +628,55 @@ class Supervisor:
         host, port = self.hostname(), self.api_server.port
 
         def announce() -> None:
-            self.discovery_result = discovery.announce(host, port, api_token)
+            try:
+                discovery.keep_announced(
+                    host, port, api_token, self.discovery_stop, self.discovery_results.append, **self.discovery_timing
+                )
+            except Exception:  # never let monitoring take anything else down
+                self.discovery_results.append(False)
 
         threading.Thread(target=announce, name="discovery", daemon=True).start()
 
+    def monitor(self, fn: Callable[..., object], *args: Any, **kwargs: Any) -> None:
+        """Run a metrics update. Monitoring is never allowed to interrupt supervision of Reticulum."""
+        try:
+            fn(*args, **kwargs)
+        except Exception as exc:
+            if self.due("monitoring_error", 3600, first=True):
+                self.say(MSG_MONITORING_ERROR.format(name=type(exc).__name__))
+
     def publish(self) -> None:
-        if self.api_store is not None:
+        """Rebuild the snapshot served to Home Assistant. Failures never reach Reticulum."""
+        if self.api_store is None:
+            return
+        try:
             self.api_store.publish(self.build_snapshot())
+        except Exception as exc:  # monitoring must never interrupt the node
+            if self.due("monitoring_error", 3600, first=True):
+                self.say(MSG_MONITORING_ERROR.format(name=type(exc).__name__))
 
     def api_housekeeping(self) -> None:
         if self.api_store is None:
             return
+        try:
+            self._api_housekeeping()
+        except Exception as exc:  # monitoring must never interrupt the node
+            if self.due("monitoring_error", 3600, first=True):
+                self.say(MSG_MONITORING_ERROR.format(name=type(exc).__name__))
+
+    def _api_housekeeping(self) -> None:
+        assert self.api_store is not None  # noqa: S101 - checked by the caller
         if self.due("publish", self.t.status_interval / 2, first=True):
             self.publish()
-        if self.discovery_result is False:
-            self.say(MSG_DISCOVERY_FAILED)
-        if self.discovery_result is not None:
-            self.discovery_result = None
+        while self.discovery_results:
+            ok = self.discovery_results.pop(0)
+            if ok and self.discovery_ok is None:
+                self.say(MSG_DISCOVERY_OK)
+            elif ok and self.discovery_ok is False:
+                self.say(MSG_DISCOVERY_RECOVERED)
+            elif not ok and self.discovery_ok is not False:
+                self.say(MSG_DISCOVERY_FAILED)  # said once per outage, not at every retry
+            self.discovery_ok = ok
         if self.due("api_refused", 3600):
             refused = self.api_store.take_refused()
             if refused:
@@ -718,6 +766,7 @@ class Supervisor:
         finally:
             self.say("Stopping MeshBeacon.")
             self.stop_child()
+            self.discovery_stop.set()
             if self.api_server is not None:
                 self.api_server.stop()
             self.health.stop()
