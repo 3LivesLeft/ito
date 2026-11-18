@@ -132,6 +132,7 @@ class Runner:
         timings: Timings = FAST,
         node_module: str = "meshbeacon.node",
         prepare_module: str = "meshbeacon.prepare",
+        **supervisor_options,
     ) -> None:
         self.paths = Paths(data)
         self.out = Output()
@@ -144,6 +145,9 @@ class Runner:
             python=[sys.executable],
             node_module=node_module,
             prepare_module=prepare_module,
+            api_host="127.0.0.1",
+            api_port=0,
+            **supervisor_options,
         )
         self._stop = threading.Event()
         self.thread = threading.Thread(target=self._run, daemon=True)
@@ -156,6 +160,8 @@ class Runner:
                 self.sup.step(0.2)
         finally:
             self.sup.stop_child()
+            if self.sup.api_server is not None:
+                self.sup.api_server.stop()
             self.sup.health.stop()
 
     def start(self) -> Runner:

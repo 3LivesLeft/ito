@@ -65,6 +65,13 @@ def test_defaults_make_no_external_connections():
     assert CONFIG["options"]["peers"] == []
     assert CONFIG["options"]["transport"] is False
     assert CONFIG["options"]["replace_identity"] is False
+    assert CONFIG["options"]["home_assistant_integration"] is False  # opt-in until ADR 0006 is approved
+
+
+def test_discovery_is_the_only_new_supervisor_feature():
+    # ADR 0006: discovery needs no hassio_api permission and does not change the security rating.
+    assert CONFIG["discovery"] == ["meshbeacon"]
+    assert "ports" not in CONFIG and "ingress" not in CONFIG
 
 
 def test_schema_matches_core_validation():

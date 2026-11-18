@@ -1,0 +1,241 @@
+# SPDX-License-Identifier: Apache-2.0
+"""v0.2 monitoring against real, isolated Reticulum processes (loopback only).
+
+* The keys MeshBeacon reads exist in the pinned RNS (an RNS upgrade that changes them fails here).
+* The monitoring API serves real figures only after discovery, only with the token, and never
+  contains hosts, network names, passphrases or hashes.
+* The Supervisor token never reaches the prepare step or Reticulum.
+* In transport mode, a link between two endpoints that can reach each other only through
+  MeshBeacon shows up as a relayed link (the forwarding indicator).
+"""
+
+import json
+import re
+import subprocess
+import sys
+import threading
+import urllib.error
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+import pytest
+
+from meshbeacon.node import INTERFACE_COUNTERS, NODE_COUNTERS
+
+from .conftest import free_port, wait_for, write_options
+
+SUPERVISOR_TOKEN = "test-supervisor-token-" + "x" * 20
+HEX32 = re.compile(r"[0-9a-f]{32}")
+
+
+class FakeSupervisor:
+    """Accepts discovery messages like the real Supervisor (POST /discovery) on 127.0.0.1."""
+
+    def __init__(self) -> None:
+        self.messages: list[dict] = []
+        self.auth: list[str | None] = []
+        outer = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_POST(self) -> None:
+                outer.auth.append(self.headers.get("Authorization"))
+                body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+                outer.messages.append(json.loads(body))
+                reply = json.dumps({"result": "ok", "data": {"uuid": "abc123"}}).encode()
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(reply)))
+                self.end_headers()
+                self.wfile.write(reply)
+
+            def log_message(self, *args) -> None:
+                pass
+
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.httpd.server_address[1]}"
+
+    def close(self) -> None:
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+
+@pytest.fixture
+def supervisor():
+    s = FakeSupervisor()
+    yield s
+    s.close()
+
+
+def fetch(port: int, token: str | None):
+    request = urllib.request.Request(f"http://127.0.0.1:{port}/api/v1/status")
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:  # noqa: S310 - loopback test URL
+            return response.status, json.loads(response.read())
+    except urllib.error.HTTPError as exc:
+        return exc.code, None
+
+
+def start_runner(runner_factory, data, supervisor, **kw):
+    return runner_factory(
+        data,
+        supervisor_token=SUPERVISOR_TOKEN,
+        supervisor_url=supervisor.url,
+        hostname=lambda: "local-meshbeacon",
+        **kw,
+    )
+
+
+def test_rns_provides_every_key_meshbeacon_reads(tmp_path):
+    out = subprocess.run(
+        [sys.executable, "-m", "tests.integration.relay_nodes", "contract", str(tmp_path / "rns"), str(free_port())],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    ).stdout
+    result = json.loads(out.strip().splitlines()[-1])
+    assert set(NODE_COUNTERS) <= set(result["node_keys"]), "RNS no longer reports a node counter MeshBeacon reads"
+    assert set(INTERFACE_COUNTERS) | {"short_name", "status", "type"} <= set(result["interface_keys"])
+    assert result["transport_enabled"] is True
+    assert result["tpcount"] == result["path_table_len"]
+
+
+def test_api_is_off_by_default(data, supervisor, runner_factory):
+    write_options(data)
+    r = start_runner(runner_factory, data, supervisor)
+    assert wait_for(lambda: r.out.has("Home Assistant integration: off."), timeout=30)
+    assert r.sup.api_server is None and supervisor.messages == []
+
+
+def test_end_to_end_metrics_via_discovery(data, peer, supervisor, runner_factory):
+    write_options(
+        data,
+        home_assistant_integration=True,
+        peers=[
+            {
+                "name": "Home",
+                "host": "127.0.0.1",
+                "port": peer.port,
+                "network_name": "privnet",
+                "passphrase": "s3cret-pass",
+            }
+        ],
+    )
+    r = start_runner(runner_factory, data, supervisor)
+    assert wait_for(lambda: supervisor.messages, timeout=30), r.out.text()
+    message = supervisor.messages[0]
+    assert supervisor.auth[0] == f"Bearer {SUPERVISOR_TOKEN}"
+    assert message["service"] == "meshbeacon"
+    config = message["config"]
+    assert config["host"] == "local-meshbeacon" and config["port"] == r.sup.api_server.port
+    token = config["token"]
+    port = config["port"]
+
+    assert fetch(port, None)[0] == 401
+    assert fetch(port, "wrong")[0] == 401
+    assert wait_for(lambda: (fetch(port, token)[1] or {}).get("network", {}).get("peers_connected") == 1, timeout=60)
+    assert wait_for(lambda: fetch(port, token)[1]["network"]["rx_rate"] is not None, timeout=30)
+    status, snap = fetch(port, token)
+    assert status == 200 and snap["schema"] == 1
+    assert snap["app"]["state"] == "running" and snap["app"]["connectivity"] == "online"
+    assert snap["app"]["problem"] == "none" and snap["app"]["message"] is None
+    assert snap["node"]["running"] is True and snap["node"]["transport_enabled"] is False
+    assert snap["node"]["started_at"] is not None and snap["node"]["restarts"] == 0
+    home = snap["peers"][0]
+    assert home["name"] == "Home" and home["connected"] is True and home["connected_since"] is not None
+    assert home["rx_bytes"] is not None and home["tx_bytes"] is not None  # reported (an idle peer may send 0)
+    assert snap["network"]["relayed_links"] == 0  # transport off: never relays
+    assert snap["resources"]["memory_bytes"] > 0
+
+    # Nothing identifying or secret is served.
+    text = json.dumps(snap)
+    for secret in ("127.0.0.1", str(peer.port), "privnet", "s3cret-pass", SUPERVISOR_TOKEN, token):
+        assert secret not in text, secret
+    assert not HEX32.search(text)
+    assert token not in r.out.text() and SUPERVISOR_TOKEN not in r.out.text()  # never logged
+
+    # The Supervisor token is never handed to Reticulum.
+    environ = Path(f"/proc/{r.sup.child.proc.pid}/environ").read_bytes()
+    assert b"SUPERVISOR_TOKEN" not in environ and SUPERVISOR_TOKEN.encode() not in environ
+
+    # Connectivity problems are reported with a stable code and a plain message.
+    peer.stop()
+    assert wait_for(lambda: fetch(port, token)[1]["app"]["problem"] == "peers_unreachable", timeout=60)
+    assert "cannot reach any of your peers" in fetch(port, token)[1]["app"]["message"]
+    peer.start()
+    assert wait_for(lambda: fetch(port, token)[1]["peers"][0]["reconnections"] == 1, timeout=90), r.out.text()
+
+
+def test_needs_attention_is_reported_with_its_code(data, supervisor, runner_factory):
+    storage = data / "reticulum" / "storage"
+    storage.mkdir(parents=True)
+    (storage / "transport_identity").write_bytes(b"damaged")  # damaged, and no backup exists
+    write_options(data, home_assistant_integration=True)
+    r = start_runner(runner_factory, data, supervisor)
+    assert wait_for(lambda: supervisor.messages, timeout=30)
+    token, port = supervisor.messages[0]["config"]["token"], supervisor.messages[0]["config"]["port"]
+    assert wait_for(lambda: r.sup.state == "needs_attention", timeout=60), r.out.text()
+    snap = fetch(port, token)[1]
+    assert snap["app"]["state"] == "needs_attention" and snap["app"]["problem"] == "identity"
+    assert snap["app"]["message"] and not snap["app"]["message"].startswith("✖")
+    assert snap["node"]["running"] is False
+    assert (storage / "transport_identity").read_bytes() == b"damaged"  # never replaced silently
+
+
+def test_transport_mode_relays_a_link(data, tmp_path, supervisor, runner_factory):
+    """A ↔ MeshBeacon ↔ B: B can reach A only through MeshBeacon (transport on)."""
+    ports = (free_port(), free_port())
+    hashfile = tmp_path / "dest.hash"
+    procs = [
+        subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "tests.integration.relay_nodes",
+                mode,
+                str(tmp_path / mode),
+                str(port),
+                str(hashfile),
+            ],
+            stdout=subprocess.PIPE if mode == "client" else subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        for mode, port in (("server", ports[0]), ("client", ports[1]))
+    ]
+    try:
+        write_options(
+            data,
+            transport=True,
+            home_assistant_integration=True,
+            peers=[
+                {"name": "A", "host": "127.0.0.1", "port": ports[0]},
+                {"name": "B", "host": "127.0.0.1", "port": ports[1]},
+            ],
+        )
+        r = start_runner(runner_factory, data, supervisor)
+        assert wait_for(lambda: supervisor.messages, timeout=30)
+        token, port = supervisor.messages[0]["config"]["token"], supervisor.messages[0]["config"]["port"]
+
+        def relayed() -> bool:
+            snap = fetch(port, token)[1]
+            return snap is not None and (snap["network"]["relayed_links"] or 0) >= 1
+
+        assert wait_for(relayed, timeout=120), r.out.text()
+        snap = fetch(port, token)[1]
+        assert snap["node"]["transport_enabled"] is True
+        assert snap["network"]["paths"] >= 1
+        assert snap["network"]["announces_rx"] >= 1
+        a = next(p for p in snap["peers"] if p["name"] == "A")
+        b = next(p for p in snap["peers"] if p["name"] == "B")
+        assert a["announces_rx"] >= 1 and b["announces_tx"] >= 1  # A's announce passed on to B
+    finally:
+        for p in procs:
+            p.terminate()
+            p.wait(10)

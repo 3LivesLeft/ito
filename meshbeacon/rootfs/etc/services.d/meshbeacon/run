@@ -2,4 +2,13 @@
 # Start the MeshBeacon core as the unprivileged service user (architecture §4.7).
 exec 2>&1
 umask 077
+# Optional Home Assistant integration (ADR 0006): the core needs the Supervisor token only to send a
+# discovery message. s6-overlay keeps the container environment in this directory, readable by root.
+# The core removes the token from its environment at once, so neither the prepare step nor
+# Reticulum ever receives it.
+token_file=/run/s6/container_environment/SUPERVISOR_TOKEN
+if [ -z "${SUPERVISOR_TOKEN:-}" ] && [ -r "$token_file" ]; then
+    SUPERVISOR_TOKEN="$(cat "$token_file")"
+    export SUPERVISOR_TOKEN
+fi
 exec /command/s6-setuidgid meshbeacon /usr/local/bin/python3 -I -m meshbeacon.supervisor
