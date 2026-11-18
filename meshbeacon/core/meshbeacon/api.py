@@ -8,6 +8,9 @@
   There are no write or control endpoints.
 * Bounded: at most ``MAX_CONCURRENT`` requests at a time (others are closed at once), a socket
   inactivity timeout, an absolute per-connection deadline, GET only, no request bodies.
+* HTTPS with a throwaway certificate made at every start; Home Assistant pins its fingerprint,
+  which it receives only in the discovery message, so another app on the internal network cannot
+  read the token or the data, or impersonate MeshBeacon, even with ARP spoofing.
 * The bearer token is 256 random bits, created in memory at every start, compared in constant
   time, never written to disk and never logged. It reaches Home Assistant only through Supervisor
   discovery, which only Home Assistant Core can read.
@@ -19,7 +22,11 @@ import contextlib
 import hmac
 import json
 import secrets
+import shutil
 import socket
+import ssl
+import subprocess
+import tempfile
 import threading
 import urllib.error
 import urllib.request
@@ -119,11 +126,13 @@ class ApiServer:
         store: StatusStore,
         host: str,
         port: int,
+        *,
         max_concurrent: int = MAX_CONCURRENT,
         deadline: float = REQUEST_DEADLINE,
+        tls: ssl.SSLContext | None = None,
     ) -> None:
         self.httpd = BoundedHTTPServer(
-            (host, port), make_handler(store), max_concurrent=max_concurrent, deadline=deadline
+            (host, port), make_handler(store), max_concurrent=max_concurrent, deadline=deadline, tls=tls
         )
         self.thread = threading.Thread(target=self.httpd.serve_forever, name="api", daemon=True)
 
@@ -137,6 +146,40 @@ class ApiServer:
     def stop(self) -> None:
         self.httpd.shutdown()
         self.httpd.server_close()
+
+
+# -- TLS --------------------------------------------------------------------------------------------
+class TlsError(Exception):
+    pass
+
+
+def make_tls(python: list[str], env: dict[str, str] | None = None, timeout: float = 60.0) -> tuple[ssl.SSLContext, str]:
+    """Create a throwaway certificate in a short-lived process; return a server context and its
+    SHA-256 fingerprint. The key exists on disk only for the moment it takes to load it."""
+    directory = Path(tempfile.mkdtemp(prefix="meshbeacon-tls-"))
+    try:
+        directory.chmod(0o700)
+        result = subprocess.run(
+            [*python, "-m", "meshbeacon.tlscert", "--dir", str(directory)],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=env,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise TlsError("certificate generation failed")
+        fingerprint = str(json.loads(result.stdout.strip().splitlines()[-1])["sha256"])
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.minimum_version = ssl.TLSVersion.TLSv1_3
+        context.load_cert_chain(directory / "cert.pem", directory / "key.pem")
+    except (OSError, ValueError, KeyError, IndexError, ssl.SSLError, subprocess.SubprocessError) as exc:
+        raise TlsError(type(exc).__name__) from exc
+    finally:
+        shutil.rmtree(directory, ignore_errors=True)
+    if len(fingerprint) != 64 or any(c not in "0123456789abcdef" for c in fingerprint):
+        raise TlsError("unexpected fingerprint")
+    return context, fingerprint
 
 
 # -- Supervisor discovery ------------------------------------------------------------------------
@@ -182,9 +225,12 @@ class Discovery:
         value = json.loads(raw) if raw else {}
         return value if isinstance(value, dict) else {}
 
-    def announce(self, host: str, port: int, api_token: str) -> bool:
+    def announce(self, host: str, port: int, api_token: str, cert_sha256: str = "") -> bool:
         """One attempt to send (or refresh) the discovery message."""
-        payload = {"service": DISCOVERY_SERVICE, "config": {"host": host, "port": port, "token": api_token}}
+        config: dict[str, Any] = {"host": host, "port": port, "token": api_token}
+        if cert_sha256:
+            config["cert_sha256"] = cert_sha256
+        payload = {"service": DISCOVERY_SERVICE, "config": config}
         try:
             reply = self._request("POST", "/discovery", payload)
         except (OSError, ValueError, urllib.error.URLError):
@@ -203,6 +249,7 @@ class Discovery:
         stop: threading.Event,
         on_result: Callable[[bool], None],
         *,
+        cert_sha256: str = "",
         retry_initial: float = RETRY_INITIAL,
         retry_max: float = RETRY_MAX,
         reannounce: float = REANNOUNCE_INTERVAL,
@@ -215,7 +262,7 @@ class Discovery:
         """
         delay = retry_initial
         while not stop.is_set():
-            ok = self.announce(host, port, api_token)
+            ok = self.announce(host, port, api_token, cert_sha256)
             on_result(ok)
             if ok:
                 delay = retry_initial

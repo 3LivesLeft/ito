@@ -14,6 +14,7 @@ REQUEST_TIMEOUT: Final = 10
 SCHEMA_VERSION: Final = 1
 
 CONF_TOKEN: Final = "token"  # noqa: S105 - the option key, not a secret
+CONF_CERT: Final = "cert_sha256"  # pinned certificate fingerprint (not secret)
 
 # Keep in step with meshbeacon/core/meshbeacon/supervisor.py (a test checks this).
 STATES: Final = ("starting", "running", "restarting", "needs_attention")

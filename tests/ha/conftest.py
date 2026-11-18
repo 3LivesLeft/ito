@@ -10,7 +10,8 @@ from .fixtures import snapshot  # noqa: F401 - re-exported for the tests
 HOST = "local-meshbeacon"
 PORT = 8100
 TOKEN = "T" * 43
-URL = f"http://{HOST}:{PORT}/api/v1/status"
+CERT = "ab" * 32
+URL = f"https://{HOST}:{PORT}/api/v1/status"
 
 
 @pytest.fixture(autouse=True)
@@ -20,7 +21,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 @pytest.fixture
 def entry_data():
-    return {"host": HOST, "port": PORT, "token": TOKEN}
+    return {"host": HOST, "port": PORT, "token": TOKEN, "cert_sha256": CERT}
 
 
 @pytest.fixture

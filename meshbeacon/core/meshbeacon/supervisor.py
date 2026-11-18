@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import IO, Any
 
 from . import __version__, fsutil, procinfo
-from .api import ApiServer, Discovery, StatusStore, container_hostname, new_token
+from .api import ApiServer, Discovery, StatusStore, TlsError, container_hostname, make_tls, new_token
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
 from .health import HealthServer, Heartbeat
 from .logfilter import RateLimiter, Redactor
@@ -613,10 +613,11 @@ class Supervisor:
             return
         api_token = new_token()
         try:
+            tls, fingerprint = make_tls(self.python, self.child_env())
             self.api_store = StatusStore(api_token)
-            self.api_server = ApiServer(self.api_store, self.api_host, self.api_port)
+            self.api_server = ApiServer(self.api_store, self.api_host, self.api_port, tls=tls)
             self.api_server.start()
-        except OSError:
+        except (OSError, TlsError):  # never falls back to plain HTTP
             self.api_store = self.api_server = None
             self.say("⚠ MeshBeacon could not start its Home Assistant status interface. The node works normally.")
             return
@@ -630,7 +631,13 @@ class Supervisor:
         def announce() -> None:
             try:
                 discovery.keep_announced(
-                    host, port, api_token, self.discovery_stop, self.discovery_results.append, **self.discovery_timing
+                    host,
+                    port,
+                    api_token,
+                    self.discovery_stop,
+                    self.discovery_results.append,
+                    cert_sha256=fingerprint,
+                    **self.discovery_timing,
                 )
             except Exception:  # never let monitoring take anything else down
                 self.discovery_results.append(False)

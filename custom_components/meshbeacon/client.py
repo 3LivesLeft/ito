@@ -188,10 +188,13 @@ def parse_status(data: Any) -> Status:
 
 
 class MeshBeaconClient:
-    def __init__(self, session: aiohttp.ClientSession, host: str, port: int, token: str) -> None:
+    def __init__(self, session: aiohttp.ClientSession, host: str, port: int, token: str, cert_sha256: str) -> None:
+        """HTTPS pinned to ``cert_sha256``: the certificate is not trusted through any authority, only
+        by its fingerprint from the discovery message. aiohttp checks it before sending the key."""
         self._session = session
-        self._url = f"http://{host}:{int(port)}{API_PATH}"
+        self._url = f"https://{host}:{int(port)}{API_PATH}"
         self._token = token
+        self._ssl = aiohttp.Fingerprint(bytes.fromhex(cert_sha256))
 
     async def async_get_status(self) -> Status:
         try:
@@ -200,6 +203,7 @@ class MeshBeaconClient:
                 headers={"Authorization": f"Bearer {self._token}"},
                 timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
                 allow_redirects=False,
+                ssl=self._ssl,
             ) as response:
                 if response.status == 401:
                     raise AuthError("token refused")

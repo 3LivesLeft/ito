@@ -17,6 +17,7 @@ import argparse
 import json
 import shutil
 import sqlite3
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -27,13 +28,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from tests.ha.fixtures import snapshot  # noqa: E402 - after the path is set
+sys.path.insert(0, str(ROOT / "meshbeacon" / "core"))
+from meshbeacon.tlscert import generate  # noqa: E402 - after the path is set
+from tests.ha.fixtures import snapshot  # noqa: E402
 
 TOKEN = "S" * 43
 EXPECTED_ENABLED = 23  # entities enabled by default, with one peer (keep in step with sensor.py)
 
 
-def serve_api(port: int, calls: list[bool]) -> HTTPServer:
+def serve_api(port: int, calls: list[bool], certs: Path) -> tuple[HTTPServer, str]:
+    """The same HTTPS set-up as the app: a throwaway certificate, pinned by its fingerprint."""
+    fingerprint = generate(certs)
+
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
             ok = self.path == "/api/v1/status" and self.headers.get("Authorization") == f"Bearer {TOKEN}"
@@ -48,11 +54,15 @@ def serve_api(port: int, calls: list[bool]) -> HTTPServer:
             pass
 
     server = HTTPServer(("127.0.0.1", port), Handler)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_3
+    context.load_cert_chain(certs / "cert.pem", certs / "key.pem")
+    server.socket = context.wrap_socket(server.socket, server_side=True)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    return server
+    return server, fingerprint
 
 
-def write_config(config: Path, port: int) -> None:
+def write_config(config: Path, port: int, fingerprint: str) -> None:
     (config / ".storage").mkdir(parents=True)
     shutil.copytree(ROOT / "custom_components" / "meshbeacon", config / "custom_components" / "meshbeacon")
     (config / "configuration.yaml").write_text(
@@ -67,7 +77,7 @@ def write_config(config: Path, port: int) -> None:
         "version": 1,
         "domain": "meshbeacon",
         "title": "MeshBeacon",
-        "data": {"host": "127.0.0.1", "port": port, "token": TOKEN},
+        "data": {"host": "127.0.0.1", "port": port, "token": TOKEN, "cert_sha256": fingerprint},
         "options": {},
         "pref_disable_new_entities": False,
         "pref_disable_polling": False,
@@ -86,10 +96,11 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=18100)
     args = parser.parse_args()
     calls: list[bool] = []
-    server = serve_api(args.port, calls)
     with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "certs").mkdir(mode=0o700)
+        server, fingerprint = serve_api(args.port, calls, Path(tmp) / "certs")
         config = Path(tmp) / "config"
-        write_config(config, args.port)
+        write_config(config, args.port, fingerprint)
         version = subprocess.run(
             [args.hass_python, "-c", "import homeassistant.const as c; print(c.__version__)"],
             capture_output=True,

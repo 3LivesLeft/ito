@@ -17,7 +17,7 @@ import pytest
 from meshbeacon import procinfo
 
 from .conftest import wait_for, write_options
-from .test_metrics_rns import fetch, start_runner
+from .test_metrics_rns import fetch, pin, start_runner
 
 
 def peer_options(peer, **extra):
@@ -49,7 +49,7 @@ def test_supervisor_not_running_at_start_then_restarting(data, peer, supervisor,
     assert supervisor.messages == []
     supervisor.up()
     assert wait_for(lambda: supervisor.messages, timeout=30), r.out.text()
-    token = supervisor.messages[0]["config"]["token"]
+    token, _ = pin(supervisor.messages[0])
     # Supervisor restart: down for a while, then up; the message is refreshed with the same token.
     supervisor.down()
     time.sleep(3)
@@ -89,12 +89,12 @@ def test_old_tokens_stop_working(data, supervisor, runner_factory):
     write_options(data, home_assistant_integration=True)
     r = start_runner(runner_factory, data, supervisor)
     assert wait_for(lambda: supervisor.messages, timeout=30)
-    first = supervisor.messages[0]["config"]["token"]
+    first, _ = pin(supervisor.messages[0])
     r.stop()
     r = start_runner(runner_factory, data, supervisor)
     assert wait_for(lambda: len(supervisor.messages) == 2, timeout=30)
-    port = r.sup.api_server.port
-    assert wait_for(lambda: fetch(port, supervisor.messages[1]["config"]["token"])[0] == 200, timeout=30)
+    second, port = pin(supervisor.messages[1])
+    assert wait_for(lambda: fetch(port, second)[0] == 200, timeout=30)
     assert fetch(port, first)[0] == 401  # a stale discovery message's key is useless
 
 
@@ -132,7 +132,7 @@ def test_sustained_flood_and_slow_clients(data, peer, supervisor, runner_factory
     write_options(data, **peer_options(peer))
     r = start_runner(runner_factory, data, supervisor)
     assert wait_for(lambda: r.out.has("Connected to Home.") and supervisor.messages, timeout=60), r.out.text()
-    token, api_port = supervisor.messages[0]["config"]["token"], r.sup.api_server.port
+    token, api_port = pin(supervisor.messages[0])
     health_port = r.sup.health.port
     pid, core = r.sup.child.proc.pid, os.getpid()  # the runner's supervisor lives in this process
     rss_before, threads_before = _rss_kb(core), _threads(core)

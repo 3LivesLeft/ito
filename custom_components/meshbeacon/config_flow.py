@@ -12,9 +12,10 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
 from .client import MeshBeaconClient, MeshBeaconError
-from .const import CONF_TOKEN, DOMAIN
+from .const import CONF_CERT, CONF_TOKEN, DOMAIN
 
 _TOKEN = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
+_FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
 # A MeshBeacon app's slug: "local_meshbeacon" (local app) or "<repository hash>_meshbeacon".
 _SLUG = re.compile(r"^(?:local|[0-9a-f]{8})_meshbeacon$")
 
@@ -41,7 +42,10 @@ def validate_discovery(slug: Any, config: Any) -> dict[str, Any] | None:
         return None
     if not isinstance(token, str) or not _TOKEN.match(token):
         return None
-    return {CONF_HOST: host, CONF_PORT: port, CONF_TOKEN: token}
+    cert = config.get(CONF_CERT)
+    if not isinstance(cert, str) or not _FINGERPRINT.match(cert):
+        return None  # never plain HTTP
+    return {CONF_HOST: host, CONF_PORT: port, CONF_TOKEN: token, CONF_CERT: cert}
 
 
 class MeshBeaconConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -71,6 +75,7 @@ class MeshBeaconConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._discovered[CONF_HOST],
                 self._discovered[CONF_PORT],
                 self._discovered[CONF_TOKEN],
+                self._discovered[CONF_CERT],
             )
             try:
                 await client.async_get_status()

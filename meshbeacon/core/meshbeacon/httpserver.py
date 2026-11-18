@@ -6,6 +6,7 @@ Three limits protect the core against floods and slow clients (v0.2 security rev
 * at most ``max_concurrent`` connections are served at once; further connections are closed at
   once rather than queued, so threads and memory stay bounded;
 * the handler's socket timeout limits how long a client may stay silent;
+* optional TLS, with the handshake done in the connection's own thread under its deadline;
 * an absolute ``deadline`` per connection, enforced by shutting the socket down, so a client that
   trickles one byte at a time cannot hold a slot for longer than the deadline.
 
@@ -16,6 +17,7 @@ from __future__ import annotations
 
 import contextlib
 import socket
+import ssl
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -31,9 +33,11 @@ class BoundedHTTPServer(ThreadingHTTPServer):
         *,
         max_concurrent: int,
         deadline: float,
+        tls: ssl.SSLContext | None = None,
     ) -> None:
         self.slots = threading.BoundedSemaphore(max_concurrent)
         self.deadline = deadline
+        self.tls = tls
         self.rejected = 0
         self.errors = 0
         super().__init__(address, handler)
@@ -63,6 +67,17 @@ class BoundedHTTPServer(ThreadingHTTPServer):
         timer.daemon = True
         timer.start()
         try:
+            if self.tls is not None:
+                # The handshake runs here, in the connection's own thread and under its deadline,
+                # never in the accepting thread, so a slow handshake cannot block other clients.
+                try:
+                    request.settimeout(self.deadline)
+                    request = self.tls.wrap_socket(request, server_side=True)
+                except (OSError, ValueError):
+                    self.errors += 1
+                    with contextlib.suppress(OSError):
+                        request.close()
+                    return
             super().process_request_thread(request, client_address)
         finally:
             timer.cancel()

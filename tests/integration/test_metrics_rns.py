@@ -9,13 +9,16 @@
   MeshBeacon shows up as a relayed link (the forwarding indicator).
 """
 
+import hashlib
+import http.client
 import json
 import re
+import ssl
 import subprocess
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
+
+import pytest
 
 from meshbeacon.node import INTERFACE_COUNTERS, NODE_COUNTERS
 
@@ -25,15 +28,34 @@ SUPERVISOR_TOKEN = "test-supervisor-token-" + "x" * 20
 HEX32 = re.compile(r"[0-9a-f]{32}")
 
 
-def fetch(port: int, token: str | None):
-    request = urllib.request.Request(f"http://127.0.0.1:{port}/api/v1/status")
-    if token:
-        request.add_header("Authorization", f"Bearer {token}")
+PINNED: dict[int, str] = {}  # port -> fingerprint from the latest discovery message seen by a test
+
+
+def fetch(port: int, token: str | None, fingerprint: str | None = None):
+    """GET the status over HTTPS, pinning the certificate like the integration does."""
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE  # trust comes from the pinned fingerprint, checked below
+    conn = http.client.HTTPSConnection("127.0.0.1", port, timeout=5, context=context)
     try:
-        with urllib.request.urlopen(request, timeout=5) as response:  # noqa: S310 - loopback test URL
-            return response.status, json.loads(response.read())
-    except urllib.error.HTTPError as exc:
-        return exc.code, None
+        conn.connect()  # handshake first: the key is sent only to the pinned certificate
+        peer = conn.sock.getpeercert(binary_form=True)
+        expected = fingerprint or PINNED.get(port)
+        if expected is not None:
+            assert hashlib.sha256(peer).hexdigest() == expected, "certificate does not match the pinned one"
+        conn.request("GET", "/api/v1/status", headers={"Authorization": f"Bearer {token}"} if token else {})
+        response = conn.getresponse()
+        body = response.read()
+        return response.status, (json.loads(body) if response.status == 200 else None)
+    finally:
+        conn.close()
+
+
+def pin(message: dict) -> tuple[str, int]:
+    """Remember the fingerprint from a discovery message; return (token, port)."""
+    config = message["config"]
+    PINNED[config["port"]] = config["cert_sha256"]
+    return config["token"], config["port"]
 
 
 FAST_DISCOVERY = {"retry_initial": 0.2, "retry_max": 1.0, "reannounce": 2.0}
@@ -93,8 +115,8 @@ def test_end_to_end_metrics_via_discovery(data, peer, supervisor, runner_factory
     assert message["service"] == "meshbeacon"
     config = message["config"]
     assert config["host"] == "local-meshbeacon" and config["port"] == r.sup.api_server.port
-    token = config["token"]
-    port = config["port"]
+    token, port = pin(message)
+    assert len(config["cert_sha256"]) == 64
 
     assert fetch(port, None)[0] == 401
     assert fetch(port, "wrong")[0] == 401
@@ -138,7 +160,7 @@ def test_needs_attention_is_reported_with_its_code(data, supervisor, runner_fact
     write_options(data, home_assistant_integration=True)
     r = start_runner(runner_factory, data, supervisor)
     assert wait_for(lambda: supervisor.messages, timeout=30)
-    token, port = supervisor.messages[0]["config"]["token"], supervisor.messages[0]["config"]["port"]
+    token, port = pin(supervisor.messages[0])
     assert wait_for(lambda: r.sup.state == "needs_attention", timeout=60), r.out.text()
     snap = fetch(port, token)[1]
     assert snap["app"]["state"] == "needs_attention" and snap["app"]["problem"] == "identity"
@@ -180,7 +202,7 @@ def test_transport_mode_relays_a_link(data, tmp_path, supervisor, runner_factory
         )
         r = start_runner(runner_factory, data, supervisor)
         assert wait_for(lambda: supervisor.messages, timeout=30)
-        token, port = supervisor.messages[0]["config"]["token"], supervisor.messages[0]["config"]["port"]
+        token, port = pin(supervisor.messages[0])
 
         def relayed() -> bool:
             snap = fetch(port, token)[1]
@@ -206,7 +228,7 @@ def test_saturated_api_never_starves_the_health_endpoint(data, supervisor, runne
     write_options(data, home_assistant_integration=True)
     r = start_runner(runner_factory, data, supervisor)
     assert wait_for(lambda: supervisor.messages, timeout=30)
-    token, port = supervisor.messages[0]["config"]["token"], supervisor.messages[0]["config"]["port"]
+    token, port = pin(supervisor.messages[0])
     idle = [socket.create_connection(("127.0.0.1", port)) for _ in range(20)]  # far more than the limit
     try:
         for _ in range(5):
@@ -216,3 +238,30 @@ def test_saturated_api_never_starves_the_health_endpoint(data, supervisor, runne
         for s in idle:
             s.close()
     assert wait_for(lambda: fetch(port, token)[0] == 200, timeout=20)  # the API recovers by itself
+
+
+def test_status_api_is_https_only_with_a_fresh_pinned_certificate(data, supervisor, runner_factory, tmp_path):
+    import glob
+    import tempfile
+
+    fingerprints = []
+    for _ in range(2):
+        write_options(data, home_assistant_integration=True)
+        r = start_runner(runner_factory, data, supervisor)
+        assert wait_for(lambda: len(supervisor.messages) > len(fingerprints), timeout=30)
+        token, port = pin(supervisor.messages[-1])
+        fingerprints.append(PINNED[port])
+        assert wait_for(lambda p=port, t=token: fetch(p, t)[0] == 200, timeout=30)
+        # Plain HTTP is not served at all.
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        with pytest.raises((http.client.HTTPException, OSError)):
+            conn.request("GET", "/api/v1/status", headers={"Authorization": f"Bearer {token}"})
+            conn.getresponse()
+        conn.close()
+        # A client pinning any other certificate refuses to talk (no token is sent before the check).
+        with pytest.raises(AssertionError, match="pinned"):
+            fetch(port, token, fingerprint="0" * 64)
+        # The private key does not stay on disk.
+        assert not glob.glob(f"{tempfile.gettempdir()}/meshbeacon-tls-*")
+        r.stop()
+    assert fingerprints[0] != fingerprints[1]  # a new certificate at every start

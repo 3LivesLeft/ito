@@ -409,12 +409,24 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
         config = record["body"]["config"]
         assert record["body"]["service"] == "meshbeacon"
         assert config["host"] == "local-meshbeacon" and config["port"] == 8100
+        assert len(config["cert_sha256"]) == 64
         token = config["token"]
 
+        fingerprint = config["cert_sha256"]
+        fetch = (
+            "import hashlib, http.client, ssl, sys\n"
+            "c = ssl.create_default_context(); c.check_hostname = False; c.verify_mode = ssl.CERT_NONE\n"
+            "h = http.client.HTTPSConnection('local-meshbeacon', 8100, timeout=10, context=c); h.connect()\n"
+            "fp = hashlib.sha256(h.sock.getpeercert(binary_form=True)).hexdigest()\n"
+            "if fp != sys.argv[2]: print('PIN-MISMATCH'); sys.exit(0)\n"
+            "auth = {'Authorization': 'Bearer ' + sys.argv[1]} if sys.argv[1] else {}\n"
+            "h.request('GET', '/api/v1/status', headers=auth)\n"
+            "r = h.getresponse(); print(r.status); print(r.read().decode())\n"
+        )
+
         def get(auth: str | None) -> str:
-            header = f"--header=Authorization: Bearer {auth}" if auth else "--header=X-None: 1"
-            cmd = ["wget", "-S", "-qO-", header, "http://local-meshbeacon:8100/api/v1/status"]
-            r = subprocess.run(["docker", "exec", sup, "busybox", *cmd], capture_output=True, text=True)
+            cmd = ["docker", "exec", sup, "python3", "-I", "-c", fetch, auth or "", fingerprint]
+            r = subprocess.run(cmd, capture_output=True, text=True)
             return r.stdout + r.stderr
 
         assert "401" in get(None) and "401" in get("wrong")

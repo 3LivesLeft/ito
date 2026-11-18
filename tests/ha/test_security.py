@@ -17,13 +17,18 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 from custom_components.meshbeacon.const import DOMAIN
 from custom_components.meshbeacon.diagnostics import async_get_config_entry_diagnostics
 
-from .conftest import HOST, PORT, TOKEN, URL, snapshot
+from .conftest import CERT, HOST, PORT, TOKEN, URL, snapshot
 
 
 def info(slug="local_meshbeacon", name="MeshBeacon", **config):
-    base = {"host": slug.replace("_", "-"), "port": PORT, "token": TOKEN}
+    base = {"host": slug.replace("_", "-"), "port": PORT, "token": TOKEN, "cert_sha256": CERT}
     base.update(config)
     return HassioServiceInfo(config=base, name=name, slug=slug, uuid="abc123")
+
+
+def message(addon, host, token, port=PORT, cert=CERT):
+    config = {"host": host, "port": port, "token": token, "cert_sha256": cert}
+    return SimpleNamespace(addon=addon, service=DOMAIN, config=config)
 
 
 async def start_flow(hass, data):
@@ -57,7 +62,7 @@ async def test_lookalike_app_needs_confirmation_and_cannot_touch_the_real_entry(
 
 async def test_flow_listing_and_logs_never_show_the_key(hass, aioclient_mock, caplog):
     caplog.set_level(logging.DEBUG)
-    aioclient_mock.get(f"http://{HOST}:{PORT}/api/v1/status", exc=ClientError("boom"))
+    aioclient_mock.get(URL, exc=ClientError("boom"))
     result = await start_flow(hass, info())
     progress = hass.config_entries.flow.async_progress()
     assert TOKEN not in repr(progress)
@@ -104,10 +109,6 @@ async def test_repeated_rotation(hass, mock_entry, aioclient_mock):
     assert hass.states.get("sensor.meshbeacon_status").state == "running"
 
 
-def message(addon, host, token, port=PORT):
-    return SimpleNamespace(addon=addon, service=DOMAIN, config={"host": host, "port": port, "token": token})
-
-
 def fake_supervisor(messages, on_list=None):
     async def list_messages():
         if on_list:
@@ -130,10 +131,8 @@ async def test_missed_push_heals_itself_from_the_supervisor(
         aioclient_mock.get(URL, json=snapshot())
 
     messages = [
-        SimpleNamespace(
-            addon="core_other", service=DOMAIN, config={"host": "core-other", "port": 1, "token": "X" * 43}
-        ),
-        SimpleNamespace(addon="local_meshbeacon", service=DOMAIN, config={"host": HOST, "port": PORT, "token": new}),
+        message("core_other", "core-other", "X" * 43, port=1),
+        message("local_meshbeacon", HOST, new),
     ]
     aioclient_mock.clear_requests()
     aioclient_mock.get(URL, status=401)
@@ -148,18 +147,22 @@ async def test_missed_push_heals_itself_from_the_supervisor(
     assert aioclient_mock.mock_calls[-1][3]["Authorization"] == f"Bearer {new}"
 
 
-async def test_self_healing_rejects_spoofed_messages(hass, mock_entry, aioclient_mock, freezer: FrozenDateTimeFactory):
+@pytest.mark.parametrize(
+    "spoofed",
+    [
+        message("local_meshbeacon", "evil", "S" * 43),  # redirect attempt
+        message("local_meshbeacon", "core-mosquitto", "S" * 43),  # redirect to another app
+        message("local_meshbeacon", HOST, "S" * 43, cert=None),  # no fingerprint: never plain HTTP
+        message("local_meshbeacon", HOST, "S" * 43, cert="00" * 31),  # malformed fingerprint
+    ],
+)
+async def test_self_healing_rejects_spoofed_messages(
+    hass, mock_entry, aioclient_mock, freezer: FrozenDateTimeFactory, spoofed
+):
     aioclient_mock.get(URL, json=snapshot())
     assert await hass.config_entries.async_setup(mock_entry.entry_id)
     await hass.async_block_till_done()
-    spoofed = [
-        SimpleNamespace(
-            addon="local_meshbeacon", service=DOMAIN, config={"host": "evil", "port": PORT, "token": "S" * 43}
-        ),
-        SimpleNamespace(
-            addon="a0d7b954_meshbeacon", service=DOMAIN, config={"host": HOST, "port": PORT, "token": "T2" * 22}
-        ),
-    ]
+    spoofed = [spoofed, message("a0d7b954_meshbeacon", "a0d7b954-meshbeacon", "T2" * 22)]  # + another app's
     calls = []
     aioclient_mock.clear_requests()
     aioclient_mock.get(URL, status=401)

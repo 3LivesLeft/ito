@@ -278,3 +278,38 @@ def test_health_server_is_bounded_but_serves_the_watchdog():
             s.close()
     finally:
         srv.stop()
+
+
+def test_tls_certificate_is_fresh_pinned_and_handshake_is_off_the_accept_thread():
+    import hashlib
+    import os
+    import ssl
+    import sys
+    from pathlib import Path
+
+    from meshbeacon.api import make_tls
+
+    core = Path(__file__).resolve().parents[2] / "meshbeacon" / "core"
+    env = {**os.environ, "PYTHONPATH": str(core)}
+    tls, fingerprint = make_tls([sys.executable], env)
+    _, other = make_tls([sys.executable], env)
+    assert fingerprint != other and len(fingerprint) == 64
+    store = StatusStore(new_token())
+    store.publish({"ok": True})
+    srv = ApiServer(store, "127.0.0.1", 0, max_concurrent=3, deadline=2.0, tls=tls)
+    srv.start()
+    try:
+        stalled = socket.create_connection(("127.0.0.1", srv.port))  # never starts the handshake
+        client = ssl.create_default_context()
+        client.check_hostname = False
+        client.verify_mode = ssl.CERT_NONE
+        start = time.monotonic()
+        with client.wrap_socket(socket.create_connection(("127.0.0.1", srv.port), timeout=5)) as s:
+            assert hashlib.sha256(s.getpeercert(binary_form=True)).hexdigest() == fingerprint
+            assert s.version() == "TLSv1.3"
+        assert time.monotonic() - start < 1.5  # not held up by the stalled client
+        stalled.settimeout(5)
+        assert stalled.recv(1) == b""  # the stalled handshake is ended by the deadline
+        stalled.close()
+    finally:
+        srv.stop()

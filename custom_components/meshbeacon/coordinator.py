@@ -17,6 +17,7 @@ from homeassistant.util import dt as dt_util
 from .client import AuthError, MeshBeaconClient, MeshBeaconError, Status
 from .config_flow import validate_discovery
 from .const import (
+    CONF_CERT,
     CONF_TOKEN,
     DOMAIN,
     ISSUE_ATTENTION,
@@ -40,7 +41,11 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
     def __init__(self, hass: HomeAssistant, entry: MeshBeaconConfigEntry) -> None:
         super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=SCAN_INTERVAL)
         self.client = MeshBeaconClient(
-            async_get_clientsession(hass), entry.data[CONF_HOST], entry.data[CONF_PORT], entry.data[CONF_TOKEN]
+            async_get_clientsession(hass),
+            entry.data[CONF_HOST],
+            entry.data[CONF_PORT],
+            entry.data[CONF_TOKEN],
+            entry.data[CONF_CERT],
         )
         self._unreachable_since: datetime | None = None
         self._last_refresh: datetime | None = None
@@ -87,11 +92,14 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
             if message.addon != slug or message.service != DOMAIN:
                 continue
             data = validate_discovery(slug, message.config)
-            if data is None or data[CONF_TOKEN] == self.config_entry.data.get(CONF_TOKEN):
+            if data is None or (
+                data[CONF_TOKEN] == self.config_entry.data.get(CONF_TOKEN)
+                and data[CONF_CERT] == self.config_entry.data.get(CONF_CERT)
+            ):
                 return False
             self.hass.config_entries.async_update_entry(self.config_entry, data={**self.config_entry.data, **data})
             self.client = MeshBeaconClient(
-                async_get_clientsession(self.hass), data[CONF_HOST], data[CONF_PORT], data[CONF_TOKEN]
+                async_get_clientsession(self.hass), data[CONF_HOST], data[CONF_PORT], data[CONF_TOKEN], data[CONF_CERT]
             )
             return True
         return False

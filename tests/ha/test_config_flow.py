@@ -8,11 +8,11 @@ from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
 from custom_components.meshbeacon.const import DOMAIN
 
-from .conftest import HOST, PORT, TOKEN, URL, snapshot
+from .conftest import CERT, HOST, PORT, TOKEN, URL, snapshot
 
 
 def info(**config):
-    base = {"host": HOST, "port": PORT, "token": TOKEN}
+    base = {"host": HOST, "port": PORT, "token": TOKEN, "cert_sha256": CERT}
     base.update(config)
     return HassioServiceInfo(config=base, name="MeshBeacon", slug="local_meshbeacon", uuid="abc123")
 
@@ -23,7 +23,7 @@ async def test_discovery_confirm_creates_entry(hass, aioclient_mock):
     assert result["type"] is FlowResultType.FORM and result["step_id"] == "hassio_confirm"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"] == {"host": HOST, "port": PORT, "token": TOKEN}
+    assert result["data"] == {"host": HOST, "port": PORT, "token": TOKEN, "cert_sha256": CERT}
     assert result["result"].unique_id == "local_meshbeacon"
     assert aioclient_mock.mock_calls[0][3]["Authorization"] == f"Bearer {TOKEN}"
 
@@ -46,6 +46,9 @@ async def test_discovery_cannot_connect(hass, aioclient_mock):
         {"token": "short"},
         {"token": "T" * 40 + "/../"},
         {"token": None},
+        {"cert_sha256": None},  # never plain HTTP
+        {"cert_sha256": "AB" * 32},
+        {"cert_sha256": "ab" * 31},
     ],
 )
 async def test_discovery_rejects_unusable_details(hass, config):
