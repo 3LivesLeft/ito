@@ -34,6 +34,7 @@ reference the [feasibility study](../research/feasibility.md) and
  [Other apps on host] ──B4── namespaces, abstract sockets
  [HA Core + integration (v0.2)] ──B2── local API
  [Browser: HA frontend + MeshBeacon panel (v0.2, ADR 0007)] ──B8── HA websocket (logged in)
+ [Supervisor ingress proxy (proposed, ADR 0013)] ──B11── built-in UI listener (plain HTTP, read-only)
  [CI, registry, PyPI, AI tools] ──B6── source and image build
 ```
 
@@ -100,6 +101,17 @@ reference the [feasibility study](../research/feasibility.md) and
   per-command allowlist mapped to fixed HA actions (no free-form service calls, templates or
   shell); persisted replay protection; rate limiting; audit log; optional confirmation; no
   safety-critical actions by default; external design review before implementation.
+
+### 4.0 Built-in interface through Ingress: proposed threats (ADR 0013; validation in progress)
+
+| ID | Boundary | STRIDE | Threat | Proposed control |
+|---|---|---|---|---|
+| T59 | B11 | S/E | **Ingress header trust bypass**: another app or LAN client sends `X-Ingress-Path` or `X-Remote-User-*` to skip HA's login (a real class of bug elsewhere) | Accept connections only from `172.30.32.2`, checked on the socket peer; never trust forwarded or ingress headers for access; no published port |
+| T60 | B11 | I/T | **Plain-HTTP hop** read or altered by a `NET_RAW` app performing ARP spoofing (as T34) | Read-only; the v0.2 snapshot only (no secrets, hashes, hosts); document `app_drop_net_raw`; residual RR-9. Pending V-1 |
+| T61 | B11 | I | **HA ingress session cookie exposed** on the plain-HTTP hop | **Open (V-2)**: blocking question before implementation |
+| T62 | B11 | E/T | **An action through Ingress** (write, configuration, message) forged on the unprotected hop | No actions through Ingress, permanently, while the hop is plain HTTP; writes only on the pinned-TLS path (ADR 0010, proposed) |
+| T63 | B11 | D | **Ingress listener flood** affects the core or watchdog | `BoundedHTTPServer` (≤ 4 connections, deadlines), separate from `/health`; page polls only while visible |
+| T64 | B8/B11 | T | **Script injection or clickjacking** in the built-in UI | `textContent` only (T38); CSP `default-src 'self'; frame-ancestors 'self'`; `nosniff`; no third-party code |
 
 ## 5. Privacy commitments
 

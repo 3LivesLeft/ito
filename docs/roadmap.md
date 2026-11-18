@@ -61,6 +61,26 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 - **Not** included: a forwarded-packet count (RNS exposes none through supported interfaces),
   identity import (deferred), any control from Home Assistant, HACS publication or releases.
 
+## Built-in interface (ADR 0013, proposed): acceptance criteria
+
+To be met before the built-in interface is released, after validation items V-1 to V-6
+([validation](research/built-in-interface.md)).
+
+| ID | Criterion | Evidence |
+|---|---|---|
+| UI-1 | A fresh install shows MeshBeacon's interface from the app page ("Open web UI") and the sidebar, with **no integration, HACS or YAML** | Pi, fresh test instance |
+| UI-2 | **Five-minute path:** a first-time user installs, configures and starts MeshBeacon and sees "Online" in its interface within 5 minutes, without a terminal or YAML; measured with at least 3 people new to MeshBeacon | Recorded sessions |
+| UI-3 | The security rating stays **8**; `config.yaml` adds only `ingress`, `ingress_port`, `panel_icon`, `panel_title` and `panel_admin` | Pi + static test |
+| UI-4 | The listener refuses every source except `172.30.32.2` (403), ignores forwarded and ingress headers for access, and answers only `GET` | Automated |
+| UI-5 | No response contains tokens, certificates, hashes, hosts, ports or discovery data | Automated (snapshot and page scan) |
+| UI-6 | Data comes only from `build_snapshot()` and the memory-only ring; no new metrics code; nothing written to disk | Automated + code review |
+| UI-7 | ADR 0007 page rules hold for the moved UI code (no `innerHTML`, external URLs, `eval`, browser storage) | Automated |
+| UI-8 | Memory: the listener and ring add ≤ **4 MiB** RSS in total on the Pi | Pi |
+| UI-9 | CPU: ≤ 0.1 % of one core with the page open; zero added with it closed | Pi |
+| UI-10 | Monitoring or UI failures never restart Reticulum or block `/health` | Automated |
+| UI-11 | Light and dark themes, phone, tablet and desktop, HA companion app | Pi + phone |
+| UI-12 | The integration remains optional: with it installed, nothing is duplicated (one sidebar entry) | Pi |
+
 ## v0.3.0 — Messaging
 
 - LXMF send/receive; HA `notify` platform (HA composes plaintext; LXMF encrypts end to end — must

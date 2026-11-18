@@ -11,6 +11,12 @@ conflict, the answer is a safe default plus one clearly explained choice — not
 connection **within five minutes**, without editing a file, opening a terminal or knowing what an
 interface is.
 
+**Permanent (maintainer, 18 Nov 2026):** the five minutes end in MeshBeacon's **own interface**,
+which comes with the app, and never require the optional integration, HACS, a terminal or YAML
+([vision](../vision.md), principle 2). The proposed path through Ingress is in the
+[built-in interface validation](../research/built-in-interface.md) §5. Until ADR 0013 is
+implemented, step 6 below (the app log) is the interim confirmation.
+
 ## 2. The five-minute path
 
 | Step | User action | Time budget | Notes |
