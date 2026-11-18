@@ -54,6 +54,18 @@ infrastructure or deploy to the maintainer's Home Assistant without explicit app
 
 ## Product principles to keep in mind
 
+- **Out-of-the-box usability is a permanent product principle** ([vision](docs/vision.md)
+  principle 2, maintainer, 18 Nov 2026). Treat it like a hard rule:
+  - The dedicated MeshBeacon interface must come with the standard app installation, with no
+    separate custom integration, HACS or manual dashboard configuration required.
+  - A first-time user can install, configure and start MeshBeacon within five minutes, with no
+    terminal and no YAML.
+  - The Home Assistant integration is an optional enhancement (entities, custom dashboards,
+    statistics, automations); nothing essential may depend on it.
+  - It never overrides security, privacy or resource principles. Do not duplicate monitoring
+    logic to achieve it.
+  - The proposed delivery is Supervisor Ingress ([ADR 0013](docs/adr/0013-built-in-interface-ingress.md),
+    proposed; validate before implementing).
 - Ease of use is a core principle: a non-technical user connected within five minutes. Prefer
   safe defaults and plain-language messages over options.
 - v0.1.0 is deliberately small (see [docs/roadmap.md](docs/roadmap.md)): no dashboards, LXMF, I2P,
