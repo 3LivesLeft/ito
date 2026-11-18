@@ -75,8 +75,11 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 
 ## Built-in interface (ADR 0013, proposed): acceptance criteria
 
+**Blocked by security review (18 Nov 2026)**: see [secure interface options](research/secure-interface-options.md).
 To be met before the built-in interface is released, after validation items V-1 to V-6
-([validation](research/built-in-interface.md)).
+([validation](research/built-in-interface.md)) and after the Ingress hop meets requirements S1–S3
+of that document. Read-only is a restriction on the first implementation, not the product's
+limit: sending and receiving LXMF messages from the built-in interface remains the goal.
 
 | ID | Criterion | Evidence |
 |---|---|---|

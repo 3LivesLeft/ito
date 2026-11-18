@@ -1,7 +1,14 @@
 # ADR 0013: The built-in MeshBeacon interface, served through Supervisor Ingress
 
-- **Status:** **Proposed — validation in progress.** Not to be implemented until V-1 and V-2 are
-  answered and the maintainer approves. If accepted, it **supersedes ADR 0007** (the
+- **Status:** **Blocked by security review** (18 Nov 2026). The independent review gave D1
+  conditional approval (read-only Ingress, *if* its security concerns are resolved), and decided
+  D2–D4. Source inspection of Supervisor 2026.11.0 then confirmed concerns that MeshBeacon cannot
+  mitigate from inside the app; some details are withheld under responsible disclosure.
+  **Ingress is not enabled or implemented.** Read-only is a restriction on the first
+  implementation, **not a permanent limit**. See
+  [secure interface options](../research/secure-interface-options.md).
+- **Earlier status:** proposed, validation in progress. Not to be implemented until V-1 and V-2
+  were answered and the maintainer approved. If accepted, it **supersedes ADR 0007** (the
   integration's panel, never released) and amends ADR 0006 and the v0.2 review's rejection of
   option E.
 - **Date:** 18 November 2026
@@ -40,7 +47,14 @@ and charts". This ADR shows how to avoid that, and sets the security conditions.
 6. **Pages follow ADR 0007's rules:** `textContent` only, no third-party code or CDN, no browser
    storage. The tests move with the code. The page refreshes every 10 s only while visible.
 
-## Maintainer decisions requested
+## Review decisions (18 Nov 2026)
+
+D1 conditional approval (condition **not met**); D2 withdraw the integration panel and keep one
+dedicated interface (timing to be confirmed: in the release that ships the built-in interface);
+D3 seven days of bounded in-memory history; D4 admin-only. Details:
+[secure interface options](../research/secure-interface-options.md) §1.
+
+## Decisions as originally requested
 
 | ID | Decision | Recommendation |
 |---|---|---|
