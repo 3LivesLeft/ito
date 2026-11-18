@@ -366,6 +366,7 @@ def test_apparmor_confinement_is_active_and_restrictive(run):
     assert subprocess.run(["docker", "exec", c.name, "sh", "-c", "echo x > /tmp/mb-test"]).returncode == 0
     # Nothing may be executed from app data.
     c.exec("cp", "/bin/busybox", "/data/mb-busybox")
-    denied = subprocess.run(["docker", "exec", c.name, "/data/mb-busybox", "true"], capture_output=True)
+    denied = subprocess.run(["docker", "exec", c.name, "/data/mb-busybox", "true"], capture_output=True, text=True)
     assert denied.returncode != 0
+    assert "permission denied" in (denied.stdout + denied.stderr).lower(), denied
     c.exec("rm", "-f", "/data/mb-busybox")

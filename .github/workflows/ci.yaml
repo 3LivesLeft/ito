@@ -109,9 +109,18 @@ jobs:
             docker ps -a --format '{{.Names}}' | grep '^mb-' | tail -1 | xargs -r docker logs | tail -40
             exit 1
           }
-      - name: AppArmor denials (for diagnosis)
-        if: always() && matrix.arch == 'amd64'
-        run: sudo journalctl -k --no-pager | grep -E 'apparmor="(DENIED|ALLOWED)".*meshbeacon-ci' | tail -100 || true
+      - name: No unexpected AppArmor denials
+        # Every denial is printed for diagnosis. The job fails on any denial other than the two the
+        # confinement test provokes on purpose (a write to /usr/local/lib, an exec from /data).
+        if: (success() || failure()) && matrix.arch == 'amd64'
+        run: |
+          sleep 2
+          sudo journalctl -k --no-pager | grep -E 'apparmor="(DENIED|ALLOWED)".*meshbeacon-ci' > "$RUNNER_TEMP/denials" || true
+          tail -100 "$RUNNER_TEMP/denials"
+          if grep -vE 'name="/(usr/local/lib/mb-test|data/mb-busybox)"' "$RUNNER_TEMP/denials"; then
+            echo "::error::Unexpected AppArmor denials (above)"
+            exit 1
+          fi
       - name: Python dependency licences inside the image
         run: |
           docker run --rm --entrypoint python3 "meshbeacon:ci-${{ matrix.arch }}" -I -c '

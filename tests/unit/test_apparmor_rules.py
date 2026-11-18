@@ -58,3 +58,17 @@ def test_parser_reads_old_failing_profile_as_failing():
     """Regression: the profile at commit 75060e3 granted '/init ix' without read."""
     old = Profile.parse("profile meshbeacon {\n  /init ix,\n  /package/** ix,\n}\n")
     assert old.can_exec("/init") and not old.can_read("/init")
+
+
+def test_capabilities_are_exactly_the_reviewed_set():
+    """Any new capability needs review (CLAUDE.md rule 4); fsetid is denied explicitly so that the
+    init step's chmod does not log a denial on every start (seen under enforcement in CI)."""
+    import re
+
+    text = (Path(__file__).resolve().parents[2] / "meshbeacon" / "apparmor.txt").read_text()
+    rules = [line.split("#", 1)[0].strip() for line in text.splitlines()]
+    granted = {m.group(1) for r in rules if (m := re.fullmatch(r"capability (\w+),", r))}
+    denied = {m.group(1) for r in rules if (m := re.fullmatch(r"deny capability (\w+),", r))}
+    assert granted == {"chown", "fowner", "dac_override", "setuid", "setgid", "kill"}
+    assert denied == {"fsetid"}
+    assert not any(re.fullmatch(r"capability,", r) for r in rules), "blanket capability rule"

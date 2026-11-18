@@ -2,7 +2,7 @@
 # Security posture (docs/architecture.md §5): no host network, no published ports, no Supervisor
 # or Home Assistant API access, no extra capabilities, no device access, custom AppArmor profile.
 name: MeshBeacon
-version: "0.1.1"
+version: "0.1.2"
 slug: meshbeacon
 description: Decentralised connectivity for your home — a private Reticulum node.
 url: https://github.com/3LivesLeft/meshbeacon

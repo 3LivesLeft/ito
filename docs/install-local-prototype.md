@@ -70,7 +70,7 @@ Use **one** of the following (both are official Home Assistant apps).
 1. Select **Start** and open the **Log** tab. Within about a minute you should see:
 
    ```text
-   [meshbeacon] MeshBeacon 0.1.0 starting (Reticulum 1.6.0, aarch64).
+   [meshbeacon] MeshBeacon 0.1.2 starting (Reticulum 1.6.0, aarch64).
    [meshbeacon] Transport mode: off.
    [meshbeacon] Node identity: created a new identity for this node.
    [meshbeacon] ⚠ MeshBeacon is running, but it is not connected to anyone. ...
@@ -125,6 +125,14 @@ Without any household identifiers (no IP addresses, hostnames, SSIDs or identity
 - **Restore:** restore the app (or a full backup) from *Settings → System → Backups*; the identity
   is restored with it and verified on the next start.
 
+## 8b. Updating from 0.1.1 to 0.1.2
+
+0.1.2 only stops three harmless AppArmor messages (`capname="fsetid"`, `comm="chmod"`) from being
+logged on every start. Update the normal way (section 8): replace the folder, **Check for
+updates**, then **Update** — not Rebuild, because the change is in the AppArmor profile. Your
+identity is kept. Afterwards the AppArmor commands in section 7 should show no MeshBeacon denials
+from a fresh start.
+
 ## 8a. Updating from 0.1.0 (fixes the start-up failure)
 
 Version 0.1.0 failed to start on Home Assistant OS with `/bin/sh: can't open '/init': Permission
@@ -136,13 +144,13 @@ or update, follow these steps exactly:
 2. If you edited `apparmor.txt` on the device while diagnosing, discard that edit: the new folder
    replaces it.
 3. Replace the whole `<local apps folder>/meshbeacon/` folder with the `meshbeacon` folder from
-   commit `<fix commit>` or later (`config.yaml` must say `version: "0.1.1"`). With the SSH
+   commit `5f2a3bc` or later (`config.yaml` must say `version: "0.1.1"` or higher). With the SSH
    terminal you can check with `grep '^version' <local apps folder>/meshbeacon/config.yaml`.
 4. *Settings → Apps → App store → ⋮ → Check for updates*.
-5. Open MeshBeacon. It now shows an update to **0.1.1**. Select **Update** (not Rebuild). This
+5. Open MeshBeacon. It now shows an update to **0.1.1** or later. Select **Update** (not Rebuild). This
    rebuilds the image *and* loads the new AppArmor profile.
 6. **Start** the app and open the **Log** tab. Expected within about a minute:
-   `[meshbeacon] MeshBeacon 0.1.1 starting (Reticulum 1.6.0, aarch64).`
+   `[meshbeacon] MeshBeacon 0.1.x starting (Reticulum 1.6.0, aarch64).` (0.1.1 or later)
 7. Only then switch **Watchdog** on.
 8. If it still fails, collect (without household identifiers) the app log, the Supervisor log and
    the output of the two AppArmor commands in section 7, and report them.

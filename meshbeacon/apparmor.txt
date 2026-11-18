@@ -27,6 +27,11 @@ profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
   capability setuid,
   capability setgid,
   capability kill,
+  # Not granted, and denied explicitly so that it is not logged: root's chmod of a file whose group
+  # it is not in (the init step, after handing /data to the service user) makes the kernel check
+  # fsetid only to decide whether to keep a setgid bit, which MeshBeacon never sets. Without this
+  # rule every start logged three harmless denials (seen in CI under enforcement).
+  deny capability fsetid,
 
   # Signals within the container (s6 supervision tree) and from the container runtime (stop).
   signal (send, receive) peer=@{profile_name},

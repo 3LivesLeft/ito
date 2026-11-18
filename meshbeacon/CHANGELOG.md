@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — unreleased (local prototype)
+
+- The AppArmor profile now denies the `fsetid` capability explicitly. It was never granted; the
+  change stops three harmless AppArmor denials from being logged on every start (the root init
+  step's `chmod`), so that real denials stand out. Behaviour is unchanged.
+
 ## 0.1.1 — unreleased (local prototype)
 
 - **Fix:** the app failed immediately on start on Home Assistant OS
