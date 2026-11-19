@@ -39,3 +39,17 @@ generation has a CPU time limit.
 - Prototype gate: if Q-40 shows the second process costs more than 40 MiB, revisit A with
   in-process watchdogs. That decision would come back to review.
 - Q-46: the client must survive RNS node restarts. This is a reliability test before release.
+
+## Amendment (maintainer, 19 Nov 2026): mandatory process isolation
+
+The messaging process **must run as its own Unix user**, separate from the core and from
+Reticulum, with least-privilege access to its credentials, `/data/messaging/` and its IPC
+channels, proven by adversarial tests. This must be **implemented** before M4 is accepted; this
+ADR alone does not satisfy it ([roadmap](../roadmap.md#process-isolation-gate-mandatory), IS-1 to IS-4).
+
+**[Open]** The decision above has the core start the process. An unprivileged core cannot start,
+signal or memory-limit a process of another user, which is why Reticulum still shares the core's
+user today (M1.2, threat T72). The M4 design must therefore choose, and review, how separate
+services are started and supervised (for example s6 services with per-user run scripts and a
+narrow control channel to the core, or a minimal reviewed privileged launcher), and must apply the
+same answer to Reticulum.

@@ -124,6 +124,27 @@ another user without new root code or a supervisor rewrite. They are to be desig
 before any write-capable credential exists. The deployed behaviour under the Supervisor-loaded
 AppArmor profile still needs acceptance test SO-1.
 
+**Second correction (M1.2, after the M1.2 re-review).** The first correction closed the relay only
+in socket mode. On the compatibility path (every released Supervisor today) the core still received
+the Supervisor token in its initial environment, and **ptrace read is not denied** by MeshBeacon's
+AppArmor profile (only ptrace trace is), so another process of the same user, the Reticulum child
+included, could read it from `/proc/<core>/environ` and announce or withdraw over HTTP. Now:
+
+| Control | Where |
+|---|---|
+| The root start step passes the token through a **one-time pipe**, never an environment; the core reads it once and closes it | `relay_link.py --token-file`, `supervisor.read_token_fd` |
+| The core is **non-dumpable** before it reads any credential or starts any child: the kernel refuses other processes without `CAP_SYS_PTRACE` access to its `/proc` environment, descriptors and memory, and ptrace | `procinfo.set_not_dumpable` |
+| Adversarial container tests in **both** transports: as Reticulum's user, nothing of the core is readable and the token is not found; against the previous image the same test finds the token | `tests/container`, `tools/acceptance/relay_probe.py` |
+
+The pipe does **not** secure the network transport: on the compatibility path the token is still
+sent in plain HTTP to the Supervisor (RR-9a, T73).
+
+**Mandatory gate (maintainer, 19 Nov 2026).** Separate Unix users for the management core,
+Reticulum, LXMF messaging and each future community service, with least-privilege access to
+credentials, storage and IPC, proven by adversarial isolation tests, must be **implemented** before
+M4 is accepted or any additional community service is introduced. An ADR alone is not sufficient
+([roadmap](../roadmap.md), isolation gate IS-1 to IS-4).
+
 **Rule carried forward:** no write-capable credential (for example a future messaging key) is ever
 delivered over the compatibility path ([secure interface options](../research/secure-interface-options.md),
 D7). Home Assistant keeps no field from a discovery message other than the status connection's

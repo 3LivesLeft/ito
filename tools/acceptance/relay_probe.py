@@ -8,8 +8,9 @@ Two views, each printing one JSON line and changing nothing:
     # what is really there (run with CAP_SYS_PTRACE, only to observe):
     docker exec --privileged -i <container> python3 -I - observer [CANARY] < relay_probe.py
 
-``CANARY`` is the Supervisor token *of a test installation* (never a real one): the probe reports
-only whether it was found, never the value. Used by the container tests and by VM acceptance test
+``CANARY`` is the Supervisor token *of a test installation* (never one anybody relies on): the
+probe reports only whether it was found, never the value. ``@FILE`` reads it from FILE and deletes
+the file, so that the value is not on a command line (on a VM). Used by the container tests and by VM acceptance test
 SO-1 (docs/testing/v0.3-vm-acceptance.md). Every key must come out ``false`` except where noted.
 
 attacker:
@@ -188,6 +189,10 @@ def observer(core: str, node: str, canary: bytes) -> dict[str, bool]:
 def main() -> None:
     mode = sys.argv[1] if len(sys.argv) > 1 else "attacker"
     canary = sys.argv[2].encode() if len(sys.argv) > 2 else b""
+    if canary.startswith(b"@"):  # @FILE: read, then delete, so the value is on no command line
+        path = Path(canary[1:].decode())
+        canary = path.read_bytes().strip()
+        path.unlink()
     core, node = pid_of(b"meshbeacon.supervisor"), pid_of(b"meshbeacon.node")
     if core is None or node is None:
         print(json.dumps({"error": "the core or the Reticulum child is not running"}))

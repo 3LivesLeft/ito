@@ -306,10 +306,14 @@ Design:
   (`services.d/discovery-relay`, `core/meshbeacon/discovery_relay.py`;
   [ADR 0006 amendment](adr/0006-local-metrics-api.md#amendment-19-november-2026-m1-how-discovery-reaches-the-supervisor)).
   Newer Supervisors give the app a root-only (0600) socket. The relay's own socket is root-only
-  too; the core's run script opens the link as root (`relay_link.py`) and hands it to the core,
-  which keeps it from Reticulum. The relay sends only MeshBeacon's validated discovery message and
-  does not run where there is no socket. The Supervisor token is then not passed to the core at
-  all (threat T72; M1.2).
+  too; the core's run script runs a short root start step (`relay_link.py`) that opens the link
+  and hands it to the core. On the compatibility path the same step passes the Supervisor token
+  through a one-time pipe instead, so it is in no process environment. The core makes itself
+  non-dumpable before it reads either, so Reticulum, though it runs as the same user, cannot reach
+  the core's memory, environment or descriptors (threat T72; M1.2). The relay sends only
+  MeshBeacon's validated discovery message and does not run where there is no socket.
+- **Process isolation gate:** separate Unix users for the core, Reticulum, LXMF and each community
+  service are mandatory before M4 or any community service ([roadmap](roadmap.md#process-isolation-gate-mandatory)).
 
 ### 4.8 Storage layout (under `/data`)
 

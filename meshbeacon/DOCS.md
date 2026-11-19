@@ -98,6 +98,8 @@ folder. MeshBeacon will not start while the option is left on after a replacemen
 | ✖ has paused to avoid a restart loop | The app was restarted many times quickly. Restart it after the time shown, or change any option. |
 | ✖ identity … damaged … has NOT created a new one | Restore the app from a backup, or use *replace identity* if you want a new address. |
 | ✖ some options need correcting | Fix the listed options in the Configuration tab. |
+| ⚠ the link to the discovery relay was lost | Only with the Home Assistant option on, on newer Supervisors. Home Assistant keeps showing the status until the next app start; restart the app to restore the link. |
+| Waiting for the discovery relay to start… | Normal on a busy or slow device at start-up; MeshBeacon waits up to 30 seconds and then starts anyway. |
 
 MeshBeacon always stays "running" in Home Assistant while it waits for you, so that the watchdog
 does not restart it pointlessly.

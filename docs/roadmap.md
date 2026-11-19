@@ -116,8 +116,10 @@ releases, each behind its own gate. **M1 (install-ready repository) is authorise
 and release acceptance testing. **M1.1 (security and release readiness):** the independent review
 ([handover](review/m1.1-handover.md)) returned a conditional pass. **M1.2 (security remediation and
 release hardening)** addresses its findings ([remediation record](review/m1.2-remediation.md)) and
-prepares the [VM acceptance tests](testing/v0.3-vm-acceptance.md); it awaits re-verification by the
-independent reviewer. The VM acceptance tests are still to run before M2. The
+prepares the [VM acceptance tests](testing/v0.3-vm-acceptance.md); it awaits re-verification by a
+genuinely independent reviewer. The VM acceptance tests are still to run before M2. The
+[process isolation gate](#process-isolation-gate-mandatory) below binds M4 and every community
+service. The
 two v0.3 sections below come from separate branches and are to be reconciled, with the final
 project name, before M2.
 
@@ -303,6 +305,21 @@ stated otherwise. **They are not Raspberry Pi validation.** Revised after indepe
 | OB-26 | **Layout and themes:** usable at 390 px (phone), 820 px (tablet) and 1280 px (desktop) widths in light and dark themes, with no horizontal scrolling | Preview screenshots; physical check on a phone | Sandbox met; **physical pending** (open the panel on a phone and a desktop on the Pi installation, after approval) |
 | OB-27 | **Panel cost:** history fetched at most once per chart bucket (≥ 60 s) and only while visible; re-render only when MeshBeacon's own entities change | Code review + model tests | Met (sandbox); browser CPU on a low-end phone pending |
 | OB-28 | **HACS-ready, not published:** `hacs.json` with known keys only, no release ZIP or release workflow, one integration, manifest complete, versions aligned | Automated | Met (`tests/unit/test_hacs.py`); HACS's own validation action is a maintainer step ([Marketplace](marketplace.md)) |
+
+## Process isolation gate (mandatory)
+
+**Maintainer decision, 19 Nov 2026.** Full process isolation by Unix user must be **implemented and
+proven** before **M4 (the LXMF engine) is accepted** and before **any additional community service**
+(public pages, bulletin boards, knowledge libraries, content replication, voice) is introduced.
+**An ADR alone is not sufficient.** Until then, the core and Reticulum share one user, and their
+separation rests on the kernel's dumpable and ptrace rules (threat T72; M1.2).
+
+| ID | Criterion | Evidence |
+|---|---|---|
+| IS-1 | **Separate Unix users** for the management core, Reticulum, LXMF messaging and each future community service; none shares a user with another, none runs as root except the minimal, reviewed root steps (the discovery relay and the start step) | Container test: each process's real UID; no two services share one |
+| IS-2 | **Least-privilege credentials:** each credential (Supervisor token, status token, messaging keys, identities) is readable only by the one process that needs it, never travels in a process environment, and is never inherited by a child | Container test as each other service's user: the credential cannot be read from files, `/proc` or descriptors |
+| IS-3 | **Least-privilege storage and IPC:** each service owns only its own folder under `/data/<service>/` (0700) and its own sockets; IPC endpoints accept only their intended peer (checked by peer credentials), and every service except the core is non-dumpable or isolated by user so that ptrace and `/proc` reads across services fail | Container test: cross-service reads, writes, connects and ptrace attempts all fail |
+| IS-4 | **Adversarial isolation tests** for every service, in CI under AppArmor enforcement and on a VM with the Supervisor-loaded profile, in the style of `tools/acceptance/relay_probe.py`; each test is shown to fail against a deliberately weakened build | CI + VM results; a recorded run against the weakened build |
 
 ## v0.3.0 acceptance criteria (proposed, for review)
 

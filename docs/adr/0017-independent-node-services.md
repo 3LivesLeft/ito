@@ -62,3 +62,14 @@ dependency of the network services.
 
 Any service that would need Home Assistant to be running; any proposal to keep service state in
 Home Assistant; any public-facing service.
+
+## Amendment (maintainer, 19 Nov 2026): process isolation is mandatory
+
+Decision 4's "own identity scope, storage quota, rate limits and failure isolation" is made
+concrete and binding: **each service, the management core and Reticulum run as separate Unix
+users**, with least-privilege access to credentials, storage and IPC, proven by adversarial
+isolation tests. This must be **implemented** before any additional community service is
+introduced and before M4 is accepted; an ADR alone is not sufficient
+([roadmap](../roadmap.md#process-isolation-gate-mandatory), IS-1 to IS-4). Today only the
+discovery credential is isolated, and by kernel dumpable and ptrace rules rather than by user
+(threat T72).
