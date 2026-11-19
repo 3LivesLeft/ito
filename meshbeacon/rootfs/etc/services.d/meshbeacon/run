@@ -12,6 +12,18 @@
 exec 2>&1
 umask 077
 unset SUPERVISOR_TOKEN
+# ADR 0018: Reticulum and its prepare step are s6 services under their own user. Let the core's
+# group control exactly these two (start once, stop, kill, status, events), once s6 supervises them.
+for svc in reticulum rns-prepare; do
+    i=0
+    while [ ! -p "/run/service/$svc/supervise/control" ] && [ "$i" -lt 150 ]; do
+        sleep 0.1
+        i=$((i + 1))
+    done
+    /command/s6-svperms -G meshbeacon -E meshbeacon "/run/service/$svc" >/dev/null 2>&1 \
+        || echo "[meshbeacon] warning: could not hand the $svc service to the core"
+done
+export MESHBEACON_S6=1
 socket_file=/run/s6/container_environment/SUPERVISOR_SOCKET
 if [ -z "${SUPERVISOR_SOCKET:-}" ] && [ -r "$socket_file" ]; then
     SUPERVISOR_SOCKET="$(cat "$socket_file")"

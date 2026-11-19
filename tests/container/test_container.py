@@ -94,9 +94,10 @@ DEFAULTS = {"peers": [], "transport": False, "log_level": "normal", "memory_limi
 def test_defaults_non_root_permissions_health_and_no_connections(run):
     c = run(DEFAULTS)
     assert wait_for(lambda: "not connected to anyone" in c.logs())
-    users = c.exec("ps", "-o", "user,args")
-    py = [line for line in users.splitlines() if "meshbeacon." in line]
-    assert len(py) >= 2 and all(line.split()[0].startswith("meshbeac") for line in py), users
+    # ADR 0018: the core and Reticulum run as separate, unprivileged users.
+    owners = processes(c)
+    assert owners.get("meshbeacon.supervisor") == {"meshbeacon"}, owners
+    assert owners.get("meshbeacon.node") == {"mb-rns"}, owners
     assert c.exec("wget", "-qO-", "http://127.0.0.1:8099/health").strip() == "ok"
     modes = c.exec("find", "/data/meshbeacon", "/data/reticulum", "-exec", "stat", "-c", "%a|%F|%n", "{}", "+")
     for line in modes.splitlines():
@@ -446,9 +447,9 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
         assert listening == {"1FA3", "1FA4"}, listening
         # The Supervisor token is never passed to the prepare step or Reticulum.
         rns = c.exec("pgrep", "-f", "meshbeacon.node").split()[0]
-        # Read as the service user: root in the container lacks CAP_SYS_PTRACE, so it cannot.
-        environ = sh("docker", "exec", "-u", "meshbeacon", c.name, "cat", f"/proc/{rns}/environ")
-        assert "MESHBEACON_DATA" in environ  # the read worked
+        # Read as Reticulum's own user (ADR 0018): root in the container lacks CAP_SYS_PTRACE.
+        environ = sh("docker", "exec", "-u", "mb-rns", c.name, "cat", f"/proc/{rns}/environ")
+        assert "PATH=" in environ  # the read worked
         assert SUPERVISOR_TOKEN not in environ
         assert SUPERVISOR_TOKEN not in c.logs() and token not in c.logs()
         # M1.2 re-review: on this compatibility path the token reaches the core through a one-time
@@ -511,7 +512,7 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
         owners = processes(c)
         assert owners.get("meshbeacon.discovery_relay") == {"root"}
         assert owners.get("meshbeacon.supervisor") == {"meshbeacon"}
-        assert owners.get("meshbeacon.node") == {"meshbeacon"}
+        assert owners.get("meshbeacon.node") == {"mb-rns"}
         # The core cannot open the Supervisor socket itself (root-only); only the relay can.
         probe = subprocess.run(
             ["docker", "exec", "-u", "meshbeacon", c.name, "python3", "-I", "-c",
@@ -560,8 +561,9 @@ def complete_json(path: Path) -> bool:
 
 
 def app_memory_kib(c: Container) -> int:
-    """RSS + swap of the service user's processes, by their real UID (/proc/<pid>/status stays
-    readable for the non-dumpable core, whose /proc entries otherwise look root-owned)."""
+    """RSS + swap of the app's own users' processes (the core and Reticulum, ADR 0018), by their
+    real UID (/proc/<pid>/status stays readable for the non-dumpable core, whose /proc entries
+    otherwise look root-owned)."""
     script = (
         "import os\n"
         "total = 0\n"
@@ -570,7 +572,7 @@ def app_memory_kib(c: Container) -> int:
         "        status = open(f'/proc/{pid}/status').read().splitlines()\n"
         "    except OSError:\n"
         "        continue\n"
-        "    if int(next(x for x in status if x.startswith('Uid:')).split()[1]) == 9100:\n"
+        "    if int(next(x for x in status if x.startswith('Uid:')).split()[1]) in (9100, 9101, 9102):\n"
         "        total += sum(int(x.split()[1]) for x in status if x.startswith(('VmRSS:', 'VmSwap:')))\n"
         "print(total)\n"
     )
@@ -584,7 +586,7 @@ def probe(c: Container, mode: str, canary: str = "") -> dict[str, bool]:
     process namespace (inside the container, the profile refuses even a privileged process
     ptrace access, which CI showed)."""
     if mode == "attacker":
-        cmd = ["docker", "exec", "-u", "meshbeacon", c.name, "python3"]
+        cmd = ["docker", "exec", "-u", "mb-rns", c.name, "python3"]  # Reticulum's user (ADR 0018)
     else:
         cmd = [
             "docker", "run", "--rm", "--privileged", f"--pid=container:{c.name}", "--network", "none",
@@ -610,8 +612,80 @@ def assert_isolated(c: Container, canary: str, *, socket_mode: bool) -> None:
         "core_maps": False,
         "core_memory": False,
         "took_fd": False,
+        "container_env_read": False,
         "canary_found": False,
     }, attack
+
+
+ISOLATION_PROBE = (Path(__file__).resolve().parents[2] / "tools" / "acceptance" / "isolation_probe.py").read_text()
+
+
+def isolation(c: Container, view: str) -> dict[str, bool]:
+    user = "meshbeacon" if view == "core" else "mb-rns"
+    result = json.loads(sh("docker", "exec", "-u", user, c.name, "python3", "-I", "-c", ISOLATION_PROBE, view))
+    print(f"isolation probe ({view}): {result}")
+    return result
+
+
+def test_services_are_isolated_by_user(run):
+    """ADR 0018, gate IS-1 to IS-4: the core and Reticulum are separate users, and neither can
+    reach the other's data, credentials or channels. The same probe must notice when the isolation
+    is weakened, or it would prove nothing (IS-4)."""
+    c = run(DEFAULTS)
+    assert wait_for(lambda: "meshbeacon.node" in processes(c), timeout=60), c.logs()
+    owners = processes(c)
+    assert owners.get("meshbeacon.supervisor") == {"meshbeacon"} and owners.get("meshbeacon.node") == {"mb-rns"}
+    # The prepare step ran as Reticulum's user too: it created the identity in mb-rns's folder.
+    owner = c.exec("stat", "-c", "%U %a", "/data/reticulum/storage/transport_identity").split()
+    assert owner == ["mb-rns", "600"], owner
+    for view in ("reticulum", "core"):
+        assert not any(isolation(c, view).values()), view
+    # A deliberately weakened installation: the probe must report every breach it is shown.
+    c.exec("chmod", "-R", "a+rwX", "/data/meshbeacon", "/data/reticulum", "/run/meshbeacon-io")
+    c.exec("chmod", "0755", "/data")
+    c.exec("chmod", "0755", "/run/service/reticulum/supervise")
+    c.exec("chmod", "0666", "/run/service/reticulum/supervise/control")
+    weak_rns, weak_core = isolation(c, "reticulum"), isolation(c, "core")
+    for key in (
+        "core_data_listed",
+        "core_history_read",
+        "data_root_listed",
+        "service_control_opened",
+        "channel_opened",
+    ):
+        assert weak_rns[key], (key, weak_rns)
+    for key in ("reticulum_data_listed", "transport_identity_read", "identity_backup_read", "reticulum_config_read"):
+        assert weak_core[key], (key, weak_core)
+
+
+def test_identity_survives_isolation_upgrade_and_downgrade(run, tmp_path):
+    """ADR 0018: moving to separate users keeps the node's identity, and so does going back. An
+    installation from before ADR 0018 is simulated: the identity's companion files in the core's
+    folder and everything owned by the core's user, as the previous image left them."""
+    c = run(DEFAULTS, name="upgrade")
+    assert wait_for(lambda: "meshbeacon.node" in processes(c), timeout=60), c.logs()
+    identity = c.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0]
+    sh("docker", "rm", "-f", c.name)
+    # Back to the previous layout and ownership (what an older image leaves behind).
+    data = tmp_path / "upgrade"
+    sh(
+        "docker", "run", "--rm", "-v", f"{data}:/data", "--entrypoint", "sh", IMAGE, "-c",
+        "mv /data/reticulum/meshbeacon-identity/* /data/meshbeacon/ && "
+        "rmdir /data/reticulum/meshbeacon-identity && chown -R 9100:9100 /data/meshbeacon /data/reticulum",
+    )  # fmt: skip
+    c2 = Container(f"mb-again-{uuid.uuid4().hex[:6]}", data)
+    confine = ["--security-opt", f"apparmor={APPARMOR}"] if APPARMOR else []
+    sh("docker", "run", "-d", "--name", c2.name, "-v", f"{data}:/data", *confine, IMAGE)
+    try:
+        assert wait_for(lambda: "meshbeacon.node" in processes(c2), timeout=60), c2.logs()
+        assert "unchanged since last start" in c2.logs(), c2.logs()
+        after = c2.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0]
+        assert after == identity  # the very same key, now owned by Reticulum's user
+        files = c2.exec("ls", "/data/reticulum/meshbeacon-identity", "/data/meshbeacon").split()
+        assert "identity.backup" in files and "identity.json" in files
+        assert not any(f.startswith("identity.") for f in c2.exec("ls", "/data/meshbeacon").split())
+    finally:
+        sh("docker", "rm", "-f", c2.name, check=False)
 
 
 def processes(c: Container) -> dict[str, set[str]]:

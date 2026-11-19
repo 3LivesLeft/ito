@@ -39,6 +39,7 @@ from .paths import Paths
 from .policy import RestartPolicy, StartHistory, Timings
 from .prepare import FREE_SPACE_FLOOR, FREE_SPACE_WARN
 from .relay_link import RELAY_FD_ENV, TOKEN, TOKEN_FD_ENV
+from .services import Services, drain
 from .settings import Settings, ValidationError, parse_options
 
 MSG_GAVE_UP = (
@@ -53,6 +54,10 @@ MSG_DISCOVERY_SOCKET = "Home Assistant is told about MeshBeacon through the Supe
 MSG_DISCOVERY_UNAVAILABLE = (
     "⚠ Home Assistant cannot be told about MeshBeacon: the link to the Supervisor's local socket could "
     "not be set up. The node works normally; restart the app to try again."
+)
+MSG_NO_ISOLATION = (
+    "✖ MeshBeacon could not set up the separate Reticulum service it runs under its own user, so it "
+    "has not started Reticulum. Restart the app; if this repeats, please report it."
 )
 MSG_RELAY_LOST = (
     "⚠ The link to the discovery relay was lost (the relay restarted). Home Assistant keeps showing "
@@ -142,6 +147,7 @@ class Child:
     status_buf: LineBuffer
     last_status: float
     stable: bool = False
+    owns_fds: bool = True  # False for an s6 service: its FIFOs stay open for the next run
 
 
 def default_python() -> list[str]:
@@ -183,6 +189,8 @@ class Supervisor:
         supervisor_url: str | None = None,
         discovery_relay: RelayLink | None = None,
         socket_mode: bool = False,
+        services: Services | None = None,
+        require_services: bool = False,
         hostname: Callable[[], str] = container_hostname,
         discovery_timing: dict[str, float] | None = None,
     ) -> None:
@@ -219,6 +227,11 @@ class Supervisor:
         self._supervisor_token = supervisor_token
         self.supervisor_url = supervisor_url
         self.discovery_relay = discovery_relay
+        # ADR 0018: in the app image, Reticulum and the prepare step are s6 services under their
+        # own user; otherwise (development, tests) they are this process's children.
+        self.services = services
+        # True in the app image: never fall back to running Reticulum as this process's child.
+        self.require_services = require_services
         # True where the Supervisor provides the app socket: then the token is never used, even if
         # the relay link is missing (no fall-back to the internal network).
         self.socket_mode = socket_mode or discovery_relay is not None
@@ -337,6 +350,8 @@ class Supervisor:
                     return False
 
     def run_prepare(self, mode: str) -> dict[str, Any] | None:
+        if self.services is not None:
+            return self._run_prepare_service(mode)
         result_path = self.paths.prepare_result
         result_path.unlink(missing_ok=True)
         with tempfile.TemporaryFile() as output:  # a file, so a chatty child can never block on a pipe
@@ -358,6 +373,39 @@ class Supervisor:
             return None
         value = fsutil.read_json(result_path)
         result_path.unlink(missing_ok=True)
+        return value if isinstance(value, dict) else None
+
+    def _run_prepare_service(self, mode: str) -> dict[str, Any] | None:
+        """The prepare step as the ``rns-prepare`` service, as Reticulum's user (ADR 0018)."""
+        assert self.services is not None  # noqa: S101 - checked by the caller
+        services = self.services
+        output = drain(services.prepare_out)  # nothing left over from an earlier run
+        try:
+            proc = services.start_prepare(mode)
+        except (OSError, ValueError):
+            return None
+        deadline = self.clock() + self.t.prepare_timeout
+        finished = True
+        while proc.poll() is None:
+            self.heartbeat.beat()
+            output += drain(services.prepare_out, 256 * 1024)  # never let a chatty step block
+            if self.clock() >= deadline:
+                proc.kill()
+                with contextlib.suppress(subprocess.TimeoutExpired):
+                    proc.wait(self.t.stop_grace)
+                finished = False
+                break
+            time.sleep(0.2)
+        output += drain(services.prepare_out, 256 * 1024)
+        for line in output[: 256 * 1024].decode("utf-8", "replace").splitlines()[:200]:
+            self.forward("prepare", line)
+        raw = drain(services.prepare_result, 64 * 1024)
+        if not finished or not raw:
+            return None
+        try:
+            value = json.loads(raw.decode("utf-8", "replace").strip().splitlines()[-1])
+        except (ValueError, IndexError):
+            return None
         return value if isinstance(value, dict) else None
 
     def prepare_or_attention(self, mode: str) -> bool:
@@ -385,6 +433,9 @@ class Supervisor:
 
     # -- child process -----------------------------------------------------------------------
     def start_child(self) -> None:
+        if self.services is not None:
+            self._start_child_service()
+            return
         read_fd, write_fd = os.pipe()
         cmd = [
             *module_command(self.python, self.node_module),
@@ -421,10 +472,42 @@ class Supervisor:
         self.monitor(self.collector.child_started)
         self.publish()
 
+    def _start_child_service(self) -> None:
+        """Reticulum as the ``reticulum`` s6 service, as its own user (ADR 0018)."""
+        assert self.services is not None  # noqa: S101 - checked by the caller
+        services = self.services
+        for fd in (services.node_out, services.node_status):
+            drain(fd)  # lines from an earlier run were already handled
+        try:
+            proc = services.start("reticulum")
+        except OSError:
+            self.child_failed("The Reticulum service could not be started.")
+            return
+        now = self.clock()
+        self.child = Child(
+            proc,  # type: ignore[arg-type]  # the part of Popen the supervisor uses
+            now,
+            services.node_out,
+            services.node_status,
+            LineBuffer(),
+            LineBuffer(),
+            now,
+            owns_fds=False,
+        )
+        self.selector.register(services.node_out, selectors.EVENT_READ, "out")
+        self.selector.register(services.node_status, selectors.EVENT_READ, "status")
+        self.policy.attempt_started()
+        self.cpu_samples.clear()
+        self.state = "running"
+        self.monitor(self.collector.child_started)
+        self.publish()
+
     def _close_child_fds(self, child: Child) -> None:
         for fd in (child.out_fd, child.status_fd):
             with contextlib.suppress(KeyError, ValueError):
                 self.selector.unregister(fd)
+        if not child.owns_fds:
+            return  # an s6 service's FIFOs: kept open for its next run
         with contextlib.suppress(OSError):
             os.close(child.status_fd)
         if child.proc.stdout is not None:
@@ -783,6 +866,9 @@ class Supervisor:
                 "restart_loop_paused",
             )
             return False
+        if self.require_services and self.services is None:
+            self.enter_attention([MSG_NO_ISOLATION], "unexpected")  # fail closed (ADR 0018)
+            return False
         if not self.prepare_or_attention("start"):
             return False
         self.load_settings()
@@ -878,6 +964,14 @@ def main() -> int:
     host = os.environ.get("MESHBEACON_HEALTH_HOST", "0.0.0.0")
     api_port = int(os.environ.get("MESHBEACON_API_PORT", "8100"))
     supervisor_token, relay, socket_mode = discovery_transport(os.environ)
+    require_services = os.environ.pop("MESHBEACON_S6", "") == "1"
+    services = None
+    if require_services:
+        for _ in range(150):  # the services start beside the core: wait at most 15 s
+            if Services.available():
+                services = Services()
+                break
+            time.sleep(0.1)
     return Supervisor(
         Paths.from_env(),
         health_host=host,
@@ -888,6 +982,8 @@ def main() -> int:
         supervisor_url=os.environ.get("MESHBEACON_SUPERVISOR_URL"),
         discovery_relay=relay,
         socket_mode=socket_mode,
+        services=services,
+        require_services=require_services,
     ).run()
 
 

@@ -130,15 +130,15 @@ class IdentityManager:
 
     def _keep_replaced(self, data: bytes) -> None:
         """Keep a copy of an identity being replaced (once: identical copies are not duplicated)."""
-        for existing in self.paths.meshbeacon.glob("identity.replaced-*"):
+        for existing in self.paths.identity_dir.glob("identity.replaced-*"):
             if _read(existing) == data:
                 return
         stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(self.clock()))
-        target = self.paths.meshbeacon / f"identity.replaced-{stamp}"
+        target = self.paths.identity_dir / f"identity.replaced-{stamp}"
         suffix = 0
         while target.exists():
             suffix += 1
-            target = self.paths.meshbeacon / f"identity.replaced-{stamp}-{suffix}"
+            target = self.paths.identity_dir / f"identity.replaced-{stamp}-{suffix}"
         fsutil.atomic_write(target, data)
 
     def ensure(self, *, replace_requested: bool = False, allow_replace: bool = True) -> Result:
@@ -147,7 +147,7 @@ class IdentityManager:
         ``allow_replace`` is False for the validation that runs before an RNS *restart* within the
         same app run, so that the replace option is acted on only once per app start.
         """
-        for directory in (self.paths.storage, self.paths.meshbeacon):
+        for directory in (self.paths.storage, self.paths.identity_dir):
             fsutil.ensure_dir(directory)
             fsutil.remove_stale_temp_files(directory)
 

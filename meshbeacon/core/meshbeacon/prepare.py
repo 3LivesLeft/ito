@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import sys
 from dataclasses import asdict, dataclass, field
@@ -89,7 +90,9 @@ def cap_regenerable(paths: Paths, result: PrepareResult) -> None:
 
 def prepare(paths: Paths, *, mode: str) -> PrepareResult:
     result = PrepareResult()
-    for directory in (paths.meshbeacon, paths.reticulum, paths.storage):
+    # Reticulum's own folders only: since ADR 0018 the prepare step runs as Reticulum's user and
+    # cannot (and need not) reach the core's /data/meshbeacon.
+    for directory in (paths.reticulum, paths.storage, paths.identity_dir):
         fsutil.ensure_dir(directory)
 
     settings = load_settings(paths, result)
@@ -116,14 +119,15 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
         )
     fsutil.atomic_write(paths.rns_config, text.encode())
     fsutil.repair_permissions(paths.reticulum)
-    fsutil.repair_permissions(paths.meshbeacon)
     return result
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="meshbeacon-prepare")
     parser.add_argument("--mode", choices=("start", "restart"), required=True)
-    parser.add_argument("--result", type=Path, required=True)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--result", type=Path, help="write the result to this file (started by the core)")
+    target.add_argument("--result-fd", type=int, help="write the result to this descriptor (s6 service, ADR 0018)")
     args = parser.parse_args(argv)
     paths = Paths.from_env()
     try:
@@ -134,7 +138,11 @@ def main(argv: list[str] | None = None) -> int:
             "It has not started Reticulum. Restart the app; if this repeats, please report it.",
             "unexpected",
         )
-    fsutil.atomic_write_json(args.result, asdict(result))
+    if args.result_fd is not None:
+        with os.fdopen(args.result_fd, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(asdict(result)) + "\n")
+    else:
+        fsutil.atomic_write_json(args.result, asdict(result))
     return 0
 
 

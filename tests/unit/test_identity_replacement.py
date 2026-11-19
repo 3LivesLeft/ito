@@ -32,7 +32,7 @@ def fp(path):
 
 
 def kept_copies(paths):
-    return {ident.fingerprint(ident.from_bytes(p.read_bytes())) for p in paths.meshbeacon.glob("identity.replaced-*")}
+    return {ident.fingerprint(ident.from_bytes(p.read_bytes())) for p in paths.identity_dir.glob("identity.replaced-*")}
 
 
 def crash_at(monkeypatch, n):

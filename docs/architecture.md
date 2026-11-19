@@ -312,8 +312,13 @@ Design:
   non-dumpable before it reads either, so Reticulum, though it runs as the same user, cannot reach
   the core's memory, environment or descriptors (threat T72; M1.2). The relay sends only
   MeshBeacon's validated discovery message and does not run where there is no socket.
-- **Process isolation gate:** separate Unix users for the core, Reticulum, LXMF and each community
-  service are mandatory before M4 or any community service ([roadmap](roadmap.md#process-isolation-gate-mandatory)).
+- **Process isolation (ADR 0018, M4 WP1):** the core runs as `meshbeacon` (9100); Reticulum and its
+  prepare step run as `mb-rns` (9101) as s6 services that start down, which the core controls
+  (`s6-svc`, permissions granted by `s6-svperms`) and reads through FIFOs in `/run/meshbeacon-io/`.
+  `/data/meshbeacon` belongs to the core and `/data/reticulum` (identity, backup, configuration) to
+  Reticulum; `/data` is 0711 and `options.json` is readable by the `mb-options` group only. Separate
+  users for LXMF and each community service are mandatory before M4 is accepted or any community
+  service is introduced ([roadmap](roadmap.md#process-isolation-gate-mandatory)).
 
 ### 4.8 Storage layout (under `/data`)
 

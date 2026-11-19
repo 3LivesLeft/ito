@@ -10,7 +10,11 @@ ENV \
     PYTHONUNBUFFERED=1 \
     PIP_EXTRA_INDEX_URL="" \
     PIP_NO_CACHE_DIR=1 \
-    MESHBEACON_DATA=/data
+    MESHBEACON_DATA=/data \
+    S6_CMD_WAIT_FOR_SERVICES=0
+# S6_CMD_WAIT_FOR_SERVICES=0 (ADR 0018): Reticulum and its prepare step are services that stay down
+# until the core starts them, so s6-overlay must not wait for every service to be up (it would
+# wait for ever: the base image sets no time limit). It only gates a container CMD; there is none.
 
 # Security updates for base-image packages that the pinned HA base image predates, with explicit
 # minimum versions so the build fails rather than silently shipping a vulnerable version. Found by
@@ -50,12 +54,19 @@ RUN set -eu; \
     mv /tmp/meshbeacon "${site}/meshbeacon"; \
     python3 -I -m compileall -q "${site}/meshbeacon" "${site}/RNS"; \
     addgroup -S -g 9100 meshbeacon; \
-    adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9100 -G meshbeacon meshbeacon
+    adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9100 -G meshbeacon meshbeacon; \
+    addgroup -S -g 9101 mb-rns; \
+    adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9101 -G mb-rns mb-rns; \
+    addgroup -S -g 9110 mb-options; \
+    addgroup meshbeacon mb-options; \
+    addgroup mb-rns mb-options
 
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES /usr/share/doc/meshbeacon/
 COPY rootfs /
 RUN chmod 0755 /etc/cont-init.d/10-meshbeacon /etc/services.d/meshbeacon/run /etc/services.d/meshbeacon/finish \
-    /etc/services.d/discovery-relay/run /etc/services.d/discovery-relay/finish
+    /etc/services.d/discovery-relay/run /etc/services.d/discovery-relay/finish \
+    /etc/services.d/reticulum/run /etc/services.d/reticulum/finish \
+    /etc/services.d/rns-prepare/run /etc/services.d/rns-prepare/finish
 
 LABEL \
     io.hass.version="${BUILD_VERSION}" \

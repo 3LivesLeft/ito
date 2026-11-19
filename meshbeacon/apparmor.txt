@@ -86,6 +86,9 @@ profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
   # The discovery relay's folder and socket: root's alone (owner rule on top of 0700/0600), so the
   # service user, which Reticulum runs as, cannot reach them even if file modes were wrong.
   owner /run/meshbeacon/{,**} rwk,
+  # Channels between the core and its services (ADR 0018): FIFOs and the prepare mode file. File
+  # modes (root:meshbeacon 0660 in 0750 folders) keep Reticulum's user out; nothing here runs.
+  /run/meshbeacon-io/{,**} rw,
   /dev/tty rw,
 
   # The Supervisor's per-app socket (newer Supervisors; used only by the discovery relay).

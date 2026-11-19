@@ -13,7 +13,7 @@ from .conftest import write_options
 
 def run_prepare(data, mode="start"):
     env = dict(os.environ, MESHBEACON_DATA=str(data))
-    result = data / "meshbeacon" / "r.json"
+    result = data.parent / "prepare-result.json"  # the core's channel, outside Reticulum's folders
     proc = subprocess.run(
         [sys.executable, "-m", "meshbeacon.prepare", "--mode", mode, "--result", str(result)],
         env=env,
@@ -44,9 +44,9 @@ def test_first_and_second_start(data):
     assert list(cfg["interfaces"]) == ["Home"]
     for path, mode in modes(data / "reticulum"):
         assert mode == (0o700 if os.path.isdir(path) else 0o600), path
-    for path, mode in modes(data / "meshbeacon"):
-        assert mode == (0o700 if os.path.isdir(path) else 0o600), path
-    fp = json.loads((data / "meshbeacon" / "identity.json").read_text())["fingerprint"]
+    # ADR 0018: the prepare step (Reticulum's user) never touches the core's folder.
+    assert not (data / "meshbeacon").exists()
+    fp = json.loads((data / "reticulum" / "meshbeacon-identity" / "identity.json").read_text())["fingerprint"]
     assert fp not in json.dumps(r1) + out1
 
 

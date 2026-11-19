@@ -3,8 +3,8 @@
 
 Two views, each printing one JSON line and changing nothing:
 
-    # what Reticulum's user can do (run as the service user, like a compromised Reticulum child):
-    docker exec -u meshbeacon -i <container> python3 -I - attacker [CANARY] < relay_probe.py
+    # what Reticulum's user (mb-rns, ADR 0018) can do, like a compromised Reticulum child:
+    docker exec -u mb-rns -i <container> python3 -I - attacker [CANARY] < relay_probe.py
     # what is really there, only to observe: an unconfined privileged sidecar in the app's PID
     # namespace (inside the app, its AppArmor profile refuses even a privileged process ptrace):
     docker run --rm -i --privileged --pid=container:<container> --security-opt apparmor=unconfined \
@@ -20,14 +20,15 @@ attacker:
 - ``core_environ`` / ``core_fds`` / ``core_maps`` / ``core_memory``: the core's /proc entries could be
   read (the core is non-dumpable, so the kernel refuses them);
 - ``took_fd``: a descriptor of the core could be copied with pidfd_getfd;
+- ``container_env_read``: s6-overlay's copy of the container environment could be read;
 - ``canary_found``: the token was found anywhere this user could read.
 
 observer:
 - ``core_non_dumpable``: the core's /proc entries belong to root although it runs as the service
   user (must be **true**);
 - ``core_env_token`` / ``node_env_token``: the token is in a process environment;
-- ``token_fd_open``: the one-time pipe is still open in the core: a pipe the core holds and no
-  other process shares (descriptor numbers are reused, so the number alone proves nothing), or any
+- ``token_fd_open``: the one-time pipe is still open in the core: an anonymous pipe the core holds
+  and no other process shares (descriptor numbers are reused, so the number alone proves nothing), or any
   such pipe from which the token can still be read;
 - ``core_holds_link`` (socket mode, must be **true**) / ``node_shares_link``: who holds the relay link;
 - ``node_holds_core_pipe_or_link``: Reticulum holds a descriptor that is also open in the core,
@@ -131,13 +132,23 @@ def take_any_fd(pid: str) -> bool:
 def attacker(core: str, node: str, canary: bytes) -> dict[str, bool]:
     memory, in_memory = read_memory(core, canary)
     core_env = readable(lambda: environ(core))
-    found = in_memory or (bool(canary) and (canary in environ(node) or (core_env and canary in environ(core))))
+    container_env = Path("/run/s6/container_environment/SUPERVISOR_TOKEN")
+    env_file = readable(container_env.read_bytes)
+    found = in_memory or (
+        bool(canary)
+        and (
+            canary in environ(node)
+            or (core_env and canary in environ(core))
+            or (env_file and canary in container_env.read_bytes())
+        )
+    )
     return {
         "core_environ": core_env,
         "core_fds": readable(lambda: os.listdir(f"/proc/{core}/fd")),
         "core_maps": readable(lambda: Path(f"/proc/{core}/maps").read_bytes()),
         "core_memory": memory,
         "took_fd": take_any_fd(core),
+        "container_env_read": env_file,
         "canary_found": bool(found),
     }
 
@@ -151,6 +162,8 @@ def unshared_pipe_with(core: str, core_fds: dict[str, int], node_fds: dict[str, 
             continue  # the core's own stdio: its log pipe to s6, never read here
         path = f"/proc/{core}/fd/{name}"
         try:
+            if not os.readlink(path).startswith("pipe:"):
+                continue  # named FIFOs (the services' channels, ADR 0018) are not the token pipe
             if not stat.S_ISFIFO(os.stat(path).st_mode) or inode in others:
                 continue
             fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)

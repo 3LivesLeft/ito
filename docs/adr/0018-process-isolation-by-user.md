@@ -1,6 +1,7 @@
 # ADR 0018: Process isolation by Unix user, supervised by s6
 
-- **Status:** **Proposed** (for the maintainer's approval with the [M4 plan](../plans/m4-lxmf-engine.md)).
+- **Status:** **Accepted** (maintainer, 19 Nov 2026, D-M4-1). Implemented for the core and Reticulum
+  in M4 WP1; the engine follows in WP3.
 - **Date:** 19 November 2026
 - **Implements:** the mandatory [process isolation gate](../roadmap.md#process-isolation-gate-mandatory)
   (IS-1 to IS-4). Amends [ADR 0008](0008-messaging-process.md) (who starts the messaging process).
@@ -50,11 +51,22 @@ least-privilege credentials, storage and IPC, proven by adversarial tests.
 6. **IPC.** The engine's contract channel (ADR 0014) is a Unix socket owned by `mb-lxmf`, group
    `meshbeacon`, mode 0660, in a 0750 folder. Each end checks the other's user ID (`SO_PEERCRED`).
    The engine needs no RNS RPC key: it is a shared-instance client only.
-7. **AppArmor.** There is still one profile (all services run `python3`). File rules for
-   `/data/<service>/` become `owner` rules, so AppArmor refuses cross-service file access as well as
-   the file modes do. No capability is added.
+7. **AppArmor.** There is still one profile (all services run `python3`), and no capability is
+   added. **As implemented:** `/data/<service>/` cannot become `owner` rules, because the root init
+   step must re-own files it does not own at every start, and a single profile cannot tell root
+   from the services. Cross-service file isolation therefore rests on separate users and 0700
+   folders, proven by the isolation test (IS-3, IS-4). The channels in `/run/meshbeacon-io/` are
+   allowed by path; their modes keep Reticulum out.
 8. **Credentials.** The discovery credentials stay with the core (non-dumpable; T72). The messaging
    identity and queue are readable only by `mb-lxmf`.
+
+9. **Start-up (as implemented).** `S6_CMD_WAIT_FOR_SERVICES=0`: otherwise s6-overlay waits, with
+   no time limit, for every service to be up, and the services that start down would block
+   start-up and shutdown for ever. It only gates a container `CMD`, which MeshBeacon does not have.
+10. **The container environment (as implemented).** s6-overlay keeps a copy of the container's
+    environment, the Supervisor token included, in `/run/s6/container_environment`, readable by every
+    user. The root init step makes it root's alone (0700, files 0600). The isolation and credential
+    probes check it.
 
 ## Consequences
 
