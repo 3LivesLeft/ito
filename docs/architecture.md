@@ -301,9 +301,11 @@ Design:
 - **v0.3 (M1): the discovery relay** is the first such root service
   (`services.d/discovery-relay`, `core/meshbeacon/discovery_relay.py`;
   [ADR 0006 amendment](adr/0006-local-metrics-api.md#amendment-19-november-2026-m1-how-discovery-reaches-the-supervisor)).
-  Newer Supervisors give the app a root-only (0600) socket; the relay serves only the `meshbeacon`
-  user, sends only MeshBeacon's validated discovery message, and does not run where there is no
-  socket. The core then never uses the Supervisor token (threat T72).
+  Newer Supervisors give the app a root-only (0600) socket. The relay's own socket is root-only
+  too; the core's run script opens the link as root (`relay_link.py`) and hands it to the core,
+  which keeps it from Reticulum. The relay sends only MeshBeacon's validated discovery message and
+  does not run where there is no socket. The Supervisor token is then not passed to the core at
+  all (threat T72; M1.2).
 
 ### 4.8 Storage layout (under `/data`)
 

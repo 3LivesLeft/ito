@@ -522,11 +522,66 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
         )  # fmt: skip
         assert probe.returncode != 0 and "Permission" in probe.stderr
         assert SUPERVISOR_TOKEN not in c.logs() and config["token"] not in c.logs()
+        assert "meshbeacon.relay_link" not in owners  # the root start step became the core
+
+        # M-1: the relay's own socket is root's alone, so the service user (which Reticulum runs as)
+        # cannot connect to it, and so can neither announce nor withdraw.
+        modes = c.exec("stat", "-c", "%a %U %G %n", "/run/meshbeacon", "/run/meshbeacon/discovery.sock")
+        assert modes.split("\n")[:2] == [
+            "700 root root /run/meshbeacon",
+            "600 root root /run/meshbeacon/discovery.sock",
+        ], modes
+        for request in ('{"op": "withdraw", "uuid": "0123abcd"}', json.dumps({"op": "announce", "config": config})):
+            probe = subprocess.run(
+                ["docker", "exec", "-u", "meshbeacon", c.name, "python3", "-I", "-c",
+                 "import socket, sys; s = socket.socket(socket.AF_UNIX); s.connect('/run/meshbeacon/discovery.sock');"
+                 " s.sendall(sys.argv[1].encode() + b'\\n'); print(s.recv(100))", request],
+                capture_output=True, text=True,
+            )  # fmt: skip
+            assert probe.returncode != 0 and "Permission" in probe.stderr, probe
+        # The core holds the link; the Reticulum child has no part of it.
+        link = json.loads(c.exec("python3", "-I", "-c", LINK_PROBE))
+        assert link["core_fd"] is not None and link["core_is_socket"], link
+        assert not link["node_shares_it"], link
+        # L-1: in socket mode the Supervisor token never enters the core's environment at all.
+        assert link["core_env_token"] is False and link["node_env_token"] is False, link
     finally:
         sh("docker", "rm", "-f", sup, check=False)
         for path in api.iterdir():
             path.unlink()
         api.rmdir()
+
+
+LINK_PROBE = """
+import json, os
+def pid_of(module):
+    for pid in filter(str.isdigit, os.listdir('/proc')):
+        try:
+            args = open(f'/proc/{pid}/cmdline', 'rb').read().split(b'\\0')
+        except OSError:
+            continue
+        if b'-m' in args and args[args.index(b'-m') + 1] == module:
+            return pid
+def environ(pid):
+    return dict(e.split(b'=', 1) for e in open(f'/proc/{pid}/environ', 'rb').read().split(b'\\0') if b'=' in e)
+def inode(pid, fd):
+    try:
+        st = os.stat(f'/proc/{pid}/fd/{fd}')
+    except OSError:
+        return None
+    return st.st_ino if (st.st_mode & 0o170000) == 0o140000 else None
+core, node = pid_of(b'meshbeacon.supervisor'), pid_of(b'meshbeacon.node')
+fd = environ(core).get(b'MESHBEACON_RELAY_FD')
+core_inode = inode(core, fd.decode()) if fd else None
+node_inodes = {inode(node, n) for n in os.listdir(f'/proc/{node}/fd')}
+print(json.dumps({
+    'core_fd': fd.decode() if fd else None,
+    'core_is_socket': core_inode is not None,
+    'node_shares_it': core_inode is not None and core_inode in node_inodes,
+    'core_env_token': b'SUPERVISOR_TOKEN' in environ(core),
+    'node_env_token': b'SUPERVISOR_TOKEN' in environ(node),
+}))
+"""
 
 
 def processes(c: Container) -> dict[str, set[str]]:

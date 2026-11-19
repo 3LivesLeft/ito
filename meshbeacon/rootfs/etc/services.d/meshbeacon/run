@@ -2,24 +2,29 @@
 # Start the MeshBeacon core as the unprivileged service user (architecture §4.7).
 exec 2>&1
 umask 077
-# Optional Home Assistant integration (ADR 0006): the core needs the Supervisor token only to send a
-# discovery message. s6-overlay keeps the container environment in this directory, readable by root.
-# The core removes the token from its environment at once, so neither the prepare step nor
-# Reticulum ever receives it.
-token_file=/run/s6/container_environment/SUPERVISOR_TOKEN
-if [ -z "${SUPERVISOR_TOKEN:-}" ] && [ -r "$token_file" ]; then
-    SUPERVISOR_TOKEN="$(cat "$token_file")"
-    export SUPERVISOR_TOKEN
-fi
-# Newer Supervisors also give the app its own socket. The core cannot open it (root-only, 0600), so
-# it uses the discovery relay (services.d/discovery-relay) and then ignores the token entirely.
+# Newer Supervisors give the app its own socket. The core cannot open it (root-only, 0600), so the
+# root discovery relay (services.d/discovery-relay) reaches it. The relay accepts only root, so this
+# script opens the core's link to it while still root (relay_link.py) and hands it to the core.
+# The Supervisor token is then never loaded: it does not exist in the core's environment at all
+# (review L-1), and nothing crosses the internal network.
 socket_file=/run/s6/container_environment/SUPERVISOR_SOCKET
 if [ -z "${SUPERVISOR_SOCKET:-}" ] && [ -r "$socket_file" ]; then
     SUPERVISOR_SOCKET="$(cat "$socket_file")"
 fi
 if [ -n "${SUPERVISOR_SOCKET:-}" ] && [ -S "$SUPERVISOR_SOCKET" ]; then
+    unset SUPERVISOR_TOKEN
     export SUPERVISOR_SOCKET
-else
-    unset SUPERVISOR_SOCKET
+    exec /usr/local/bin/python3 -I -m meshbeacon.relay_link /run/meshbeacon/discovery.sock -- \
+        /command/s6-setuidgid meshbeacon /usr/local/bin/python3 -I -m meshbeacon.supervisor
+fi
+unset SUPERVISOR_SOCKET
+# Compatibility path (Supervisors without app sockets; ADR 0006): the core needs the Supervisor token
+# only to send a discovery message. s6-overlay keeps the container environment in this directory,
+# readable by root. The core removes the token from its environment at once, so neither the prepare
+# step nor Reticulum ever receives it.
+token_file=/run/s6/container_environment/SUPERVISOR_TOKEN
+if [ -z "${SUPERVISOR_TOKEN:-}" ] && [ -r "$token_file" ]; then
+    SUPERVISOR_TOKEN="$(cat "$token_file")"
+    export SUPERVISOR_TOKEN
 fi
 exec /command/s6-setuidgid meshbeacon /usr/local/bin/python3 -I -m meshbeacon.supervisor

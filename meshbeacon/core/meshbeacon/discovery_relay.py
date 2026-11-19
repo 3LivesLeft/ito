@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Discovery over the Supervisor's Unix socket, for an unprivileged core (M1, ADR 0006 amendment).
+"""Discovery over the Supervisor's Unix socket, for an unprivileged core (ADR 0006 amendment, M1.2).
 
 Newer Supervisors give each app its own socket at ``/run/supervisor/api/supervisor.sock`` and
 identify the app by the socket itself, so no token travels over the internal network. The socket
@@ -7,33 +7,39 @@ is owned by root with mode 0600 (Supervisor ``api/sockets.py``), and MeshBeacon'
 unprivileged ``meshbeacon`` user, so it cannot open it.
 
 This relay is the smallest privileged piece that bridges the two. It runs as root in its own s6
-service, listens on ``/run/meshbeacon/discovery.sock`` for the core only (checked by the peer's
-user ID), and does exactly two things:
+service and does exactly two things:
 
 - ``announce``: POST MeshBeacon's discovery message, built here from strictly validated fields
   (host, port, token, fingerprint). Nothing else can be sent, and the service is fixed.
 - ``withdraw``: DELETE one earlier message by its UUID.
 
-It holds no state, logs no request content, reads at most 8 KiB per request with a deadline, and
-serves one connection at a time. It grants nothing new: the core could already send the same
-message with the Supervisor token over the internal network (the compatibility path that current
-releases still need). Where there is no socket, the relay does not run.
+**Who can reach it (M1.2, threat T72).** The relay's socket is root's alone: mode 0600 in a 0700
+folder, and the relay also drops any peer that is not root. The core does not connect to it
+itself. Its root start step (:mod:`meshbeacon.relay_link`) opens the connection and hands it to
+the core before it drops to the ``meshbeacon`` user. The Reticulum child runs as the same user as
+the core but never receives that connection (it is not inheritable, and children are started with
+``close_fds``), and it cannot open the socket, so it can neither announce nor withdraw.
+
+It holds no state, logs no request content, reads at most 8 KiB per request, drops a request that
+is not finished within a few seconds, and serves at most a few connections at once, so one stalled
+connection never blocks another. Where there is no Supervisor socket, the relay does not run.
 """
 
 from __future__ import annotations
 
 import contextlib
-import grp
 import http.client
 import json
 import os
-import pwd
 import re
+import selectors
 import signal
 import socket
+import stat
 import struct
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -41,9 +47,9 @@ RELAY_DIR = Path("/run/meshbeacon")
 RELAY_SOCKET = RELAY_DIR / "discovery.sock"
 SUPERVISOR_SOCKET_ENV = "SUPERVISOR_SOCKET"
 SERVICE = "meshbeacon"
-SERVICE_USER = "meshbeacon"
 MAX_REQUEST = 8192
-DEADLINE = 5.0
+MAX_CLIENTS = 4
+DEADLINE = 5.0  # for a request that has started to arrive; an idle, authorised link may wait
 SUPERVISOR_TIMEOUT = 10.0
 
 _HOST = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
@@ -53,7 +59,7 @@ _UUID = re.compile(r"^[0-9A-Za-z]{1,64}$")
 
 
 class RelayError(Exception):
-    """The request was refused or could not be delivered (never carries request content)."""
+    """The relay cannot start safely (never carries request content)."""
 
 
 def announce_config(config: Any) -> dict[str, Any] | None:
@@ -136,6 +142,7 @@ def handle(request: Any, supervisor_socket: str) -> dict[str, Any]:
 
 
 def peer_uid(conn: socket.socket) -> int | None:
+    """The user ID of the process at the other end, as the kernel recorded it at connect time."""
     try:
         creds = conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i"))
     except OSError:
@@ -144,83 +151,147 @@ def peer_uid(conn: socket.socket) -> int | None:
     return int(uid)
 
 
-def _read_line(conn: socket.socket, deadline: float) -> bytes | None:
-    data = b""
-    while b"\n" not in data:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0 or len(data) > MAX_REQUEST:
-            return None
-        conn.settimeout(remaining)
-        chunk = conn.recv(MAX_REQUEST + 1 - len(data))
-        if not chunk:
-            return None
-        data += chunk
-    line = data.split(b"\n", 1)[0]
-    return line if len(line) <= MAX_REQUEST else None
+def _safe_directory(directory: Path, owner: int) -> None:
+    """Create ``directory`` for ``owner`` alone (0700), refusing anything unexpected (review L-3).
+
+    The parent must be a real folder that only its owner can write to. ``directory`` itself must be
+    a real folder (never a symbolic link, which ``O_NOFOLLOW`` refuses) owned by ``owner``; its mode
+    is then set through the open descriptor, so nothing can be swapped in between.
+    """
+    parent = os.lstat(directory.parent)
+    if not stat.S_ISDIR(parent.st_mode) or parent.st_uid not in (0, owner) or parent.st_mode & 0o022:
+        raise RelayError("unsafe parent folder")
+    with contextlib.suppress(FileExistsError):
+        os.mkdir(directory, 0o700)
+    try:
+        fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except OSError as exc:
+        raise RelayError("relay folder is not a folder") from exc
+    try:
+        info = os.fstat(fd)
+        if info.st_uid != owner:
+            raise RelayError("relay folder has an unexpected owner")
+        os.fchmod(fd, 0o700)
+        with contextlib.suppress(PermissionError):  # tests run as an unprivileged user
+            os.fchown(fd, owner, 0 if owner == 0 else -1)
+    finally:
+        os.close(fd)
 
 
-def serve_one(conn: socket.socket, supervisor_socket: str, allowed_uid: int) -> None:
-    with conn:
-        if peer_uid(conn) != allowed_uid:
-            return  # not the core: close without a word
-        try:
-            line = _read_line(conn, time.monotonic() + DEADLINE)
-        except OSError:  # a slow, stalled or vanished client: drop it, never the relay
-            return
-        if line is None:
-            return
-        try:
-            request = json.loads(line)
-        except ValueError:
-            request = None
-        reply = handle(request, supervisor_socket)
-        with contextlib.suppress(OSError):
-            conn.settimeout(DEADLINE)
-            conn.sendall(json.dumps(reply).encode() + b"\n")
-
-
-def listen(path: Path, gid: int, owner: int = 0) -> socket.socket:
-    path.parent.mkdir(mode=0o750, parents=True, exist_ok=True)
-    os.chown(path.parent, owner, gid)
-    path.parent.chmod(0o750)
-    with contextlib.suppress(FileNotFoundError):
+def listen(path: Path, owner: int = 0) -> socket.socket:
+    """Bind the relay's socket, readable and writable by ``owner`` (root) only."""
+    _safe_directory(path.parent, owner)
+    try:
+        existing = os.lstat(path)
+    except FileNotFoundError:
+        pass
+    else:
+        if not stat.S_ISSOCK(existing.st_mode):
+            raise RelayError("unexpected file where the relay socket belongs")
         path.unlink()
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    old = os.umask(0o177)
+    old = os.umask(0o177)  # created as 0600: nothing to change afterwards
     try:
         server.bind(str(path))
     finally:
         os.umask(old)
-    os.chown(path, owner, gid)
-    path.chmod(0o660)
-    server.listen(4)
+    server.listen(MAX_CLIENTS)
     return server
+
+
+@dataclass
+class _Client:
+    sock: socket.socket
+    buf: bytes = b""
+    started: float | None = None  # when the unfinished request began to arrive
+
+
+def _reply(client: _Client, reply: dict[str, Any]) -> bool:
+    try:
+        client.sock.settimeout(DEADLINE)
+        client.sock.sendall(json.dumps(reply).encode() + b"\n")
+        client.sock.setblocking(False)
+    except OSError:
+        return False
+    return True
+
+
+def _feed(client: _Client, data: bytes, supervisor_socket: str, now: float) -> bool:
+    """Handle every complete request in ``data``. False: drop the connection."""
+    client.buf += data
+    if client.started is None:
+        client.started = now
+    while b"\n" in client.buf:
+        line, client.buf = client.buf.split(b"\n", 1)
+        if len(line) > MAX_REQUEST:
+            return False
+        try:
+            request = json.loads(line)
+        except ValueError:
+            request = None
+        if not _reply(client, handle(request, supervisor_socket)):
+            return False
+        client.started = time.monotonic() if client.buf else None
+    return len(client.buf) <= MAX_REQUEST
 
 
 def serve(
     path: Path,
     supervisor_socket: str,
-    allowed_uid: int,
-    gid: int,
     *,
+    allowed_uid: int = 0,
     owner: int = 0,
     stop: list[bool] | None = None,
 ) -> None:
-    server = listen(path, gid, owner)
-    server.settimeout(1.0)
+    server = listen(path, owner)
+    server.setblocking(False)
+    selector = selectors.DefaultSelector()
+    selector.register(server, selectors.EVENT_READ, None)
+    clients: dict[int, _Client] = {}
+
+    def drop(client: _Client) -> None:
+        clients.pop(client.sock.fileno(), None)
+        with contextlib.suppress(KeyError, ValueError):
+            selector.unregister(client.sock)
+        client.sock.close()
+
     with server:
         while not (stop and stop[0]):
-            try:
-                conn, _ = server.accept()
-            except TimeoutError:
-                continue
-            except OSError:
-                time.sleep(0.5)
-                continue
-            try:
-                serve_one(conn, supervisor_socket, allowed_uid)
-            except Exception:
-                print("[meshbeacon] Discovery relay: a request failed and was dropped.", flush=True)
+            for key, _events in selector.select(timeout=0.5):
+                try:
+                    if key.data is None:
+                        try:
+                            conn, _ = server.accept()
+                        except (BlockingIOError, InterruptedError):
+                            continue
+                        if peer_uid(conn) != allowed_uid or len(clients) >= MAX_CLIENTS:
+                            conn.close()  # not root, or too many at once: close without a word
+                            continue
+                        conn.setblocking(False)
+                        client = _Client(conn)
+                        clients[conn.fileno()] = client
+                        selector.register(conn, selectors.EVENT_READ, client)
+                        continue
+                    client = key.data
+                    try:
+                        data = client.sock.recv(MAX_REQUEST + 1)
+                    except (BlockingIOError, InterruptedError):
+                        continue
+                    except OSError:
+                        data = b""
+                    if not data or not _feed(client, data, supervisor_socket, time.monotonic()):
+                        drop(client)
+                except Exception:  # one bad connection never stops the relay
+                    if isinstance(key.data, _Client):
+                        drop(key.data)
+                    print("[meshbeacon] Discovery relay: a request failed and was dropped.", flush=True)
+            now = time.monotonic()
+            for client in list(clients.values()):
+                if client.started is not None and now - client.started > DEADLINE:
+                    drop(client)  # a stalled or slow request
+        for client in list(clients.values()):
+            drop(client)
+        selector.close()
 
 
 def main() -> int:
@@ -229,8 +300,15 @@ def main() -> int:
         print("[meshbeacon] No Supervisor socket here; discovery uses the compatibility path.", flush=True)
         signal.pause()  # nothing to do; s6 keeps the service up without a restart loop
         return 0
-    user = pwd.getpwnam(SERVICE_USER)
-    serve(RELAY_SOCKET, supervisor_socket, user.pw_uid, grp.getgrnam(SERVICE_USER).gr_gid)
+    try:
+        serve(RELAY_SOCKET, supervisor_socket)
+    except RelayError:
+        print(
+            "[meshbeacon] The discovery relay found something unexpected in its run-time folder and has "
+            "not started. Home Assistant will not be told about MeshBeacon; restart the app.",
+            flush=True,
+        )
+        signal.pause()  # fail closed, without a restart loop
     return 0
 
 

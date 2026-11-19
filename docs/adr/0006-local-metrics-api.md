@@ -109,8 +109,20 @@ That remains true of *reading* them, but the delivery path needs a precise state
 Supervisors), the app posts discovery through it, via a small root-owned relay
 (`core/meshbeacon/discovery_relay.py`), because the socket is root-only and the core runs
 unprivileged. The token is then not used at all. Older Supervisors keep the compatibility path
-above. The relay adds no `config.yaml` privilege, sends only MeshBeacon's own validated message
-and serves only the core.
+above. The relay adds no `config.yaml` privilege and sends only MeshBeacon's own validated message.
+
+**Correction (M1.2, after the M1.1 review).** The M1 relay accepted any process of the `meshbeacon`
+user, which includes the Reticulum child, so it did not serve "only the core" as stated above. It
+now accepts **root only** (socket 0600 in a 0700 folder, and a peer check). The core's s6 run
+script, while still root, opens the one link (`core/meshbeacon/relay_link.py`) and hands the
+descriptor to the core, which keeps it out of every child process. Reticulum therefore cannot
+announce or withdraw. In socket mode the run script no longer passes the Supervisor token to the
+core at all, and a missing link means no discovery, never a fall-back to the internal network.
+Separate Unix users for the core and Reticulum were assessed and deferred: the core starts,
+stops, signals and memory-limits Reticulum directly, which an unprivileged core cannot do for
+another user without new root code or a supervisor rewrite. They are to be designed in an ADR
+before any write-capable credential exists. The deployed behaviour under the Supervisor-loaded
+AppArmor profile still needs acceptance test SO-1.
 
 **Rule carried forward:** no write-capable credential (for example a future messaging key) is ever
 delivered over the compatibility path ([secure interface options](../research/secure-interface-options.md),
