@@ -291,8 +291,12 @@ Design:
 - AppArmor: a custom profile (revised after the v0.1.0 start-up failure on the reference Pi).
   Read access to the container's own filesystem; execution only from the image's program
   directories and s6-overlay's run-time service directories (never from `/data` or `/tmp`); writes
-  only to `/data`, `/run` and `/tmp`; a short capability list; mount, pivot_root and ptrace
-  denied. s6-overlay starts with shell scripts (`/init` is `#!/bin/sh -e`), and an interpreter must
+  only to `/data`, `/tmp`, s6-overlay's own folders in `/run` and the discovery relay's folder
+  (owner-only rule; narrowed in M1.2); a short capability list (none added since v0.1); mount,
+  pivot_root and ptrace denied. One profile covers every process: AppArmor selects a profile by
+  executable path, and the core and Reticulum both run `python3`, so a separate Reticulum profile
+  would need a second interpreter path. That, and running Reticulum as another user, is deferred
+  to an ADR before any write-capable credential exists. s6-overlay starts with shell scripts (`/init` is `#!/bin/sh -e`), and an interpreter must
   be able to read a script it runs — the 0.1.0 profile allowed only execution, so `/bin/sh` could
   not open `/init`. **The Supervisor loads the profile only on install and on update to a new
   version, not on Rebuild** (Supervisor 2026.11.0, `apps/app.py`), and renames it to the app slug.

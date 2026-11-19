@@ -12,15 +12,19 @@
 #   it executes; the previous profile granted only 'ix' on them, so /bin/sh could not open /init.
 # - Execution is allowed only from the image's program directories and s6-overlay's run-time
 #   service directories — never from /data or /tmp.
-# - Writes are allowed only to /data (app data), /run (s6-overlay state) and /tmp.
+# - Writes are allowed only to /data (app data), s6-overlay's own folders in /run, the discovery
+#   relay's folder (its owner only) and /tmp (M1.2: /run narrowed from a blanket rule).
 # - Only the capabilities the root init step and s6-overlay need; mount and ptrace are denied.
 #
 # Enforcement is tested in CI on an AppArmor-enabled runner (tests/container, MESHBEACON_APPARMOR).
 profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
   #include <abstractions/base>
 
-  # Capabilities: root init step (ownership and permissions under /data) and s6-overlay
-  # (dropping to the service user, signalling its children).
+  # Capabilities (reviewed M1.2; none added): root init step and relay folder ownership (chown,
+  # fowner, dac_override on /data after it is handed to the service user), s6-overlay dropping to
+  # the service user (setuid, setgid) and signalling its children (kill). The discovery relay
+  # itself needs none of them beyond being root. The unprivileged core and Reticulum cannot use
+  # any capability: they run as an ordinary user without file capabilities (no-new-privileges).
   capability chown,
   capability fowner,
   capability dac_override,
@@ -64,16 +68,31 @@ profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
   # Writable locations.
   /data/ rw,
   /data/** rwk,
-  /run/{,**} rwk,
   /tmp/{,**} rwk,
+
+  # /run, as s6-overlay 3.2.3.2 uses it (libexec/preinit, s6-linux-init, s6-rc-init -c /run/s6/db
+  # /run/service): it checks that /run is writable, then keeps its state in these folders.
+  # Nothing else in /run is writable, so neither the core nor Reticulum can create files there.
+  /run/ r,
+  "/run/test of writability" rw,
+  /run/s6/{,**} rwk,
+  /run/s6-rc* rwk,
+  /run/s6-rc*/** rwk,
+  /run/service/{,**} rwk,
+  /run/uncaught-logs/{,**} rwk,
+  /run/s6-linux-init-container-results/{,**} rwk,
+  # The discovery relay's folder and socket: root's alone (owner rule on top of 0700/0600), so the
+  # service user, which Reticulum runs as, cannot reach them even if file modes were wrong.
+  owner /run/meshbeacon/{,**} rwk,
   /dev/tty rw,
 
   # The Supervisor's per-app socket (newer Supervisors; used only by the discovery relay).
   # AppArmor checks a Unix socket by the name the server bound it to, which is the Supervisor's
   # own path, not /run/supervisor/api/supervisor.sock as mounted here (Supervisor e610ca8:
-  # config.py path_run_supervisor = /run/os/supervisor, apps/app.py apps/<slug>). /run/** above
-  # covers it too; this line keeps the dependency visible if /run is ever narrowed.
-  /run/os/supervisor/apps/*/supervisor.sock rw,
+  # config.py path_run_supervisor = /run/os/supervisor, apps/app.py apps/<slug>); the mounted name
+  # is listed too. The socket is root's (0600), and only the relay, which runs as root, connects.
+  owner /run/os/supervisor/apps/*/supervisor.sock rw,
+  owner /run/supervisor/api/supervisor.sock rw,
 
   # Outbound TCP to user-configured peers, DNS lookups, the internal health endpoint, and the
   # local sockets and pipes used by s6-overlay.
