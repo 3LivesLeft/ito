@@ -85,6 +85,7 @@ docs/testing/reference-environment.md  maintainer's reference device (no househo
 docs/adr/NNNN-*.md                 architecture decision records
 docs/research/v0.2-observability.md  v0.2 feasibility, architecture, security review
 docs/home-assistant-integration.md  v0.2 integration: set-up, entities, dashboard
+docs/research/long-term-direction.md  v0.3 forward-compatibility review (proposed v0.4+ direction)
 custom_components/meshbeacon/       v0.2 Home Assistant integration
 ```
 

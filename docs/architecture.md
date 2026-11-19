@@ -345,10 +345,9 @@ Design:
 |---|---|
 | **v0.1** | Init step, core supervisor, config renderer, identity manager, health endpoint, status reporter, resource guards, app wrapper. **Nothing else.** |
 | v0.2 | **In progress** ([v0.2 design](research/v0.2-observability.md), [ADR 0006](adr/0006-local-metrics-api.md)): opt-in, read-only, token-authenticated status API on internal port 8100; Supervisor discovery (verified: needs no `hassio_api`, Q-11); HA integration (entities, repairs, diagnostics); metrics computed only in `core/meshbeacon/metrics.py`. Identity import deferred |
-| v0.3 | LXMF service, notify platform, optional propagation node |
-| v0.4 | Optional I2P (separate router process); public-gateway investigation |
-| v0.5 | RNode via explicit device mapping |
-| v0.6 | Authenticated remote commands with allowlists and replay protection |
+| v0.3 | LXMF service, notify platform, optional propagation node. Decisions that could constrain later milestones: [forward-compatibility review](research/long-term-direction.md) |
+| v0.4–v0.8+ | *Proposed* ([roadmap](roadmap.md#long-term-direction-proposed)): page hosting, community services, voice bursts, replication. Not designed |
+| Unscheduled | Optional I2P (separate router process); RNode via explicit device mapping; authenticated remote commands with allowlists and replay protection ([previously planned items](roadmap.md#previously-planned-items)) |
 | v1.0 | Standalone Docker packaging |
 
 ## 8. Deliberately excluded

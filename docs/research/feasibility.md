@@ -591,6 +591,16 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-31 | Will the reference device move from Wi-Fi to Ethernet? | Open — maintainer; tests run on Wi-Fi meanwhile |
 | Q-32 | Is the reference 5G connection behind CGNAT? | Open — maintainer |
 | Q-33 | Does AdGuard Home serve DNS for apps on the reference device, and with which blocklists? | Open — maintainer; test C5–C8 |
+| Q-35 | Process model for LXMF and later services: in the RNS child, or separate processes on a shared instance? ([F-1](long-term-direction.md#f-1-process-model-for-lxmf-and-later-services)) | Open — v0.3 ADR |
+| Q-36 | Does LXMF get its own identity, managed like the transport identity? (F-2) | Open — v0.3 ADR |
+| Q-37 | One consent model for announcing, reusable by every service? (F-3) | Open — v0.3 ADR (hard rule 4) |
+| Q-38 | Design of the private HA → core path for sending messages; ADR 0006 is read-only (F-4) | Open — v0.3 ADR |
+| Q-39 | Where contacts, conversations and delivery state are stored (F-5) | Open — v0.3 design |
+| Q-40 | Optional propagation node: keep in v0.3 or move to v0.5 community services? (F-8) | Open — maintainer |
+| Q-41 | Do the name and tagline still fit the community direction, given the existing MeshBeacon project? Decide before any image is published (ADR 0003) | Open — maintainer |
+| Q-42 | Placement of previously planned I2P, RNode, remote automation, identity import, and of v1.0 relative to v0.4–v0.8 | Open — maintainer |
+| Q-43 | Distribution route for store installation (app repository, any store or HACS listing) and who submits it | Open — maintainer (CLAUDE.md rule 10) |
+| Q-44 | General per-service storage quota and whether messages are in HA backups (F-7) | Open — v0.3 design |
 
 ## 15. Risks
 
