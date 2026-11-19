@@ -27,3 +27,12 @@ costs). On a home Pi it consumes disk, memory and bandwidth, and it accepts data
   outbound node (phase 3a).
 - Public-node operation (auto-peering, no authentication) needs its own review, like the v0.4
   public-gateway work.
+
+## Later decisions (19 November 2026)
+
+- [ADR 0021](0021-v0.3-scope.md) (accepted) **moves the optional propagation node from v0.3
+  (phase 3b) to proposed v0.5** (community services). This ADR's content is kept as the starting
+  proposal for that design. There it is a public-facing service under
+  [ADR 0019](0019-opt-in-publication.md) (opt-in announcement) and
+  [ADR 0020](0020-public-service-isolation.md) (isolation). Acceptance criterion MS-17 moves with
+  it.

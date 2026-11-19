@@ -117,6 +117,15 @@ delivered over the compatibility path ([secure interface options](../research/se
 D7). Home Assistant keeps no field from a discovery message other than the status connection's
 (config entry v2, `ENTRY_KEYS`).
 
+## Later decisions (19 November 2026, roadmap reconciliation)
+
+- [ADR 0021](0021-v0.3-scope.md) removes the HA `notify` platform from the committed v0.3 scope.
+  v0.3.0 therefore adds no write path, and the status key stays read-only. Any sending path for
+  the v0.3 messaging milestone needs its own approved ADR: [ADR 0010](0010-home-assistant-messaging-interface.md)
+  is the proposal, and gates MG-1 and MG-2 apply.
+- [ADR 0020](0020-public-service-isolation.md): public services never use this API or its
+  credentials.
+
 ## Review triggers
 
 Any request to add a write endpoint, publish the port, or expose identifiers; an RNS version that

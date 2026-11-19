@@ -29,3 +29,12 @@ becomes the household's messaging address that contacts store.
   privacy statement.
 - Two identities appear in the app's backup. The documentation recommends encrypted HA backups
   (threat T2).
+
+## Later decisions (19 November 2026)
+
+- [ADR 0018](0018-separate-identities.md) (accepted, subject to validation) adopts separate
+  identities per role and is consistent with this proposal. Its rules apply here:
+  - IR-1: upgrades, migrations and restarts never replace an identity;
+  - IR-3: the "replace" option in decision 2 needs a confirmation step that explains the
+    consequences;
+  - IR-4: each identity is replaced individually.

@@ -24,10 +24,10 @@ MeshBeacon is a free, open-source, privacy-first, decentralised communications g
 - Run a Reticulum node as a Home Assistant app (formerly "add-on"), on the machine you already
   have — no extra hardware required to start.
 - Show node and network health as Home Assistant entities.
-- Send end-to-end-encrypted notifications from Home Assistant to Reticulum messaging apps
-  (via [LXMF](https://github.com/markqvist/LXMF)).
-- Next (v0.3): installation from an app repository once release gates are met, and private LXMF
-  messaging.
+- Secure, end-to-end-encrypted messaging with Reticulum messaging apps
+  (via [LXMF](https://github.com/markqvist/LXMF)), once its authorisation gates are met.
+- Next: v0.3.0 makes it installable from the Home Assistant App store once every release gate
+  is met; secure LXMF messaging follows as a later v0.3 milestone, behind security gates.
 
 **Long-term direction (proposed, not committed):** an offline-first community network over
 Reticulum, including LoRa — Nomad Network-compatible pages, bulletin boards and offline libraries,
@@ -55,6 +55,7 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [Architecture](docs/architecture.md) | Proposed structure and boundaries |
 | [Roadmap](docs/roadmap.md) | Provisional versions, long-term direction and acceptance criteria |
 | [Forward-compatibility review](docs/research/long-term-direction.md) | v0.3 decisions that could constrain the long-term direction |
+| [v0.3 distribution](docs/research/v0.3-distribution.md) | App store (backend) and Marketplace (integration), verified against Home Assistant 2026.11.2 |
 | [Feasibility study](docs/research/feasibility.md) | Phase 0 research with verified facts, assumptions and open questions |
 | [Licensing research](docs/research/licensing.md) | Licence decision, dependency compatibility, AI-training condition, publication obligations |
 | [Threat model](docs/security/threat-model.md) | Assets, threats and controls |
@@ -76,6 +77,10 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [ADR 0006](docs/adr/0006-local-metrics-api.md) | Read-only local status API, delivered by Supervisor discovery |
 | [ADR 0015](docs/adr/0015-distribution-and-updates.md) | Distribution through the app store and the Marketplace |
 | [ADR 0017](docs/adr/0017-independent-node-services.md) | Node services are independent of Home Assistant |
+| [ADR 0018](docs/adr/0018-separate-identities.md) | Separate identities for transport, messaging and public services |
+| [ADR 0019](docs/adr/0019-opt-in-publication.md) | Explicit opt-in for announcements and publication |
+| [ADR 0020](docs/adr/0020-public-service-isolation.md) | Public services isolated from Home Assistant and from transport |
+| [ADR 0021](docs/adr/0021-v0.3-scope.md) | v0.3.0 is a distribution release; messaging follows behind security gates |
 
 ## Credits
 

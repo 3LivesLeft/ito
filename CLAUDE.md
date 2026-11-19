@@ -15,7 +15,9 @@ dedicated interface; Ingress (ADR 0013) is blocked. **v0.3 plan approved (19 Nov
 release (app store + Home Assistant's Marketplace, ADR 0015); **M1 (install-ready repository) is authorised** on
 `feature/v0.3.0-install-ready`. Nothing is published before M2's approval. The LXMF engine stays out of production images until
 M4's gate; Home Assistant messaging and migration of existing installations are later milestones. LoRa, I2P and remote control
-remain out of scope. The project name may change before the first release: identifiers live in `project.yaml`. Never publish images, create releases, connect to live public Reticulum
+remain out of scope. Roadmap decisions of 19 Nov 2026 (ADRs 0018–0021): separate identities, opt-in
+publication, public services isolated from HA and transport (process/IPC choice deferred), no HA
+`notify` in v0.3, propagation node moved to proposed v0.5. The project name may change before the first release: identifiers live in `project.yaml`. Never publish images, create releases, connect to live public Reticulum
 infrastructure or deploy to the maintainer's Home Assistant without explicit approval.
 
 ## Hard rules
@@ -129,6 +131,7 @@ docs/testing/v0.2-physical-results.md  initial physical readings (not final acce
 docs/testing/v0.2-acceptance-review.md  open criteria, CI status, risks, simplest installation
 docs/getting-started.md            tester guide: app, then the optional sidebar integration
 docs/research/long-term-direction.md  v0.3 forward-compatibility review (proposed v0.4+ direction)
+docs/research/v0.3-distribution.md  App store and Marketplace installation (HA 2026.11.2)
 custom_components/meshbeacon/       v0.2 Home Assistant integration
 custom_components/meshbeacon/frontend/  interface (ADR 0007): plain JS, no dependencies; layers in
                                    docs/architecture.md §6a: sources/ (data), ui/ (presentation),

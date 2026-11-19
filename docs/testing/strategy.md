@@ -52,7 +52,7 @@ Topologies to cover:
 | A ↔ B with IFAC (`network_name`/`passphrase`) | Interface access control; mismatched passphrase must fail |
 | Server killed and restarted | Client reconnection, `degraded` → `healthy` transitions |
 | Flood generator → T | Resource bounds with filters enabled (bounded, local only) |
-| LXMF A → B, A → propagation node → B (v0.3) | Messaging, offline delivery |
+| LXMF A → B (v0.3 messaging milestone); A → propagation node → B (proposed v0.5) | Messaging, offline delivery |
 | Mixed RNS versions (pinned and next) | Upgrade compatibility, stamp enforcement (1.6.2) |
 
 ## 4. Security tests (mandatory)

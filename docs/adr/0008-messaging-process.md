@@ -39,3 +39,13 @@ generation has a CPU time limit.
 - Prototype gate: if Q-40 shows the second process costs more than 40 MiB, revisit A with
   in-process watchdogs. That decision would come back to review.
 - Q-46: the client must survive RNS node restarts. This is a reliability test before release.
+
+## Later decisions (19 November 2026)
+
+- [ADR 0020](0020-public-service-isolation.md) (accepted): the specific process and IPC model is
+  **deferred** until a security review and physical Raspberry Pi memory measurements exist. This
+  ADR's choice of option **B** (shared RNS instance, local pipe) therefore **cannot be accepted
+  before those inputs**. It remains the leading proposal. Its separate-process direction is
+  consistent with ADR 0020 and [ADR 0017](0017-independent-node-services.md). Q-40 here is the
+  messaging research's question (memory of a second RNS client), one of the measurements ADR 0020
+  needs.

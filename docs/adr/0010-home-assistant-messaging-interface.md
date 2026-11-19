@@ -46,3 +46,16 @@ by design, and must not gain one.
   "read-only" statements must change when this is approved.
 - The threat model gains B10 and T47–T52.
 - No control beyond sending to known contacts. Anything more is v0.6, under its own review.
+
+## Later decisions (19 November 2026)
+
+- [ADR 0021](0021-v0.3-scope.md) (accepted) **removes the HA `notify` platform from the committed
+  v0.3 scope**, because its default service permissions do not meet MeshBeacon's messaging
+  authorisation requirements. This **supersedes the `notify` entities** in the decision above,
+  and the blueprint's reply through them.
+- The `meshbeacon.send_message` action is also an HA service call with the same default
+  permissions. This ADR can be approved only with an authorisation design that meets gate MG-1
+  ([roadmap](../roadmap.md#v03-messaging-milestone--secure-lxmf-messaging-after-v030-m4-gate)).
+- The rest (separate option, scoped messaging key, contact IDs only, limits, unrecorded content)
+  stays proposed. No write-capable credential may travel over the compatibility discovery path
+  ([ADR 0006](0006-local-metrics-api.md) amendment).

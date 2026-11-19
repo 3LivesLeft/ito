@@ -1,6 +1,7 @@
 # Long-term direction: forward-compatibility review of v0.3
 
-Status: **Review for the maintainer — nothing here is decided or implemented.** · Date: 19 November
+Status: **Review for the maintainer; nothing here is implemented.** Several findings were decided
+by the maintainer on 19 November 2026 (ADRs 0018–0021); see the Status column. · Date: 19 November
 2026 · Roadmap: [roadmap §Long-term direction](../roadmap.md#long-term-direction-proposed)
 
 Labels: **[Verified]**, **[Assumption]**, **[Recommendation]**, **[Open]** (see
@@ -21,19 +22,22 @@ All recommendations need the maintainer's approval before they affect any design
 
 ## 2. Summary
 
-| ID | v0.3 decision | Later capability at risk | Severity | Question |
-|---|---|---|---|---|
-| F-1 | How LXMF runs alongside RNS (process model) | Pages (v0.4), propagation and boards (v0.5), replication (v0.7) | **High** | Q-35 |
-| F-2 | Which identity LXMF uses | Separate public service addresses; identity compatibility (principle 8) | **High** | Q-36 |
-| F-3 | How "announce my address" is consented to | Every public service (v0.4+) | **High** | Q-37 |
-| F-4 | The Home Assistant → core path for sending messages | Isolation of public services from HA (principle 4) | **High** | Q-38 |
-| F-5 | Where contacts, conversations and delivery state are stored | Standalone deployments (principle 7) | Medium | Q-39 |
-| F-6 | Message size, delivery-method and timeout defaults | LoRa links (principle 3), voice bursts (v0.6) | Medium | — |
-| F-7 | Storage quota and backup treatment of messages | Boards, libraries, replication (v0.5, v0.7) | Medium | Q-44 |
-| F-8 | Whether the optional propagation node stays in v0.3 | Community propagation services (v0.5) | Medium | Q-40 |
-| F-9 | Publishing the app for store installation | Name, slug and data layout become permanent | **High** | Q-41, Q-43 |
-| F-10 | Status API schema when messaging metrics are added | Radio interfaces, multiple services | Low | — |
-| F-11 | Memory budget with LXMF loaded | Running several services on one small device | Low | — |
+v0.3 is now split ([ADR 0021](../adr/0021-v0.3-scope.md)): v0.3.0 distribution, then a gated
+messaging milestone. "v0.3" below means whichever of the two takes the decision.
+
+| ID | v0.3 decision | Later capability at risk | Severity | Question | Status (19 Nov) |
+|---|---|---|---|---|---|
+| F-1 | How LXMF runs alongside RNS (process model) | Pages (v0.4), propagation and boards (v0.5), replication (v0.7) | **High** | Q-35 | Requirement set ([ADR 0020](../adr/0020-public-service-isolation.md)); mechanism open (MG-5) |
+| F-2 | Which identity LXMF uses | Separate public service addresses; identity compatibility (principle 8) | **High** | Q-36 | Decided: separate identities ([ADR 0018](../adr/0018-separate-identities.md)), subject to validation |
+| F-3 | How "announce my address" is consented to | Every public service (v0.4+) | **High** | Q-37 | Decided: per-service opt-in ([ADR 0019](../adr/0019-opt-in-publication.md)) |
+| F-4 | The Home Assistant → core path for sending messages | Isolation of public services from HA (principle 4) | **High** | Q-38 | `notify` removed; send path needs its own ADR (MG-1, MG-2) |
+| F-5 | Where contacts, conversations and delivery state are stored | Standalone deployments (principle 7) | Medium | Q-39 | Open (MG-6) |
+| F-6 | Message size, delivery-method and timeout defaults | LoRa links (principle 3), voice bursts (v0.6) | Medium | — | Gate MG-7 |
+| F-7 | Storage quota and backup treatment of messages | Boards, libraries, replication (v0.5, v0.7) | Medium | Q-53 | Open (MG-6) |
+| F-8 | Whether the optional propagation node stays in v0.3 | Community propagation services (v0.5) | Medium | Q-49 | Decided: proposed v0.5 |
+| F-9 | Publishing the app for store installation | Name, slug and data layout become permanent | **High** | Q-50, Q-52, Q-54 | Q-52, Q-54 resolved ([v0.3 distribution](v0.3-distribution.md)); naming open, blocks v0.3.0 ([naming §5–6](naming.md#6-availability-and-collision-assessment-commonwave-19-november-2026)) |
+| F-10 | Status API schema when messaging metrics are added | Radio interfaces, multiple services | Low | — | Unchanged |
+| F-11 | Memory budget with LXMF loaded | Running several services on one small device | Low | — | Unchanged |
 
 ## 3. Findings
 
@@ -120,8 +124,8 @@ All recommendations need the maintainer's approval before they affect any design
 - The optional propagation node is a previously agreed v0.3 item; the new direction places "LXMF
   propagation services" in v0.5. It would also be the first MeshBeacon service that stores data
   from strangers, so it sets the precedent for principle 5 (quotas, rate limits, abuse handling).
-- **[Open] Q-40** — keep it in v0.3 (as a private, quota-bound node) or move it to v0.5 with the
-  other community services. This revision keeps it in v0.3 until the maintainer decides.
+- **Decided (ADR 0021):** moved to proposed v0.5, designed as a public service under ADRs 0019
+  and 0020.
 
 ### F-9 Publishing for store installation
 
@@ -132,10 +136,11 @@ All recommendations need the maintainer's approval before they affect any design
   working when the internet does not (naming research §1.1). The new community, offline-first
   direction moves this project closer to it in purpose and audience than the household framing
   assessed in ADR 0003.
-- **[Assumption]** Community apps are installed in Home Assistant by adding an app repository; a
-  listing in HA's own store or in HACS's default list is a separate submission with its own
-  rules. Any such submission must be made by the maintainer personally (CLAUDE.md rule 10).
-- **[Open] Q-41, Q-43.**
+- **[Verified]** (Home Assistant 2026.11.2; [v0.3 distribution](v0.3-distribution.md)) The backend
+  app is installed from the Supervisor **App store** (a repository with `repository.yaml`); the
+  integration from the Core **Marketplace** (needs `hacs.json`; catalogue `hacs/default`). Q-52 and
+  Q-54 are resolved. Any such submission must be made by the maintainer personally (CLAUDE.md rule 10).
+- **[Open] Q-50** (Commonwave assessed in [naming §6](naming.md#6-availability-and-collision-assessment-commonwave-19-november-2026)).
 
 ### F-10 Status API schema
 
