@@ -111,6 +111,8 @@ docs/testing/strategy.md           isolated-network and reference-environment te
 docs/testing/reference-environment.md  maintainer's reference device (no household identifiers)
 docs/adr/NNNN-*.md                 architecture decision records
 docs/research/v0.2-observability.md  v0.2 feasibility, architecture, security review
+docs/research/v0.3-messaging.md    v0.3 feasibility and proposed architecture (ADRs 0008–0012, 0014;
+                                   research only: do not implement until independently reviewed)
 docs/home-assistant-integration.md  v0.2 integration: set-up, entities, panel, dashboard
 docs/hacs.md                       HACS compatibility (prepared, not published)
 docs/research/known-paths.md       why "Known paths" reads 2,048 (RNS unused-path target)
