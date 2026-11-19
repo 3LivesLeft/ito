@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
-"""HACS compatibility of the integration's packaging (prepared, not published; docs/hacs.md).
+"""Marketplace compatibility of the integration's packaging (docs/marketplace.md).
 
-These are offline checks of what HACS reads from the repository. They do not replace HACS's own
-validation action, which needs GitHub API access and is a maintainer step before any listing.
+Home Assistant 2026.11 replaced HACS with the built-in Marketplace, which still reads ``hacs.json``.
+These are offline checks of what the Marketplace reads, verified against its source in Home
+Assistant 2026.11.2 (``components/marketplace``). They do not replace the catalog's own checks
+(the HACS action and Hassfest), which need GitHub API access.
 """
 
 import json
@@ -17,30 +19,34 @@ INTEGRATION = ROOT / "custom_components" / "meshbeacon"
 MANIFEST = json.loads((INTEGRATION / "manifest.json").read_text())
 APP = yaml.safe_load((ROOT / "meshbeacon" / "config.yaml").read_text())
 
-HACS_KEYS = {
-    "name",
+# What the Marketplace reads from hacs.json (HA 2026.11.2, marketplace/utils/validate.py).
+MARKETPLACE_KEYS = {
     "content_in_root",
-    "zip_release",
     "filename",
+    "hacs",
     "hide_default_branch",
-    "country",
     "homeassistant",
+    "name",
     "persistent_directory",
-    "render_readme",
+    "zip_release",
 }
 
 
-def test_hacs_json_uses_only_known_keys():
+def test_hacs_json_uses_only_keys_the_marketplace_reads():
     assert HACS["name"] == "MeshBeacon"
-    assert set(HACS) <= HACS_KEYS
+    assert set(HACS) <= MARKETPLACE_KEYS  # others are skipped silently, so they would be mistakes
     assert re.fullmatch(r"\d{4}\.\d{1,2}\.\d+", HACS["homeassistant"])
 
 
-def test_no_release_install_workflow_is_enabled():
-    """Maintainer decision (18 Nov 2026): prepare only. No release ZIPs, no content-in-root."""
+def test_marketplace_installs_the_integration_directory():
+    """No release ZIPs and no content-in-root: the Marketplace copies custom_components/meshbeacon."""
     assert "zip_release" not in HACS
     assert "filename" not in HACS
     assert HACS.get("content_in_root", False) is False
+
+
+def test_no_workflow_publishes_releases():
+    """Publishing needs the maintainer's approval (D3, M2). Until then no workflow may release."""
     for path in (ROOT / ".github" / "workflows").glob("*.y*ml"):
         workflow = yaml.safe_load(path.read_text())
         triggers = workflow.get("on", workflow.get(True))  # YAML 1.1 reads a bare `on` as True
@@ -69,13 +75,20 @@ def test_integration_and_app_versions_match():
     assert MANIFEST["version"] == APP["version"]
 
 
-def test_minimum_home_assistant_matches_the_tested_harness():
-    pins = (ROOT / "requirements-ha-test.txt").read_text()
-    assert "pytest-homeassistant-custom-component==" in pins
-    assert HACS["homeassistant"] == "2026.10.4"  # the release the pinned harness runs
+def test_minimum_home_assistant_is_the_marketplace_release():
+    """D2: Home Assistant 2026.11.0 or newer, the first release with the Marketplace.
+
+    The real-Home Assistant smoke test runs that series. The pytest harness lags: no
+    pytest-homeassistant-custom-component release exists for 2026.11 yet, and the 2026.10 one cannot
+    load Home Assistant 2026.11, so it stays on 2026.10.4 (docs/testing/strategy.md).
+    """
+    assert HACS["homeassistant"] == "2026.11.0"
+    smoke = (ROOT / "requirements-ha-smoke.txt").read_text()
+    smoke_version = re.search(r"^homeassistant==(\S+)$", smoke, re.M)
+    assert smoke_version and smoke_version.group(1).startswith("2026.11.")
 
 
 def test_frontend_ships_inside_the_integration():
-    """HACS copies only custom_components/meshbeacon, so the panel must live there."""
+    """The Marketplace copies only custom_components/meshbeacon, so the panel must live there."""
     assert (INTEGRATION / "frontend" / "meshbeacon-panel.js").is_file()
     assert (INTEGRATION / "frontend" / "model.js").is_file()
