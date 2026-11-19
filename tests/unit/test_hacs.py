@@ -92,3 +92,31 @@ def test_frontend_ships_inside_the_integration():
     """The Marketplace copies only custom_components/meshbeacon, so the panel must live there."""
     assert (INTEGRATION / "frontend" / "meshbeacon-panel.js").is_file()
     assert (INTEGRATION / "frontend" / "model.js").is_file()
+
+
+def test_no_workflow_can_publish_images_or_sign():
+    """M1 prepares publishing but performs none of it (D3; publishing is M2, after approval)."""
+    forbidden = re.compile(r"docker (?:image )?push|--push\b|push: *true|cosign sign|docker login|gh release")
+    for path in (ROOT / ".github" / "workflows").glob("*.y*ml"):
+        workflow = yaml.safe_load(path.read_text())
+        assert workflow.get("permissions") == {"contents": "read"}, path
+        for job in workflow["jobs"].values():
+            assert "permissions" not in job, (path, "jobs must not widen permissions")
+            for step in job.get("steps", []):
+                assert not forbidden.search(str(step.get("run", ""))), (path, step)
+                assert "login-action" not in str(step.get("uses", "")), (path, step)
+                assert "build-push-action" not in str(step.get("uses", "")), (path, step)
+                assert "cosign" not in str(step.get("uses", "")), (path, step)
+                with_ = step.get("with") or {}
+                assert with_.get("push") not in (True, "true"), (path, step)
+
+
+def test_release_dry_run_checks_reproducibility_and_attestations():
+    workflow = (ROOT / ".github" / "workflows" / "release-dry-run.yaml").read_text()
+    assert "SOURCE_DATE_EPOCH" in workflow and "rewrite-timestamp=true" in workflow
+    assert "--sbom=true" in workflow and "--provenance=mode=max" in workflow
+    assert "tools/verify_image.py candidate-1.tar candidate-2.tar" in workflow
+    assert "tools/check_release.py" in workflow
+    for line in workflow.splitlines():
+        if "uses:" in line and not line.strip().startswith("#"):
+            assert re.search(r"@[0-9a-f]{40} # v", line), f"action not pinned to a commit SHA: {line.strip()}"

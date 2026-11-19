@@ -1,0 +1,61 @@
+# Release dry run (M1, decision D3). Builds the release candidate image exactly as a release would,
+# twice, and verifies it. It NEVER publishes: there is no registry login, no push, no signing and no
+# GitHub release, and it has read-only permissions. Publishing is M2, after the maintainer's
+# approval (docs/releasing.md). All third-party actions are pinned to commit SHAs.
+name: Release dry run
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    paths:
+      - "meshbeacon/**"
+      - "custom_components/**"
+      - "hacs.json"
+      - "repository.yaml"
+      - "project.yaml"
+      - "tools/check_release.py"
+      - "tools/verify_image.py"
+      - ".github/workflows/release-dry-run.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-dry-run-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    name: Build, reproduce and verify the release candidate (no publishing)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.13" }
+      - run: pip install pyyaml==6.0.3
+      - name: Release layout (app store, Marketplace, one version everywhere)
+        run: python tools/check_release.py
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build both architectures twice, from scratch, with fixed timestamps
+        run: |
+          set -eu
+          version="$(python -c 'import yaml; print(yaml.safe_load(open("meshbeacon/config.yaml"))["version"])')"
+          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          export SOURCE_DATE_EPOCH
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          for n in 1 2; do
+            docker buildx build --no-cache \
+              --platform linux/amd64,linux/arm64 \
+              --build-arg BUILD_VERSION="$version" \
+              --build-arg SOURCE_DATE_EPOCH \
+              --sbom=true --provenance=mode=max \
+              --output "type=oci,dest=candidate-$n.tar,rewrite-timestamp=true" \
+              meshbeacon
+          done
+      - name: Verify platforms, labels, SBOM and provenance, and reproducibility
+        run: python tools/verify_image.py candidate-1.tar candidate-2.tar --version "$VERSION" --summary "$GITHUB_STEP_SUMMARY"

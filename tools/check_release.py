@@ -20,6 +20,7 @@ Keys and rules are from Home Assistant 2026.11.2 (``components/marketplace``) an
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -33,9 +34,13 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 GIT = shutil.which("git") or "/usr/bin/git"
-REPOSITORY_URL = "https://github.com/3LivesLeft/meshbeacon"
-PUBLISHED_IMAGE = "ghcr.io/3livesleft/meshbeacon"
-DOMAIN = "meshbeacon"
+# Project identifiers live in project.yaml (renaming before the first release changes only that
+# file plus what tests/unit/test_project_identifiers.py then points at).
+PROJECT: dict[str, str] = {k: str(v) for k, v in yaml.safe_load((ROOT / "project.yaml").read_text()).items()}
+NAME = PROJECT["name"]
+REPOSITORY_URL = PROJECT["repository"]
+PUBLISHED_IMAGE = PROJECT["image"]
+DOMAIN = PROJECT["slug"]
 # What the Marketplace reads from hacs.json (HA 2026.11.2, marketplace/utils/validate.py). It skips
 # other keys silently, so an unknown key is a mistake we want to see, not a harmless extra.
 MARKETPLACE_KEYS = frozenset(
@@ -50,7 +55,7 @@ MARKETPLACE_KEYS = frozenset(
         "zip_release",
     }
 )
-MINIMUM_HOME_ASSISTANT = "2026.11.0"
+MINIMUM_HOME_ASSISTANT = PROJECT["minimum_home_assistant"]
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 HA_VERSION = re.compile(r"^\d{4}\.\d{1,2}\.\d+$")
 # Privileges the approved posture forbids (docs/architecture.md §5); kept in step with test_app_config.
@@ -84,6 +89,13 @@ FORBIDDEN_TRUE = (
 )
 # Nothing under the app's build context may look like test code (P-6: test-only bindings stay in tests/).
 TEST_ONLY = re.compile(r"(^|/)(tests?|testing|conftest\.py|test_[^/]*\.py|[^/]*_test\.py|fake_[^/]*\.py)(/|$)")
+
+
+def store_slug(repository_url: str = REPOSITORY_URL, slug: str = DOMAIN) -> str:
+    """The app's slug when installed from ``repository_url`` (Supervisor store/utils.py and
+    store/data.py: the first 8 hex digits of SHA-1 of the lower-cased URL, then the app's slug)."""
+    digest = hashlib.sha1(repository_url.lower().encode(), usedforsecurity=False).hexdigest()
+    return f"{digest[:8]}_{slug}"
 
 
 class Tree:
@@ -143,12 +155,14 @@ def check(tree: Tree, tag: str | None = None) -> list[str]:
             add("repository.yaml has no name")
         if repo.get("url") != REPOSITORY_URL:
             add("repository.yaml url is not the canonical repository URL")
-    app = load("meshbeacon/config.yaml", yaml.safe_load)
+    app = load(f"{DOMAIN}/config.yaml", yaml.safe_load)
     app_version = None
     if isinstance(app, dict):
         app_version = app.get("version")
         if app.get("slug") != DOMAIN:
-            add("config.yaml slug must stay 'meshbeacon' (the slug decides the app's data folder)")
+            add(f"config.yaml slug must be {DOMAIN!r} (project.yaml; the slug decides the app's data folder)")
+        if app.get("name") != NAME or app.get("url") != REPOSITORY_URL:
+            add("config.yaml name or url differs from project.yaml")
         if not isinstance(app_version, str) or not VERSION.match(app_version):
             add("config.yaml version is not MAJOR.MINOR.PATCH")
         for key in FORBIDDEN_TRUE:
@@ -156,7 +170,7 @@ def check(tree: Tree, tag: str | None = None) -> list[str]:
                 add(f"config.yaml grants {key!r}, which the approved posture forbids")
         if app.get("hassio_role", "default") != "default":
             add("config.yaml hassio_role must stay 'default'")
-        if app.get("apparmor") is not True or "meshbeacon/apparmor.txt" not in present:
+        if app.get("apparmor") is not True or f"{DOMAIN}/apparmor.txt" not in present:
             add("config.yaml must use the custom AppArmor profile")
         if "image" in app and app["image"] != PUBLISHED_IMAGE:
             add(f"config.yaml image must be {PUBLISHED_IMAGE!r} (the multi-arch manifest), if set")
@@ -169,8 +183,8 @@ def check(tree: Tree, tag: str | None = None) -> list[str]:
         unknown = set(hacs) - MARKETPLACE_KEYS
         if unknown:
             add(f"hacs.json has keys the Marketplace does not read: {sorted(unknown)}")
-        if hacs.get("name") != "MeshBeacon":
-            add("hacs.json name must be 'MeshBeacon'")
+        if hacs.get("name") != NAME:
+            add(f"hacs.json name must be {NAME!r} (project.yaml)")
         if hacs.get("homeassistant") != MINIMUM_HOME_ASSISTANT:
             add(f"hacs.json homeassistant must be {MINIMUM_HOME_ASSISTANT!r} (decision D2)")
         for key in ("content_in_root", "zip_release", "filename"):
@@ -184,7 +198,7 @@ def check(tree: Tree, tag: str | None = None) -> list[str]:
     if isinstance(manifest, dict):
         integration_version = manifest.get("version")
         if manifest.get("domain") != DOMAIN:
-            add("manifest.json domain must be 'meshbeacon' (a changed domain is refused on update)")
+            add(f"manifest.json domain must be {DOMAIN!r} (a changed domain is refused on update)")
         if manifest.get("requirements") != []:
             add("manifest.json must not install anything from PyPI")
         for key in ("name", "documentation", "issue_tracker", "codeowners", "version", "config_flow"):
@@ -194,14 +208,14 @@ def check(tree: Tree, tag: str | None = None) -> list[str]:
         add("the integration has no brand/icon.png (the catalog's brand check)")
 
     # -- One version everywhere ------------------------------------------------------------------
-    versions: dict[str, Any] = {"meshbeacon/config.yaml": app_version, "manifest.json": integration_version}
-    core = tree.read("meshbeacon/core/meshbeacon/__init__.py") or ""
+    versions: dict[str, Any] = {f"{DOMAIN}/config.yaml": app_version, "manifest.json": integration_version}
+    core = tree.read(f"{DOMAIN}/core/meshbeacon/__init__.py") or ""
     match = re.search(r'^__version__ = "([^"]+)"', core, re.M)
     versions["core __version__"] = match.group(1) if match else None
-    dockerfile = tree.read("meshbeacon/Dockerfile") or ""
+    dockerfile = tree.read(f"{DOMAIN}/Dockerfile") or ""
     match = re.search(r"^ARG BUILD_VERSION=(\S+)", dockerfile, re.M)
     versions["Dockerfile BUILD_VERSION"] = match.group(1) if match else None
-    changelog = tree.read("meshbeacon/CHANGELOG.md") or ""
+    changelog = tree.read(f"{DOMAIN}/CHANGELOG.md") or ""
     match = re.search(r"^## (\d+\.\d+\.\d+)", changelog, re.M)
     versions["CHANGELOG.md (top entry)"] = match.group(1) if match else None
     if tag is not None:
@@ -213,7 +227,7 @@ def check(tree: Tree, tag: str | None = None) -> list[str]:
 
     # -- No tests or test-only bindings in the image's build context -----------------------------
     for path in files:
-        if path.startswith("meshbeacon/") and TEST_ONLY.search(path[len("meshbeacon/") :]):
+        if path.startswith(f"{DOMAIN}/") and TEST_ONLY.search(path[len(DOMAIN) + 1 :]):
             add(f"test-only file inside the app's build context: {path}")
     return problems
 

@@ -32,10 +32,12 @@ jobs:
       - run: ruff check meshbeacon/core custom_components tests tools
       - run: ruff format --check meshbeacon/core custom_components tests tools
       - run: mypy
+      - name: Release layout (app store, Marketplace, one version everywhere)
+        run: python tools/check_release.py
       - name: Panel and design-token tests, including WCAG contrast (Node's built-in runner; no packages)
         run: node --test tests/frontend/*.test.mjs
       - name: Shell scripts
-        run: shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/meshbeacon/run meshbeacon/rootfs/etc/services.d/meshbeacon/finish tests/container/build_localbase.sh
+        run: shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/*/run meshbeacon/rootfs/etc/services.d/*/finish tests/container/build_localbase.sh
       - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           dockerfile: meshbeacon/Dockerfile

@@ -21,6 +21,10 @@ RUN apk add --no-cache --upgrade \
         "krb5-libs>=1.22.3-r0" \
         "libexpat>=2.10.0-r0"
 
+# Reproducible builds (docs/releasing.md): when the release build sets SOURCE_DATE_EPOCH, Python
+# (pip's bytecode step and compileall below) writes hash-checked .pyc files with no timestamps.
+ARG SOURCE_DATE_EPOCH
+
 # Hash-pinned, binary-only install of the unmodified Reticulum reference implementation and its
 # dependencies, from PyPI only.
 # An optional build secret `build_ca` lets builds run behind a TLS-intercepting proxy; it is never
@@ -45,7 +49,8 @@ RUN set -eu; \
 
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES /usr/share/doc/meshbeacon/
 COPY rootfs /
-RUN chmod 0755 /etc/cont-init.d/10-meshbeacon /etc/services.d/meshbeacon/run /etc/services.d/meshbeacon/finish
+RUN chmod 0755 /etc/cont-init.d/10-meshbeacon /etc/services.d/meshbeacon/run /etc/services.d/meshbeacon/finish \
+    /etc/services.d/discovery-relay/run /etc/services.d/discovery-relay/finish
 
 LABEL \
     io.hass.version="${BUILD_VERSION}" \
