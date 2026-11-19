@@ -20,6 +20,7 @@ attacker:
 - ``core_environ`` / ``core_fds`` / ``core_maps`` / ``core_memory``: the core's /proc entries could be
   read (the core is non-dumpable, so the kernel refuses them);
 - ``took_fd``: a descriptor of the core could be copied with pidfd_getfd;
+- ``container_env_read``: s6-overlay's copy of the container environment could be read;
 - ``canary_found``: the token was found anywhere this user could read.
 
 observer:
@@ -131,13 +132,23 @@ def take_any_fd(pid: str) -> bool:
 def attacker(core: str, node: str, canary: bytes) -> dict[str, bool]:
     memory, in_memory = read_memory(core, canary)
     core_env = readable(lambda: environ(core))
-    found = in_memory or (bool(canary) and (canary in environ(node) or (core_env and canary in environ(core))))
+    container_env = Path("/run/s6/container_environment/SUPERVISOR_TOKEN")
+    env_file = readable(container_env.read_bytes)
+    found = in_memory or (
+        bool(canary)
+        and (
+            canary in environ(node)
+            or (core_env and canary in environ(core))
+            or (env_file and canary in container_env.read_bytes())
+        )
+    )
     return {
         "core_environ": core_env,
         "core_fds": readable(lambda: os.listdir(f"/proc/{core}/fd")),
         "core_maps": readable(lambda: Path(f"/proc/{core}/maps").read_bytes()),
         "core_memory": memory,
         "took_fd": take_any_fd(core),
+        "container_env_read": env_file,
         "canary_found": bool(found),
     }
 

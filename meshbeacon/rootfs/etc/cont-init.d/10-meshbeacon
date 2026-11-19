@@ -3,6 +3,13 @@
 # to the unprivileged `meshbeacon` user. It never fails the container: if something here goes
 # wrong, the core reports it in plain language instead (ADR 0005 — no restart loops).
 umask 077
+# s6-overlay keeps the container's environment (the Supervisor token among it) in this folder, and
+# leaves it readable by every user. Only root's start steps read it: make it root's alone (T72).
+if [ -d /run/s6/container_environment ]; then
+    chmod 0700 /run/s6/container_environment 2>/dev/null \
+        || echo "[meshbeacon] warning: could not protect the container environment"
+    find /run/s6/container_environment -type f -exec chmod 0600 {} + 2>/dev/null || true
+fi
 for dir in /data/meshbeacon /data/reticulum /data/reticulum/storage; do
     mkdir -p "$dir" 2>/dev/null || echo "[meshbeacon] warning: could not create $dir"
 done

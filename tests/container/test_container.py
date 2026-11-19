@@ -610,6 +610,7 @@ def assert_isolated(c: Container, canary: str, *, socket_mode: bool) -> None:
         "core_maps": False,
         "core_memory": False,
         "took_fd": False,
+        "container_env_read": False,
         "canary_found": False,
     }, attack
 
