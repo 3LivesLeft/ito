@@ -133,7 +133,7 @@ included, could read it from `/proc/<core>/environ` and announce or withdraw ove
 | Control | Where |
 |---|---|
 | The root start step passes the token through a **one-time pipe**, never an environment; the core reads it once and closes it | `relay_link.py --token-file`, `supervisor.read_token_fd` |
-| The core is **non-dumpable** before it reads any credential or starts any child: the kernel refuses other processes without `CAP_SYS_PTRACE` access to its `/proc` environment, descriptors and memory, and ptrace | `procinfo.set_not_dumpable` |
+| The core is **non-dumpable** before it reads any credential or starts any child: the kernel refuses other **non-root** processes (Reticulum among them) access to its `/proc` environment, descriptors, memory map and memory, and ptrace. Root keeps some read access even without `CAP_SYS_PTRACE`, but root already controls the container | `procinfo.set_not_dumpable` |
 | Adversarial container tests in **both** transports: as Reticulum's user, nothing of the core is readable and the token is not found; against the previous image the same test finds the token | `tests/container`, `tools/acceptance/relay_probe.py` |
 
 The pipe does **not** secure the network transport: on the compatibility path the token is still

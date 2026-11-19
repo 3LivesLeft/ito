@@ -9,16 +9,19 @@ tests use real processes; the container tests repeat them with the real users an
 
 from __future__ import annotations
 
+import contextlib
+import json
 import os
+import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 import pytest
 
-from meshbeacon import procinfo
 from meshbeacon import relay_link as link_mod
 from meshbeacon.supervisor import discovery_transport, read_token_fd
 
@@ -130,12 +133,21 @@ def test_the_core_never_waits_on_a_pipe_that_is_still_open():
 
 
 # -- non-dumpable: what another process of the same user can see -----------------------------------
+#
+# The threat is the Reticulum child: an ordinary, unprivileged user with no capabilities. Root is
+# not the threat (it already controls the container), and root keeps some /proc read access to a
+# non-dumpable process even without CAP_SYS_PTRACE, so when these tests run as root (as in CI's test
+# container) both processes are run as an unprivileged user instead.
+
+NOBODY = 65534
+# Both helper scripts use only the standard library: the real interpreter, which an unprivileged user
+# can always run (a virtual environment may sit in a folder only its owner can enter).
+PYTHON = os.path.realpath(sys.executable)
 
 PROTECTED = """
 import os, sys, time
-sys.path.insert(0, {core!r})
+sys.path.insert(0, sys.argv[1])
 from meshbeacon import procinfo
-os.environ['CANARY'] = 'x'  # only the initial environment is what /proc shows
 ok = procinfo.set_not_dumpable()
 child = os.fork()
 if child == 0:
@@ -144,41 +156,80 @@ print(ok, child, flush=True)
 time.sleep(30)
 """
 
+READER = """
+import json, os, sys
+pid, child = sys.argv[1], sys.argv[2]
+def can(action):
+    try:
+        action()
+    except OSError:
+        return False
+    return True
+print(json.dumps({
+    "environ": can(lambda: open(f"/proc/{pid}/environ", "rb").read(1)),
+    "maps": can(lambda: open(f"/proc/{pid}/maps", "rb").read(1)),
+    "mem": can(lambda: open(f"/proc/{pid}/mem", "rb").read(1)),
+    "fd": can(lambda: os.listdir(f"/proc/{pid}/fd")),
+    "child_environ": b"canary-value" in open(f"/proc/{child}/environ", "rb").read(),
+    "status": can(lambda: open(f"/proc/{pid}/status").read()),
+}))
+"""
 
-def _start_protected() -> tuple[subprocess.Popen[str], int]:
-    core = str(Path(__file__).resolve().parents[2] / "meshbeacon" / "core")
+
+def _as_user() -> dict[str, int]:
+    return {"user": NOBODY, "group": NOBODY, "extra_groups": []} if os.geteuid() == 0 else {}
+
+
+@pytest.mark.skipif(os.geteuid() != 0 and has_cap_sys_ptrace(), reason="CAP_SYS_PTRACE overrides the protection")
+def test_an_unprivileged_same_user_process_cannot_read_the_cores_proc_entries():
+    # A copy of procinfo.py that the unprivileged user can read (neither the checkout nor pytest's
+    # own temporary folder, which is 0700, need be).
+    tmp_path = Path(tempfile.mkdtemp(prefix="mb-dumpable-", dir="/tmp"))
+    package = tmp_path / "core" / "meshbeacon"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+    source = Path(__file__).resolve().parents[2] / "meshbeacon" / "core" / "meshbeacon" / "procinfo.py"
+    (package / "procinfo.py").write_text(source.read_text())
+    for path in (tmp_path, tmp_path / "core", package, *package.iterdir()):
+        path.chmod(0o755 if path.is_dir() else 0o644)
     proc = subprocess.Popen(
-        [sys.executable, "-I", "-c", PROTECTED.format(core=core)],
+        [PYTHON, "-I", "-c", PROTECTED, str(tmp_path / "core")],
         stdout=subprocess.PIPE,
         text=True,
         env={"SECRET_IN_ENV": "canary-value"},
+        **_as_user(),
     )
     assert proc.stdout is not None
-    ok, child = proc.stdout.readline().split()
-    assert ok == "True"
-    for _ in range(100):  # wait until the child has executed its program (cmdline is world-readable)
-        if Path(f"/proc/{child}/cmdline").read_bytes().startswith(b"sleep"):
-            break
-        time.sleep(0.02)
-    return proc, int(child)
-
-
-@pytest.mark.skipif(has_cap_sys_ptrace(), reason="CAP_SYS_PTRACE overrides the protection (run unprivileged)")
-def test_a_same_user_process_cannot_read_the_cores_proc_entries():
-    proc, child = _start_protected()
     try:
-        pid = proc.pid
-        for entry in ("environ", "mem", "maps", "fd"):
-            with pytest.raises(PermissionError):
-                target = Path(f"/proc/{pid}/{entry}")
-                os.listdir(target) if entry == "fd" else target.read_bytes()[:1]
-        # The protected process's own child is readable as usual: monitoring Reticulum still works.
-        assert b"canary-value" in Path(f"/proc/{child}/environ").read_bytes()
-        assert procinfo.memory_bytes(pid)  # /proc/<pid>/status stays readable: memory readings work
+        ok, child = proc.stdout.readline().split()
+        assert ok == "True"
+        for _ in range(100):  # wait until the child has executed its program (cmdline is world-readable)
+            if Path(f"/proc/{child}/cmdline").read_bytes().startswith(b"sleep"):
+                break
+            time.sleep(0.02)
+        out = subprocess.run(
+            [PYTHON, "-I", "-c", READER, str(proc.pid), child],
+            capture_output=True,
+            text=True,
+            check=True,
+            **_as_user(),
+        )
+        seen = json.loads(out.stdout)
+        # The core's memory, environment, memory map and descriptors: all refused.
+        assert seen == {
+            "environ": False,
+            "maps": False,
+            "mem": False,
+            "fd": False,
+            "child_environ": True,  # its own child (as Reticulum) is readable: monitoring still works
+            "status": True,  # /proc/<pid>/status stays readable: memory readings still work
+        }, seen
     finally:
-        os.kill(child, 15)
+        with contextlib.suppress(ProcessLookupError, ValueError, NameError):
+            os.kill(int(child), 15)
         proc.kill()
         proc.wait()
+        shutil.rmtree(tmp_path, ignore_errors=True)
 
 
 def test_set_not_dumpable_takes_effect():

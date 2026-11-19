@@ -54,9 +54,10 @@ def die_with_parent(expected_parent: int) -> None:
 def set_not_dumpable() -> bool:
     """Mark this process non-dumpable (Linux PR_SET_DUMPABLE 0), before it starts any child.
 
-    The kernel then refuses every other process without CAP_SYS_PTRACE (including processes of the
-    same user, such as the Reticulum child) access to this process's memory, environment and
-    descriptors through /proc and ptrace, and writes no core dump of it (threat T72, M1.2). Its
+    The kernel then refuses other non-root processes without CAP_SYS_PTRACE (including processes of
+    the same user, such as the Reticulum child) access to this process's memory, environment and
+    descriptors through /proc and ptrace, and writes no core dump of it (threat T72, M1.2). Root
+    keeps some /proc read access even without CAP_SYS_PTRACE; root already controls the container. Its
     children are unaffected: executing a program makes a process dumpable again. True if it took
     effect.
     """

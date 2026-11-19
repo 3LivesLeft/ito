@@ -401,7 +401,7 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
             "--network-alias",
             "local-meshbeacon",
         )
-        assert wait_for((out / "discovery.json").exists, timeout=60), c.logs()
+        assert wait_for(lambda: complete_json(out / "discovery.json"), timeout=60), c.logs()
         record = json.loads((out / "discovery.json").read_text())
         assert record["path"] == "/discovery" and record["auth"] == f"Bearer {SUPERVISOR_TOKEN}"
         config = record["body"]["config"]
@@ -498,7 +498,7 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
             "--hostname",
             "ce27fbb5-meshbeacon",
         )
-        assert wait_for((out / "discovery.json").exists, timeout=60), c.logs()
+        assert wait_for(lambda: complete_json(out / "discovery.json"), timeout=60), c.logs()
         record = json.loads((out / "discovery.json").read_text())
         assert record["path"] == "/discovery" and record["auth"] is None  # the socket identifies the app
         config = record["body"]["config"]
@@ -550,6 +550,15 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
 LINK_PROBE = (Path(__file__).resolve().parents[2] / "tools" / "acceptance" / "relay_probe.py").read_text()
 
 
+def complete_json(path: Path) -> bool:
+    """The fake Supervisor's record exists and is fully written (it can be read mid-write)."""
+    try:
+        json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
+    return True
+
+
 def app_memory_kib(c: Container) -> int:
     """RSS + swap of the service user's processes, by their real UID (/proc/<pid>/status stays
     readable for the non-dumpable core, whose /proc entries otherwise look root-owned)."""
@@ -569,11 +578,19 @@ def app_memory_kib(c: Container) -> int:
 
 
 def probe(c: Container, mode: str, canary: str = "") -> dict[str, bool]:
-    """tools/acceptance/relay_probe.py: the attacker view runs as the service user (Reticulum's
-    user); the observer view runs with CAP_SYS_PTRACE only to see what is really there."""
-    who = ["-u", "meshbeacon"] if mode == "attacker" else ["--privileged"]
-    out = sh("docker", "exec", *who, c.name, "python3", "-I", "-c", LINK_PROBE, mode, canary)
-    result = json.loads(out)
+    """tools/acceptance/relay_probe.py. The attacker view runs inside the app container as the
+    service user (Reticulum's user), under the app's AppArmor profile when CI loads it. The
+    observer view only looks: an unconfined, privileged sidecar sharing the app container's
+    process namespace (inside the container, the profile refuses even a privileged process
+    ptrace access, which CI showed)."""
+    if mode == "attacker":
+        cmd = ["docker", "exec", "-u", "meshbeacon", c.name, "python3"]
+    else:
+        cmd = [
+            "docker", "run", "--rm", "--privileged", f"--pid=container:{c.name}", "--network", "none",
+            "--security-opt", "apparmor=unconfined", "--entrypoint", "python3", IMAGE,
+        ]  # fmt: skip
+    result = json.loads(sh(*cmd, "-I", "-c", LINK_PROBE, mode, canary))
     print(f"{mode} probe: {result}")
     return result
 

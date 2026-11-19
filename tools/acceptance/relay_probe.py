@@ -5,12 +5,15 @@ Two views, each printing one JSON line and changing nothing:
 
     # what Reticulum's user can do (run as the service user, like a compromised Reticulum child):
     docker exec -u meshbeacon -i <container> python3 -I - attacker [CANARY] < relay_probe.py
-    # what is really there (run with CAP_SYS_PTRACE, only to observe):
-    docker exec --privileged -i <container> python3 -I - observer [CANARY] < relay_probe.py
+    # what is really there, only to observe: an unconfined privileged sidecar in the app's PID
+    # namespace (inside the app, its AppArmor profile refuses even a privileged process ptrace):
+    docker run --rm -i --privileged --pid=container:<container> --security-opt apparmor=unconfined \
+        --entrypoint python3 <image> -I - observer [CANARY|@auto] < relay_probe.py
 
 ``CANARY`` is the Supervisor token *of a test installation* (never one anybody relies on): the
 probe reports only whether it was found, never the value. ``@FILE`` reads it from FILE and deletes
-the file, so that the value is not on a command line (on a VM). Used by the container tests and by VM acceptance test
+the file, so that the value is not on a command line (on a VM); ``@auto`` (observer only, beside
+the app) reads the app's own token through ``/proc/<core>/root``. Used by the container tests and by VM acceptance test
 SO-1 (docs/testing/v0.3-vm-acceptance.md). Every key must come out ``false`` except where noted.
 
 attacker:
@@ -189,11 +192,13 @@ def observer(core: str, node: str, canary: bytes) -> dict[str, bool]:
 def main() -> None:
     mode = sys.argv[1] if len(sys.argv) > 1 else "attacker"
     canary = sys.argv[2].encode() if len(sys.argv) > 2 else b""
-    if canary.startswith(b"@"):  # @FILE: read, then delete, so the value is on no command line
+    if canary.startswith(b"@") and canary != b"@auto":  # @FILE: read, then delete (no command line)
         path = Path(canary[1:].decode())
         canary = path.read_bytes().strip()
         path.unlink()
     core, node = pid_of(b"meshbeacon.supervisor"), pid_of(b"meshbeacon.node")
+    if canary == b"@auto" and core is not None:  # observer beside the app: the app's own token
+        canary = Path(f"/proc/{core}/root/run/s6/container_environment/SUPERVISOR_TOKEN").read_bytes().strip()
     if core is None or node is None:
         print(json.dumps({"error": "the core or the Reticulum child is not running"}))
         return
