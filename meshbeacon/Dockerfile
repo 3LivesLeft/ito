@@ -16,10 +16,12 @@ ENV \
 # minimum versions so the build fails rather than silently shipping a vulnerable version. Found by
 # the CI image scan (18 Nov 2026): zlib CVE-2026-4738 (critical), krb5-libs and libexpat (high).
 # Drop these lines once the HA base image includes the fixes; then refresh the base digest.
+# apk's log records install times; nothing reads it, and it would make builds differ, so it goes.
 RUN apk add --no-cache --upgrade \
         "zlib>=1.4-r0" \
         "krb5-libs>=1.22.3-r0" \
-        "libexpat>=2.10.0-r0"
+        "libexpat>=2.10.0-r0" \
+    && rm -f /var/log/apk.log
 
 # Reproducible builds (docs/releasing.md): when the release build sets SOURCE_DATE_EPOCH, Python
 # (pip's bytecode step and compileall below) writes hash-checked .pyc files with no timestamps.
