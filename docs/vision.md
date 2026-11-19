@@ -7,6 +7,9 @@
 
 > **Decentralised connectivity for your home.**
 
+Status: revised 19 November 2026 to record the agreed long-term direction. The tagline is
+unchanged (ADR 0003); whether it still fits is [Open] Q-41.
+
 ## The problem
 
 Home Assistant runs the home, but almost every way of reaching it from outside — or of receiving
@@ -33,6 +36,37 @@ Over time it aims to let a household:
 - receive end-to-end-encrypted notifications from Home Assistant in any Reticulum messaging app;
 - keep communicating locally, and over radio, when the internet is unavailable;
 - eventually, monitor and control the home off-grid — with strong, explicit authorisation.
+
+## Long-term direction
+
+Beyond the household, MeshBeacon is evolving into a free, open-source, privacy-first,
+decentralised **community network that can continue operating without internet connectivity**.
+The goal is to let communities host and discover information, communicate and share resources
+over Reticulum, including compatible LoRa radio links: private messaging, Nomad Network-compatible
+pages, bulletin boards and offline libraries, short voice messages, and resilient, replicated
+infrastructure.
+
+Home Assistant remains a **first-class deployment and management interface**, but the underlying
+community services must not depend on Home Assistant to function. The milestones that lead there
+are in the [roadmap](roadmap.md#long-term-direction-proposed); from v0.4 onwards they are
+proposals, not commitments.
+
+### Architectural principles for the long-term direction
+
+These add to the principles below; where they overlap, the stricter reading applies.
+
+1. **Offline-first.** Public internet connectivity is optional, never required.
+2. **Interoperable** with existing Reticulum and LXMF clients, using the same protocols.
+3. **LoRa-aware.** Designs respect strict bandwidth, airtime and regulatory constraints.
+4. **Public community services are isolated** from Home Assistant's private APIs and data.
+5. **Secure-by-default publishing**: access controls, rate limits, storage quotas and abuse
+   protections.
+6. **No central cloud service, subscription or mandatory account.**
+7. **Modular**, so that it can eventually run standalone on a Raspberry Pi or other Linux system.
+8. **Compatible with existing MeshBeacon installations and identities.**
+
+v0.3 decisions that could constrain these are reviewed in the
+[forward-compatibility review](research/long-term-direction.md).
 
 ## What MeshBeacon is not
 
@@ -92,6 +126,8 @@ Over time it aims to let a household:
 - Home Assistant users who want resilient alerts and access without relying on cloud services.
 - Households in areas with unreliable connectivity, or preparing for outages.
 - Existing Reticulum users who already run Home Assistant and want the two to work together.
+- Later: communities that want local messaging, information and services that keep working when
+  the internet does not.
 
 ## Measures of success
 

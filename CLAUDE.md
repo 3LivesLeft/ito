@@ -119,6 +119,7 @@ docs/research/known-paths.md       why "Known paths" reads 2,048 (RNS unused-pat
 docs/testing/v0.2-physical-results.md  initial physical readings (not final acceptance)
 docs/testing/v0.2-acceptance-review.md  open criteria, CI status, risks, simplest installation
 docs/getting-started.md            tester guide: app, then the optional sidebar integration
+docs/research/long-term-direction.md  v0.3 forward-compatibility review (proposed v0.4+ direction)
 custom_components/meshbeacon/       v0.2 Home Assistant integration
 custom_components/meshbeacon/frontend/  interface (ADR 0007): plain JS, no dependencies; layers in
                                    docs/architecture.md §6a: sources/ (data), ui/ (presentation),

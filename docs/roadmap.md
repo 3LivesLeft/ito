@@ -5,7 +5,9 @@
 
 # Roadmap
 
-Status: **Provisional — revised after independent review.** Every item remains open to challenge.
+Status: **Provisional — revised after independent review; long-term direction added 19 November
+2026.** Every item remains open to challenge. Completed milestones and acceptance records below are
+unchanged. **v0.4 onwards are proposed milestones, not release commitments.**
 
 ## Phase 0 — Research and foundations (complete once PR #1 is merged)
 
@@ -46,7 +48,10 @@ Explicitly **out of scope** for v0.1.0 (moved or deferred):
 | Remote automation | v0.6 | |
 | Raw RNS configuration | Not planned | Would bypass validation and privacy defaults |
 
-## v0.2.0 — Visibility (in progress, branch `feature/v0.2.0-observability`)
+The "Where it went" column records the plan when v0.1.0 was scoped. I2P, RNode and remote
+automation are now unscheduled; see [previously planned items](#previously-planned-items).
+
+## v0.2.0 — Visibility (merged to `main` in PR #3; physical acceptance pending)
 
 Lightweight, privacy-first monitoring ([feasibility and architecture](research/v0.2-observability.md),
 [ADR 0006](adr/0006-local-metrics-api.md), accepted 18 Nov 2026):
@@ -118,26 +123,74 @@ implemented until independently reviewed and approved.**
   practical) on isolated networks.
 - Optional propagation node with quotas (phase 3b). Requires `rns`/`lxmf` pins of 1.6.1/1.3.1.
 
-## v0.4.0 — Privacy and reachability
+## v0.3.0 — Installation and LXMF messaging (next)
 
-- Optional I2P via a separate router; investigate public gateway hosting behind CGNAT.
-- Tailscale guidance (no code needed) is documented from v0.1 onwards once tested (feasibility
-  Q-8).
+Theme agreed by the maintainer (19 November 2026): native installation from a Home Assistant app
+repository, secure private messaging, contacts and delivery tracking.
 
-## v0.5.0 — Off-grid
+**This revision does not expand v0.3's implementation scope.** The committed items are those
+already agreed:
 
-RNode support with explicit device mapping and regional parameter validation. First version that
-*optionally* uses extra hardware.
+- LXMF send/receive; HA `notify` platform (HA composes plaintext; LXMF encrypts end to end — must
+  be documented).
+- Interoperability testing with Sideband, NomadNet, MeshChat and Ratspeak.
+- Optional propagation node with disk quota (placement under review: Q-40).
 
-## v0.6.0 — Remote automation
+The theme's other elements are recorded, **not yet committed**; each needs scoping in the v0.3
+design and the maintainer's approval:
 
-Authenticated, allow-listed remote commands with replay protection — external design review
-**before** implementation.
+| Element | Relation to the agreed scope | Condition |
+|---|---|---|
+| Installation from an app repository / store | Publication, not new features | Only after all Tier B release gates (RG-1 to RG-12) and explicit approval to publish; naming decision first (Q-41); route and submitter Q-43 |
+| Contacts | New | Scope and storage location (Q-39) |
+| Delivery tracking | Extends LXMF send/receive | Must express long, LoRa-scale delays (forward-compatibility review F-6) |
+
+v0.3 decisions that could constrain later milestones are listed in the
+[forward-compatibility review](research/long-term-direction.md) (F-1 to F-11). They are to be
+settled in v0.3's ADRs, not redesigned in advance.
+
+## Long-term direction (proposed)
+
+MeshBeacon is to grow into a free, open-source, privacy-first, decentralised **community network**
+that keeps operating without the internet: communities host and discover information,
+communicate and share resources over Reticulum, including compatible LoRa radio links. Home
+Assistant remains a first-class deployment and management interface; the community services must
+not depend on it. See the [vision](vision.md#long-term-direction) and its
+[architectural principles](vision.md#architectural-principles-for-the-long-term-direction).
+
+**These milestones are proposed, not release commitments.** Each needs its own design, ADRs and
+acceptance criteria, approved by the maintainer, before implementation starts.
+
+| Version | Theme | Proposed content |
+|---|---|---|
+| v0.4 | Public offline internet | Nomad Network-compatible page hosting, browsing, publishing and discovery; lightweight content suitable for LoRa |
+| v0.5 | Community services | Public bulletin boards, offline knowledge libraries, LXMF propagation services, community information sharing |
+| v0.6 | Voice messaging | Short push-to-talk voice bursts with low-bitrate codecs, asynchronous delivery, radio airtime limits |
+| v0.7 | Resilient infrastructure | Distributed content replication, selected sensor sharing, local alerts, network resilience |
+| v0.8+ | Advanced communications | *Investigation:* live push-to-talk group voice over suitable higher-bandwidth transports, intelligent transport selection, additional radio capabilities |
+
+### Previously planned items
+
+Items from the earlier roadmap that the new sequence does not name. None is dropped; their
+placement is **[Open] Q-42** for the maintainer.
+
+| Item | Previously | Now | Note |
+|---|---|---|---|
+| HA `notify` platform, interop testing | v0.3 | v0.3 | Unchanged |
+| Optional propagation node | v0.3 | v0.3, under review | Q-40: stay in v0.3 or join v0.5 propagation services |
+| Optional I2P (separate router); public-gateway investigation | v0.4 | Unscheduled | Candidate for v0.7 resilience or v0.8+ transport selection |
+| Tailscale guidance (documentation only) | v0.1 onwards | Unchanged | Once tested (feasibility Q-8) |
+| RNode / LoRa hardware support | v0.5 | Unscheduled | Needed before LoRa-aware features (v0.4+) can be validated on real radio; device access needs an ADR (hard rule 4) |
+| Authenticated remote automation | v0.6 | Unscheduled | Private and allow-listed, separate from public services (principle 4); external design review before implementation, as agreed |
+| Identity import from file | v0.2, then deferred | Unscheduled | Relevant to compatibility with existing identities (principle 8) |
+| TCP listener (inbound) | Later, if requested | Unchanged | Not needed to host services over outbound links **[Assumption]** |
 
 ## v1.0.0 — Stable
 
 External security audit, compatibility matrix, full documentation, standalone Docker image, and a
-published RNS-upgrade policy.
+published RNS-upgrade policy. Unchanged; standalone Raspberry Pi and other Linux deployments
+(architectural principle 7) build on the standalone image. Where v1.0 falls relative to v0.4–v0.8
+is part of Q-42.
 
 ---
 

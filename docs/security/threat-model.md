@@ -90,7 +90,12 @@ reference the [feasibility study](../research/feasibility.md) and
 - **v0.2 local API and integration:** implemented as T11 and T28–T37 ([ADR 0006](../adr/0006-local-metrics-api.md));
   sidebar panel as T38–T42 ([ADR 0007](../adr/0007-sidebar-panel.md)).
   Identity import is deferred beyond v0.2.
-- **v0.3 messaging:** proposed threats T43–T58 below (awaiting independent review, nothing implemented).
+- **v0.3 messaging:** proposed threats T43–T58 below (awaiting independent review, nothing implemented). Baseline: LXMF identity 0600; no message content in logs or diagnostics; document that
+  HA composes notifications in plaintext before LXMF encrypts them; propagation node opt-in with
+  disk quota.
+- **Long-term direction (proposed v0.4+):** public community services need their own threat
+  analysis before design (principles 4 and 5; [forward-compatibility review](../research/long-term-direction.md)).
+  The three items below are now unscheduled; their version labels record the earlier plan.
 - **v0.4 I2P / public gateway:** separate I2P router; public gateway only with RNS native filters,
   stamps enforcement, blackhole sources and a clear exposure statement.
 - **v0.5 RNode:** device access lowers isolation; validate LoRa parameters against regional rules
