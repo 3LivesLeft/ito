@@ -1,7 +1,7 @@
 # Long-term direction: forward-compatibility review of v0.3
 
 Status: **Review for the maintainer; nothing here is implemented.** Several findings were decided
-by the maintainer on 19 November 2026 (ADRs 0007–0010); see the Status column. · Date: 19 November
+by the maintainer on 19 November 2026 (ADRs 0018–0021); see the Status column. · Date: 19 November
 2026 · Roadmap: [roadmap §Long-term direction](../roadmap.md#long-term-direction-proposed)
 
 Labels: **[Verified]**, **[Assumption]**, **[Recommendation]**, **[Open]** (see
@@ -22,14 +22,14 @@ All recommendations need the maintainer's approval before they affect any design
 
 ## 2. Summary
 
-v0.3 is now split ([ADR 0010](../adr/0010-v0.3-scope.md)): v0.3.0 distribution, then a gated
+v0.3 is now split ([ADR 0021](../adr/0021-v0.3-scope.md)): v0.3.0 distribution, then a gated
 messaging milestone. "v0.3" below means whichever of the two takes the decision.
 
 | ID | v0.3 decision | Later capability at risk | Severity | Question | Status (19 Nov) |
 |---|---|---|---|---|---|
-| F-1 | How LXMF runs alongside RNS (process model) | Pages (v0.4), propagation and boards (v0.5), replication (v0.7) | **High** | Q-35 | Requirement set ([ADR 0009](../adr/0009-public-service-isolation.md)); mechanism open (MG-5) |
-| F-2 | Which identity LXMF uses | Separate public service addresses; identity compatibility (principle 8) | **High** | Q-36 | Decided: separate identities ([ADR 0007](../adr/0007-separate-identities.md)), subject to validation |
-| F-3 | How "announce my address" is consented to | Every public service (v0.4+) | **High** | Q-37 | Decided: per-service opt-in ([ADR 0008](../adr/0008-opt-in-publication.md)) |
+| F-1 | How LXMF runs alongside RNS (process model) | Pages (v0.4), propagation and boards (v0.5), replication (v0.7) | **High** | Q-35 | Requirement set ([ADR 0020](../adr/0020-public-service-isolation.md)); mechanism open (MG-5) |
+| F-2 | Which identity LXMF uses | Separate public service addresses; identity compatibility (principle 8) | **High** | Q-36 | Decided: separate identities ([ADR 0018](../adr/0018-separate-identities.md)), subject to validation |
+| F-3 | How "announce my address" is consented to | Every public service (v0.4+) | **High** | Q-37 | Decided: per-service opt-in ([ADR 0019](../adr/0019-opt-in-publication.md)) |
 | F-4 | The Home Assistant → core path for sending messages | Isolation of public services from HA (principle 4) | **High** | Q-38 | `notify` removed; send path needs its own ADR (MG-1, MG-2) |
 | F-5 | Where contacts, conversations and delivery state are stored | Standalone deployments (principle 7) | Medium | Q-39 | Open (MG-6) |
 | F-6 | Message size, delivery-method and timeout defaults | LoRa links (principle 3), voice bursts (v0.6) | Medium | — | Gate MG-7 |
@@ -124,8 +124,8 @@ messaging milestone. "v0.3" below means whichever of the two takes the decision.
 - The optional propagation node is a previously agreed v0.3 item; the new direction places "LXMF
   propagation services" in v0.5. It would also be the first MeshBeacon service that stores data
   from strangers, so it sets the precedent for principle 5 (quotas, rate limits, abuse handling).
-- **Decided (ADR 0010):** moved to proposed v0.5, designed as a public service under ADRs 0008
-  and 0009.
+- **Decided (ADR 0021):** moved to proposed v0.5, designed as a public service under ADRs 0019
+  and 0020.
 
 ### F-9 Publishing for store installation
 

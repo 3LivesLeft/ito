@@ -1,4 +1,4 @@
-# ADR 0008: Explicit opt-in for announcements and publication
+# ADR 0019: Explicit opt-in for announcements and publication
 
 - **Status:** **Accepted** (maintainer, 19 November 2026)
 - **Date:** 19 November 2026

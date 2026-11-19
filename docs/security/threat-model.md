@@ -16,7 +16,7 @@ reference the [feasibility study](../research/feasibility.md) and
 | ID | Asset | Why it matters |
 |---|---|---|
 | A1 | **Transport identity private key** (`storage/transport_identity`, 64 raw bytes) | Node identity when transport is on; default RPC-key seed. Compromise = impersonation; loss = new node address. |
-| A2 | LXMF delivery identity (v0.3 messaging milestone; separate from A1, [ADR 0007](../adr/0007-separate-identities.md)) | Decrypts messages addressed to the user. |
+| A2 | LXMF delivery identity (v0.3 messaging milestone; separate from A1, [ADR 0018](../adr/0018-separate-identities.md)) | Decrypts messages addressed to the user. |
 | A3 | RNS RPC key; IFAC passphrases for private peers; (v0.2) local API token | Control of the RNS instance; access to private networks. |
 | A4 | Home Assistant itself (availability, data, configuration) | MeshBeacon must not become a path into, or a burden on, HA. |
 | A5 | User's IP address, approximate location, network topology | Privacy. |
@@ -82,16 +82,16 @@ reference the [feasibility study](../research/feasibility.md) and
 - **v0.2 local API and integration:** implemented as T11 and T28–T33 ([ADR 0006](../adr/0006-local-metrics-api.md)).
   Identity import is deferred beyond v0.2.
 - **v0.3.0 distribution:** supply-chain controls (RG-6, RG-7); no new runtime surface.
-- **v0.3 messaging milestone** ([ADR 0010](../adr/0010-v0.3-scope.md)): separate LXMF identity,
-  0600 ([ADR 0007](../adr/0007-separate-identities.md)); announce only on opt-in
-  ([ADR 0008](../adr/0008-opt-in-publication.md)); no message content or metadata in logs or
+- **v0.3 messaging milestone** ([ADR 0021](../adr/0021-v0.3-scope.md)): separate LXMF identity,
+  0600 ([ADR 0018](../adr/0018-separate-identities.md)); announce only on opt-in
+  ([ADR 0019](../adr/0019-opt-in-publication.md)); no message content or metadata in logs or
   diagnostics; **authorisation of who may send** (gate MG-1) — new threat: an HA user or
   automation sending messages under the user's identity. *Superseded 19 Nov 2026:* the HA `notify`
   platform (its default service permissions do not meet MG-1) and the v0.3 propagation node (now
   proposed v0.5).
 - **Long-term direction (proposed v0.4+):** public community services need their own threat
   analysis before design; they are isolated from HA and from the transport failure domain
-  ([ADR 0009](../adr/0009-public-service-isolation.md)); propagation node opt-in with disk quota.
+  ([ADR 0020](../adr/0020-public-service-isolation.md)); propagation node opt-in with disk quota.
   The three items below are unscheduled; their version labels record the earlier plan.
 - **v0.4 I2P / public gateway:** separate I2P router; public gateway only with RNS native filters,
   stamps enforcement, blackhole sources and a clear exposure statement.

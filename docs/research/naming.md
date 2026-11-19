@@ -240,5 +240,5 @@ are clear, because it fits the community direction. Whatever is chosen also need
 
 - a new app slug and package names;
 - a one-off data migration for the maintainer's local prototype, preserving the identity
-  (ADR 0007);
+  (ADR 0018);
 - an updated ADR 0003.

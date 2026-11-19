@@ -1,4 +1,4 @@
-# ADR 0007: Separate identities for transport, messaging and public services
+# ADR 0018: Separate identities for transport, messaging and public services
 
 - **Status:** **Accepted, subject to technical validation** (maintainer, 19 November 2026). The
   validation items below must pass before any code relies on this decision.
@@ -30,7 +30,7 @@ public address and make it impossible to retire one role without changing all of
    creation, validation before use, a verified backup, no silent replacement, no key material or
    hashes in logs (hard rules 5 and 13).
 4. A new identity is created only when the user first enables the role that needs it; nothing is
-   created or announced by default (see [ADR 0008](0008-opt-in-publication.md)).
+   created or announced by default (see [ADR 0019](0019-opt-in-publication.md)).
 
 ### Identity replacement rules (maintainer, 19 November 2026)
 
@@ -46,7 +46,7 @@ public address and make it impossible to retire one role without changing all of
 | ID | To validate | How |
 |---|---|---|
 | IV-1 | LXMF accepts a delivery identity distinct from the transport identity, through public APIs only | Isolated-network test (RNS 1.6.0, LXMF 1.3.0 or the pin then current) |
-| IV-2 | Several identities in one RNS instance (or across the processes chosen under ADR 0009) behave as expected, with no private-attribute access | Isolated-network test |
+| IV-2 | Several identities in one RNS instance (or across the processes chosen under ADR 0020) behave as expected, with no private-attribute access | Isolated-network test |
 | IV-3 | An installation upgraded from v0.1/v0.2 keeps a byte-identical transport identity and fingerprint, and no migration path can reach the replacement code (IR-1) | Upgrade and migration tests from a v0.2 `/data` fixture with a throwaway identity |
 | IV-4 | Crash-safety of creating each new identity (the LP-7 method) | Randomised-kill test |
 | IV-5 | Memory and storage cost per identity is negligible against the 128 MB target | Measurement |

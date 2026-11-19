@@ -84,7 +84,7 @@ Protective features (rate limiting, filtering, blackholing) will use RNS's nativ
 
 ## Amendments
 
-- **19 November 2026 — [ADR 0010](0010-v0.3-scope.md):** "from v0.3, LXMF" now means the **v0.3
+- **19 November 2026 — [ADR 0021](0021-v0.3-scope.md):** "from v0.3, LXMF" now means the **v0.3
   messaging milestone** that follows the v0.3.0 distribution release. The rest of this ADR is
   unchanged.
 

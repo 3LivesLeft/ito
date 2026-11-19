@@ -94,10 +94,10 @@ app); an Ingress UI (a second monitoring implementation). See
 
 ## Later decisions
 
-- **19 November 2026 — [ADR 0010](0010-v0.3-scope.md):** the HA `notify` platform is removed from
+- **19 November 2026 — [ADR 0021](0021-v0.3-scope.md):** the HA `notify` platform is removed from
   the committed v0.3 scope, so v0.3.0 adds no write path and this API stays read-only. The v0.3
   messaging milestone needs a separate ADR for its sending path (gates MG-1, MG-2); it must not be
-  added to this API. [ADR 0009](0009-public-service-isolation.md): public services never use this
+  added to this API. [ADR 0020](0020-public-service-isolation.md): public services never use this
   API or its credentials.
 
 ## Review triggers

@@ -3,8 +3,8 @@
 Status: **Provisional — revised after independent review; long-term direction added 19 November
 2026.** Every item remains open to challenge. Completed milestones and acceptance records below are
 unchanged. **v0.4 onwards are proposed milestones, not release commitments; v1.0 is unscheduled.**
-Decisions of 19 November 2026: ADRs [0007](adr/0007-separate-identities.md) to
-[0010](adr/0010-v0.3-scope.md).
+Decisions of 19 November 2026: ADRs [0018](adr/0018-separate-identities.md) to
+[0021](adr/0021-v0.3-scope.md).
 
 ## Phase 0 — Research and foundations (complete once PR #1 is merged)
 
@@ -68,7 +68,7 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 
 ## v0.3.0 — Installation and distribution (next)
 
-Decided by the maintainer, 19 November 2026 ([ADR 0010](adr/0010-v0.3-scope.md)). **No new
+Decided by the maintainer, 19 November 2026 ([ADR 0021](adr/0021-v0.3-scope.md)). **No new
 application features.** The release makes MeshBeacon installable through Home Assistant's two
 native mechanisms, verified against Home Assistant 2026.11.2
 ([distribution research](research/v0.3-distribution.md)):
@@ -94,11 +94,11 @@ only when **all** of these gates are met; the messaging design turns them into a
 
 | ID | Gate |
 |---|---|
-| MG-1 | **Authorisation:** sending can be restricted to callers the user explicitly approves. The Home Assistant / Supervisor capabilities this needs are identified on the HA release then current, and any permission they require is approved by ADR (hard rule 4). HA's default service-call permissions are not sufficient (maintainer decision, ADR 0010) |
+| MG-1 | **Authorisation:** sending can be restricted to callers the user explicitly approves. The Home Assistant / Supervisor capabilities this needs are identified on the HA release then current, and any permission they require is approved by ADR (hard rule 4). HA's default service-call permissions are not sufficient (maintainer decision, ADR 0021) |
 | MG-2 | An ADR for the Home Assistant → core path for sending; ADR 0006's status API stays read-only |
-| MG-3 | Separate messaging identity: [ADR 0007](adr/0007-separate-identities.md) validation IV-1 to IV-5 passed; identity rules IR-1 to IR-4 met, including confirmation before an explicit replacement (IR-3) |
-| MG-4 | Announcing the messaging address is an explicit opt-in ([ADR 0008](adr/0008-opt-in-publication.md)) |
-| MG-5 | The process model does not prevent isolating later public services from transport ([ADR 0009](adr/0009-public-service-isolation.md), Q-35). The specific model is chosen only after the security review and physical Pi memory measurements ADR 0009 requires |
+| MG-3 | Separate messaging identity: [ADR 0018](adr/0018-separate-identities.md) validation IV-1 to IV-5 passed; identity rules IR-1 to IR-4 met, including confirmation before an explicit replacement (IR-3) |
+| MG-4 | Announcing the messaging address is an explicit opt-in ([ADR 0019](adr/0019-opt-in-publication.md)) |
+| MG-5 | The process model does not prevent isolating later public services from transport ([ADR 0020](adr/0020-public-service-isolation.md), Q-35). The specific model is chosen only after the security review and physical Pi memory measurements ADR 0020 requires |
 | MG-6 | No message content or metadata in logs or diagnostics; storage location (Q-39), quota and backup treatment (Q-44) decided |
 | MG-7 | Delivery states can express long, LoRa-scale delays (forward-compatibility review F-6) |
 | MG-8 | Interoperability with Sideband, NomadNet, MeshChat and Ratspeak on isolated networks |
@@ -118,8 +118,8 @@ not depend on it. See the [vision](vision.md#long-term-direction) and its
 
 **These milestones are proposed, not release commitments.** Each needs its own design, ADRs and
 acceptance criteria, approved by the maintainer, before implementation starts. Every public
-service is subject to [ADR 0008](adr/0008-opt-in-publication.md) (opt-in announcement and
-publication) and [ADR 0009](adr/0009-public-service-isolation.md) (isolated from Home Assistant
+service is subject to [ADR 0019](adr/0019-opt-in-publication.md) (opt-in announcement and
+publication) and [ADR 0020](adr/0020-public-service-isolation.md) (isolated from Home Assistant
 and from the transport failure domain).
 
 | Version | Theme | Proposed content |
@@ -138,14 +138,14 @@ Kept explicitly so that nothing is dropped silently. Each needs its own design a
 |---|---|
 | **RNode / LoRa radio hardware support** | Explicit future capability: RNode with explicit device mapping and regional parameter validation (UK: Ofcom IR 2030 **[Assumption]**). Device access changes the security posture and needs an ADR (hard rule 4). Needed before LoRa-aware features can be validated on air |
 | Optional I2P (separate router); public-gateway investigation | Candidate for v0.7 or v0.8+ (Q-42) |
-| Authenticated remote automation | Private and allow-listed, separate from public services (ADR 0009); external design review before implementation |
+| Authenticated remote automation | Private and allow-listed, separate from public services (ADR 0020); external design review before implementation |
 | Identity import from file | Requirements in architecture §4.6; relevant to principle 8 |
 | TCP listener (inbound) | Later, if requested; not needed to host services over outbound links **[Assumption]** |
 | Tailscale guidance (documentation only) | Once tested (feasibility Q-8) |
 
 ## v1.0.0 — Stable (unscheduled)
 
-A stability milestone, **not scheduled and not a release commitment** ([ADR 0010](adr/0010-v0.3-scope.md)).
+A stability milestone, **not scheduled and not a release commitment** ([ADR 0021](adr/0021-v0.3-scope.md)).
 Criteria unchanged: external security audit, compatibility matrix, full documentation, standalone
 Docker image (the basis for standalone Raspberry Pi and other Linux deployments, principle 7), and
 a published RNS-upgrade policy.
@@ -157,8 +157,8 @@ Superseded plans are kept here rather than deleted.
 | Date | Plan | Superseded by |
 |---|---|---|
 | 18 Nov 2026 | v0.3 Messaging (LXMF, HA `notify`, interop testing, optional propagation node); v0.4 Privacy and reachability (I2P, public-gateway investigation); v0.5 Off-grid (RNode); v0.6 Remote automation; v1.0 after v0.6 | Long-term direction, 19 Nov 2026 (commit `f409058`) |
-| 19 Nov 2026 (`f409058`) | v0.3 "Installation and LXMF messaging" as one release, still including `notify` and the propagation node; I2P, RNode and remote automation unscheduled; v1.0 position open | ADR 0010 (`4723d9d`) |
-| 19 Nov 2026 (`4723d9d`) | v0.3.0 installation "from the App store and any further catalogue" (Q-43, Q-45 open) | Two verified mechanisms, App store (app) and Marketplace (integration); ADR 0010 amendment (this revision) |
+| 19 Nov 2026 (`f409058`) | v0.3 "Installation and LXMF messaging" as one release, still including `notify` and the propagation node; I2P, RNode and remote automation unscheduled; v1.0 position open | ADR 0021 (`4723d9d`) |
+| 19 Nov 2026 (`4723d9d`) | v0.3.0 installation "from the App store and any further catalogue" (Q-43, Q-45 open) | Two verified mechanisms, App store (app) and Marketplace (integration); ADR 0021 amendment (this revision) |
 
 ---
 

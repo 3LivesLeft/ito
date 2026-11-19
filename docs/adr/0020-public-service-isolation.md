@@ -1,4 +1,4 @@
-# ADR 0009: Isolate public services from Home Assistant and from the transport process
+# ADR 0020: Isolate public services from Home Assistant and from the transport process
 
 - **Status:** **Accepted as an architectural requirement** (maintainer, 19 November 2026). The
   process and IPC mechanism is **deliberately deferred** until a security review and physical
