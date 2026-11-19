@@ -1,5 +1,18 @@
 # Changelog
 
+## Next (v0.3 development; version number set at release)
+
+- **Install from Home Assistant's own stores** (prepared; available from the first release): the
+  app from the app store, the dashboard from Home Assistant's Marketplace (Home Assistant 2026.11
+  or newer). No terminal and no copying of files.
+- **Discovery over the Supervisor's local socket** where the Supervisor provides one: Home
+  Assistant is told about MeshBeacon without anything crossing the internal network, and the
+  Supervisor token is not used. Current Supervisors keep the previous method.
+- The dashboard's integration keeps your entity IDs and history if the app is ever reinstalled
+  from a different source, and it says which part to update when the app and the integration are
+  out of step.
+- No new permissions; the security rating is unchanged.
+
 ## 0.2.0 — unreleased (in development)
 
 - **New option: "Show MeshBeacon's status in Home Assistant"** (off by default). When it is on,
@@ -15,6 +28,21 @@
 - The watchdog's health check is now protected against slow or flooding clients.
 - Each problem now has a stable code alongside its plain-language message, for repair issues in
   Home Assistant.
+- **MeshBeacon in the sidebar.** Once the integration is added, administrators get a MeshBeacon
+  entry in Home Assistant's sidebar: connectivity at a glance, large figures, traffic, processor
+  and memory history, a card for each peer, and a Diagnostics tab. It follows your theme (light or
+  dark), works on phones, tablets and desktops, and uses only Home Assistant's own data and
+  history. Nothing to configure, and no code loaded from the internet.
+- **Fix:** the integration could occasionally reject a valid status reply that arrived in several
+  pieces. It now reads the whole reply, still with a size limit.
+- "Known paths" stopping at 2,048 is normal on a busy network: Reticulum trims paths it has never
+  used. The panel explains this.
+- The integration is ready for HACS, but is not offered through it yet.
+- **New look.** MeshBeacon has its own logo, app icon and colours, used in the app store, on
+  the app page, in the sidebar (lighthouse icon), in its panel and under Devices & services. The
+  panel follows your light or dark theme, uses the Inter typeface bundled with it (nothing is
+  loaded from the internet), and meets WCAG 2.2 AA contrast. Status is never shown by colour
+  alone.
 
 ## 0.1.2 — unreleased (local prototype)
 

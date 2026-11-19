@@ -20,26 +20,18 @@ in later versions of MeshBeacon, over radio as well.
 From v0.2 it can also **show its status in Home Assistant** (optional, off by default; see
 below). It does not yet send messages or use radio.
 
-## Install as a local app (prototype)
+## Installing and updating
 
-MeshBeacon is not published yet, so you install it from a copy of its folder:
+From the first release, MeshBeacon installs from Home Assistant's own app store and updates under
+**Settings → Updates**, with no terminal or file copying (Home Assistant 2026.11 or newer). Step
+by step: `docs/getting-started.md` in the repository.
 
-1. Install the **Samba share** or **Advanced SSH & Web Terminal** app if you have neither.
-2. Copy the `meshbeacon` folder from this repository into the local apps folder on your Home
-   Assistant device. Depending on the Samba or SSH app's version it appears as `/local_apps` or
-   `/addons` (the same folder), so that you have `…/meshbeacon/config.yaml`. Step-by-step
-   instructions: `docs/install-local-prototype.md` in the repository.
-3. Go to **Settings → Apps → App store**, open the ⋮ menu and choose **Check for updates**.
-4. **MeshBeacon** appears under **Local apps**. Open it and select **Install**. Home Assistant
-   builds it on your device; on a Raspberry Pi 4 this takes a few minutes and needs an internet
-   connection to download the base image and the pinned Python packages.
-5. Start it, then open the **Log** tab. You will see:
-   *"MeshBeacon is running, but it is not connected to anyone."* — that is expected until you add
-   a peer.
-6. After this first successful start, switch on **Watchdog** on the app's Info tab (recommended).
-   MeshBeacon is designed so that the watchdog only restarts it if MeshBeacon itself stops
-   responding — never because your internet is down. Leave it off until the first start has
-   succeeded: if the app cannot start at all, the watchdog only restarts it in quick succession.
+Until then, testers install it as a local app: `docs/install-local-prototype.md` in the
+repository.
+
+After the first successful start, switch on **Watchdog** on the app's Info tab (recommended).
+MeshBeacon is designed so that the watchdog only restarts it if MeshBeacon itself stops
+responding, never because your internet is down.
 
 ## Connect to a peer
 
@@ -106,16 +98,20 @@ folder. MeshBeacon will not start while the option is left on after a replacemen
 | ✖ has paused to avoid a restart loop | The app was restarted many times quickly. Restart it after the time shown, or change any option. |
 | ✖ identity … damaged … has NOT created a new one | Restore the app from a backup, or use *replace identity* if you want a new address. |
 | ✖ some options need correcting | Fix the listed options in the Configuration tab. |
+| ⚠ the link to the discovery relay was lost | Only with the Home Assistant option on, on newer Supervisors. Home Assistant keeps showing the status until the next app start; restart the app to restore the link. |
+| Waiting for the discovery relay to start… | Normal on a busy or slow device at start-up; MeshBeacon waits up to 30 seconds and then starts anyway. |
 
 MeshBeacon always stays "running" in Home Assistant while it waits for you, so that the watchdog
 does not restart it pointlessly.
 
-## Show MeshBeacon's status in Home Assistant (v0.2)
+## Show MeshBeacon's status in Home Assistant (the dashboard)
 
 This is optional and **off by default**.
 
-1. Install the MeshBeacon integration once: copy `custom_components/meshbeacon` from the
-   repository into `/config/custom_components/` and restart Home Assistant.
+1. Install the MeshBeacon integration once, from Home Assistant's Marketplace:
+   [open MeshBeacon in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=3LivesLeft&repository=meshbeacon&category=integration).
+   Until MeshBeacon is in the Marketplace's catalog, Home Assistant asks you to connect GitHub
+   first (read-only). If Home Assistant asks for a restart, use the repair it shows.
 2. Switch on **Show MeshBeacon's status in Home Assistant** in the Configuration tab and restart
    the app.
 3. Home Assistant shows **MeshBeacon discovered** under Settings → Devices & services. Choose
@@ -127,8 +123,14 @@ example dashboard is in the repository (`docs/home-assistant/dashboard.yaml`).
 
 - **Read-only.** Home Assistant can see the status but cannot control your node.
 - **Private.** The status stays on Home Assistant's internal network, encrypted, and protected by
-  a key and a certificate that change every time the app starts. Other apps cannot read it. It
-  contains no addresses, keys, passphrases or network names. Nothing is sent anywhere else.
+  a key and a certificate that change every time the app starts. It contains no addresses, keys,
+  passphrases or network names. Nothing is sent anywhere else.
+- **How Home Assistant gets the key.** MeshBeacon hands the key to Home Assistant through the
+  Supervisor. Newer Supervisors provide a local socket for this, and MeshBeacon uses it
+  automatically. On current Supervisors the hand-over crosses the internal network without
+  encryption, so another installed app able to spoof on that network might read the key; this has
+  not been demonstrated. The key only allows reading the status, until the next app start. You can
+  reduce this risk with the Supervisor's advanced `app_drop_net_raw` feature flag.
 - **Honest numbers.** Anything Reticulum does not report is shown as "unknown". **Links relayed for
   others** shows that transport mode is carrying other people's connections. It is not a count of
   forwarded packets, which Reticulum does not report, so MeshBeacon does not show one.

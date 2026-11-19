@@ -33,8 +33,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "S108", "S311", "S607", "PLC0415", "PLW1510"]
+"tests/**" = ["S101", "S105", "S106", "S108", "S311", "S314", "S607", "PLC0415", "PLW1510"]
 "meshbeacon/core/meshbeacon/**" = ["PLC0415"]  # RNS is imported lazily on purpose
+# Brand build tools parse the repository's own SVGs, call node, and import optional tools lazily.
+"tools/brand/**" = ["S314", "S607", "PLC0415"]
 
 [tool.mypy]
 python_version = "3.13"

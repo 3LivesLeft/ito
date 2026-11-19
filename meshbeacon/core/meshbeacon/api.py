@@ -25,6 +25,7 @@ import secrets
 import shutil
 import socket
 import ssl
+import struct
 import subprocess
 import tempfile
 import threading
@@ -190,8 +191,92 @@ def _open(request: urllib.request.Request, timeout: float) -> Any:
     return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310 - fixed http://supervisor URL
 
 
+# The relay runs as root; the core accepts a link only to root (tests may change this).
+RELAY_PEER_UID = 0
+
+
+class RelayRefusedError(OSError):
+    """The discovery relay refused or could not deliver a request."""
+
+
+class RelayLink:
+    """The core's one connection to the root discovery relay (discovery_relay.py, M1.2).
+
+    The core never opens it: its root start step (relay_link.py) connects and passes the descriptor
+    in ``MESHBEACON_RELAY_FD``. It is made non-inheritable at once and child processes are started
+    with ``close_fds``, so the Reticulum child never holds it (threat T72). If it breaks, it stays
+    broken until the app restarts; the integration keeps its key until then, because the key only
+    changes at an app start.
+    """
+
+    def __init__(self, sock: socket.socket) -> None:
+        self._sock = sock
+        self._lock = threading.Lock()
+        self.broken = False
+
+    @classmethod
+    def from_fd(cls, fd: int) -> RelayLink | None:
+        """Adopt descriptor ``fd`` if, and only if, it is a Unix stream connection to root."""
+        try:
+            sock = socket.socket(fileno=fd)
+        except OSError:
+            return None
+        if sock.family != socket.AF_UNIX or sock.type != socket.SOCK_STREAM or _peer_uid(sock) != RELAY_PEER_UID:
+            sock.close()
+            return None
+        sock.set_inheritable(False)
+        sock.settimeout(None)
+        return cls(sock)
+
+    def request(self, request: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
+        with self._lock:
+            if self.broken:
+                raise RelayRefusedError("link lost")
+            try:
+                self._sock.settimeout(timeout)
+                self._sock.sendall(json.dumps(request).encode() + b"\n")
+                data = b""
+                while b"\n" not in data:
+                    chunk = self._sock.recv(4096)
+                    if not chunk or len(data) + len(chunk) > 65536:
+                        raise OSError("no reply")
+                    data += chunk
+            except OSError as exc:  # a half-read reply would put later replies out of step
+                self.broken = True
+                self._sock.close()
+                raise RelayRefusedError("link lost") from exc
+        try:
+            value = json.loads(data.split(b"\n", 1)[0])
+        except ValueError as exc:
+            raise RelayRefusedError("bad reply") from exc
+        if not isinstance(value, dict) or value.get("ok") is not True:
+            raise RelayRefusedError(str(value.get("error", "refused")) if isinstance(value, dict) else "refused")
+        return value
+
+    def close(self) -> None:
+        with self._lock:
+            self.broken = True
+            self._sock.close()
+
+
+def _peer_uid(sock: socket.socket) -> int | None:
+    try:
+        creds = sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i"))
+    except OSError:
+        return None
+    return int(struct.unpack("3i", creds)[1])
+
+
 class Discovery:
     """Announces the API to Home Assistant through the Supervisor (no ``hassio_api`` needed).
+
+    Two transports, chosen by the caller (``Supervisor.setup_integration``):
+
+    - **Socket** (preferred, newer Supervisors): ``relay`` is the core's link to the root discovery
+      relay, which reaches the Supervisor over its per-app Unix socket. Nothing crosses the internal
+      network, and no token exists in the core.
+    - **Compatibility path** (Supervisor 2026.11.0 and older): HTTP to ``http://supervisor`` on the
+      internal network with the Supervisor token (risk RR-9a in the threat model).
 
     The UUID of the message (not secret) is remembered in ``state_path`` so that the message can be
     withdrawn when the user switches the integration option off.
@@ -199,20 +284,30 @@ class Discovery:
 
     def __init__(
         self,
-        supervisor_token: str,
+        supervisor_token: str | None,
         state_path: Path,
         *,
         base_url: str = SUPERVISOR_URL,
         opener: Opener = _open,
         timeout: float = 10.0,
+        relay: RelayLink | None = None,
     ) -> None:
+        if relay is None and not supervisor_token:
+            raise ValueError("discovery needs either the relay or a Supervisor token")
         self._supervisor_token = supervisor_token
         self.state_path = state_path
         self.base_url = base_url
         self.opener = opener
         self.timeout = timeout
+        self.relay = relay
+
+    @property
+    def transport(self) -> str:
+        return "socket" if self.relay is not None else "tcp"
 
     def _request(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        if self.relay is not None:
+            return self._relay_request(method, path, payload)
         data = None if payload is None else json.dumps(payload).encode()
         request = urllib.request.Request(  # noqa: S310 - fixed http://supervisor URL
             self.base_url + path,
@@ -224,6 +319,18 @@ class Discovery:
             raw = response.read(65536)
         value = json.loads(raw) if raw else {}
         return value if isinstance(value, dict) else {}
+
+    def _relay_request(self, method: str, path: str, payload: dict[str, Any] | None) -> dict[str, Any]:
+        """The same two requests, through the relay (which rebuilds and validates them)."""
+        if self.relay is None:
+            raise ValueError("no relay")
+        if method == "POST" and path == "/discovery" and payload is not None:
+            reply = self.relay.request({"op": "announce", "config": payload.get("config")}, self.timeout + 5)
+            return {"data": {"uuid": reply.get("uuid")}}
+        if method == "DELETE" and path.startswith("/discovery/"):
+            self.relay.request({"op": "withdraw", "uuid": path.removeprefix("/discovery/")}, self.timeout + 5)
+            return {}
+        raise ValueError("unsupported discovery request")
 
     def announce(self, host: str, port: int, api_token: str, cert_sha256: str = "") -> bool:
         """One attempt to send (or refresh) the discovery message."""
@@ -264,6 +371,8 @@ class Discovery:
         while not stop.is_set():
             ok = self.announce(host, port, api_token, cert_sha256)
             on_result(ok)
+            if self.relay is not None and self.relay.broken:
+                return  # a lost relay link cannot come back until the app restarts (MSG_RELAY_LOST)
             if ok:
                 delay = retry_initial
                 stop.wait(reannounce)

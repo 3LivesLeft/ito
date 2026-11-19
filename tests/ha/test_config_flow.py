@@ -23,8 +23,16 @@ async def test_discovery_confirm_creates_entry(hass, aioclient_mock):
     assert result["type"] is FlowResultType.FORM and result["step_id"] == "hassio_confirm"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"] == {"host": HOST, "port": PORT, "token": TOKEN, "cert_sha256": CERT}
+    assert result["data"] == {
+        "host": HOST,
+        "port": PORT,
+        "token": TOKEN,
+        "cert_sha256": CERT,
+        "node_key": "local_meshbeacon",
+        "app_slug": "local_meshbeacon",
+    }
     assert result["result"].unique_id == "local_meshbeacon"
+    assert result["result"].version == 2
     assert aioclient_mock.mock_calls[0][3]["Authorization"] == f"Bearer {TOKEN}"
 
 

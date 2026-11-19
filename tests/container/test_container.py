@@ -119,8 +119,7 @@ def test_idle_memory_under_128_mb(run):
     c = run(DEFAULTS)
     assert wait_for(lambda: "not connected to anyone" in c.logs())
     time.sleep(20)
-    out = c.exec("sh", "-c", "for p in $(pgrep -u meshbeacon); do grep -E '^(VmRSS|VmSwap)' /proc/$p/status; done")
-    total_kb = sum(int(line.split()[1]) for line in out.splitlines())
+    total_kb = app_memory_kib(c)
     label = "EMULATED (indicative only)" if EMULATED else "native"
     print(f"idle RSS+swap of app processes ({label}): {total_kb / 1024:.1f} MiB")
     if not EMULATED:
@@ -282,10 +281,7 @@ def test_low_memory_announce_flood(run, network, tmp_path):
         peak_kb = 0
         end = time.monotonic() + 55
         while time.monotonic() < end:
-            out = c.exec(
-                "sh", "-c", "for p in $(pgrep -u meshbeacon); do grep -E '^(VmRSS|VmSwap)' /proc/$p/status; done"
-            )
-            peak_kb = max(peak_kb, sum(int(line.split()[1]) for line in out.splitlines()))
+            peak_kb = max(peak_kb, app_memory_kib(c))
             time.sleep(2)
         stats = json.loads(
             sh("docker", "exec", peer, "python3", "-I", "-m", "RNS.Utilities.rnstatus", "--config", "/cfg", "-j")
@@ -336,6 +332,8 @@ def test_apparmor_profile_covers_every_program_in_the_image():
         "/etc/cont-init.d/10-meshbeacon",
         "/etc/services.d/meshbeacon/run",
         "/etc/services.d/meshbeacon/finish",
+        "/etc/services.d/discovery-relay/run",
+        "/etc/services.d/discovery-relay/finish",
     ]
     must_run += [p for p in inventory if "/s6-overlay" in p and "/libexec/" in p]
     for path in must_run:
@@ -403,7 +401,7 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
             "--network-alias",
             "local-meshbeacon",
         )
-        assert wait_for((out / "discovery.json").exists, timeout=60), c.logs()
+        assert wait_for(lambda: complete_json(out / "discovery.json"), timeout=60), c.logs()
         record = json.loads((out / "discovery.json").read_text())
         assert record["path"] == "/discovery" and record["auth"] == f"Bearer {SUPERVISOR_TOKEN}"
         config = record["body"]["config"]
@@ -453,12 +451,194 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
         assert "MESHBEACON_DATA" in environ  # the read worked
         assert SUPERVISOR_TOKEN not in environ
         assert SUPERVISOR_TOKEN not in c.logs() and token not in c.logs()
+        # M1.2 re-review: on this compatibility path the token reaches the core through a one-time
+        # pipe; Reticulum can find it neither in an environment nor in the core's memory or files.
+        assert_isolated(c, SUPERVISOR_TOKEN, socket_mode=False)
         time.sleep(20)
-        mem = c.exec("sh", "-c", "for p in $(pgrep -u meshbeacon); do grep -E '^(VmRSS|VmSwap)' /proc/$p/status; done")
-        total_kb = sum(int(line.split()[1]) for line in mem.splitlines())
+        total_kb = app_memory_kib(c)
         label = "EMULATED (indicative only)" if EMULATED else "native"
         print(f"idle RSS+swap with the Home Assistant integration on ({label}): {total_kb / 1024:.1f} MiB")
         if not EMULATED:
             assert total_kb < 128 * 1024
     finally:
         sh("docker", "rm", "-f", sup, check=False)
+
+
+# Where the Supervisor binds an app's socket inside its own container (e610ca8: config.py, apps/app.py).
+SUPERVISOR_BIND = "/run/os/supervisor/apps/ce27fbb5_meshbeacon"
+
+
+def test_discovery_over_the_supervisor_socket(run, tmp_path):
+    """M1: where the Supervisor gives the app its own socket (root-owned, 0600), the unprivileged
+    core announces through the root relay. No token is sent and nothing crosses the network."""
+    repo = Path(__file__).resolve().parents[2]
+    out = tmp_path / "supervisor"
+    out.mkdir()
+    out.chmod(0o777)
+    api = Path(f"/tmp/mbsock-{uuid.uuid4().hex[:6]}")
+    api.mkdir(mode=0o755)
+    sup = f"mbsup-{uuid.uuid4().hex[:6]}"
+    sh(
+        "docker", "run", "-d", "--name", sup, "--network", "none",
+        "-v", f"{repo / 'tests' / 'container' / 'fake_supervisor.py'}:/fake.py:ro", "-v", f"{out}:/out",
+        # Bound where the real Supervisor binds it, so that AppArmor checks the real name.
+        "-v", f"{api}:{SUPERVISOR_BIND}", "--entrypoint", "python3", IMAGE, "-I", "/fake.py",
+        "--unix", f"{SUPERVISOR_BIND}/supervisor.sock",
+    )  # fmt: skip
+    try:
+        assert wait_for((api / "supervisor.sock").exists, timeout=30)
+        c = run(
+            {**DEFAULTS, "home_assistant_integration": True},
+            "-e",
+            f"SUPERVISOR_TOKEN={SUPERVISOR_TOKEN}",  # present, as on today's Supervisors; must not be used
+            "-e",
+            "SUPERVISOR_SOCKET=/run/supervisor/api/supervisor.sock",
+            "-v",
+            f"{api}:/run/supervisor/api:ro",
+            "--hostname",
+            "ce27fbb5-meshbeacon",
+        )
+        assert wait_for(lambda: complete_json(out / "discovery.json"), timeout=60), c.logs()
+        record = json.loads((out / "discovery.json").read_text())
+        assert record["path"] == "/discovery" and record["auth"] is None  # the socket identifies the app
+        config = record["body"]["config"]
+        assert record["body"]["service"] == "meshbeacon"
+        assert set(config) == {"host", "port", "token", "cert_sha256"}
+        assert config["host"] == "ce27fbb5-meshbeacon" and config["port"] == 8100
+        assert "local socket" in c.logs()
+        # The relay runs as root; the core and Reticulum do not.
+        assert wait_for(lambda: "meshbeacon.node" in processes(c), timeout=60), c.logs()
+        owners = processes(c)
+        assert owners.get("meshbeacon.discovery_relay") == {"root"}
+        assert owners.get("meshbeacon.supervisor") == {"meshbeacon"}
+        assert owners.get("meshbeacon.node") == {"meshbeacon"}
+        # The core cannot open the Supervisor socket itself (root-only); only the relay can.
+        probe = subprocess.run(
+            ["docker", "exec", "-u", "meshbeacon", c.name, "python3", "-I", "-c",
+             "import socket; s = socket.socket(socket.AF_UNIX); s.connect('/run/supervisor/api/supervisor.sock')"],
+            capture_output=True, text=True,
+        )  # fmt: skip
+        assert probe.returncode != 0 and "Permission" in probe.stderr
+        assert SUPERVISOR_TOKEN not in c.logs() and config["token"] not in c.logs()
+        assert "meshbeacon.relay_link" not in owners  # the root start step became the core
+
+        # M-1: the relay's own socket is root's alone, so the service user (which Reticulum runs as)
+        # cannot connect to it, and so can neither announce nor withdraw.
+        modes = c.exec("stat", "-c", "%a %U %G %n", "/run/meshbeacon", "/run/meshbeacon/discovery.sock")
+        assert modes.split("\n")[:2] == [
+            "700 root root /run/meshbeacon",
+            "600 root root /run/meshbeacon/discovery.sock",
+        ], modes
+        for request in ('{"op": "withdraw", "uuid": "0123abcd"}', json.dumps({"op": "announce", "config": config})):
+            probe = subprocess.run(
+                ["docker", "exec", "-u", "meshbeacon", c.name, "python3", "-I", "-c",
+                 "import socket, sys; s = socket.socket(socket.AF_UNIX); s.connect('/run/meshbeacon/discovery.sock');"
+                 " s.sendall(sys.argv[1].encode() + b'\\n'); print(s.recv(100))", request],
+                capture_output=True, text=True,
+            )  # fmt: skip
+            assert probe.returncode != 0 and "Permission" in probe.stderr, probe
+        # The core holds the link; Reticulum has no part of it and cannot reach the core's /proc,
+        # memory or descriptors; the Supervisor token is in no process at all (L-1).
+        assert_isolated(c, SUPERVISOR_TOKEN, socket_mode=True)
+    finally:
+        sh("docker", "rm", "-f", sup, check=False)
+        for path in api.iterdir():
+            path.unlink()
+        api.rmdir()
+
+
+LINK_PROBE = (Path(__file__).resolve().parents[2] / "tools" / "acceptance" / "relay_probe.py").read_text()
+
+
+def complete_json(path: Path) -> bool:
+    """The fake Supervisor's record exists and is fully written (it can be read mid-write)."""
+    try:
+        json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
+    return True
+
+
+def app_memory_kib(c: Container) -> int:
+    """RSS + swap of the service user's processes, by their real UID (/proc/<pid>/status stays
+    readable for the non-dumpable core, whose /proc entries otherwise look root-owned)."""
+    script = (
+        "import os\n"
+        "total = 0\n"
+        "for pid in filter(str.isdigit, os.listdir('/proc')):\n"
+        "    try:\n"
+        "        status = open(f'/proc/{pid}/status').read().splitlines()\n"
+        "    except OSError:\n"
+        "        continue\n"
+        "    if int(next(x for x in status if x.startswith('Uid:')).split()[1]) == 9100:\n"
+        "        total += sum(int(x.split()[1]) for x in status if x.startswith(('VmRSS:', 'VmSwap:')))\n"
+        "print(total)\n"
+    )
+    return int(c.exec("python3", "-I", "-c", script).strip())
+
+
+def probe(c: Container, mode: str, canary: str = "") -> dict[str, bool]:
+    """tools/acceptance/relay_probe.py. The attacker view runs inside the app container as the
+    service user (Reticulum's user), under the app's AppArmor profile when CI loads it. The
+    observer view only looks: an unconfined, privileged sidecar sharing the app container's
+    process namespace (inside the container, the profile refuses even a privileged process
+    ptrace access, which CI showed)."""
+    if mode == "attacker":
+        cmd = ["docker", "exec", "-u", "meshbeacon", c.name, "python3"]
+    else:
+        cmd = [
+            "docker", "run", "--rm", "--privileged", f"--pid=container:{c.name}", "--network", "none",
+            "--security-opt", "apparmor=unconfined", "--entrypoint", "python3", IMAGE,
+        ]  # fmt: skip
+    result = json.loads(sh(*cmd, "-I", "-c", LINK_PROBE, mode, canary))
+    print(f"{mode} probe: {result}")
+    return result
+
+
+def assert_isolated(c: Container, canary: str, *, socket_mode: bool) -> None:
+    """M1.2 (threat T72): what a compromised Reticulum child could reach, in either transport."""
+    seen = probe(c, "observer", canary)
+    assert seen["core_non_dumpable"], seen
+    assert not seen["core_env_token"] and not seen["node_env_token"], seen  # in no environment
+    assert not seen["token_fd_open"], seen  # the one-time pipe was read and closed
+    assert not seen["node_shares_link"] and not seen["node_holds_core_pipe_or_link"], seen
+    assert seen["core_holds_link"] is socket_mode, seen
+    attack = probe(c, "attacker", canary)
+    assert attack == {
+        "core_environ": False,
+        "core_fds": False,
+        "core_maps": False,
+        "core_memory": False,
+        "took_fd": False,
+        "container_env_read": False,
+        "canary_found": False,
+    }, attack
+
+
+def processes(c: Container) -> dict[str, set[str]]:
+    """Owner (real UID) of each MeshBeacon Python module running in the container."""
+    script = (
+        "import os, pwd\n"
+        "for pid in filter(str.isdigit, os.listdir('/proc')):\n"
+        "    try:\n"
+        "        args = open(f'/proc/{pid}/cmdline', 'rb').read().split(b'\\0')\n"
+        "        status = open(f'/proc/{pid}/status').read().splitlines()\n"
+        "        uid = int(next(x for x in status if x.startswith('Uid:')).split()[1])\n"
+        "    except OSError:\n"
+        "        continue\n"
+        "    if b'-m' in args:\n"
+        "        print(args[args.index(b'-m') + 1].decode(), pwd.getpwuid(uid).pw_name)\n"
+    )
+    found: dict[str, set[str]] = {}
+    for line in c.exec("python3", "-I", "-c", script).splitlines():
+        module, owner = line.split()
+        found.setdefault(module, set()).add(owner)
+    return found
+
+
+def test_without_a_socket_the_relay_is_idle(run):
+    """Today's Supervisors: no socket, so the relay never starts; the compatibility path is used."""
+    c = run({**DEFAULTS})
+    assert wait_for(lambda: "meshbeacon.node" in processes(c), timeout=60), c.logs()
+    assert "meshbeacon.discovery_relay" not in processes(c)
+    assert "s6-pause" in c.exec("sh", "-c", "cat /proc/[0-9]*/comm")

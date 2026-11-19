@@ -6,7 +6,7 @@
 name: MeshBeacon
 version: "0.2.0"
 slug: meshbeacon
-description: Decentralised connectivity for your home — a private Reticulum node.
+description: Decentralised connectivity for your home.
 url: https://github.com/3LivesLeft/meshbeacon
 arch:
   - aarch64

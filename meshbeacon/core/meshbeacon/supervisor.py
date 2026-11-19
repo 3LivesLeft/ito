@@ -16,6 +16,7 @@ import platform
 import selectors
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -29,7 +30,7 @@ from pathlib import Path
 from typing import IO, Any
 
 from . import __version__, fsutil, procinfo
-from .api import ApiServer, Discovery, StatusStore, TlsError, container_hostname, make_tls, new_token
+from .api import ApiServer, Discovery, RelayLink, StatusStore, TlsError, container_hostname, make_tls, new_token
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
 from .health import HealthServer, Heartbeat
 from .logfilter import RateLimiter, Redactor
@@ -37,6 +38,7 @@ from .metrics import Collector
 from .paths import Paths
 from .policy import RestartPolicy, StartHistory, Timings
 from .prepare import FREE_SPACE_FLOOR, FREE_SPACE_WARN
+from .relay_link import RELAY_FD_ENV, TOKEN, TOKEN_FD_ENV
 from .settings import Settings, ValidationError, parse_options
 
 MSG_GAVE_UP = (
@@ -46,6 +48,20 @@ MSG_GAVE_UP = (
 MSG_STORAGE = (
     "✖ Free storage has fallen below 200 MB, so MeshBeacon has stopped Reticulum to protect "
     "Home Assistant. Free some space and restart the app."
+)
+MSG_DISCOVERY_SOCKET = "Home Assistant is told about MeshBeacon through the Supervisor's local socket."
+MSG_DISCOVERY_UNAVAILABLE = (
+    "⚠ Home Assistant cannot be told about MeshBeacon: the link to the Supervisor's local socket could "
+    "not be set up. The node works normally; restart the app to try again."
+)
+MSG_RELAY_LOST = (
+    "⚠ The link to the discovery relay was lost (the relay restarted). Home Assistant keeps showing "
+    "MeshBeacon's status until the next app start, but MeshBeacon cannot refresh it: restart the app "
+    "to restore the link."
+)
+MSG_DISCOVERY_TCP = (
+    "Home Assistant is told about MeshBeacon over the Supervisor's internal network (this Supervisor "
+    "has no app socket yet)."
 )
 MSG_API_STARTED = (
     "Home Assistant integration: on. MeshBeacon shares its status with Home Assistant over the "
@@ -85,6 +101,7 @@ PROBLEMS = (
     "unexpected",
 )
 SUPERVISOR_TOKEN_ENV = "SUPERVISOR_TOKEN"  # noqa: S105 - the variable name, not a secret
+SUPERVISOR_SOCKET_ENV = "SUPERVISOR_SOCKET"
 
 
 @functools.cache
@@ -164,6 +181,8 @@ class Supervisor:
         api_port: int = 8100,
         supervisor_token: str | None = None,
         supervisor_url: str | None = None,
+        discovery_relay: RelayLink | None = None,
+        socket_mode: bool = False,
         hostname: Callable[[], str] = container_hostname,
         discovery_timing: dict[str, float] | None = None,
     ) -> None:
@@ -199,6 +218,10 @@ class Supervisor:
         self.api_server: ApiServer | None = None
         self._supervisor_token = supervisor_token
         self.supervisor_url = supervisor_url
+        self.discovery_relay = discovery_relay
+        # True where the Supervisor provides the app socket: then the token is never used, even if
+        # the relay link is missing (no fall-back to the internal network).
+        self.socket_mode = socket_mode or discovery_relay is not None
         self.hostname = hostname
         self.discovery_results: list[bool] = []  # appended by the discovery thread
         self.discovery_ok: bool | None = None
@@ -292,6 +315,9 @@ class Supervisor:
         env["MESHBEACON_DATA"] = str(self.paths.data)
         env["MESHBEACON_OPTIONS"] = str(self.paths.options)
         env.pop(SUPERVISOR_TOKEN_ENV, None)  # never handed to prepare or Reticulum
+        env.pop(SUPERVISOR_SOCKET_ENV, None)
+        env.pop(RELAY_FD_ENV, None)
+        env.pop(TOKEN_FD_ENV, None)
         return env
 
     def wait_responsive(self, proc: subprocess.Popen[bytes], timeout: float) -> bool:
@@ -600,13 +626,14 @@ class Supervisor:
         self._supervisor_token = None  # keep only inside the discovery helper
         if self.settings is None:
             return
-        discovery = (
-            Discovery(
-                token, self.paths.meshbeacon / "discovery.json", base_url=self.supervisor_url or "http://supervisor"
-            )
-            if token
-            else None
-        )
+        state = self.paths.meshbeacon / "discovery.json"
+        discovery: Discovery | None = None
+        if self.discovery_relay is not None:
+            # The Supervisor's own socket, through the relay: nothing crosses the internal network.
+            discovery = Discovery(None, state, relay=self.discovery_relay)
+        elif token and not self.socket_mode:
+            # Compatibility path for Supervisors without app sockets (2026.11.0 and older).
+            discovery = Discovery(token, state, base_url=self.supervisor_url or "http://supervisor")
         if not self.settings.home_assistant_integration:
             if discovery is not None and (self.paths.meshbeacon / "discovery.json").exists():
                 threading.Thread(target=discovery.withdraw, name="discovery", daemon=True).start()
@@ -623,8 +650,14 @@ class Supervisor:
             return
         self.publish()
         self.say(MSG_API_STARTED)
+        if discovery is not None:
+            self.say(MSG_DISCOVERY_SOCKET if discovery.transport == "socket" else MSG_DISCOVERY_TCP)
         if discovery is None:
-            self.say("⚠ Not running under the Home Assistant Supervisor, so Home Assistant cannot be told about it.")
+            self.say(
+                MSG_DISCOVERY_UNAVAILABLE
+                if self.socket_mode
+                else "⚠ Not running under the Home Assistant Supervisor, so Home Assistant cannot be told about it."
+            )
             return
         host, port = self.hostname(), self.api_server.port
 
@@ -682,7 +715,8 @@ class Supervisor:
             elif ok and self.discovery_ok is False:
                 self.say(MSG_DISCOVERY_RECOVERED)
             elif not ok and self.discovery_ok is not False:
-                self.say(MSG_DISCOVERY_FAILED)  # said once per outage, not at every retry
+                lost = self.discovery_relay is not None and self.discovery_relay.broken
+                self.say(MSG_RELAY_LOST if lost else MSG_DISCOVERY_FAILED)  # once per outage, not per retry
             self.discovery_ok = ok
         if self.due("api_refused", 3600):
             refused = self.api_store.take_refused()
@@ -780,14 +814,70 @@ class Supervisor:
         return 0
 
 
+def read_token_fd(fd: int) -> str | None:
+    """The Supervisor token from the one-time pipe the root start step filled (relay_link.py).
+
+    Reads it once and closes the pipe at once, whatever it holds. Anything other than a pipe, or a
+    malformed token, gives None.
+    """
+    try:
+        if not stat.S_ISFIFO(os.fstat(fd).st_mode):
+            return None
+        os.set_blocking(fd, False)  # the write end is already closed: never wait
+        data = b""
+        while len(data) <= 4096:
+            try:
+                chunk = os.read(fd, 4097 - len(data))
+            except BlockingIOError:
+                break
+            if not chunk:
+                break
+            data += chunk
+    except OSError:
+        return None
+    finally:
+        with contextlib.suppress(OSError):
+            os.close(fd)
+    token = data.strip().decode("ascii", "replace")
+    return token if TOKEN.match(token) else None
+
+
+def discovery_transport(
+    environ: dict[str, str] | os._Environ[str],
+) -> tuple[str | None, RelayLink | None, bool]:
+    """(token, relay link, socket mode): how this start reaches the Supervisor for discovery.
+
+    Removes every related variable from ``environ``, so that no child process inherits it, and
+    never takes the token from the environment: the root start step (relay_link.py) passes it
+    through a one-time pipe (``MESHBEACON_TOKEN_FD``), so it is never in any process environment.
+
+    Newer Supervisors give the app its own socket (``SUPERVISOR_SOCKET``): then the root start step
+    has opened a link to the root relay (``MESHBEACON_RELAY_FD``) instead, no token is passed at all,
+    and a missing link never falls back to the internal network. Otherwise the token is used over
+    the internal network (the compatibility path for Supervisor 2026.11.0 and older).
+    """
+    environ.pop(SUPERVISOR_TOKEN_ENV, None)  # never used from the environment (M1.2)
+    socket_mode = bool(environ.pop(SUPERVISOR_SOCKET_ENV, None))
+    relay_fd = environ.pop(RELAY_FD_ENV, "")
+    token_fd = environ.pop(TOKEN_FD_ENV, "")
+    token = read_token_fd(int(token_fd)) if token_fd.isdecimal() else None
+    if socket_mode:
+        link = RelayLink.from_fd(int(relay_fd)) if relay_fd.isdecimal() else None
+        return None, link, True
+    return token, None, False
+
+
 def main() -> int:
+    # First, before any secret is read and before any child exists: no other process of this user
+    # (the Reticulum child) may read this one's memory, environment or descriptors (threat T72).
+    procinfo.set_not_dumpable()
     os.umask(0o077)
     with contextlib.suppress(OSError):
         os.nice(10)  # Home Assistant always wins CPU contention
     port = int(os.environ.get("MESHBEACON_HEALTH_PORT", "8099"))
     host = os.environ.get("MESHBEACON_HEALTH_HOST", "0.0.0.0")
     api_port = int(os.environ.get("MESHBEACON_API_PORT", "8100"))
-    supervisor_token = os.environ.pop(SUPERVISOR_TOKEN_ENV, None) or None
+    supervisor_token, relay, socket_mode = discovery_transport(os.environ)
     return Supervisor(
         Paths.from_env(),
         health_host=host,
@@ -796,6 +886,8 @@ def main() -> int:
         api_port=api_port,
         supervisor_token=supervisor_token,
         supervisor_url=os.environ.get("MESHBEACON_SUPERVISOR_URL"),
+        discovery_relay=relay,
+        socket_mode=socket_mode,
     ).run()
 
 
