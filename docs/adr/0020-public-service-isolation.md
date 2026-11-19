@@ -8,8 +8,11 @@
 - **Evidence:** [Forward-compatibility review F-1, F-4](../research/long-term-direction.md#f-1-process-model-for-lxmf-and-later-services),
   [ADR 0005](0005-bounded-recovery.md), [ADR 0006](0006-local-metrics-api.md),
   [vision, architectural principle 4](../vision.md#architectural-principles-for-the-long-term-direction)
-- **Extends:** ADR 0005 (bounded recovery of one RNS child) and ADR 0006 (read-only status API).
-  Supersedes nothing.
+- **Extends:** ADR 0005 (bounded recovery of one RNS child), ADR 0006 (read-only status API) and
+  [ADR 0017](0017-independent-node-services.md) (services independent of Home Assistant; failure
+  isolation), which this ADR makes stricter for **public** services.
+- **Affects:** [ADR 0008](0008-messaging-process.md) (proposed): its process and IPC choice waits
+  for the deferral below. Supersedes nothing.
 
 ## Context
 

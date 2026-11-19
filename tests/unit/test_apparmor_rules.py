@@ -5,7 +5,8 @@ from pathlib import Path
 
 from tests.apparmor.rules import Profile, glob_to_regex, load
 
-PROFILE = load(Path(__file__).resolve().parents[2] / "meshbeacon" / "apparmor.txt")
+ROOT = Path(__file__).resolve().parents[2]
+PROFILE = load(ROOT / "meshbeacon" / "apparmor.txt")
 
 # Programs started during initialisation and at run time. Scripts need read AND execute.
 SCRIPTS = [
@@ -72,3 +73,15 @@ def test_capabilities_are_exactly_the_reviewed_set():
     assert granted == {"chown", "fowner", "dac_override", "setuid", "setgid", "kill"}
     assert denied == {"fsetid"}
     assert not any(re.fullmatch(r"capability,", r) for r in rules), "blanket capability rule"
+
+
+def test_supervisor_socket_and_relay_need_no_new_rules():
+    """M1: the relay listens in /run/meshbeacon and connects to the Supervisor's per-app socket in
+    /run/supervisor/api. Both lie under /run, which the profile already allows, with `network unix`;
+    the relay's script must be runnable like the core's."""
+    for path in ("/run/meshbeacon/discovery.sock", "/run/supervisor/api/supervisor.sock"):
+        assert "w" in PROFILE.perms(path), path
+        assert "x" not in PROFILE.perms(path), path
+    assert "network unix," in (ROOT / "meshbeacon" / "apparmor.txt").read_text()
+    for script in ("/etc/services.d/discovery-relay/run", "/etc/services.d/discovery-relay/finish"):
+        assert PROFILE.can_exec(script) and PROFILE.can_read(script), script

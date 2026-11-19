@@ -303,6 +303,12 @@ Design:
   version, not on Rebuild** (Supervisor 2026.11.0, `apps/app.py`), and renames it to the app slug.
 - "Where supported": if a future feature needs root (none in v0.1), it must be isolated in its own
   s6 service, documented and justified in an ADR.
+- **v0.3 (M1): the discovery relay** is the first such root service
+  (`services.d/discovery-relay`, `core/meshbeacon/discovery_relay.py`;
+  [ADR 0006 amendment](adr/0006-local-metrics-api.md#amendment-19-november-2026-m1-how-discovery-reaches-the-supervisor)).
+  Newer Supervisors give the app a root-only (0600) socket; the relay serves only the `meshbeacon`
+  user, sends only MeshBeacon's validated discovery message, and does not run where there is no
+  socket. The core then never uses the Supervisor token (threat T72).
 
 ### 4.8 Storage layout (under `/data`)
 
@@ -344,15 +350,69 @@ Design:
 - **No image is published** until the licensing obligations O1–O7 are implemented
   ([licensing §5](research/licensing.md#5-obligations-before-publishing-images)).
 
+## 6a. Interface layers (v0.2; maintainer requirement, 18 Nov 2026)
+
+The core, the secure API, the presentation and the delivery mechanism are maintained
+independently. Each layer depends only on the one below through a versioned contract, so a new
+delivery (the built-in interface, once a secure one exists) or a new feature (LXMF messaging,
+I2P, LoRa) adds a part without reworking the others.
+
+```text
+ delivery     meshbeacon-panel.js (integration panel, today) | future built-in interface (ADR 0013, blocked)
+                     │ chooses a source, supplies chrome (menu button, routing) and wording
+ presentation ui/controller.js · ui/views.js · ui/components.js · ui/style.js · ui/dom.js · tokens.js
+                     │ reads only the view-data contract (model.js NODE_KEYS / PEER_KEYS / HISTORY_KEYS)
+ data sources sources/hass.js (HA entities + recorder) | sources/snapshot.js (core snapshot + history provider)
+                     │
+ secure API   GET /api/v1/status, schema 1, pinned TLS (ADR 0006) → integration entities
+                     │
+ core         metrics.py (the only metrics implementation), supervisor, RNS child
+```
+
+| Layer | Contract | Rules (enforced by tests) |
+|---|---|---|
+| Core | Status snapshot, schema 1 | Metrics computed only in `metrics.py` |
+| Secure API | `GET /api/v1/status` | Pinned TLS, token, read-only (ADR 0006); messaging adds its own scoped API (ADR 0010, proposed) |
+| Data sources | `reading(key)`, `has`, `peers`, `peerState`, `availability`, `version`, `history` | No DOM (`tests/frontend/sources.test.mjs`); both sources return complete readings for every key |
+| Presentation | Components and views take plain values or a source | No Home Assistant objects, network or storage (`sources.test.mjs`); only design tokens (`tokens.test.mjs`); `textContent` only |
+| Delivery | Wires a source, the controller and host chrome | The only place that knows its host (Home Assistant today) |
+
+`tools/panel_preview.html?source=snapshot` renders the same views from a schema-1 snapshot
+through `sources/snapshot.js`, with no Home Assistant. It shows that the presentation does not
+depend on the delivery. The built-in interface's remaining needs are a secure delivery and the
+seven-day memory-only history (decision D3), not new presentation code.
+
+## 6b. Distribution and node identity in Home Assistant (v0.3, M1)
+
+[ADR 0015](adr/0015-distribution-and-updates.md):
+
+- One repository serves two installers: the Supervisor **app store** reads `repository.yaml` and
+  `meshbeacon/config.yaml`; Home Assistant's **Marketplace** reads `hacs.json` and
+  `custom_components/meshbeacon/`. One version and one tag cover both
+  ([releasing](releasing.md)); `tools/check_release.py` checks the layout.
+- Identifiers live in `project.yaml`; `tests/unit/test_project_identifiers.py` checks every copy.
+- The integration's config entry (version 2) separates **`node_key`** (the stable prefix of entity
+  unique IDs) from **`app_slug`** (the app it talks to now), so the app can move between slugs
+  without changing entity IDs or history. Config entries hold only allow-listed keys.
+- The integration and the app may update at different times; `compatibility.py` raises a repair
+  that names the part to update.
+
+## 6c. Node services independent of Home Assistant
+
+[ADR 0017](adr/0017-independent-node-services.md): the core and its services (messaging from v0.3;
+later pages, boards, libraries, voice) run without Home Assistant; Home Assistant is a first-class
+management interface, through bindings of a versioned management contract, never a runtime
+dependency.
+
 ## 7. Evolution by version
 
 | Version | Architectural additions |
 |---|---|
 | **v0.1** | Init step, core supervisor, config renderer, identity manager, health endpoint, status reporter, resource guards, app wrapper. **Nothing else.** |
-| v0.2 | Merged (PR #3; physical acceptance pending) ([v0.2 design](research/v0.2-observability.md), [ADR 0006](adr/0006-local-metrics-api.md)): opt-in, read-only, token-authenticated status API on internal port 8100; Supervisor discovery (verified: needs no `hassio_api`, Q-11); HA integration (entities, repairs, diagnostics); metrics computed only in `core/meshbeacon/metrics.py`. Identity import deferred |
-| v0.3.0 | Distribution only: signed images and app repository (App store), `hacs.json` for the integration (Marketplace), documentation. No architectural additions ([ADR 0021](adr/0021-v0.3-scope.md), [distribution research](research/v0.3-distribution.md)) |
-| v0.3 messaging | LXMF service with its own identity ([ADR 0018](adr/0018-separate-identities.md)), opt-in announce ([ADR 0019](adr/0019-opt-in-publication.md)), authorised HA → core send path (ADR to come). The HA `notify` platform and the propagation node are no longer in v0.3. Constraints on later milestones: [forward-compatibility review](research/long-term-direction.md) |
-| v0.4–v0.8+ | *Proposed* ([roadmap](roadmap.md#long-term-direction-proposed)): page hosting, community services (including propagation), voice bursts, replication. Public services isolated from HA and from the transport failure domain ([ADR 0020](adr/0020-public-service-isolation.md)). Not designed |
+| v0.2 | Merged (PR #3; physical acceptance pending) ([v0.2 design](research/v0.2-observability.md), [ADR 0006](adr/0006-local-metrics-api.md)): opt-in, read-only, token-authenticated status API on internal port 8100; Supervisor discovery (verified: needs no `hassio_api`, Q-11); HA integration (entities, repairs, diagnostics); metrics computed only in `core/meshbeacon/metrics.py`; a sidebar panel served by the integration ([ADR 0007](adr/0007-sidebar-panel.md)): one plain JS module, live values from HA entities, history from HA's recorder, admin-only, no app-side change. Identity import deferred |
+| v0.3.0 | Distribution ([ADR 0015](adr/0015-distribution-and-updates.md), [ADR 0021](adr/0021-v0.3-scope.md)): app from the app store, integration from the Marketplace (`hacs.json`), one version and tag, discovery over the app's own Supervisor socket through a minimal root relay (ADR 0006 amendment). M1 implemented; nothing published before M2 |
+| v0.3 messaging | *Proposed* (ADRs [0008](adr/0008-messaging-process.md)–[0012](adr/0012-optional-propagation-node.md), [0014](adr/0014-messaging-engine-contract.md)): LXMF engine with its own identity ([ADR 0018](adr/0018-separate-identities.md), [ADR 0009](adr/0009-messaging-identity.md)), opt-in announce ([ADR 0019](adr/0019-opt-in-publication.md)), authorised HA → core send path (ADR 0010, proposed); process/IPC choice deferred ([ADR 0020](adr/0020-public-service-isolation.md)). The HA `notify` platform and the propagation node are no longer in v0.3. Constraints on later milestones: [forward-compatibility review](research/long-term-direction.md) |
+| v0.4–v0.8+ | *Proposed* ([roadmap](roadmap.md#long-term-direction-proposed)): page hosting, community services (including propagation), voice bursts, replication. Services independent of HA ([ADR 0017](adr/0017-independent-node-services.md)); public services isolated from HA and from the transport failure domain ([ADR 0020](adr/0020-public-service-isolation.md)). Not designed |
 | Unscheduled | RNode via explicit device mapping (explicit future capability); optional I2P (separate router process); authenticated remote commands with allowlists and replay protection ([future capabilities](roadmap.md#future-capabilities-unscheduled)) |
 | v1.0 (unscheduled) | Standalone Docker packaging |
 

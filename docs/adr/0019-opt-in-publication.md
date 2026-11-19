@@ -6,7 +6,9 @@
 - **Evidence:** [Forward-compatibility review F-3](../research/long-term-direction.md#f-3-consent-to-announce),
   [architecture §5](../architecture.md#5-networking-posture), CLAUDE.md hard rules 4 and 14
 - **Extends:** the v0.1 privacy defaults (nothing published, discovered or connected without the
-  user's choice) and [ADR 0004](0004-public-peer-presets.md) (no default connection). Supersedes
+  user's choice) and [ADR 0004](0004-public-peer-presets.md) (no default connection). Applies to the proposed messaging ADRs (announces in
+  [ADR 0009](0009-messaging-identity.md): empty display name by default) and to every service under
+  [ADR 0017](0017-independent-node-services.md). Supersedes
   nothing.
 
 ## Context

@@ -336,6 +336,8 @@ def test_apparmor_profile_covers_every_program_in_the_image():
         "/etc/cont-init.d/10-meshbeacon",
         "/etc/services.d/meshbeacon/run",
         "/etc/services.d/meshbeacon/finish",
+        "/etc/services.d/discovery-relay/run",
+        "/etc/services.d/discovery-relay/finish",
     ]
     must_run += [p for p in inventory if "/s6-overlay" in p and "/libexec/" in p]
     for path in must_run:
@@ -462,3 +464,88 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
             assert total_kb < 128 * 1024
     finally:
         sh("docker", "rm", "-f", sup, check=False)
+
+
+def test_discovery_over_the_supervisor_socket(run, tmp_path):
+    """M1: where the Supervisor gives the app its own socket (root-owned, 0600), the unprivileged
+    core announces through the root relay. No token is sent and nothing crosses the network."""
+    repo = Path(__file__).resolve().parents[2]
+    out = tmp_path / "supervisor"
+    out.mkdir()
+    out.chmod(0o777)
+    api = Path(f"/tmp/mbsock-{uuid.uuid4().hex[:6]}")
+    api.mkdir(mode=0o755)
+    sup = f"mbsup-{uuid.uuid4().hex[:6]}"
+    sh(
+        "docker", "run", "-d", "--name", sup, "--network", "none",
+        "-v", f"{repo / 'tests' / 'container' / 'fake_supervisor.py'}:/fake.py:ro", "-v", f"{out}:/out",
+        "-v", f"{api}:/api", "--entrypoint", "python3", IMAGE, "-I", "/fake.py", "--unix", "/api/supervisor.sock",
+    )  # fmt: skip
+    try:
+        assert wait_for((api / "supervisor.sock").exists, timeout=30)
+        c = run(
+            {**DEFAULTS, "home_assistant_integration": True},
+            "-e",
+            f"SUPERVISOR_TOKEN={SUPERVISOR_TOKEN}",  # present, as on today's Supervisors; must not be used
+            "-e",
+            "SUPERVISOR_SOCKET=/run/supervisor/api/supervisor.sock",
+            "-v",
+            f"{api}:/run/supervisor/api:ro",
+            "--hostname",
+            "ce27fbb5-meshbeacon",
+        )
+        assert wait_for((out / "discovery.json").exists, timeout=60), c.logs()
+        record = json.loads((out / "discovery.json").read_text())
+        assert record["path"] == "/discovery" and record["auth"] is None  # the socket identifies the app
+        config = record["body"]["config"]
+        assert record["body"]["service"] == "meshbeacon"
+        assert set(config) == {"host", "port", "token", "cert_sha256"}
+        assert config["host"] == "ce27fbb5-meshbeacon" and config["port"] == 8100
+        assert "local socket" in c.logs()
+        # The relay runs as root; the core and Reticulum do not.
+        assert wait_for(lambda: "meshbeacon.node" in processes(c), timeout=60), c.logs()
+        owners = processes(c)
+        assert owners.get("meshbeacon.discovery_relay") == {"root"}
+        assert owners.get("meshbeacon.supervisor") == {"meshbeacon"}
+        assert owners.get("meshbeacon.node") == {"meshbeacon"}
+        # The core cannot open the Supervisor socket itself (root-only); only the relay can.
+        probe = subprocess.run(
+            ["docker", "exec", "-u", "meshbeacon", c.name, "python3", "-I", "-c",
+             "import socket; s = socket.socket(socket.AF_UNIX); s.connect('/run/supervisor/api/supervisor.sock')"],
+            capture_output=True, text=True,
+        )  # fmt: skip
+        assert probe.returncode != 0 and "Permission" in probe.stderr
+        assert SUPERVISOR_TOKEN not in c.logs() and config["token"] not in c.logs()
+    finally:
+        sh("docker", "rm", "-f", sup, check=False)
+        for path in api.iterdir():
+            path.unlink()
+        api.rmdir()
+
+
+def processes(c: Container) -> dict[str, set[str]]:
+    """Owner of each MeshBeacon Python module running in the container, read from /proc."""
+    script = (
+        "import os, pwd\n"
+        "for pid in filter(str.isdigit, os.listdir('/proc')):\n"
+        "    try:\n"
+        "        args = open(f'/proc/{pid}/cmdline', 'rb').read().split(b'\\0')\n"
+        "        uid = os.stat(f'/proc/{pid}').st_uid\n"
+        "    except OSError:\n"
+        "        continue\n"
+        "    if b'-m' in args:\n"
+        "        print(args[args.index(b'-m') + 1].decode(), pwd.getpwuid(uid).pw_name)\n"
+    )
+    found: dict[str, set[str]] = {}
+    for line in c.exec("python3", "-I", "-c", script).splitlines():
+        module, owner = line.split()
+        found.setdefault(module, set()).add(owner)
+    return found
+
+
+def test_without_a_socket_the_relay_is_idle(run):
+    """Today's Supervisors: no socket, so the relay never starts; the compatibility path is used."""
+    c = run({**DEFAULTS})
+    assert wait_for(lambda: "meshbeacon.node" in processes(c), timeout=60), c.logs()
+    assert "meshbeacon.discovery_relay" not in processes(c)
+    assert "s6-pause" in c.exec("sh", "-c", "cat /proc/[0-9]*/comm")

@@ -33,9 +33,9 @@ messaging milestone. "v0.3" below means whichever of the two takes the decision.
 | F-4 | The Home Assistant → core path for sending messages | Isolation of public services from HA (principle 4) | **High** | Q-38 | `notify` removed; send path needs its own ADR (MG-1, MG-2) |
 | F-5 | Where contacts, conversations and delivery state are stored | Standalone deployments (principle 7) | Medium | Q-39 | Open (MG-6) |
 | F-6 | Message size, delivery-method and timeout defaults | LoRa links (principle 3), voice bursts (v0.6) | Medium | — | Gate MG-7 |
-| F-7 | Storage quota and backup treatment of messages | Boards, libraries, replication (v0.5, v0.7) | Medium | Q-44 | Open (MG-6) |
-| F-8 | Whether the optional propagation node stays in v0.3 | Community propagation services (v0.5) | Medium | Q-40 | Decided: proposed v0.5 |
-| F-9 | Publishing the app for store installation | Name, slug and data layout become permanent | **High** | Q-41, Q-43, Q-45 | Q-43, Q-45 resolved ([v0.3 distribution](v0.3-distribution.md)); naming open, blocks v0.3.0 ([naming §5–6](naming.md#6-availability-and-collision-assessment-commonwave-19-november-2026)) |
+| F-7 | Storage quota and backup treatment of messages | Boards, libraries, replication (v0.5, v0.7) | Medium | Q-53 | Open (MG-6) |
+| F-8 | Whether the optional propagation node stays in v0.3 | Community propagation services (v0.5) | Medium | Q-49 | Decided: proposed v0.5 |
+| F-9 | Publishing the app for store installation | Name, slug and data layout become permanent | **High** | Q-50, Q-52, Q-54 | Q-52, Q-54 resolved ([v0.3 distribution](v0.3-distribution.md)); naming open, blocks v0.3.0 ([naming §5–6](naming.md#6-availability-and-collision-assessment-commonwave-19-november-2026)) |
 | F-10 | Status API schema when messaging metrics are added | Radio interfaces, multiple services | Low | — | Unchanged |
 | F-11 | Memory budget with LXMF loaded | Running several services on one small device | Low | — | Unchanged |
 
@@ -138,9 +138,9 @@ messaging milestone. "v0.3" below means whichever of the two takes the decision.
   assessed in ADR 0003.
 - **[Verified]** (Home Assistant 2026.11.2; [v0.3 distribution](v0.3-distribution.md)) The backend
   app is installed from the Supervisor **App store** (a repository with `repository.yaml`); the
-  integration from the Core **Marketplace** (needs `hacs.json`; catalogue `hacs/default`). Q-43 and
-  Q-45 are resolved. Any such submission must be made by the maintainer personally (CLAUDE.md rule 10).
-- **[Open] Q-41** (Commonwave assessed in [naming §6](naming.md#6-availability-and-collision-assessment-commonwave-19-november-2026)).
+  integration from the Core **Marketplace** (needs `hacs.json`; catalogue `hacs/default`). Q-52 and
+  Q-54 are resolved. Any such submission must be made by the maintainer personally (CLAUDE.md rule 10).
+- **[Open] Q-50** (Commonwave assessed in [naming §6](naming.md#6-availability-and-collision-assessment-commonwave-19-november-2026)).
 
 ### F-10 Status API schema
 

@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="branding/png/logo-full-dark.png">
+    <img src="branding/png/logo-full-light.png" alt="MeshBeacon: Decentralised connectivity for your home" width="600">
+  </picture>
+</p>
+
 # MeshBeacon
 
 **Decentralised connectivity for your home.**
@@ -55,7 +62,10 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [Testing strategy](docs/testing/strategy.md) | How we will test against isolated Reticulum networks |
 | [Phase 1 results](docs/testing/phase1-results.md) | What has been verified so far, and what has not |
 | [App documentation](meshbeacon/DOCS.md) | Using the local prototype |
+| [Getting started](docs/getting-started.md) | Installing and updating from Home Assistant's app store and Marketplace (from the first release) |
 | [Installing the local prototype](docs/install-local-prototype.md) | Step-by-step on Home Assistant OS, without published images |
+| [Releasing](docs/releasing.md) | One version for the app and the integration; build, verify and publish steps |
+| [Marketplace](docs/marketplace.md) | What Home Assistant's Marketplace reads from this repository |
 | [First-run UX](docs/ux/first-run.md) | The five-minute setup path and configuration design |
 | [Naming research](docs/research/naming.md) | The existing "MeshBeacon" project and trademark checks |
 | [Public peer presets](docs/research/public-peers.md) | Optional public entry points and how they are verified |
@@ -65,6 +75,8 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [ADR 0004](docs/adr/0004-public-peer-presets.md) | Optional verified presets; no default connection |
 | [ADR 0005](docs/adr/0005-bounded-recovery.md) | Bounded recovery that cannot loop with the Supervisor watchdog |
 | [ADR 0006](docs/adr/0006-local-metrics-api.md) | Read-only local status API, delivered by Supervisor discovery |
+| [ADR 0015](docs/adr/0015-distribution-and-updates.md) | Distribution through the app store and the Marketplace |
+| [ADR 0017](docs/adr/0017-independent-node-services.md) | Node services are independent of Home Assistant |
 | [ADR 0018](docs/adr/0018-separate-identities.md) | Separate identities for transport, messaging and public services |
 | [ADR 0019](docs/adr/0019-opt-in-publication.md) | Explicit opt-in for announcements and publication |
 | [ADR 0020](docs/adr/0020-public-service-isolation.md) | Public services isolated from Home Assistant and from transport |
@@ -105,3 +117,8 @@ and use in creating AI training datasets. Those conditions apply to anyone using
 ## Security
 
 Please see [SECURITY.md](SECURITY.md). Do not report vulnerabilities in public issues.
+
+## Brand
+
+The MeshBeacon name, logo, colours and typography are defined in [docs/branding.md](docs/branding.md);
+assets live in [`branding/`](branding/). Inter is bundled under the SIL Open Font License 1.1.

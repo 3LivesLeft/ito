@@ -167,6 +167,14 @@
     "needs_attention": {
       "title": "MeshBeacon needs your attention",
       "description": "MeshBeacon has stopped the Reticulum service until the cause is fixed:\n\n{message}\n\nSee the MeshBeacon app's Log tab for details."
+    },
+    "app_outdated": {
+      "title": "Update the MeshBeacon app",
+      "description": "The MeshBeacon integration ({integration_version}) is newer than the MeshBeacon app ({app_version}) and may not work fully with it. Update the app: Settings → Apps → MeshBeacon → Update. Your node's identity and settings are kept."
+    },
+    "integration_outdated": {
+      "title": "Update the MeshBeacon integration",
+      "description": "The MeshBeacon app ({app_version}) is newer than the MeshBeacon integration ({integration_version}), so some of its information may not be shown. Update the integration under Settings → Updates (it comes from the Marketplace), then restart Home Assistant when asked."
     }
   }
 }

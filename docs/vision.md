@@ -1,9 +1,14 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
+  <img src="../branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+</picture>
+
 # Vision
 
 > **Decentralised connectivity for your home.**
 
 Status: revised 19 November 2026 to record the agreed long-term direction. The tagline is
-unchanged (ADR 0003); whether it still fits is [Open] Q-41.
+unchanged (ADR 0003); whether it still fits is [Open] Q-50.
 
 ## The problem
 
@@ -85,24 +90,45 @@ services isolated from Home Assistant and from the transport process).
    Reticulum within five minutes, without editing a file or understanding networking. Safe
    defaults and a few plainly explained choices beat many options. See
    [first-run UX](ux/first-run.md).
-2. **Free for everyone, forever.**
-3. **Privacy by default.** Nothing is published, discovered or connected without the user's
+2. **Works out of the box (permanent; maintainer, 18 Nov 2026).** Everything a first-time user
+   needs comes with the standard app installation:
+   - No terminal, no file copying, no third-party installer and no manual dashboard
+     configuration. **Amended (maintainer, 19 Nov 2026, decision D1):** MeshBeacon's interface,
+     with its sidebar entry, arrives through Home Assistant's own app store and Marketplace in at
+     most two guided steps ([ADR 0015](adr/0015-distribution-and-updates.md)). A one-step install
+     remains the goal (Ingress after upstream hardening, or an integration shipped with Home
+     Assistant), but never at the cost of security.
+   - A first-time user can install, configure and start MeshBeacon within **five minutes**,
+     without touching a terminal or editing YAML.
+   - The Home Assistant integration remains an **optional enhancement**, for entities, custom
+     dashboards, long-term statistics and automations. Nothing essential depends on it.
+   - This never justifies weakening security or privacy (principles 5 and 6). When the two
+     conflict, the safe design wins and the usability gap is recorded as a defect to solve.
+   - It never justifies duplicating monitoring logic or adding avoidable resource use
+     (principle 10).
+3. **Consistent branding (permanent; maintainer, 18 Nov 2026).** MeshBeacon looks and reads the
+   same everywhere: app store, sidebar, interface, integration, README and documentation. It uses
+   one name, one mark, one palette and one type system, defined in [branding](branding.md). The
+   brand complements Home Assistant and follows the user's theme. It never adds external fonts,
+   CDNs, tracking, permissions or resource use, and never relies on colour alone.
+4. **Free for everyone, forever.**
+5. **Privacy by default.** Nothing is published, discovered or connected without the user's
    explicit choice.
-4. **Security by default.** Least privilege, no privileged containers, no unnecessary Home
+6. **Security by default.** Least privilege, no privileged containers, no unnecessary Home
    Assistant permissions, no public ports by default.
-5. **Reuse upstream.** Build on RNS and LXMF through their public interfaces; never copy or patch
+7. **Reuse upstream.** Build on RNS and LXMF through their public interfaces; never copy or patch
    them.
-6. **Native interoperability.** Talk to the wider ecosystem (Sideband, Ratspeak, NomadNet,
+8. **Native interoperability.** Talk to the wider ecosystem (Sideband, Ratspeak, NomadNet,
    MeshChat) because it is the same protocol — not through bridges or translations.
-7. **Good network citizenship.** Be a considerate neighbour on shared networks and shared radio
+9. **Good network citizenship.** Be a considerate neighbour on shared networks and shared radio
    spectrum.
-8. **Light on resources.** The Home Assistant host comes first. MeshBeacon must run comfortably on
+10. **Light on resources.** The Home Assistant host comes first. MeshBeacon must run comfortably on
    lower-memory devices, not just on well-equipped ones: the idle target is 128 MB or less.
-9. **Maintainable, testable and portable.** A small core that runs with or without Home
+11. **Maintainable, testable and portable.** A small core that runs with or without Home
    Assistant, tested against real, isolated Reticulum networks.
-10. **Honest.** Clear about what works, what does not, what is experimental, and how the project
+12. **Honest.** Clear about what works, what does not, what is experimental, and how the project
    is made — including the use of AI assistance.
-11. **British English** throughout documentation.
+13. **British English** throughout documentation.
 
 ## Who it is for
 
@@ -115,6 +141,7 @@ services isolated from Home Assistant and from the transport process).
 ## Measures of success
 
 - An ordinary Home Assistant user can install MeshBeacon and have a connected, private node in
-  **five minutes or less**, without editing a configuration file — measured with real users.
+  **five minutes or less**, without editing a configuration file or opening a terminal, and can
+  see it working in MeshBeacon's own interface, measured with real users.
 - MeshBeacon never degrades the stability of the Home Assistant instance it runs on.
 - Reticulum community members regard MeshBeacon as a good citizen of the network.

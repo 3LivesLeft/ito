@@ -1,0 +1,4 @@
+#!/bin/sh
+# A failed relay only affects discovery: s6 restarts it and the core keeps retrying. It never stops
+# the app (unlike the core's finish script).
+exit 0

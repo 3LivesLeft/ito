@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="branding/png/logo-horizontal-dark.png">
+  <img src="branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+</picture>
+
 # Contributing to MeshBeacon
 
 Thank you for your interest. MeshBeacon is in **Phase 0 (research and design)**: the most useful

@@ -187,6 +187,27 @@ def parse_status(data: Any) -> Status:
     )
 
 
+async def read_bounded(content: aiohttp.StreamReader, limit: int) -> bytes:
+    """Read the whole body, but never hold more than ``limit`` bytes of it.
+
+    One ``StreamReader.read(n)`` returns only what has arrived so far (one TLS record or TCP
+    segment, or one chunk of a chunked reply), so a single call can silently cut a valid response
+    short. This reads until end of stream, asking only for the bytes still allowed, and fails as
+    soon as the body would pass the limit, without buffering the excess. The caller's request
+    deadline bounds how long it can take.
+    """
+    chunks: list[bytes] = []
+    size = 0
+    while True:
+        chunk = await content.read(limit + 1 - size)
+        if not chunk:
+            return b"".join(chunks)
+        size += len(chunk)
+        if size > limit:
+            raise SchemaError("response too large")
+        chunks.append(chunk)
+
+
 class MeshBeaconClient:
     def __init__(self, session: aiohttp.ClientSession, host: str, port: int, token: str, cert_sha256: str) -> None:
         """HTTPS pinned to ``cert_sha256``: the certificate is not trusted through any authority, only
@@ -200,7 +221,8 @@ class MeshBeaconClient:
         try:
             async with self._session.get(
                 self._url,
-                headers={"Authorization": f"Bearer {self._token}"},
+                # The app never compresses; asking for identity keeps the size limit meaningful.
+                headers={"Authorization": f"Bearer {self._token}", "Accept-Encoding": "identity"},
                 timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
                 allow_redirects=False,
                 ssl=self._ssl,
@@ -209,11 +231,12 @@ class MeshBeaconClient:
                     raise AuthError("token refused")
                 if response.status != 200:
                     raise MeshBeaconError(f"HTTP {response.status}")
-                body = await response.content.read(MAX_RESPONSE + 1)
+                declared = response.headers.get("Content-Length", "")
+                if declared.isdecimal() and int(declared) > MAX_RESPONSE:
+                    raise SchemaError("response too large")  # refused before reading any of it
+                body = await read_bounded(response.content, MAX_RESPONSE)
         except (aiohttp.ClientError, TimeoutError) as exc:
             raise MeshBeaconError(type(exc).__name__) from exc
-        if len(body) > MAX_RESPONSE:
-            raise SchemaError("response too large")
         try:
             data = json.loads(body)
         except ValueError as exc:

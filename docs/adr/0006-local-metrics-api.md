@@ -1,10 +1,11 @@
 # ADR 0006: Read-only local status API, delivered to Home Assistant by Supervisor discovery
 
-- **Status:** **Accepted in principle** (maintainer, 18 November 2026), subject to the security
-  review. That review is complete and recorded below ("Review outcome"), and the implementation
-  was merged to `main` in PR #3. Final acceptance (dropping "in principle") is for the maintainer
-  to confirm. The `home_assistant_integration` option stays **off by default, permanently**. That is a
-  decision, not a placeholder until approval.
+- **Status:** **Accepted**; amended 19 Nov 2026 (discovery transport, below).
+- **Original status:** **Accepted** (maintainer, 18 November 2026, after a positive independent review of
+  PR #3 with all 14 CI checks confirmed passing). The `home_assistant_integration` option stays
+  **off by default, permanently**. That is a decision, not a placeholder until approval.
+  Follow-up after acceptance: the client's response reading was made complete and bounded (threat
+  model T37).
 - **Date:** 18 November 2026; revised after independent review the same day
 - **Evidence:** [v0.2 feasibility, architecture and security review](../research/v0.2-observability.md),
   [threat model T11, T28–T36](../security/threat-model.md),
@@ -92,13 +93,38 @@ app); an Ingress UI (a second monitoring implementation). See
   `/config`, HA backups) can read the current token until the next app restart. It grants read-only
   access to non-identifying metrics.
 
-## Later decisions
+## Amendment (19 November 2026, M1): how discovery reaches the Supervisor
 
-- **19 November 2026 — [ADR 0021](0021-v0.3-scope.md):** the HA `notify` platform is removed from
-  the committed v0.3 scope, so v0.3.0 adds no write path and this API stays read-only. The v0.3
-  messaging milestone needs a separate ADR for its sending path (gates MG-1, MG-2); it must not be
-  added to this API. [ADR 0020](0020-public-service-isolation.md): public services never use this
-  API or its credentials.
+Decision 4 says the token and fingerprint reach Home Assistant only through Supervisor discovery.
+That remains true of *reading* them, but the delivery path needs a precise statement:
+
+| | Status |
+|---|---|
+| On Supervisor 2026.11.0 and older, the app posts its discovery message to `http://supervisor` over the internal network in plain HTTP, with its Supervisor token | **Confirmed** from source |
+| Apps keep `NET_RAW` unless the Supervisor's opt-in `app_drop_net_raw` flag is set | **Confirmed** from source |
+| A co-installed app can intercept or alter that message on Home Assistant OS | **Not verified.** The same class as T34; not reproduced. A lab test is planned (W3-4) |
+| Impact if it can | Read-only, non-identifying metrics until the next app start (residual RR-9a, threat T28) |
+
+**Change (implemented in M1):** where the Supervisor gives the app its own Unix socket (newer
+Supervisors), the app posts discovery through it, via a small root-owned relay
+(`core/meshbeacon/discovery_relay.py`), because the socket is root-only and the core runs
+unprivileged. The token is then not used at all. Older Supervisors keep the compatibility path
+above. The relay adds no `config.yaml` privilege, sends only MeshBeacon's own validated message
+and serves only the core.
+
+**Rule carried forward:** no write-capable credential (for example a future messaging key) is ever
+delivered over the compatibility path ([secure interface options](../research/secure-interface-options.md),
+D7). Home Assistant keeps no field from a discovery message other than the status connection's
+(config entry v2, `ENTRY_KEYS`).
+
+## Later decisions (19 November 2026, roadmap reconciliation)
+
+- [ADR 0021](0021-v0.3-scope.md) removes the HA `notify` platform from the committed v0.3 scope.
+  v0.3.0 therefore adds no write path, and the status key stays read-only. Any sending path for
+  the v0.3 messaging milestone needs its own approved ADR: [ADR 0010](0010-home-assistant-messaging-interface.md)
+  is the proposal, and gates MG-1 and MG-2 apply.
+- [ADR 0020](0020-public-service-isolation.md): public services never use this API or its
+  credentials.
 
 ## Review triggers
 

@@ -108,7 +108,7 @@ because the slug, image name and `/data` paths are effectively permanent once us
 ## 5. Reassessment for the community direction (19 November 2026)
 
 Prompted by the long-term direction (offline-first community network, LoRa, community alerts and
-information). **No rename has been made; this section informs the maintainer's decision (Q-41).**
+information). **No rename has been made; this section informs the maintainer's decision (Q-50).**
 Not legal advice.
 
 ### 5.1 What changed since 18 November
@@ -165,7 +165,7 @@ search only; **not** trademark clearance):
 Whatever the name, avoid upstream or ecosystem marks (Reticulum, LXMF, Nomad Network, Sideband,
 Meshtastic, MeshCore) that could imply endorsement.
 
-**[Recommendation]** Decide Q-41 before any v0.3.0 publication. If option A is kept, complete the
+**[Recommendation]** Decide Q-50 before any v0.3.0 publication. If option A is kept, complete the
 courtesy contact (RG-9) and register searches (RG-8) first, and rewrite the vision's pitch so that it
 does not echo theirs. On current evidence, option C costs least now and removes most of the risk.
 Any candidate needs register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) and domain checks
@@ -238,7 +238,11 @@ Same limits as §6.1 (GitHub, registries, web search; no registers, no RDAP).
 EUIPO, WIPO, USPTO; MyIPO if still wanted) and domain checks. Choose Commonwave if the registers
 are clear, because it fits the community direction. Whatever is chosen also needs:
 
-- a new app slug and package names;
+- new values in `project.yaml` (M1 keeps every project identifier there, and
+  `tests/unit/test_project_identifiers.py` lists each file that must follow), including the app
+  slug, which moves the app's data folder and changes the integration's domain. The integration's
+  history survives that change, because the stable node key (ADR 0015 decision 5) is independent of
+  the slug;
 - a one-off data migration for the maintainer's local prototype, preserving the identity
   (ADR 0018);
 - an updated ADR 0003.

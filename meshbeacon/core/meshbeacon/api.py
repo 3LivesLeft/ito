@@ -190,8 +190,37 @@ def _open(request: urllib.request.Request, timeout: float) -> Any:
     return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310 - fixed http://supervisor URL
 
 
+class RelayRefusedError(OSError):
+    """The discovery relay refused or could not deliver a request."""
+
+
+def relay_request(relay: Path, request: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
+    """One request to the root-owned discovery relay (discovery_relay.py) over its local socket."""
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        sock.settimeout(timeout)
+        sock.connect(str(relay))
+        sock.sendall(json.dumps(request).encode() + b"\n")
+        data = b""
+        while b"\n" not in data and len(data) < 65536:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            data += chunk
+    value = json.loads(data.split(b"\n", 1)[0]) if data else {}
+    if not isinstance(value, dict) or value.get("ok") is not True:
+        raise RelayRefusedError(str(value.get("error", "refused")) if isinstance(value, dict) else "refused")
+    return value
+
+
 class Discovery:
     """Announces the API to Home Assistant through the Supervisor (no ``hassio_api`` needed).
+
+    Two transports, chosen by the caller (``Supervisor.setup_integration``):
+
+    - **Socket** (preferred, newer Supervisors): ``relay`` is the path of the discovery relay, which
+      reaches the Supervisor over its per-app Unix socket. Nothing crosses the internal network.
+    - **Compatibility path** (Supervisor 2026.11.0 and older): HTTP to ``http://supervisor`` on the
+      internal network with the Supervisor token (risk RR-9a in the threat model).
 
     The UUID of the message (not secret) is remembered in ``state_path`` so that the message can be
     withdrawn when the user switches the integration option off.
@@ -199,20 +228,30 @@ class Discovery:
 
     def __init__(
         self,
-        supervisor_token: str,
+        supervisor_token: str | None,
         state_path: Path,
         *,
         base_url: str = SUPERVISOR_URL,
         opener: Opener = _open,
         timeout: float = 10.0,
+        relay: Path | None = None,
     ) -> None:
+        if relay is None and not supervisor_token:
+            raise ValueError("discovery needs either the relay or a Supervisor token")
         self._supervisor_token = supervisor_token
         self.state_path = state_path
         self.base_url = base_url
         self.opener = opener
         self.timeout = timeout
+        self.relay = relay
+
+    @property
+    def transport(self) -> str:
+        return "socket" if self.relay is not None else "tcp"
 
     def _request(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        if self.relay is not None:
+            return self._relay_request(method, path, payload)
         data = None if payload is None else json.dumps(payload).encode()
         request = urllib.request.Request(  # noqa: S310 - fixed http://supervisor URL
             self.base_url + path,
@@ -224,6 +263,18 @@ class Discovery:
             raw = response.read(65536)
         value = json.loads(raw) if raw else {}
         return value if isinstance(value, dict) else {}
+
+    def _relay_request(self, method: str, path: str, payload: dict[str, Any] | None) -> dict[str, Any]:
+        """The same two requests, through the relay (which rebuilds and validates them)."""
+        if self.relay is None:
+            raise ValueError("no relay")
+        if method == "POST" and path == "/discovery" and payload is not None:
+            reply = relay_request(self.relay, {"op": "announce", "config": payload.get("config")}, self.timeout + 5)
+            return {"data": {"uuid": reply.get("uuid")}}
+        if method == "DELETE" and path.startswith("/discovery/"):
+            relay_request(self.relay, {"op": "withdraw", "uuid": path.removeprefix("/discovery/")}, self.timeout + 5)
+            return {}
+        raise ValueError("unsupported discovery request")
 
     def announce(self, host: str, port: int, api_token: str, cert_sha256: str = "") -> bool:
         """One attempt to send (or refresh) the discovery message."""

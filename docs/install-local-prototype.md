@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
+  <img src="../branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+</picture>
+
 # Installing the MeshBeacon local prototype on Home Assistant OS
 
 Status: v0.1.0 **local prototype** — experimental. No container image is published: Home Assistant

@@ -8,6 +8,9 @@
   [architecture §4.6](../architecture.md#46-identity-crash-safe-initialisation-and-restoration),
   [threat model A1, A2](../security/threat-model.md#1-assets)
 - **Extends:** architecture §4.6 (one MeshBeacon-owned transport identity). Supersedes nothing.
+- **Related:** [ADR 0009](0009-messaging-identity.md) (proposed separate messaging identity) is
+  the first application of this ADR; [ADR 0017](0017-independent-node-services.md) decision 4
+  (identity scope per service).
 
 ## Context
 

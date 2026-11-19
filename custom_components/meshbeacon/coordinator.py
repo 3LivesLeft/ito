@@ -15,6 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .client import AuthError, MeshBeaconClient, MeshBeaconError, Status
+from .compatibility import ISSUE_APP_OUTDATED, ISSUE_INTEGRATION_OUTDATED, mismatch
 from .config_flow import validate_discovery
 from .const import (
     CONF_CERT,
@@ -27,18 +28,26 @@ from .const import (
     SCAN_INTERVAL,
     UNREACHABLE_GRACE,
 )
+from .nodes import app_slug
 
 _LOGGER = logging.getLogger(__name__)
 
 type MeshBeaconConfigEntry = ConfigEntry[MeshBeaconCoordinator]
 
-ISSUES = (ISSUE_ISOLATED, ISSUE_UNREACHABLE, ISSUE_ATTENTION)
+# Where the user finds the update. Version mismatches link to the update guide.
+LEARN_MORE = {
+    ISSUE_APP_OUTDATED: "https://github.com/3LivesLeft/meshbeacon/blob/main/docs/getting-started.md#updating",
+    ISSUE_INTEGRATION_OUTDATED: "https://github.com/3LivesLeft/meshbeacon/blob/main/docs/getting-started.md#updating",
+}
+ISSUES = (ISSUE_ISOLATED, ISSUE_UNREACHABLE, ISSUE_ATTENTION, ISSUE_APP_OUTDATED, ISSUE_INTEGRATION_OUTDATED)
 
 
 class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
     config_entry: MeshBeaconConfigEntry
 
-    def __init__(self, hass: HomeAssistant, entry: MeshBeaconConfigEntry) -> None:
+    def __init__(
+        self, hass: HomeAssistant, entry: MeshBeaconConfigEntry, integration_version: str | None = None
+    ) -> None:
         super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=SCAN_INTERVAL)
         self.client = MeshBeaconClient(
             async_get_clientsession(hass),
@@ -49,6 +58,7 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
         )
         self._unreachable_since: datetime | None = None
         self._last_refresh: datetime | None = None
+        self.integration_version = integration_version
 
     async def _async_update_data(self) -> Status:
         try:
@@ -81,7 +91,7 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
         if self._last_refresh is not None and now - self._last_refresh < REFRESH_INTERVAL:
             return False
         self._last_refresh = now
-        slug = self.config_entry.unique_id
+        slug = app_slug(self.config_entry)
         try:
             from homeassistant.components.hassio import get_supervisor_client  # noqa: PLC0415 - optional
 
@@ -117,6 +127,12 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
                 wanted[ISSUE_UNREACHABLE] = {}
         else:
             self._unreachable_since = None
+        # The app and the integration update separately (compatibility.py).
+        if version_issue := mismatch(status.version, self.integration_version):
+            wanted[version_issue] = {
+                "app_version": status.version or "",
+                "integration_version": self.integration_version or "",
+            }
         for issue in ISSUES:
             if issue in wanted:
                 ir.async_create_issue(
@@ -125,6 +141,7 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
                     issue,
                     is_fixable=False,
                     severity=ir.IssueSeverity.ERROR if issue == ISSUE_ATTENTION else ir.IssueSeverity.WARNING,
+                    learn_more_url=LEARN_MORE.get(issue),
                     translation_key=issue,
                     translation_placeholders=wanted[issue],
                 )
