@@ -143,6 +143,10 @@ class Queue:
             (name, by, by),
         )
 
+    def count(self, name: str, by: int = 1) -> None:
+        """Add to a persistent counter (refusals and other events the engine counts)."""
+        self._count(name, by)
+
     def counters(self) -> dict[str, int]:
         return dict(self.db.execute("SELECT name, value FROM counters").fetchall())
 

@@ -97,3 +97,15 @@ RNS 1.6.0:
 | Q-46: it survives a Reticulum restart | **Works:** offline during the restart, reconnected by itself about 16 s later |
 | Q-40: the engine's idle memory | **43.1 MiB** (RSS + swap, amd64); the go/no-go limit is +40 MiB |
 | IS-3: who can reach the shared instance | **Any process in the app container.** RNS 1.6.0 uses abstract Unix sockets on Linux (`RNS/Reticulum.py`, lines 369 and 816–826): no file permissions and no peer check. RPC needs a key that only `mb-rns` holds. Other apps cannot reach it (each container has its own network namespace) |
+
+**WP3 (engine) is complete.** It is tested against the unmodified LXMF 1.3.0, RNS 1.6.0 and
+`lxmd` on loopback (`tests/integration/test_messaging_lxmf.py`, 12 tests, about 5 minutes), plus
+unit tests for the policy and the socket. Findings, all **[Verified]** with these versions:
+
+| Finding | Consequence |
+|---|---|
+| A shared-instance client works **without the node's RPC key**: direct delivery both ways, restarts and propagation all pass. RNS logs failed "destination used" updates (`RNS/Reticulum.py`, `_used_destination_data`) and drops any link identification it cannot check against the node's blackhole list (`RNS/Link.py`, `is_blackholed`) | IS-3a holds as decided: the engine has no RPC key, and a test checks this. The drop fails closed. The engine never needs a remote party to identify itself to it, but a propagation node would, so the engine cannot become one without revisiting IS-3a |
+| A client cannot read the node's identity cache (`RNS/Identity.py`, the shared-instance database). After an engine restart it knows nobody until it hears them again | The engine requests paths for its contacts at start and every 30 minutes; a path answer carries the key, so contacts who never announce are verified too |
+| A message can arrive before its sender's key does. LXMF marks it `SOURCE_UNKNOWN`, while the sender is told "delivered" | The engine holds such messages from contacts (or anyone, in "anyone" mode) for up to two minutes, at most 50, asks for the sender's key, and checks them again with `LXMessage.unpack_from_bytes`. Invalid signatures are refused at once |
+| LXMF 1.3.0 has no "propagate on failure" setting | The engine falls back itself, and reports `stored_on_node`, never `delivered` (MS-6) |
+| The hub's TCP peers cannot reach each other without transport | Test topology only: `lxmd` is a local client of the hub, as the engine is |

@@ -28,6 +28,7 @@ from .contract import CONTACT_ID
 HEX_HASH = re.compile(r"^[0-9a-f]{32}$")
 NAME = re.compile(r"^[^\x00-\x1f\x7f]{0,32}$")
 MAX_CONTACTS = 100
+STRANGER = "unknown"  # the contact ID of a sender who is not a contact ("anyone" mode); reserved
 STAMP_COST_RANGE = (0, 24)
 
 
@@ -94,7 +95,7 @@ def parse(raw: Any) -> Settings:
             problems.append(f"{where}: only id, name and destination are allowed")
             continue
         cid, name, dest = item.get("id"), item.get("name", ""), item.get("destination")
-        if not isinstance(cid, str) or not CONTACT_ID.match(cid) or cid in seen_ids:
+        if not isinstance(cid, str) or not CONTACT_ID.match(cid) or cid in seen_ids or cid == STRANGER:
             problems.append(f"{where}: id must be unique, lower case, 1 to 32 of a-z 0-9 _ -")
             continue
         if not isinstance(name, str) or not NAME.match(name):

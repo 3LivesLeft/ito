@@ -121,3 +121,15 @@ def test_fuzz_validated_input_always_renders_exact_structure(peers, transport):
         assert iface["type"] == "TCPClientInterface"
         assert not (set(iface.keys()) & rnsconfig.FORBIDDEN_KEYS)
     assert not (set(cfg["reticulum"].keys()) & rnsconfig.FORBIDDEN_KEYS)
+
+
+def test_the_messaging_client_config_is_a_client_only():
+    """M4/IS-3a: no interfaces, no transport, no RPC key; and the node shares only when asked."""
+    cfg = parsed(rnsconfig.render_client())
+    assert cfg["reticulum"]["share_instance"] == "Yes" and cfg["reticulum"]["enable_transport"] == "No"
+    assert "rpc_key" not in cfg["reticulum"] and not cfg["interfaces"]
+    assert cfg["reticulum"]["instance_name"] == rnsconfig.INSTANCE_NAME
+    with pytest.raises(rnsconfig.RenderError):
+        rnsconfig.render_client(instance_name="../x")
+    assert parsed(rnsconfig.render(Settings(), KEY))["reticulum"]["share_instance"] == "No"
+    assert parsed(rnsconfig.render(Settings(), KEY, share_instance=True))["reticulum"]["share_instance"] == "Yes"
