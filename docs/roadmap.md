@@ -113,8 +113,11 @@ distribution release** (app store + Marketplace, [ADR 0015](adr/0015-distributio
 the LXMF engine, Home Assistant messaging and migration of existing installations follow in later
 releases, each behind its own gate. **M1 (install-ready repository) is authorised** on
 `feature/v0.3.0-install-ready`; it is implementation-complete, subject to independent review
-and release acceptance testing. **M1.1 (security and release readiness)** comes next: an
-independent review ([handover](review/m1.1-handover.md)) and the VM acceptance tests, before M2. The
+and release acceptance testing. **M1.1 (security and release readiness):** the independent review
+([handover](review/m1.1-handover.md)) returned a conditional pass. **M1.2 (security remediation and
+release hardening)** addresses its findings ([remediation record](review/m1.2-remediation.md)) and
+prepares the [VM acceptance tests](testing/v0.3-vm-acceptance.md); it awaits re-verification by the
+independent reviewer. The VM acceptance tests are still to run before M2. The
 two v0.3 sections below come from separate branches and are to be reconciled, with the final
 project name, before M2.
 

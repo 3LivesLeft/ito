@@ -557,52 +557,7 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
         api.rmdir()
 
 
-LINK_PROBE = """
-import json, os
-def pid_of(module):
-    for pid in filter(str.isdigit, os.listdir('/proc')):
-        try:
-            args = open(f'/proc/{pid}/cmdline', 'rb').read().split(b'\\0')
-        except OSError:
-            continue
-        if b'-m' in args and args[args.index(b'-m') + 1] == module:
-            return pid
-def environ(pid):
-    return dict(e.split(b'=', 1) for e in open(f'/proc/{pid}/environ', 'rb').read().split(b'\\0') if b'=' in e)
-def inode(pid, fd):
-    try:
-        st = os.stat(f'/proc/{pid}/fd/{fd}')
-    except OSError:
-        return None
-    return st.st_ino if (st.st_mode & 0o170000) == 0o140000 else None
-def take(pid, fd):
-    # Try to copy the core's descriptor, as a compromised same-user process might (pidfd_getfd).
-    import ctypes
-    libc = ctypes.CDLL(None, use_errno=True)
-    try:
-        pidfd = os.pidfd_open(int(pid))
-    except OSError:
-        return False
-    try:
-        got = libc.syscall(438, pidfd, int(fd), 0)  # pidfd_getfd (x86-64 and arm64)
-        if got >= 0:
-            os.close(got)
-        return got >= 0
-    finally:
-        os.close(pidfd)
-core, node = pid_of(b'meshbeacon.supervisor'), pid_of(b'meshbeacon.node')
-fd = environ(core).get(b'MESHBEACON_RELAY_FD')
-core_inode = inode(core, fd.decode()) if fd else None
-node_inodes = {inode(node, n) for n in os.listdir(f'/proc/{node}/fd')}
-print(json.dumps({
-    'same_user_can_take_link': take(core, fd.decode()) if fd else False,
-    'core_fd': fd.decode() if fd else None,
-    'core_is_socket': core_inode is not None,
-    'node_shares_it': core_inode is not None and core_inode in node_inodes,
-    'core_env_token': b'SUPERVISOR_TOKEN' in environ(core),
-    'node_env_token': b'SUPERVISOR_TOKEN' in environ(node),
-}))
-"""
+LINK_PROBE = (Path(__file__).resolve().parents[2] / "tools" / "acceptance" / "relay_probe.py").read_text()
 
 
 def processes(c: Container) -> dict[str, set[str]]:
