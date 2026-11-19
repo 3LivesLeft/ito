@@ -466,6 +466,10 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
         sh("docker", "rm", "-f", sup, check=False)
 
 
+# Where the Supervisor binds an app's socket inside its own container (e610ca8: config.py, apps/app.py).
+SUPERVISOR_BIND = "/run/os/supervisor/apps/ce27fbb5_meshbeacon"
+
+
 def test_discovery_over_the_supervisor_socket(run, tmp_path):
     """M1: where the Supervisor gives the app its own socket (root-owned, 0600), the unprivileged
     core announces through the root relay. No token is sent and nothing crosses the network."""
@@ -479,7 +483,9 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
     sh(
         "docker", "run", "-d", "--name", sup, "--network", "none",
         "-v", f"{repo / 'tests' / 'container' / 'fake_supervisor.py'}:/fake.py:ro", "-v", f"{out}:/out",
-        "-v", f"{api}:/api", "--entrypoint", "python3", IMAGE, "-I", "/fake.py", "--unix", "/api/supervisor.sock",
+        # Bound where the real Supervisor binds it, so that AppArmor checks the real name.
+        "-v", f"{api}:{SUPERVISOR_BIND}", "--entrypoint", "python3", IMAGE, "-I", "/fake.py",
+        "--unix", f"{SUPERVISOR_BIND}/supervisor.sock",
     )  # fmt: skip
     try:
         assert wait_for((api / "supervisor.sock").exists, timeout=30)

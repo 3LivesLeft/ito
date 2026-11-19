@@ -68,6 +68,13 @@ profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
   /tmp/{,**} rwk,
   /dev/tty rw,
 
+  # The Supervisor's per-app socket (newer Supervisors; used only by the discovery relay).
+  # AppArmor checks a Unix socket by the name the server bound it to, which is the Supervisor's
+  # own path, not /run/supervisor/api/supervisor.sock as mounted here (Supervisor e610ca8:
+  # config.py path_run_supervisor = /run/os/supervisor, apps/app.py apps/<slug>). /run/** above
+  # covers it too; this line keeps the dependency visible if /run is ever narrowed.
+  /run/os/supervisor/apps/*/supervisor.sock rw,
+
   # Outbound TCP to user-configured peers, DNS lookups, the internal health endpoint, and the
   # local sockets and pipes used by s6-overlay.
   network inet stream,
