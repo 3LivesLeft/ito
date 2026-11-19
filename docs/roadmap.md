@@ -119,7 +119,7 @@ release hardening) is development-complete at `defefdc`** (maintainer, 19 Nov 20
 [remediation record](review/m1.2-remediation.md)). Its VM and hardware acceptance tests, and an
 independent review, are **public release blockers** (RG-13 to RG-16 below); they could not be run
 in the cloud sessions used so far, which have no virtualisation. **M4 (the standalone LXMF engine)
-is in planning** on `feature/v0.4-lxmf-engine`; M2 (publishing) still needs RG-13 to RG-16 and
+is in planning** on `feature/m4-lxmf-engine`; M2 (publishing) still needs RG-13 to RG-16 and
 approval. The
 [process isolation gate](#process-isolation-gate-mandatory) below binds M4 and every community
 service. The
