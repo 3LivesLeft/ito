@@ -145,6 +145,15 @@ def test_test_only_code_cannot_enter_the_build_context(path):
     assert any("test-only" in p for p in problems(files))
 
 
+def test_the_working_tree_passes_without_git(monkeypatch):
+    """CI's network-less test container has no git: the checker walks the files instead."""
+    monkeypatch.setattr(check_release, "GIT", None)
+    tree = check_release.Tree(ROOT, None)
+    assert "hacs.json" in tree.files() and not any("__pycache__" in f or f.startswith(".git/") for f in tree.files())
+    assert check_release.check(tree) == []
+
+
+@pytest.mark.skipif(check_release.GIT is None, reason="needs git")
 def test_a_git_ref_is_read_like_the_working_tree():
     head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
     tree = check_release.Tree(ROOT, head.stdout.strip())

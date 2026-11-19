@@ -33,7 +33,9 @@ from typing import Any
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-GIT = shutil.which("git") or "/usr/bin/git"
+GIT = shutil.which("git")
+# Skipped when walking the working tree without git (for example in CI's minimal test container).
+_SKIP_DIRS = {"__pycache__", "node_modules"}
 # Project identifiers live in project.yaml (renaming before the first release changes only that
 # file plus what tests/unit/test_project_identifiers.py then points at).
 PROJECT: dict[str, str] = {k: str(v) for k, v in yaml.safe_load((ROOT / "project.yaml").read_text()).items()}
@@ -105,6 +107,17 @@ class Tree:
         self.root, self.ref = root, ref
 
     def files(self) -> list[str]:
+        if self.ref is None and GIT is None:
+            return sorted(
+                path.relative_to(self.root).as_posix()
+                for path in self.root.rglob("*")
+                if path.is_file()
+                and not any(
+                    part.startswith(".") or part in _SKIP_DIRS for part in path.relative_to(self.root).parts[:-1]
+                )
+            )
+        if GIT is None:
+            raise RuntimeError("checking a git ref needs git")
         if self.ref is None:
             out = subprocess.run(
                 [GIT, "-C", str(self.root), "ls-files", "--cached", "--others", "--exclude-standard"],
@@ -125,6 +138,8 @@ class Tree:
         if self.ref is None:
             file = self.root / path
             return file.read_text() if file.is_file() else None
+        if GIT is None:
+            raise RuntimeError("checking a git ref needs git")
         result = subprocess.run(
             [GIT, "-C", str(self.root), "show", f"{self.ref}:{path}"], capture_output=True, text=True, check=False
         )
