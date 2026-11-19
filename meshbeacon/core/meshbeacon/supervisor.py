@@ -8,6 +8,7 @@ Runs as the unprivileged ``meshbeacon`` user. Deliberately does not import RNS (
 from __future__ import annotations
 
 import contextlib
+import functools
 import hashlib
 import json
 import os
@@ -18,6 +19,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from collections import deque
 from collections.abc import Callable
@@ -27,9 +29,11 @@ from pathlib import Path
 from typing import IO, Any
 
 from . import __version__, fsutil, procinfo
+from .api import ApiServer, Discovery, StatusStore, TlsError, container_hostname, make_tls, new_token
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
 from .health import HealthServer, Heartbeat
 from .logfilter import RateLimiter, Redactor
+from .metrics import Collector
 from .paths import Paths
 from .policy import RestartPolicy, StartHistory, Timings
 from .prepare import FREE_SPACE_FLOOR, FREE_SPACE_WARN
@@ -43,6 +47,53 @@ MSG_STORAGE = (
     "✖ Free storage has fallen below 200 MB, so MeshBeacon has stopped Reticulum to protect "
     "Home Assistant. Free some space and restart the app."
 )
+MSG_API_STARTED = (
+    "Home Assistant integration: on. MeshBeacon shares its status with Home Assistant over the "
+    "internal network only, protected by a key that changes at every start."
+)
+MSG_DISCOVERY_FAILED = (
+    "⚠ MeshBeacon could not reach the Home Assistant Supervisor to share its status. The node works "
+    "normally, and MeshBeacon will keep trying by itself."
+)
+MSG_DISCOVERY_OK = (
+    "Home Assistant has been told about MeshBeacon's status. In Home Assistant, open Settings → "
+    'Devices & services and add "MeshBeacon" when it is shown as discovered. If it is not shown, '
+    "install the MeshBeacon integration first and restart Home Assistant (see the app's "
+    "Documentation tab)."
+)
+MSG_DISCOVERY_RECOVERED = "Home Assistant can now see MeshBeacon's status again."
+MSG_MONITORING_ERROR = (
+    "⚠ MeshBeacon's status reporting for Home Assistant hit an unexpected problem ({name}). "
+    "Reticulum is not affected. If this repeats, please report it."
+)
+# Problem codes shown in Home Assistant (docs/research/v0.2-observability.md §1). Keep in step with
+# custom_components/meshbeacon/const.py PROBLEMS.
+PROBLEMS = (
+    "none",
+    "isolated",
+    "peers_unreachable",
+    "some_peers_unreachable",
+    "reticulum_restarting",
+    "reticulum_failing",
+    "restart_loop_paused",
+    "options",
+    "storage",
+    "identity",
+    "configuration",
+    "data_folder",
+    "preparation_failed",
+    "unexpected",
+)
+SUPERVISOR_TOKEN_ENV = "SUPERVISOR_TOKEN"  # noqa: S105 - the variable name, not a secret
+
+
+@functools.cache
+def installed_rns_version() -> str | None:
+    """The installed RNS version (looked up once: the lookup scans site-packages)."""
+    try:
+        return metadata.version("rns")
+    except metadata.PackageNotFoundError:
+        return None
 
 
 class LineBuffer:
@@ -109,6 +160,12 @@ class Supervisor:
         prepare_module: str = "meshbeacon.prepare",
         clock: Callable[[], float] = time.monotonic,
         wall: Callable[[], float] = time.time,
+        api_host: str = "0.0.0.0",  # container-internal; no port is published
+        api_port: int = 8100,
+        supervisor_token: str | None = None,
+        supervisor_url: str | None = None,
+        hostname: Callable[[], str] = container_hostname,
+        discovery_timing: dict[str, float] | None = None,
     ) -> None:
         self.paths = paths
         self.t = timings or Timings()
@@ -134,6 +191,19 @@ class Supervisor:
         self.timers: dict[str, float] = {}
         self.selector = selectors.DefaultSelector()
         self.state = "starting"
+        self.problem_code = "none"
+        self.collector = Collector(clock=clock, wall=wall)
+        self.api_host = api_host
+        self.api_port = api_port
+        self.api_store: StatusStore | None = None
+        self.api_server: ApiServer | None = None
+        self._supervisor_token = supervisor_token
+        self.supervisor_url = supervisor_url
+        self.hostname = hostname
+        self.discovery_results: list[bool] = []  # appended by the discovery thread
+        self.discovery_ok: bool | None = None
+        self.discovery_stop = threading.Event()
+        self.discovery_timing = discovery_timing or {}  # shorter back-off in tests only
 
     # -- output ------------------------------------------------------------------------------
     def say(self, message: str) -> None:
@@ -180,6 +250,7 @@ class Supervisor:
             self.settings = None
         if self.settings is not None:
             self.redact = Redactor(self.settings.secrets)
+            self.monitor(self.collector.configure, tuple(p.name for p in self.settings.peers))
 
     def startup_report(self) -> None:
         try:
@@ -194,14 +265,18 @@ class Supervisor:
                 for p in s.peers:
                     self.say(f"Peer configured: {p.name} ({p.host}, port {p.port}).")
             self.say(f"Log detail: {s.log_level}. Memory limit for Reticulum: {s.memory_limit_mb} MB.")
+            if not s.home_assistant_integration:
+                self.say("Home Assistant integration: off.")
 
-    def enter_attention(self, messages: list[str]) -> None:
+    def enter_attention(self, messages: list[str], problem: str) -> None:
         self.state = "needs_attention"
+        self.problem_code = problem if problem in PROBLEMS else "unexpected"
         self.attention = messages
         self.stop_child()
         for m in messages:
             self.say(m)
         self.timers["attention"] = self.clock()
+        self.publish()  # state changes reach Home Assistant without waiting for the next interval
 
     def history(self) -> StartHistory:
         return StartHistory.from_json(self.t, fsutil.read_json(self.paths.start_history))
@@ -216,6 +291,7 @@ class Supervisor:
         env = dict(os.environ)
         env["MESHBEACON_DATA"] = str(self.paths.data)
         env["MESHBEACON_OPTIONS"] = str(self.paths.options)
+        env.pop(SUPERVISOR_TOKEN_ENV, None)  # never handed to prepare or Reticulum
         return env
 
     def wait_responsive(self, proc: subprocess.Popen[bytes], timeout: float) -> bool:
@@ -265,7 +341,8 @@ class Supervisor:
                 [
                     "✖ MeshBeacon could not finish preparing Reticulum, so it has not started it. "
                     "Restart the app; if this repeats, please report it."
-                ]
+                ],
+                "preparation_failed",
             )
             return False
         for message in result.get("info", []):
@@ -274,7 +351,9 @@ class Supervisor:
             self.say(f"⚠ {message}")
         if not result.get("ok"):
             messages = [str(m) for m in result.get("attention", [])]
-            self.enter_attention([m if m.startswith("  ") else f"✖ {m}" for m in messages])
+            self.enter_attention(
+                [m if m.startswith("  ") else f"✖ {m}" for m in messages], str(result.get("problem") or "unexpected")
+            )
             return False
         return True
 
@@ -313,6 +392,8 @@ class Supervisor:
         self.policy.attempt_started()
         self.cpu_samples.clear()
         self.state = "running"
+        self.monitor(self.collector.child_started)
+        self.publish()
 
     def _close_child_fds(self, child: Child) -> None:
         for fd in (child.out_fd, child.status_fd):
@@ -327,6 +408,7 @@ class Supervisor:
         child, self.child = self.child, None
         if child is None:
             return
+        self.monitor(self.collector.child_stopped)
         if child.proc.poll() is None:
             child.proc.terminate()
             if not self.wait_responsive(child.proc, self.t.stop_grace):
@@ -343,7 +425,7 @@ class Supervisor:
             except (BlockingIOError, OSError):
                 pass
 
-    def child_failed(self, reason: str) -> None:
+    def child_failed(self, reason: str, *, memory: bool = False) -> None:
         self.stop_child()
         now = self.clock()
         self.last_failure = now
@@ -351,8 +433,10 @@ class Supervisor:
         self.state = "restarting"
         self.say(f"⚠ {reason}")
         if self.policy.gave_up:
-            self.enter_attention([MSG_GAVE_UP])
+            self.enter_attention([MSG_GAVE_UP], "reticulum_failing")
             return
+        self.monitor(self.collector.record_failure, memory=memory)
+        self.publish()
         self.next_attempt = self.policy.next_start(now)
         if self.policy.breaker_open:
             minutes = round(self.t.breaker_cooldown / 60)
@@ -379,6 +463,7 @@ class Supervisor:
             return
         if not isinstance(status, dict) or self.settings is None:
             return
+        self.monitor(self.collector.update, status)
         snap = evaluate(tuple(p.name for p in self.settings.peers), status)
         # Announce changes only. (With no peers, boot has already reported the isolated state.)
         if self.snapshot is None or snap.state is not self.snapshot.state or snap.up != self.snapshot.up:
@@ -416,10 +501,18 @@ class Supervisor:
         if mem is not None and mem > limit:
             self.child_failed(
                 f"The Reticulum service used more memory than its limit ({mem // 1048576} MB > "
-                f"{self.settings.memory_limit_mb} MB) and has been restarted."
+                f"{self.settings.memory_limit_mb} MB) and has been restarted.",
+                memory=True,
             )
             return
         cpu = procinfo.cpu_seconds(child.proc.pid)
+        core_cpu = procinfo.cpu_seconds(os.getpid())
+        self.monitor(
+            self.collector.resources,
+            procinfo.memory_bytes(os.getpid()),
+            mem,
+            None if cpu is None or core_cpu is None else cpu + core_cpu,
+        )
         if cpu is not None:
             now = self.clock()
             self.cpu_samples.append((now, cpu))
@@ -439,7 +532,7 @@ class Supervisor:
             return
         free = shutil.disk_usage(self.paths.data).free
         if free < FREE_SPACE_FLOOR:
-            self.enter_attention([MSG_STORAGE])
+            self.enter_attention([MSG_STORAGE], "storage")
         elif free < FREE_SPACE_WARN and self.due("storage_warning", 6 * 3600, first=True):
             self.say("⚠ Free storage is below 1 GB. MeshBeacon will stop Reticulum below 200 MB.")
 
@@ -468,6 +561,134 @@ class Supervisor:
         parts.append(memory)
         self.say("Status: " + "; ".join(parts) + ".")
 
+    # -- monitoring (v0.2) --------------------------------------------------------------------
+    def problem(self) -> tuple[str, str | None]:
+        """A stable problem code and the plain-language message that goes with it."""
+        if self.state == "needs_attention":
+            text = " ".join(m.strip().lstrip("✖⚠ ").strip() for m in (self.attention or []))
+            return self.problem_code, self.redact(text) or None
+        if self.state == "restarting":
+            return "reticulum_restarting", "The Reticulum service is restarting automatically."
+        snap = self.snapshot
+        if snap is None or self.child is None:
+            return "none", None
+        code = {
+            Connectivity.ISOLATED: "isolated",
+            Connectivity.OFFLINE: "peers_unreachable",
+            Connectivity.PARTIAL: "some_peers_unreachable",
+        }.get(snap.state, "none")
+        return code, None if code == "none" else self.redact(describe(snap).lstrip("⚠ "))
+
+    def build_snapshot(self) -> dict[str, Any]:
+        code, message = self.problem()
+        snap = self.snapshot
+        return self.collector.snapshot(
+            {
+                "version": __version__,
+                "rns_version": installed_rns_version(),
+                "arch": platform.machine(),
+                "state": self.state,
+                "connectivity": snap.state.value if snap is not None else Connectivity.UNKNOWN.value,
+                "problem": code,
+                "message": message,
+            }
+        )
+
+    def setup_integration(self) -> None:
+        """Start the monitoring API and announce it, or withdraw an earlier announcement."""
+        token = self._supervisor_token
+        self._supervisor_token = None  # keep only inside the discovery helper
+        if self.settings is None:
+            return
+        discovery = (
+            Discovery(
+                token, self.paths.meshbeacon / "discovery.json", base_url=self.supervisor_url or "http://supervisor"
+            )
+            if token
+            else None
+        )
+        if not self.settings.home_assistant_integration:
+            if discovery is not None and (self.paths.meshbeacon / "discovery.json").exists():
+                threading.Thread(target=discovery.withdraw, name="discovery", daemon=True).start()
+            return
+        api_token = new_token()
+        try:
+            tls, fingerprint = make_tls(self.python, self.child_env())
+            self.api_store = StatusStore(api_token)
+            self.api_server = ApiServer(self.api_store, self.api_host, self.api_port, tls=tls)
+            self.api_server.start()
+        except (OSError, TlsError):  # never falls back to plain HTTP
+            self.api_store = self.api_server = None
+            self.say("⚠ MeshBeacon could not start its Home Assistant status interface. The node works normally.")
+            return
+        self.publish()
+        self.say(MSG_API_STARTED)
+        if discovery is None:
+            self.say("⚠ Not running under the Home Assistant Supervisor, so Home Assistant cannot be told about it.")
+            return
+        host, port = self.hostname(), self.api_server.port
+
+        def announce() -> None:
+            try:
+                discovery.keep_announced(
+                    host,
+                    port,
+                    api_token,
+                    self.discovery_stop,
+                    self.discovery_results.append,
+                    cert_sha256=fingerprint,
+                    **self.discovery_timing,
+                )
+            except Exception:  # never let monitoring take anything else down
+                self.discovery_results.append(False)
+
+        threading.Thread(target=announce, name="discovery", daemon=True).start()
+
+    def monitor(self, fn: Callable[..., object], *args: Any, **kwargs: Any) -> None:
+        """Run a metrics update. Monitoring is never allowed to interrupt supervision of Reticulum."""
+        try:
+            fn(*args, **kwargs)
+        except Exception as exc:
+            if self.due("monitoring_error", 3600, first=True):
+                self.say(MSG_MONITORING_ERROR.format(name=type(exc).__name__))
+
+    def publish(self) -> None:
+        """Rebuild the snapshot served to Home Assistant. Failures never reach Reticulum."""
+        if self.api_store is None:
+            return
+        try:
+            self.api_store.publish(self.build_snapshot())
+        except Exception as exc:  # monitoring must never interrupt the node
+            if self.due("monitoring_error", 3600, first=True):
+                self.say(MSG_MONITORING_ERROR.format(name=type(exc).__name__))
+
+    def api_housekeeping(self) -> None:
+        if self.api_store is None:
+            return
+        try:
+            self._api_housekeeping()
+        except Exception as exc:  # monitoring must never interrupt the node
+            if self.due("monitoring_error", 3600, first=True):
+                self.say(MSG_MONITORING_ERROR.format(name=type(exc).__name__))
+
+    def _api_housekeeping(self) -> None:
+        assert self.api_store is not None  # noqa: S101 - checked by the caller
+        if self.due("publish", self.t.status_interval / 2, first=True):
+            self.publish()
+        while self.discovery_results:
+            ok = self.discovery_results.pop(0)
+            if ok and self.discovery_ok is None:
+                self.say(MSG_DISCOVERY_OK)
+            elif ok and self.discovery_ok is False:
+                self.say(MSG_DISCOVERY_RECOVERED)
+            elif not ok and self.discovery_ok is not False:
+                self.say(MSG_DISCOVERY_FAILED)  # said once per outage, not at every retry
+            self.discovery_ok = ok
+        if self.due("api_refused", 3600):
+            refused = self.api_store.take_refused()
+            if refused:
+                self.say(f"⚠ {refused} requests to the status interface were refused in the last hour (wrong key).")
+
     # -- main loop ---------------------------------------------------------------------------
     def _on_signal(self, signum: int, _frame: object) -> None:
         self.stopping = True
@@ -485,6 +706,7 @@ class Supervisor:
             if data:
                 self._handle_lines(key.data, buf.feed(data))
         self.flush_suppressed()
+        self.api_housekeeping()
         if self.attention is not None:
             if self.due("attention", self.t.attention_reminder):
                 for m in self.attention:
@@ -504,11 +726,13 @@ class Supervisor:
         """Start-up sequence. Returns False if MeshBeacon is waiting for the user."""
         self.load_settings()
         self.startup_report()
+        self.setup_integration()
         try:
             fsutil.ensure_dir(self.paths.meshbeacon)
         except OSError:
             self.enter_attention(
-                ["✖ MeshBeacon cannot write to its data folder. Restart the app; if this repeats, reinstall it."]
+                ["✖ MeshBeacon cannot write to its data folder. Restart the app; if this repeats, reinstall it."],
+                "data_folder",
             )
             return False
         history = self.history()
@@ -521,14 +745,15 @@ class Supervisor:
                     "✖ MeshBeacon has been restarted many times in a short period, so it has paused "
                     f"to avoid a restart loop. Restart it after {when}, or change any option to try "
                     "again now."
-                ]
+                ],
+                "restart_loop_paused",
             )
             return False
         if not self.prepare_or_attention("start"):
             return False
         self.load_settings()
         if self.settings is None:  # pragma: no cover - prepare validated the same file
-            self.enter_attention(["✖ The app options could not be read."])
+            self.enter_attention(["✖ The app options could not be read."], "options")
             return False
         if not self.settings.peers:
             self.snapshot = evaluate((), None)
@@ -548,6 +773,9 @@ class Supervisor:
         finally:
             self.say("Stopping MeshBeacon.")
             self.stop_child()
+            self.discovery_stop.set()
+            if self.api_server is not None:
+                self.api_server.stop()
             self.health.stop()
         return 0
 
@@ -558,7 +786,17 @@ def main() -> int:
         os.nice(10)  # Home Assistant always wins CPU contention
     port = int(os.environ.get("MESHBEACON_HEALTH_PORT", "8099"))
     host = os.environ.get("MESHBEACON_HEALTH_HOST", "0.0.0.0")
-    return Supervisor(Paths.from_env(), health_host=host, health_port=port).run()
+    api_port = int(os.environ.get("MESHBEACON_API_PORT", "8100"))
+    supervisor_token = os.environ.pop(SUPERVISOR_TOKEN_ENV, None) or None
+    return Supervisor(
+        Paths.from_env(),
+        health_host=host,
+        health_port=port,
+        api_host=host,
+        api_port=api_port,
+        supervisor_token=supervisor_token,
+        supervisor_url=os.environ.get("MESHBEACON_SUPERVISOR_URL"),
+    ).run()
 
 
 if __name__ == "__main__":

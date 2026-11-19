@@ -38,7 +38,7 @@ def evaluate(configured: tuple[str, ...], status: dict[str, Any] | None) -> Snap
         state = Connectivity.PARTIAL
     else:
         state = Connectivity.ONLINE
-    return Snapshot(state, up, len(configured), int(status.get("rxb", 0)), int(status.get("txb", 0)))
+    return Snapshot(state, up, len(configured), int(status.get("rxb") or 0), int(status.get("txb") or 0))
 
 
 def human_bytes(n: int) -> str:

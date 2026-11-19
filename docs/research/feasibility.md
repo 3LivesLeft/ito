@@ -567,7 +567,7 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-8 | Can a bridged-network app use the HA Tailscale app's tailnet? | Open — Phase 1 test on device |
 | Q-9 | First-run UX with no default remote | **Resolved in design:** [first-run UX](../ux/first-run.md), [ADR 0004](../adr/0004-public-peer-presets.md) |
 | Q-10 | Long-run memory/CPU on Pi 4B on a real network | Open — Phase 1 soak test |
-| Q-11 | Permissions needed to publish Supervisor discovery | Open — v0.2 |
+| Q-11 | Permissions needed to publish Supervisor discovery | **Resolved (v0.2):** none beyond `discovery:` in `config.yaml`. `/discovery.*` is in the Supervisor's app API bypass, and only HA Core can read messages (Supervisor `e610ca8`; [v0.2 design §2](v0.2-observability.md#2-options-considered-for-home-assistant)). Manual token entry is not offered |
 | Q-12 | Launch `rnsd` vs a thin Python entry point | **Resolved (Phase 1):** thin entry point `meshbeacon.node` using the public `RNS.Reticulum` API (architecture §9) |
 | Q-13 | Interoperability of Python RNS 1.6.x with Ratspeak servers and apps (Rust `rsReticulum`) | Open — **public release gate** (RG-10); not a local development blocker |
 | Q-14 | How will MeshBeacon track RNS security fixes given the mirror-only upstream? | Open — maintainer |

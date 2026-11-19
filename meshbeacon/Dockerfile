@@ -2,7 +2,7 @@
 # MeshBeacon app image. Base image pinned by multi-arch digest (Python 3.13, Alpine 3.24).
 FROM ghcr.io/home-assistant/base-python:3.13-alpine3.24@sha256:c7d34ae22a87275d46deb65bcb0511b389d7bc6eb8dccb28d44dd7cb8616e603
 
-ARG BUILD_VERSION=0.1.2
+ARG BUILD_VERSION=0.2.0
 ARG BUILD_ARCH
 
 ENV \

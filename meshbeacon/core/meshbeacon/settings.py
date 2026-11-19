@@ -28,7 +28,14 @@ _LABEL_RE = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
 # "\") or to its interpolation ("%", "$"). No leading or trailing space.
 _PASSPHRASE_FORBIDDEN = set("\"'#,%$\\")
 
-ALLOWED_TOP_LEVEL = {"peers", "transport", "log_level", "memory_limit_mb", "replace_identity"}
+ALLOWED_TOP_LEVEL = {
+    "peers",
+    "transport",
+    "log_level",
+    "memory_limit_mb",
+    "replace_identity",
+    "home_assistant_integration",
+}
 ALLOWED_PEER_KEYS = {"name", "host", "port", "network_name", "passphrase"}
 
 
@@ -56,6 +63,7 @@ class Settings:
     log_level: LogLevel = "normal"
     memory_limit_mb: int = MEMORY_LIMIT_DEFAULT_MB
     replace_identity: bool = False
+    home_assistant_integration: bool = False
 
     @property
     def secrets(self) -> tuple[str, ...]:
@@ -196,6 +204,7 @@ def parse_options(raw: Any) -> Settings:
 
     transport = _bool(raw, "transport", False, problems)
     replace_identity = _bool(raw, "replace_identity", False, problems)
+    integration = _bool(raw, "home_assistant_integration", False, problems)
 
     if problems:
         raise ValidationError(problems)
@@ -205,4 +214,5 @@ def parse_options(raw: Any) -> Settings:
         log_level=log_level,
         memory_limit_mb=memory,
         replace_identity=replace_identity,
+        home_assistant_integration=integration,
     )

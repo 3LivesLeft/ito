@@ -1,0 +1,5 @@
+# Home Assistant integration tests (tests/ha). Home Assistant needs Python 3.14, so these run in a
+# separate CI job from the app's Python 3.13 tests. Pinned by version.
+pytest-homeassistant-custom-component==0.13.375
+mypy==2.4.1
+pyyaml==6.0.3

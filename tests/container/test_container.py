@@ -375,3 +375,90 @@ def test_apparmor_confinement_is_active_and_restrictive(run):
     assert denied.returncode == 126, denied
     assert "permission denied" in (denied.stdout + denied.stderr).lower(), denied
     c.exec("rm", "-f", "/data/mb-busybox")
+
+
+SUPERVISOR_TOKEN = "container-test-supervisor-token"
+
+
+def test_home_assistant_integration_end_to_end(run, network, tmp_path):
+    """v0.2 (ADR 0006): discovery to a fake Supervisor, token-protected API on port 8100 only,
+    the Supervisor token never reaches Reticulum, and idle memory stays under 128 MB."""
+    repo = Path(__file__).resolve().parents[2]
+    out = tmp_path / "supervisor"
+    out.mkdir()
+    out.chmod(0o777)
+    sup = f"mbsup-{uuid.uuid4().hex[:6]}"
+    sh(
+        "docker", "run", "-d", "--name", sup, "--network", network, "--network-alias", "supervisor",
+        "-v", f"{repo / 'tests' / 'container' / 'fake_supervisor.py'}:/fake.py:ro", "-v", f"{out}:/out",
+        "--entrypoint", "python3", IMAGE, "-I", "/fake.py",
+    )  # fmt: skip
+    try:
+        c = run(
+            {**DEFAULTS, "home_assistant_integration": True},
+            "-e",
+            f"SUPERVISOR_TOKEN={SUPERVISOR_TOKEN}",
+            "--hostname",
+            "local-meshbeacon",
+            "--network-alias",
+            "local-meshbeacon",
+        )
+        assert wait_for((out / "discovery.json").exists, timeout=60), c.logs()
+        record = json.loads((out / "discovery.json").read_text())
+        assert record["path"] == "/discovery" and record["auth"] == f"Bearer {SUPERVISOR_TOKEN}"
+        config = record["body"]["config"]
+        assert record["body"]["service"] == "meshbeacon"
+        assert config["host"] == "local-meshbeacon" and config["port"] == 8100
+        assert len(config["cert_sha256"]) == 64
+        token = config["token"]
+
+        fingerprint = config["cert_sha256"]
+        fetch = (
+            "import hashlib, http.client, ssl, sys\n"
+            "c = ssl.create_default_context(); c.check_hostname = False; c.verify_mode = ssl.CERT_NONE\n"
+            "h = http.client.HTTPSConnection('local-meshbeacon', 8100, timeout=10, context=c); h.connect()\n"
+            "fp = hashlib.sha256(h.sock.getpeercert(binary_form=True)).hexdigest()\n"
+            "if fp != sys.argv[2]: print('PIN-MISMATCH'); sys.exit(0)\n"
+            "auth = {'Authorization': 'Bearer ' + sys.argv[1]} if sys.argv[1] else {}\n"
+            "h.request('GET', '/api/v1/status', headers=auth)\n"
+            "r = h.getresponse(); print(r.status); print(r.read().decode())\n"
+        )
+
+        def get(auth: str | None) -> str:
+            cmd = ["docker", "exec", sup, "python3", "-I", "-c", fetch, auth or "", fingerprint]
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            return r.stdout + r.stderr
+
+        assert "401" in get(None) and "401" in get("wrong")
+
+        def snapshot() -> dict:
+            reply = get(token)
+            return json.loads(reply[reply.index("{") : reply.rindex("}") + 1]) if "{" in reply else {}
+
+        assert wait_for(lambda: snapshot().get("node", {}).get("running") is True, timeout=60), get(token)
+        snap = snapshot()
+        assert snap["app"]["state"] == "running" and snap["app"]["problem"] == "isolated"
+        assert snap["app"]["version"] == "0.2.0"
+        # Listeners: health (8099) and the API (8100); nothing published, nothing outbound to peers.
+        listening = {
+            line.split()[1].split(":")[1]
+            for line in c.exec("cat", "/proc/net/tcp").splitlines()[1:]
+            if line.split()[3] == "0A" and not line.split()[1].startswith("0B00007F:")
+        }
+        assert listening == {"1FA3", "1FA4"}, listening
+        # The Supervisor token is never passed to the prepare step or Reticulum.
+        rns = c.exec("pgrep", "-f", "meshbeacon.node").split()[0]
+        # Read as the service user: root in the container lacks CAP_SYS_PTRACE, so it cannot.
+        environ = sh("docker", "exec", "-u", "meshbeacon", c.name, "cat", f"/proc/{rns}/environ")
+        assert "MESHBEACON_DATA" in environ  # the read worked
+        assert SUPERVISOR_TOKEN not in environ
+        assert SUPERVISOR_TOKEN not in c.logs() and token not in c.logs()
+        time.sleep(20)
+        mem = c.exec("sh", "-c", "for p in $(pgrep -u meshbeacon); do grep -E '^(VmRSS|VmSwap)' /proc/$p/status; done")
+        total_kb = sum(int(line.split()[1]) for line in mem.splitlines())
+        label = "EMULATED (indicative only)" if EMULATED else "native"
+        print(f"idle RSS+swap with the Home Assistant integration on ({label}): {total_kb / 1024:.1f} MiB")
+        if not EMULATED:
+            assert total_kb < 128 * 1024
+    finally:
+        sh("docker", "rm", "-f", sup, check=False)

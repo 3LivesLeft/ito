@@ -8,8 +8,10 @@ see [CONTRIBUTING.md](CONTRIBUTING.md), which takes precedence over this file.
 MeshBeacon is a free, privacy-first Home Assistant app (formerly "add-on") that runs the
 **unmodified** Reticulum reference implementation (RNS, and later LXMF) and surfaces it in Home
 Assistant. Phase 0 (research and design) is complete. **Phase 1 (v0.1.0 foundation) is authorised** on
-branch `feature/v0.1.0-foundation`, starting after PR #1 is merged. Do not begin v0.2.0 work
-without approval. Never publish images, create releases, connect to live public Reticulum
+branch `feature/v0.1.0-foundation` (PR #2). **v0.2.0 (monitoring and observability) is authorised**
+on branch `feature/v0.2.0-observability`, based on PR #2's reviewed head `192db5f` and kept separate
+from it; ADR 0006 (local status API and Supervisor discovery) is proposed and needs approval before
+its option may default to on. LXMF, LoRa, I2P and remote control remain out of scope. Never publish images, create releases, connect to live public Reticulum
 infrastructure or deploy to the maintainer's Home Assistant without explicit approval.
 
 ## Hard rules
@@ -81,9 +83,12 @@ docs/security/threat-model.md      assets, threats (T-n), controls
 docs/testing/strategy.md           isolated-network and reference-environment testing
 docs/testing/reference-environment.md  maintainer's reference device (no household identifiers)
 docs/adr/NNNN-*.md                 architecture decision records
+docs/research/v0.2-observability.md  v0.2 feasibility, architecture, security review
+docs/home-assistant-integration.md  v0.2 integration: set-up, entities, dashboard
+custom_components/meshbeacon/       v0.2 Home Assistant integration
 ```
 
-## Developing (Phase 1)
+## Developing (Phase 1 and v0.2)
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
@@ -92,7 +97,14 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/pytest -m "not container"            # unit + isolated-network integration (loopback only)
 docker buildx build --load -t meshbeacon:dev meshbeacon
 MESHBEACON_IMAGE=meshbeacon:dev .venv/bin/pytest -m container tests/container
+# Home Assistant integration (needs Python 3.14 and requirements-ha-test.txt):
+mypy --strict --python-version 3.14 custom_components/meshbeacon
+python -m pytest tests/ha -o "pythonpath=meshbeacon/core ." -o asyncio_mode=auto
 ```
+
+v0.2: `custom_components/meshbeacon/` is the HA integration (never imports RNS or the core; talks
+only to `GET /api/v1/status`, schema 1). Metrics are computed only in `core/meshbeacon/metrics.py`;
+read only allow-listed RNS counters and report anything unavailable as `null`, never as zero.
 
 Layout: `meshbeacon/` is the app folder (Supervisor build context); `meshbeacon/core/meshbeacon/`
 is the HA-free core; only `prepare.py` and `node.py` import RNS. Child processes are started with

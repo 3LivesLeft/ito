@@ -36,9 +36,13 @@ class PrepareResult:
     warnings: list[str] = field(default_factory=list)
     info: list[str] = field(default_factory=list)
     identity: str = ""
+    # Stable code for the first problem (v0.2 diagnostics): options, storage, identity,
+    # configuration or unexpected.
+    problem: str = ""
 
-    def fail(self, message: str) -> PrepareResult:
+    def fail(self, message: str, problem: str) -> PrepareResult:
         self.ok = False
+        self.problem = self.problem or problem
         self.attention.append(message)
         return self
 
@@ -49,12 +53,13 @@ def load_settings(paths: Paths, result: PrepareResult) -> Settings | None:
     except FileNotFoundError:
         raw = {}
     except (OSError, ValueError):
-        result.fail("MeshBeacon could not read its options. Open the Configuration tab and save them again.")
+        result.fail("MeshBeacon could not read its options. Open the Configuration tab and save them again.", "options")
         return None
     try:
         return parse_options(raw)
     except ValidationError as exc:
         result.ok = False
+        result.problem = result.problem or "options"
         result.attention.append("Some options need correcting in the Configuration tab:")
         result.attention.extend(f"  • {p}" for p in exc.problems)
         return None
@@ -65,7 +70,8 @@ def check_storage(paths: Paths, result: PrepareResult) -> bool:
     if free < FREE_SPACE_FLOOR:
         result.fail(
             "There is less than 200 MB of free storage, so MeshBeacon has not started Reticulum. "
-            "Free some space on your Home Assistant device and restart the app."
+            "Free some space on your Home Assistant device and restart the app.",
+            "storage",
         )
         return False
     if free < FREE_SPACE_WARN:
@@ -94,7 +100,7 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
     outcome = manager.ensure(replace_requested=settings.replace_identity, allow_replace=(mode == "start"))
     result.identity = outcome.outcome.value
     if not outcome.ok:
-        return result.fail(outcome.message)
+        return result.fail(outcome.message, "identity")
     if mode == "start" or outcome.outcome is not Outcome.UNCHANGED:
         result.info.append(outcome.message)
 
@@ -105,7 +111,8 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
     except rnsconfig.RenderError:
         return result.fail(
             "MeshBeacon could not build a safe Reticulum configuration from your options, so it "
-            "has not started Reticulum. Check the peer details in the Configuration tab."
+            "has not started Reticulum. Check the peer details in the Configuration tab.",
+            "configuration",
         )
     fsutil.atomic_write(paths.rns_config, text.encode())
     fsutil.repair_permissions(paths.reticulum)
@@ -124,7 +131,8 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:  # unexpected: report, never loop
         result = PrepareResult().fail(
             f"MeshBeacon hit an unexpected problem while preparing to start ({type(exc).__name__}). "
-            "It has not started Reticulum. Restart the app; if this repeats, please report it."
+            "It has not started Reticulum. Restart the app; if this repeats, please report it.",
+            "unexpected",
         )
     fsutil.atomic_write_json(args.result, asdict(result))
     return 0

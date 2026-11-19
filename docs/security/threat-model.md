@@ -50,7 +50,7 @@ reference the [feasibility study](../research/feasibility.md) and
 | T8 | B1 | T/E | Auto-connecting to untrusted discovered interfaces; LAN discovery | Never rendered; `AutoInterface` off | Planned |
 | T9 | B1 | D | Announce/path-request floods exhaust memory/CPU | Transport off by default; RNS native ingress control/announce cap; RSS watchdog; `nice` | Planned |
 | T10 | B1 | D | 5G data exhaustion as a transport node | Transport opt-in with explanation; byte counters; optional data warning | Planned (warning only) |
-| T11 | B2 | S | Unauthenticated local API (v0.2) | Not present in v0.1; v0.2: token, internal network only, no published port | Deferred |
+| T11 | B2 | S | Unauthenticated local API (v0.2) | Off by default, permanently. When on: TLS 1.3 with a pinned per-start certificate, a 256-bit bearer token compared in constant time, internal network only, no published port, read-only ([ADR 0006](../adr/0006-local-metrics-api.md)) | Implemented in v0.2 (tests `tests/unit/test_api.py`, `tests/integration/test_metrics_rns.py`, container test) |
 | T12 | B2 | E | Excess HA permissions | No `homeassistant_api`, `hassio_api`, `auth_api` in v0.1 | Planned |
 | **T13** | B4 | E | Container escape or host compromise; compromise of a root process | Non-root `meshbeacon` user for core and RNS; root limited to a small init step; no extra capabilities; AppArmor profile; no Docker socket | Planned |
 | T14 | B6 | T | Malicious or compromised dependency or base image | Hash-pinned deps; digest-pinned base; signed images; SBOM; vulnerability scanning; reviewed dependency updates | Planned |
@@ -66,12 +66,21 @@ reference the [feasibility study](../research/feasibility.md) and
 | T24 | — | — | Upstream RNS unmaintained or slow to fix (mirror-only — **verified**) | Release monitoring; compatibility tests; ADR 0001 review triggers | Accepted residual risk |
 | **T26** | B4 | I/E | **High-privilege co-installed apps** (e.g. an SSH/terminal app with protection mode disabled) can reach the Docker daemon and read any app's `/data`, including the identity (**[Assumption]**) | Outside MeshBeacon's control: documented in `DOCS.md` and SECURITY.md; recommend keeping protection mode enabled | Accepted residual risk (documented) |
 | **T27** | B1 | I/D | **DNS resolver** (e.g. AdGuard Home) logs peer lookups or blocks a peer hostname | Document; plain "cannot resolve" message with no restart loop; reference tests C5–C8 | Planned |
+| **T28** | B2 | I | **Another app on the internal network reads the status API** | Bearer token; no listener while the option is off; token only in Supervisor discovery, which only HA Core can read (verified, Supervisor `e610ca8`) | Implemented (v0.2) |
+| **T29** | B2 | I | **Token leaks** through logs, exceptions, flow listings, diagnostics or backups | Token in memory only in the app; never logged by app or integration (tested under every failure mode with debug logging); diagnostics redact it; rotated every start. HA's config entry holds it in plain JSON, so it is in `/config` and HA backups until the next app start (residual RR-1) | Implemented (v0.2); residual documented |
+| **T30** | B2 | D | **API request flood or slow clients** starve the core or the watchdog | API: ≤ 4 connections, 5 s inactivity timeout, 10 s absolute deadline, pre-built snapshot. `/health` on its own server: ≤ 16 connections, 5 s deadline. Errors counted, not printed. 30 s flood test: watchdog answered throughout, Reticulum unaffected | Implemented (v0.2); residual RR-2 (sustained flood above 16 connections) |
+| **T31** | B2 | I | **Identifier disclosure** through metrics (hashes, peer hosts, network names, passphrases) | Allow-listed counters only; no hosts, network names or hashes in the snapshot (asserted in tests); peer names only | Implemented (v0.2) |
+| **T32** | B4 | E | **Supervisor token reaches Reticulum** or the prepare step | Removed from the child environment; verified by reading `/proc/<pid>/environ` in integration and container tests | Implemented (v0.2) |
+| **T33** | B2 | T | **Misleading metrics** (invented or wrongly reset values) mislead diagnosis | Unavailable values are `null` and shown as unknown; no forwarded-packet figure (RNS exposes none); "Links relayed for others" explained as not packets; contract test pins the RNS keys | Implemented (v0.2) |
+| **T34** | B2 | I/T/S | **Interception or impersonation on the internal network.** Apps keep `NET_RAW` unless the Supervisor's `app_drop_net_raw` flag is on (verified, default off), so an app can ARP-spoof and read or alter plain HTTP | TLS 1.3; throwaway certificate per start; fingerprint delivered by discovery and pinned before the token is sent | Implemented (v0.2) |
+| **T35** | B2 | S/T | **Discovery spoofing**: another app declares the `meshbeacon` service to redirect the integration or capture credentials | Only MeshBeacon slugs; host must be the sending app's own hostname; fingerprint required; entries keyed by the slug the Supervisor sets; a look-alike needs confirmation naming app and slug | Implemented (v0.2); residual RR-3 |
+| **T36** | B5 | D | **Monitoring failure disturbs Reticulum** | Every metrics call, snapshot and discovery step isolated from the supervision loop (a defect of this kind was found and fixed in review) | Implemented (v0.2) |
 | **T25** | B6 | — | **AI-tool data use**: RNS source given to an AI tool whose provider trains on inputs would risk breaching the Reticulum License's AI condition | Project rules in licensing §6.4: training opted out; documentation rather than source; no datasets | Planned (process control) |
 
 ## 4. Later versions (outline)
 
-- **v0.2 local API and integration:** token authentication, internal network only, read-only
-  until v0.3; redacted diagnostics; identity import with validation and confirmation.
+- **v0.2 local API and integration:** implemented as T11 and T28–T33 ([ADR 0006](../adr/0006-local-metrics-api.md)).
+  Identity import is deferred beyond v0.2.
 - **v0.3 messaging:** LXMF identity 0600; no message content in logs or diagnostics; document that
   HA composes notifications in plaintext before LXMF encrypts them; propagation node opt-in with
   disk quota.

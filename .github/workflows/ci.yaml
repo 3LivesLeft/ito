@@ -29,8 +29,8 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
       - run: pip install -r requirements-dev.txt
-      - run: ruff check meshbeacon/core tests tools
-      - run: ruff format --check meshbeacon/core tests tools
+      - run: ruff check meshbeacon/core custom_components tests tools
+      - run: ruff format --check meshbeacon/core custom_components tests tools
       - run: mypy
       - name: Shell scripts
         run: shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/meshbeacon/run meshbeacon/rootfs/etc/services.d/meshbeacon/finish tests/container/build_localbase.sh
@@ -54,6 +54,37 @@ jobs:
           docker run --rm --network none -v "$PWD:/src" -w /src python:3.13-slim sh -c '
             pip install -q --no-index --find-links /src/.wheelhouse -r requirements-test.txt &&
             python -m pytest -m "not container" -p no:cacheprovider'
+
+  home-assistant:
+    name: Home Assistant integration tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.14" }
+      - run: pip install -r requirements-ha-test.txt
+      - name: Type check (strict, against Home Assistant's own types)
+        run: mypy --strict --python-version 3.14 custom_components/meshbeacon
+      - name: Integration tests (HTTP is mocked; no network)
+        run: >-
+          python -m pytest tests/ha -p no:cacheprovider
+          -o "pythonpath=meshbeacon/core ." -o asyncio_mode=auto
+
+  home-assistant-release:
+    name: Home Assistant 2026.11.2 (reference release) smoke test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.14" }
+      - name: Install Home Assistant in a virtual environment (it refuses to run outside one)
+        run: python -m venv "$RUNNER_TEMP/ha" && "$RUNNER_TEMP/ha/bin/pip" install -r requirements-ha-smoke.txt
+      - name: Type check against this release
+        run: '"$RUNNER_TEMP/ha/bin/mypy" --strict --python-version 3.14 custom_components/meshbeacon'
+      - name: Real Home Assistant with the integration and a fake status API (127.0.0.1 only)
+        run: '"$RUNNER_TEMP/ha/bin/python" tools/ha_smoke_test.py --hass-python "$RUNNER_TEMP/ha/bin/python" --seconds 200'
 
   container:
     name: Container tests (${{ matrix.arch }})
