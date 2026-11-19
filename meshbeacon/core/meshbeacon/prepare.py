@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import sqlite3
 import sys
@@ -104,12 +103,13 @@ def check_sqlite_storage(paths: Paths, result: PrepareResult) -> bool:
             temporary.write(b"sqlite-temp-check")
             temporary.flush()
     except (OSError, sqlite3.Error) as exc:
-        return bool(result.fail(
+        result.fail(
             "Reticulum's database storage is not writable or SQLite cannot use its temporary "
             f"directory ({type(exc).__name__}). Check the app's storage permissions and free "
             "space; existing identities and databases have not been modified.",
             "storage",
-        ).ok)
+        )
+        return False
     return True
 
 
