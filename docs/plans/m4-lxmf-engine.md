@@ -72,6 +72,12 @@ MS-7, MS-11, MS-12, MS-13, MS-20 and MS-22 belong to M5 (Home Assistant). MS-17 
 | **D-M4-4** | Contacts in M4 | A development-only file; user-facing configuration with M5 |
 | **D-M4-5** | Order | WP1, then WP2, then WP3 to WP5, then WP6; one draft PR, opened only when asked |
 
+## Decisions after the spike (maintainer, 19 Nov 2026)
+
+- **D-M4-6:** a narrow IS-3 exception for the RNS shared-instance socket only (roadmap IS-3a).
+- **D-M4-7:** continue. +40 MiB stays the binding criterion, measured on the spare Pi (MS-18); the
+  container reading is a warning, and the engine avoids loading what it does not use.
+
 ## Progress (19 Nov 2026)
 
 **WP1 (isolation) is complete:** `87a249e`. CI is green on the real base image, including amd64
