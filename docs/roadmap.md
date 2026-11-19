@@ -115,9 +115,12 @@ releases, each behind its own gate. **M1 (install-ready repository) is authorise
 `feature/v0.3.0-install-ready`; it is implementation-complete, subject to independent review
 and release acceptance testing. **M1.1 (security and release readiness):** the independent review
 ([handover](review/m1.1-handover.md)) returned a conditional pass. **M1.2 (security remediation and
-release hardening)** addresses its findings ([remediation record](review/m1.2-remediation.md)) and
-prepares the [VM acceptance tests](testing/v0.3-vm-acceptance.md); it awaits re-verification by a
-genuinely independent reviewer. The VM acceptance tests are still to run before M2. The
+release hardening) is development-complete at `defefdc`** (maintainer, 19 Nov 2026;
+[remediation record](review/m1.2-remediation.md)). Its VM and hardware acceptance tests, and an
+independent review, are **public release blockers** (RG-13 to RG-16 below); they could not be run
+in the cloud sessions used so far, which have no virtualisation. **M4 (the standalone LXMF engine)
+is in planning** on `feature/v0.4-lxmf-engine`; M2 (publishing) still needs RG-13 to RG-16 and
+approval. The
 [process isolation gate](#process-isolation-gate-mandatory) below binds M4 and every community
 service. The
 two v0.3 sections below come from separate branches and are to be reconciled, with the final
@@ -265,6 +268,10 @@ All of tier A (LP-1 to LP-20), plus:
 | RG-10 | Public peer presets: only if verified (V1–V7, two independent operators, operator consent — Q-13, Q-28); otherwise none shipped | Maintainer | Not started |
 | RG-11 | Private vulnerability reporting enabled — Q-27 | Maintainer | Not started |
 | RG-12 | AI assistance disclosed; every merged change reviewed by the named human maintainer | Maintainer | Not started |
+| RG-13 | **v0.3 VM acceptance** on isolated VMs ([procedures](testing/v0.3-vm-acceptance.md)): real Supervisor compatibility and security controls (SO-1, SO-1b, SO-1c, SO-1d, SO-2, SO-3, AA-1, TM-1, with the credential-isolation probe in both transports); terminal-free installation (IN-1 to IN-11, AP-1); migration and rollback (MG-9 to MG-11) | Maintainer (needs a VM host; not runnable in the cloud sessions used so far) | Not started |
+| RG-14 | **v0.3 hardware acceptance** on a spare Pi 4B, never the maintainer's own (HW-1, with v0.2's open OB-9, OB-10, OB-17, OB-20, OB-23, OB-26) | Maintainer | Not started |
+| RG-15 | **Independent security review** of M1.2 (`defefdc`) by a session or person that did not implement it; the interception lab test W3-4 (private) | Maintainer | Not started |
+| RG-16 | Repository settings that no test can check: protected `release` environment with required reviewer, tag protection for `v*`, Actions' default token read-only | Maintainer | Not started |
 
 ---
 
