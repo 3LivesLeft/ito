@@ -540,9 +540,14 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
             )  # fmt: skip
             assert probe.returncode != 0 and "Permission" in probe.stderr, probe
         # The core holds the link; the Reticulum child has no part of it.
-        link = json.loads(c.exec("python3", "-I", "-c", LINK_PROBE))
+        # Run as the service user: Reticulum's own user, and the only one allowed to read the core's
+        # /proc entries (root in the container lacks CAP_SYS_PTRACE).
+        link = json.loads(sh("docker", "exec", "-u", "meshbeacon", c.name, "python3", "-I", "-c", LINK_PROBE))
+        print(f"relay link probe: {link}")
         assert link["core_fd"] is not None and link["core_is_socket"], link
         assert not link["node_shares_it"], link
+        if APPARMOR:  # residual (threat T72): only AppArmor's ptrace denial stops this
+            assert not link["same_user_can_take_link"], link
         # L-1: in socket mode the Supervisor token never enters the core's environment at all.
         assert link["core_env_token"] is False and link["node_env_token"] is False, link
     finally:
@@ -570,11 +575,27 @@ def inode(pid, fd):
     except OSError:
         return None
     return st.st_ino if (st.st_mode & 0o170000) == 0o140000 else None
+def take(pid, fd):
+    # Try to copy the core's descriptor, as a compromised same-user process might (pidfd_getfd).
+    import ctypes
+    libc = ctypes.CDLL(None, use_errno=True)
+    try:
+        pidfd = os.pidfd_open(int(pid))
+    except OSError:
+        return False
+    try:
+        got = libc.syscall(438, pidfd, int(fd), 0)  # pidfd_getfd (x86-64 and arm64)
+        if got >= 0:
+            os.close(got)
+        return got >= 0
+    finally:
+        os.close(pidfd)
 core, node = pid_of(b'meshbeacon.supervisor'), pid_of(b'meshbeacon.node')
 fd = environ(core).get(b'MESHBEACON_RELAY_FD')
 core_inode = inode(core, fd.decode()) if fd else None
 node_inodes = {inode(node, n) for n in os.listdir(f'/proc/{node}/fd')}
 print(json.dumps({
+    'same_user_can_take_link': take(core, fd.decode()) if fd else False,
     'core_fd': fd.decode() if fd else None,
     'core_is_socket': core_inode is not None,
     'node_shares_it': core_inode is not None and core_inode in node_inodes,
