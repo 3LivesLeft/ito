@@ -35,7 +35,7 @@ messaging milestone. "v0.3" below means whichever of the two takes the decision.
 | F-6 | Message size, delivery-method and timeout defaults | LoRa links (principle 3), voice bursts (v0.6) | Medium | — | Gate MG-7 |
 | F-7 | Storage quota and backup treatment of messages | Boards, libraries, replication (v0.5, v0.7) | Medium | Q-44 | Open (MG-6) |
 | F-8 | Whether the optional propagation node stays in v0.3 | Community propagation services (v0.5) | Medium | Q-40 | Decided: proposed v0.5 |
-| F-9 | Publishing the app for store installation | Name, slug and data layout become permanent | **High** | Q-41, Q-43, Q-45 | Open; blocks v0.3.0 ([naming §5](naming.md#5-reassessment-for-the-community-direction-19-november-2026)) |
+| F-9 | Publishing the app for store installation | Name, slug and data layout become permanent | **High** | Q-41, Q-43, Q-45 | Q-43, Q-45 resolved ([v0.3 distribution](v0.3-distribution.md)); naming open, blocks v0.3.0 ([naming §5–6](naming.md#6-availability-and-collision-assessment-commonwave-19-november-2026)) |
 | F-10 | Status API schema when messaging metrics are added | Radio interfaces, multiple services | Low | — | Unchanged |
 | F-11 | Memory budget with LXMF loaded | Running several services on one small device | Low | — | Unchanged |
 
@@ -136,12 +136,11 @@ messaging milestone. "v0.3" below means whichever of the two takes the decision.
   working when the internet does not (naming research §1.1). The new community, offline-first
   direction moves this project closer to it in purpose and audience than the household framing
   assessed in ADR 0003.
-- **[Verified]** (HA developer documentation, "Create an app repository", read 19 November 2026)
-  Apps are installed by adding a git repository with `repository.yaml` from the App store, and a
-  My Home Assistant link can do this in one click. That page describes no central catalogue or
-  listing process; what "Marketplace" refers to is Q-43. The integration cannot be installed this
-  way (Q-45). Any such submission must be made by the maintainer personally (CLAUDE.md rule 10).
-- **[Open] Q-41, Q-43.**
+- **[Verified]** (Home Assistant 2026.11.2; [v0.3 distribution](v0.3-distribution.md)) The backend
+  app is installed from the Supervisor **App store** (a repository with `repository.yaml`); the
+  integration from the Core **Marketplace** (needs `hacs.json`; catalogue `hacs/default`). Q-43 and
+  Q-45 are resolved. Any such submission must be made by the maintainer personally (CLAUDE.md rule 10).
+- **[Open] Q-41** (Commonwave assessed in [naming §6](naming.md#6-availability-and-collision-assessment-commonwave-19-november-2026)).
 
 ### F-10 Status API schema
 

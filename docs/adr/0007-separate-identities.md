@@ -32,8 +32,14 @@ public address and make it impossible to retire one role without changing all of
 4. A new identity is created only when the user first enables the role that needs it; nothing is
    created or announced by default (see [ADR 0008](0008-opt-in-publication.md)).
 
-The explicit, user-requested *"Replace identity on next start"* option for the transport identity
-(architecture §4.6 item 5, LP-6) is **not** changed by this ADR. See "Open point" below.
+### Identity replacement rules (maintainer, 19 November 2026)
+
+| ID | Rule |
+|---|---|
+| IR-1 | **Automatic upgrades, migrations and normal restarts never replace or regenerate any identity.** This covers app updates, schema or storage migrations, the introduction of new roles, restores from backup, recovery and safe mode |
+| IR-2 | The existing **user-initiated** *"Replace identity on next start"* option (architecture §4.6 item 5, LP-6) is **preserved** |
+| IR-3 | Explicit replacement **requires a confirmation step** in addition to switching the option on, and **explains its consequences** before anything changes: the node gets a new address; peers, paths and contacts that knew the old address will not recognise it; the previous identity is kept in the data folder and in backups; identities of other roles (messaging, public services) are not affected unless replaced separately |
+| IR-4 | Each role's identity can be replaced only individually and only through IR-2/IR-3; there is no "replace all" |
 
 ## Technical validation required
 
@@ -41,7 +47,7 @@ The explicit, user-requested *"Replace identity on next start"* option for the t
 |---|---|---|
 | IV-1 | LXMF accepts a delivery identity distinct from the transport identity, through public APIs only | Isolated-network test (RNS 1.6.0, LXMF 1.3.0 or the pin then current) |
 | IV-2 | Several identities in one RNS instance (or across the processes chosen under ADR 0009) behave as expected, with no private-attribute access | Isolated-network test |
-| IV-3 | An installation upgraded from v0.1/v0.2 keeps a byte-identical transport identity and fingerprint | Upgrade test from a v0.2 `/data` fixture with a throwaway identity |
+| IV-3 | An installation upgraded from v0.1/v0.2 keeps a byte-identical transport identity and fingerprint, and no migration path can reach the replacement code (IR-1) | Upgrade and migration tests from a v0.2 `/data` fixture with a throwaway identity |
 | IV-4 | Crash-safety of creating each new identity (the LP-7 method) | Randomised-kill test |
 | IV-5 | Memory and storage cost per identity is negligible against the 128 MB target | Measurement |
 
@@ -55,11 +61,23 @@ If any item fails, this ADR returns to the maintainer before an alternative is d
 - The identity manager must be generalised from one identity to named identities, keeping the
   transport identity's existing code path and tests intact.
 
-## Open point
+## Resolved point and implementation gap
 
-Item 2 forbids MeshBeacon from replacing the transport identity as part of any change. The
-maintainer is asked to confirm that the existing explicit, user-requested replacement option stays
-(it is covered by LP-6 and journalled), or whether it should be withdrawn. Until then it stays.
+The open point recorded earlier the same day (whether the user-requested replacement option stays)
+is **resolved by IR-2: it stays**.
+
+**[Verified]** The current implementation (v0.1/v0.2) satisfies IR-1 and IR-2:
+
+- replacement is a journalled transaction;
+- it happens only when the user switches the option on, and MeshBeacon refuses to start while
+  the option is left on afterwards (LP-6).
+
+It does **not yet** satisfy IR-3. The option is a single switch, and its description
+(`translations/en.yaml`, `DOCS.md`) mentions only the new address and the kept old identity.
+
+**[Open]** How to add the confirmation step is not chosen; it is an implementation decision for
+the maintainer. Options include a second confirmation field, a confirmation in the optional
+integration, or a two-start handshake. Supervisor options cannot show a dialog.
 
 ## Review triggers
 

@@ -48,6 +48,7 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [Architecture](docs/architecture.md) | Proposed structure and boundaries |
 | [Roadmap](docs/roadmap.md) | Provisional versions, long-term direction and acceptance criteria |
 | [Forward-compatibility review](docs/research/long-term-direction.md) | v0.3 decisions that could constrain the long-term direction |
+| [v0.3 distribution](docs/research/v0.3-distribution.md) | App store (backend) and Marketplace (integration), verified against Home Assistant 2026.11.2 |
 | [Feasibility study](docs/research/feasibility.md) | Phase 0 research with verified facts, assumptions and open questions |
 | [Licensing research](docs/research/licensing.md) | Licence decision, dependency compatibility, AI-training condition, publication obligations |
 | [Threat model](docs/security/threat-model.md) | Assets, threats and controls |

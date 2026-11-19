@@ -10,8 +10,8 @@ MeshBeacon is a free, privacy-first Home Assistant app (formerly "add-on") that 
 Assistant. Phase 0 (research and design) is complete. **Phase 1 (v0.1.0 foundation) is authorised** on
 branch `feature/v0.1.0-foundation` (PR #2). **v0.2.0 (monitoring and observability) is authorised**
 on branch `feature/v0.2.0-observability`, based on PR #2's reviewed head `192db5f` and kept separate
-from it; ADR 0006 (local status API and Supervisor discovery) is proposed and needs approval before
-its option may default to on. Next, v0.3.0 is an installation and distribution release only (ADR 0010);
+from it; ADR 0006 (local status API and Supervisor discovery) is accepted in principle, its security review
+is recorded and PR #3 is merged; its option stays off by default permanently. Next, v0.3.0 is an installation and distribution release only (ADR 0010);
 LXMF messaging is a later, gated v0.3 milestone; ADRs 0007–0009 (separate identities, opt-in
 publication, public-service isolation) constrain it. LXMF, LoRa, I2P and remote control remain out of scope. Never publish images, create releases, connect to live public Reticulum
 infrastructure or deploy to the maintainer's Home Assistant without explicit approval.
@@ -88,6 +88,7 @@ docs/adr/NNNN-*.md                 architecture decision records
 docs/research/v0.2-observability.md  v0.2 feasibility, architecture, security review
 docs/home-assistant-integration.md  v0.2 integration: set-up, entities, dashboard
 docs/research/long-term-direction.md  v0.3 forward-compatibility review (proposed v0.4+ direction)
+docs/research/v0.3-distribution.md  App store and Marketplace installation (HA 2026.11.2)
 custom_components/meshbeacon/       v0.2 Home Assistant integration
 ```
 

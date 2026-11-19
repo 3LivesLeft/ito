@@ -1,7 +1,8 @@
 # ADR 0009: Isolate public services from Home Assistant and from the transport process
 
 - **Status:** **Accepted as an architectural requirement** (maintainer, 19 November 2026). The
-  mechanism is not chosen; it is decided when the first public service is designed.
+  process and IPC mechanism is **deliberately deferred** until a security review and physical
+  Raspberry Pi memory measurements are available (see "Deferral").
 - **Date:** 19 November 2026
 - **Deciders:** MeshBeacon maintainer
 - **Evidence:** [Forward-compatibility review F-1, F-4](../research/long-term-direction.md#f-1-process-model-for-lxmf-and-later-services),
@@ -33,6 +34,18 @@ in the roadmap. Today one child process (`meshbeacon.node`) holds the RNS instan
    (architectural principle 5).
 4. Private messaging (the v0.3 messaging milestone) is **not** a public service, but its design
    must not prevent this separation later.
+
+## Deferral (maintainer, 19 November 2026)
+
+No process or IPC implementation is chosen now. The choice is made only once both are available:
+
+| Input | What is needed |
+|---|---|
+| Security review | Of each candidate, especially a shared RNS instance with a local socket and `rpc_key` (feasibility Q-6): reach from other apps (namespaces, abstract sockets, trust boundary B4), key handling, failure isolation |
+| Raspberry Pi memory | Measured on the physical reference device (not QEMU): idle RSS + swap of each candidate layout with transport, messaging and one stand-in service, against the 128 MB idle target (RG-1 method) |
+
+Until then, designs keep a per-service boundary inside the core (own start, stop, health and
+recovery state) so that any of the options below remains possible.
 
 ## Options to evaluate (not chosen)
 

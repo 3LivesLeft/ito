@@ -53,7 +53,7 @@ propagation is proposed v0.5; I2P, RNode and remote automation are
 ## v0.2.0 — Visibility (merged to `main` in PR #3; physical acceptance pending)
 
 Lightweight, privacy-first monitoring ([feasibility and architecture](research/v0.2-observability.md),
-[ADR 0006](adr/0006-local-metrics-api.md), proposed):
+[ADR 0006](adr/0006-local-metrics-api.md), accepted in principle; its security review is recorded and PR #3 is merged):
 
 - Optional, read-only, token-authenticated local status API (internal network only, off by
   default), delivered to Home Assistant by Supervisor discovery.
@@ -69,15 +69,19 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 ## v0.3.0 — Installation and distribution (next)
 
 Decided by the maintainer, 19 November 2026 ([ADR 0010](adr/0010-v0.3-scope.md)). **No new
-application features.** The release makes MeshBeacon installable through Home Assistant's native
-app installation path:
+application features.** The release makes MeshBeacon installable through Home Assistant's two
+native mechanisms, verified against Home Assistant 2026.11.2
+([distribution research](research/v0.3-distribution.md)):
 
-- signed, multi-arch app images and the app repository (`repository.yaml`, already present),
-  added from the **App store**, with a one-click My Home Assistant link **[Verified]** (HA
-  developer documentation, "Create an app repository");
-- any further catalogue the maintainer names (Q-43); listing anywhere is submitted by the
-  maintainer personally (CLAUDE.md rule 10);
-- installation and update documentation; the v0.2 integration's installation path (Q-45).
+- the **backend app** from the **App store** (Supervisor): signed, multi-arch images and the app
+  repository (`repository.yaml`, already present), added by URL or a My Home Assistant link;
+- the **integration** from the **Marketplace** (Core integration `marketplace`): needs a
+  `hacs.json` at the repository root and in every release (packaging, not yet added). Until the
+  integration is in the `hacs/default` catalogue, users add the repository as a custom repository,
+  which needs a GitHub connection;
+- installation and update documentation for both.
+
+Any catalogue submission is made by the maintainer personally (CLAUDE.md rule 10).
 
 **Gates:** every Tier A criterion (LP-1 to LP-20) and Tier B release gate (RG-1 to RG-12), the
 v0.2 physical acceptance still pending (OB-2, OB-9, OB-10, OB-13, OB-17, OB-20), the naming
@@ -92,9 +96,9 @@ only when **all** of these gates are met; the messaging design turns them into a
 |---|---|
 | MG-1 | **Authorisation:** sending can be restricted to callers the user explicitly approves. The Home Assistant / Supervisor capabilities this needs are identified on the HA release then current, and any permission they require is approved by ADR (hard rule 4). HA's default service-call permissions are not sufficient (maintainer decision, ADR 0010) |
 | MG-2 | An ADR for the Home Assistant → core path for sending; ADR 0006's status API stays read-only |
-| MG-3 | Separate messaging identity: [ADR 0007](adr/0007-separate-identities.md) validation IV-1 to IV-5 passed; transport identity unchanged on upgrade |
+| MG-3 | Separate messaging identity: [ADR 0007](adr/0007-separate-identities.md) validation IV-1 to IV-5 passed; identity rules IR-1 to IR-4 met, including confirmation before an explicit replacement (IR-3) |
 | MG-4 | Announcing the messaging address is an explicit opt-in ([ADR 0008](adr/0008-opt-in-publication.md)) |
-| MG-5 | The process model does not prevent isolating later public services from transport ([ADR 0009](adr/0009-public-service-isolation.md), Q-35) |
+| MG-5 | The process model does not prevent isolating later public services from transport ([ADR 0009](adr/0009-public-service-isolation.md), Q-35). The specific model is chosen only after the security review and physical Pi memory measurements ADR 0009 requires |
 | MG-6 | No message content or metadata in logs or diagnostics; storage location (Q-39), quota and backup treatment (Q-44) decided |
 | MG-7 | Delivery states can express long, LoRa-scale delays (forward-compatibility review F-6) |
 | MG-8 | Interoperability with Sideband, NomadNet, MeshChat and Ratspeak on isolated networks |
@@ -153,7 +157,8 @@ Superseded plans are kept here rather than deleted.
 | Date | Plan | Superseded by |
 |---|---|---|
 | 18 Nov 2026 | v0.3 Messaging (LXMF, HA `notify`, interop testing, optional propagation node); v0.4 Privacy and reachability (I2P, public-gateway investigation); v0.5 Off-grid (RNode); v0.6 Remote automation; v1.0 after v0.6 | Long-term direction, 19 Nov 2026 (commit `f409058`) |
-| 19 Nov 2026 (`f409058`) | v0.3 "Installation and LXMF messaging" as one release, still including `notify` and the propagation node; I2P, RNode and remote automation unscheduled; v1.0 position open | ADR 0010 (this revision) |
+| 19 Nov 2026 (`f409058`) | v0.3 "Installation and LXMF messaging" as one release, still including `notify` and the propagation node; I2P, RNode and remote automation unscheduled; v1.0 position open | ADR 0010 (`4723d9d`) |
+| 19 Nov 2026 (`4723d9d`) | v0.3.0 installation "from the App store and any further catalogue" (Q-43, Q-45 open) | Two verified mechanisms, App store (app) and Marketplace (integration); ADR 0010 amendment (this revision) |
 
 ---
 

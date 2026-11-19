@@ -170,3 +170,75 @@ courtesy contact (RG-9) and register searches (RG-8) first, and rewrite the visi
 does not echo theirs. On current evidence, option C costs least now and removes most of the risk.
 Any candidate needs register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) and domain checks
 before adoption.
+
+## 6. Availability and collision assessment: "Commonwave" (19 November 2026)
+
+Requested by the maintainer, who favours renaming before the first published release. **Nothing
+has been renamed.** This is a screening, **not trademark clearance or legal advice**.
+
+### 6.1 Method and limits
+
+| Source | Method | Result obtained? |
+|---|---|---|
+| GitHub | Repository and user search (API); account pages (web) | Yes |
+| PyPI, npm, crates.io, RubyGems, NuGet, Maven Central, Go module proxy, Docker Hub | Public registry APIs | Yes |
+| F-Droid | Public API | **No** — host not reachable from this environment |
+| Domains (`.com`, `.net`, `.org`, `.io`, `.app`, `.dev`, `.uk`, `.org.uk`, `.eu`, `.network`) | RDAP | **No** — RDAP hosts not reachable from this environment; web search only |
+| UK IPO, EUIPO (TMview), WIPO Global Brand Database, USPTO, MyIPO | Official search | **No** — not reachable; one USPTO record found indirectly through a web search of a third-party mirror |
+| General web | Search engines | Yes |
+
+The official register searches therefore remain open (release gate RG-8) and must be run by the
+maintainer for Commonwave or whichever name is chosen.
+
+### 6.2 Findings
+
+| Area | Finding | Label |
+|---|---|---|
+| GitHub account `commonwave` | Does not exist (404) | [Verified] |
+| GitHub, similar accounts | Organisation `CommonWave-Studios` and user `CommonWaveStudios`: no public repositories, no description | [Verified] |
+| GitHub repositories | Two unrelated repositories named `commonwave` (no description; last pushed May and September 2026) | [Verified] |
+| Package registries | `commonwave` is unused on PyPI, npm, crates.io, RubyGems, NuGet, Maven Central and the Go proxy; no PyPI project contains the string; Docker Hub has no `commonwave` user or organisation | [Verified] |
+| `commonwave.net` | Used by **Common Wave Hi-Fi**, a Los Angeles hi-fi and record shop (domain registered 2017 per a WHOIS mirror) | [Verified] use; [Assumption] registration date |
+| `commonwave.com`, `.org`, `.io` and others | No site found by web search; registration status unknown | [Open] |
+| USPTO | **COMMON WAVE HI FI**, a design (logo) mark, registration 6368621, registered 1 June 2021, Class 35 (retail/advertising services), owner Common Wave Hi-Fi — as reported by a third-party mirror, not read from the USPTO | [Assumption] until checked at the USPTO |
+| Other registers | Not searched | [Open] |
+| Confusable names | **Commonware** (commonware.xyz): infrastructure "enabling secure peer communication, data persistence"; one letter from Commonwave, in a related technical space. **Community Waves** (communitywaves.org): an ethical social platform for community changemakers run by Transition Network | [Verified] existence from web search |
+| Mesh / radio ecosystems | No Reticulum, Meshtastic, MeshCore or amateur-radio project named Commonwave found | [Verified] for the sources above |
+
+### 6.3 Assessment
+
+| Risk | Rating | Reason |
+|---|---|---|
+| Collision with an existing mesh or off-grid project | **Low** | None found |
+| Registered-mark conflict | Low–medium [Assumption] | The one known mark is a logo for retail services in a different field (audio retail), but it is a registered mark containing both words, and audio equipment is adjacent to radio |
+| Confusion with Commonware | Medium | One letter apart, both about secure peer communication |
+| Confusion with Community Waves | Low–medium | Similar words and a community audience; different product type |
+| Domain availability | Unknown | `.net` is taken; others unverified |
+| Search visibility | Medium | The hi-fi shop and its social accounts own current results |
+
+**Verdict:** **Commonwave is usable but not cleared.** It removes the MeshBeacon collision
+(§1, §5), which was the main problem. It brings milder risks: the Commonware look-alike, a
+registered US design mark and an occupied `.net`. Adopt it only after the official register
+searches (RG-8) and a domain check, both by the maintainer.
+
+### 6.4 Alternatives screened
+
+Same limits as §6.1 (GitHub, registries, web search; no registers, no RDAP).
+
+| Candidate | GitHub | Registries | Web | Assessment |
+|---|---|---|---|---|
+| **Lanternpost** | No repositories; one user account | Free on PyPI, npm, Docker Hub | Nothing found | Clearest result of the screen, but "Lantern" is an established privacy/anti-censorship brand (§5.4) |
+| **Fieldpost** | Two repositories, including a 2026 "FieldPost Everywhere" UX project; user `fieldpost` taken | Free | A construction job-site SaaS listing | Usable outside that field; weaker fit for a community network |
+| Hearthwave | `Hearthwave`: a 2026 GMRS radio "family hub for home server" | Free | — | **Rejected:** radio and household overlap |
+| HearthMesh | Existing resilient-knowledge project | — | — | **Rejected** (§5) |
+| Commonlight | 43 repositories, 6 accounts | — | Close to the education brand CommonLit | **Rejected:** crowded |
+| Wayfold, Tidepost | 15 and 5 repositories | Free | — | Crowded; not pursued |
+
+**[Recommendation]** Carry **Commonwave** and **Lanternpost** to official register searches (UK IPO,
+EUIPO, WIPO, USPTO; MyIPO if still wanted) and domain checks. Choose Commonwave if the registers
+are clear, because it fits the community direction. Whatever is chosen also needs:
+
+- a new app slug and package names;
+- a one-off data migration for the maintainer's local prototype, preserving the identity
+  (ADR 0007);
+- an updated ADR 0003.

@@ -1,8 +1,10 @@
 # ADR 0006: Read-only local status API, delivered to Home Assistant by Supervisor discovery
 
-- **Status:** **Accepted in principle** (maintainer, 18 November 2026), subject to the remaining
-  security review. The `home_assistant_integration` option stays **off by default, permanently**.
-  That is a decision, not a placeholder until approval.
+- **Status:** **Accepted in principle** (maintainer, 18 November 2026), subject to the security
+  review. That review is complete and recorded below ("Review outcome"), and the implementation
+  was merged to `main` in PR #3. Final acceptance (dropping "in principle") is for the maintainer
+  to confirm. The `home_assistant_integration` option stays **off by default, permanently**. That is a
+  decision, not a placeholder until approval.
 - **Date:** 18 November 2026; revised after independent review the same day
 - **Evidence:** [v0.2 feasibility, architecture and security review](../research/v0.2-observability.md),
   [threat model T11, T28–T36](../security/threat-model.md),
