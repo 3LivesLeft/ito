@@ -298,6 +298,12 @@ Design:
   version, not on Rebuild** (Supervisor 2026.11.0, `apps/app.py`), and renames it to the app slug.
 - "Where supported": if a future feature needs root (none in v0.1), it must be isolated in its own
   s6 service, documented and justified in an ADR.
+- **v0.3 (M1): the discovery relay** is the first such root service
+  (`services.d/discovery-relay`, `core/meshbeacon/discovery_relay.py`;
+  [ADR 0006 amendment](adr/0006-local-metrics-api.md#amendment-19-november-2026-m1-how-discovery-reaches-the-supervisor)).
+  Newer Supervisors give the app a root-only (0600) socket; the relay serves only the `meshbeacon`
+  user, sends only MeshBeacon's validated discovery message, and does not run where there is no
+  socket. The core then never uses the Supervisor token (threat T72).
 
 ### 4.8 Storage layout (under `/data`)
 
@@ -370,6 +376,28 @@ I2P, LoRa) adds a part without reworking the others.
 through `sources/snapshot.js`, with no Home Assistant. It shows that the presentation does not
 depend on the delivery. The built-in interface's remaining needs are a secure delivery and the
 seven-day memory-only history (decision D3), not new presentation code.
+
+## 6b. Distribution and node identity in Home Assistant (v0.3, M1)
+
+[ADR 0015](adr/0015-distribution-and-updates.md):
+
+- One repository serves two installers: the Supervisor **app store** reads `repository.yaml` and
+  `meshbeacon/config.yaml`; Home Assistant's **Marketplace** reads `hacs.json` and
+  `custom_components/meshbeacon/`. One version and one tag cover both
+  ([releasing](releasing.md)); `tools/check_release.py` checks the layout.
+- Identifiers live in `project.yaml`; `tests/unit/test_project_identifiers.py` checks every copy.
+- The integration's config entry (version 2) separates **`node_key`** (the stable prefix of entity
+  unique IDs) from **`app_slug`** (the app it talks to now), so the app can move between slugs
+  without changing entity IDs or history. Config entries hold only allow-listed keys.
+- The integration and the app may update at different times; `compatibility.py` raises a repair
+  that names the part to update.
+
+## 6c. Node services independent of Home Assistant
+
+[ADR 0017](adr/0017-independent-node-services.md): the core and its services (messaging from v0.3;
+later pages, boards, libraries, voice) run without Home Assistant; Home Assistant is a first-class
+management interface, through bindings of a versioned management contract, never a runtime
+dependency.
 
 ## 7. Evolution by version
 

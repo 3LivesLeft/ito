@@ -67,7 +67,7 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 - A **MeshBeacon sidebar panel** served by the integration ([ADR 0007](adr/0007-sidebar-panel.md),
   proposed): Overview and Diagnostics tabs, history from HA's recorder, admin-only, no third-party
   code.
-- HACS compatibility **prepared, not published** ([HACS](hacs.md)).
+- HACS compatibility **prepared, not published** ([Marketplace](marketplace.md)).
 - **Not** included: a forwarded-packet count (RNS exposes none through supported interfaces),
   identity import (deferred), any control from Home Assistant, HACS publication or releases.
 
@@ -105,6 +105,15 @@ limit: sending and receiving LXMF messages from the built-in interface remains t
 | UI-10 | Monitoring or UI failures never restart Reticulum or block `/health` | Automated |
 | UI-11 | Light and dark themes, phone, tablet and desktop, HA companion app | Pi + phone |
 | UI-12 | The integration remains optional: with it installed, nothing is duplicated (one sidebar entry) | Pi |
+
+## v0.3 status (19 Nov 2026)
+
+The maintainer approved the v0.3 implementation plan: **v0.3.0 is the installation and
+distribution release** (app store + Marketplace, [ADR 0015](adr/0015-distribution-and-updates.md));
+the LXMF engine, Home Assistant messaging and migration of existing installations follow in later
+releases, each behind its own gate. **M1 (install-ready repository) is authorised** on
+`feature/v0.3.0-install-ready`. The two v0.3 sections below come from separate branches and are to
+be reconciled, with the final project name, before M2.
 
 ## v0.3.0 — Messaging (research and architecture; not authorised for implementation)
 
@@ -287,7 +296,7 @@ stated otherwise. **They are not Raspberry Pi validation.** Revised after indepe
 | OB-25 | **States:** loading, not connected, error with retry, app unavailable, history unavailable and no history yet are each shown distinctly; unavailable values show as "—", never zero | Automated (model) + preview screenshots | Met in sandbox (model tests; `tools/panel_preview.html` scenarios) |
 | OB-26 | **Layout and themes:** usable at 390 px (phone), 820 px (tablet) and 1280 px (desktop) widths in light and dark themes, with no horizontal scrolling | Preview screenshots; physical check on a phone | Sandbox met; **physical pending** (open the panel on a phone and a desktop on the Pi installation, after approval) |
 | OB-27 | **Panel cost:** history fetched at most once per chart bucket (≥ 60 s) and only while visible; re-render only when MeshBeacon's own entities change | Code review + model tests | Met (sandbox); browser CPU on a low-end phone pending |
-| OB-28 | **HACS-ready, not published:** `hacs.json` with known keys only, no release ZIP or release workflow, one integration, manifest complete, versions aligned | Automated | Met (`tests/unit/test_hacs.py`); HACS's own validation action is a maintainer step ([HACS](hacs.md)) |
+| OB-28 | **HACS-ready, not published:** `hacs.json` with known keys only, no release ZIP or release workflow, one integration, manifest complete, versions aligned | Automated | Met (`tests/unit/test_hacs.py`); HACS's own validation action is a maintainer step ([Marketplace](marketplace.md)) |
 
 ## v0.3.0 acceptance criteria (proposed, for review)
 

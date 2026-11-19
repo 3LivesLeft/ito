@@ -11,8 +11,11 @@ Assistant. Phase 0 (research and design) is complete. **Phase 1 (v0.1.0 foundati
 branch `feature/v0.1.0-foundation` (PR #2). **v0.2.0 (monitoring and observability) is authorised**
 on branch `feature/v0.2.0-observability` (draft PR #3), based on PR #2's reviewed head `192db5f`;
 ADR 0006 is accepted, and its option stays off by default permanently. ADR 0007 (integration sidebar panel) is accepted as the interim
-dedicated interface; Ingress (ADR 0013) is blocked. HACS is prepared, not published. v0.3.0 is in research and architecture only (no
-implementation until independently reviewed). LXMF, LoRa, I2P and remote control remain out of scope. Never publish images, create releases, connect to live public Reticulum
+dedicated interface; Ingress (ADR 0013) is blocked. **v0.3 plan approved (19 Nov 2026):** v0.3.0 is the installation and distribution
+release (app store + Home Assistant's Marketplace, ADR 0015); **M1 (install-ready repository) is authorised** on
+`feature/v0.3.0-install-ready`. Nothing is published before M2's approval. The LXMF engine stays out of production images until
+M4's gate; Home Assistant messaging and migration of existing installations are later milestones. LoRa, I2P and remote control
+remain out of scope. The project name may change before the first release: identifiers live in `project.yaml`. Never publish images, create releases, connect to live public Reticulum
 infrastructure or deploy to the maintainer's Home Assistant without explicit approval.
 
 ## Hard rules
@@ -56,8 +59,9 @@ infrastructure or deploy to the maintainer's Home Assistant without explicit app
 
 - **Out-of-the-box usability is a permanent product principle** ([vision](docs/vision.md)
   principle 2, maintainer, 18 Nov 2026). Treat it like a hard rule:
-  - The dedicated MeshBeacon interface must come with the standard app installation, with no
-    separate custom integration, HACS or manual dashboard configuration required.
+  - No terminal, no file copying, no third-party installer, no manual dashboard configuration.
+    Amended (D1, 19 Nov 2026): the dedicated interface arrives through Home Assistant's own app
+    store and Marketplace in at most two guided steps (ADR 0015).
   - A first-time user can install, configure and start MeshBeacon within five minutes, with no
     terminal and no YAML.
   - The Home Assistant integration is an optional enhancement (entities, custom dashboards,
@@ -114,7 +118,12 @@ docs/research/v0.2-observability.md  v0.2 feasibility, architecture, security re
 docs/research/v0.3-messaging.md    v0.3 feasibility and proposed architecture (ADRs 0008–0012, 0014;
                                    research only: do not implement until independently reviewed)
 docs/home-assistant-integration.md  v0.2 integration: set-up, entities, panel, dashboard
-docs/hacs.md                       HACS compatibility (prepared, not published)
+docs/marketplace.md                Marketplace compatibility (prepared, not published)
+docs/releasing.md                  release process: one version and tag, order, dry run, M2 steps
+docs/research/v0.3-install.md      verified Marketplace / app store / Supervisor-socket facts
+project.yaml                       project identifiers (name, slug, repository, image) in one place
+tools/check_release.py             release-layout check (app store, Marketplace, versions)
+tools/verify_image.py              release-candidate image check (platforms, labels, SBOM, reproducible)
 docs/research/known-paths.md       why "Known paths" reads 2,048 (RNS unused-path target)
 docs/testing/v0.2-physical-results.md  initial physical readings (not final acceptance)
 docs/testing/v0.2-acceptance-review.md  open criteria, CI status, risks, simplest installation
@@ -126,7 +135,7 @@ custom_components/meshbeacon/frontend/  interface (ADR 0007): plain JS, no depen
                                    meshbeacon-panel.js (delivery shell for the integration panel)
 tests/frontend/                    panel unit tests (`node --test tests/frontend/model.test.mjs`)
 tools/panel_preview.html           panel preview with sample data (loopback only)
-hacs.json                          HACS metadata (no release workflow)
+hacs.json                          Marketplace metadata (read by Home Assistant 2026.11+)
 docs/branding.md                   visual identity, colours, type, tokens, accessibility
 branding/                          brand assets: src/ (master SVGs), svg/, png/, fonts/ (OFL)
 tools/brand/                       asset build (build.py, render.mjs, outline_wordmark.py)
@@ -144,6 +153,9 @@ MESHBEACON_IMAGE=meshbeacon:dev .venv/bin/pytest -m container tests/container
 # Home Assistant integration (needs Python 3.14 and requirements-ha-test.txt):
 mypy --strict --python-version 3.14 custom_components/meshbeacon
 python -m pytest tests/ha -o "pythonpath=meshbeacon/core ." -o asyncio_mode=auto
+# Real Home Assistant 2026.11.2 (venv from requirements-ha-smoke.txt; the pytest harness lags):
+python tools/ha_smoke_test.py --hass-python <venv>/bin/python
+python tools/check_release.py                  # release layout; also run on a tag with --ref/--tag
 ```
 
 v0.2: `custom_components/meshbeacon/` is the HA integration (never imports RNS or the core; talks

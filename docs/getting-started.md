@@ -3,49 +3,85 @@
   <img src="../branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
 </picture>
 
-# Getting started with MeshBeacon (v0.2, testing)
+# Getting started with MeshBeacon
 
 **Decentralised connectivity for your home.**
 
-> **Status: for testers.** MeshBeacon is experimental and not published. These steps install the
-> development version as a local app. No terminal and no YAML are needed.
+> **Status: prepared for the first release (v0.3.0), not yet available.** The buttons below work
+> once MeshBeacon's first release is published. Until then, testers follow the
+> [local prototype guide](install-local-prototype.md).
+
+You need **Home Assistant OS 2026.11 or newer** (or a supervised installation), and an
+administrator account. No terminal, no YAML and no copying of files.
 
 ## What you get
 
 - **The MeshBeacon app:** a private Reticulum node on your Home Assistant device.
-- **Optional: MeshBeacon in your sidebar.** Its own page shows connectivity, figures, history and
-  peers, and entities are available for dashboards and automations. Today this needs the
-  MeshBeacon integration (part 2). A built-in page that needs no integration is a goal: see
-  [why it is not there yet](research/secure-interface-options.md).
+- **The MeshBeacon dashboard (optional, recommended):** its own page in the sidebar with
+  connectivity, figures, history and peers, plus entities for your own dashboards and
+  automations. It comes as a separate part, the MeshBeacon integration, from Home Assistant's
+  Marketplace.
 
-## 1. Install the app (about 5 minutes)
+## 1. Install the app (about 3 minutes)
 
-Follow [installing the local prototype](install-local-prototype.md): copy the `meshbeacon` folder
-to your Home Assistant, install it from the app store, choose a peer in the **Configuration**
-tab, and start it. The app log then says "Connected to … Your node is online."
+1. Select this button, or open the link on a device signed in to your Home Assistant:
 
-## 2. Add MeshBeacon to the sidebar (about 5 minutes, optional)
+   [Open MeshBeacon in your Home Assistant](https://my.home-assistant.io/redirect/supervisor_app/?app=ce27fbb5_meshbeacon&repository_url=https://github.com/3LivesLeft/meshbeacon)
 
-1. **Copy the integration.** Install the **File editor** app (or **Samba share**). Create the
-   folder `/config/custom_components/meshbeacon` and put the files from this repository's
-   `custom_components/meshbeacon` folder in it (keep the `brand`, `frontend` and `translations`
-   folders).
-2. **Restart Home Assistant:** Settings → System → Restart.
-3. **Switch it on in the app:** MeshBeacon → Configuration → **Show MeshBeacon's status in Home
-   Assistant** → Save, then restart the app.
-4. **Add it:** Settings → Devices & services shows **MeshBeacon discovered**. Choose **Add**.
+   Home Assistant asks whether to add the MeshBeacon app repository. Choose **Add**.
+2. On the MeshBeacon page, select **Install**. Home Assistant downloads the app (about a minute
+   on a Raspberry Pi 4).
+3. Open **Configuration**: add a peer you trust (optional; without one MeshBeacon makes no
+   connections), and switch on **Show MeshBeacon's status in Home Assistant** if you want the
+   dashboard. Select **Save**.
+4. Open **Info** and select **Start**. The **Log** tab explains what MeshBeacon is doing in plain
+   words.
+
+## 2. Add the MeshBeacon dashboard
+
+1. Select this button (it is also in the app's **Documentation** tab):
+
+   [Open MeshBeacon in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=3LivesLeft&repository=meshbeacon&category=integration)
+
+2. Until MeshBeacon is listed in the Marketplace's catalog, Home Assistant first asks you to
+   **connect GitHub**: it shows a code, you enter it at github.com and approve. The connection
+   only reads public information. Then confirm adding the repository.
+3. The first time you use the Marketplace, read and accept its warning.
+4. Select **Install**. If Home Assistant asks for a restart, use the repair it shows.
+5. A notification says **New device discovered: MeshBeacon**. Select it, then **Add**.
 
 **MeshBeacon** now appears in the sidebar, with a lighthouse icon, for administrators. It follows
 your light or dark theme and works on phones, tablets and computers.
 
-- There is nothing else to configure: no keys, no dashboards.
-- Removing it is the same steps in reverse. See the
-  [integration guide](home-assistant-integration.md#set-up).
-- Privacy: everything stays on your Home Assistant device; see the
-  [integration guide](home-assistant-integration.md#privacy-and-security).
+## Updating
+
+The app and the dashboard update separately, both under **Settings → Updates**:
+
+- **MeshBeacon app**: select it and **Update**. Your node's identity, peers and settings are kept.
+- **MeshBeacon** (from the Marketplace): select it and **Update**, then restart Home Assistant
+  when the repair asks.
+
+If one is much newer than the other, a repair under **Settings → System → Repairs** says which one
+to update. Take a backup before updating if you want to be able to go back: restoring that backup
+is the way to return to an earlier version.
+
+## Removing
+
+- **The dashboard:** Settings → Devices & services → MeshBeacon → **Delete**. Home Assistant then
+  offers to uninstall it from the Marketplace.
+- **The app:** Settings → Apps → MeshBeacon → **Uninstall**. This deletes the node's identity
+  unless you keep a backup.
+
+## Privacy
+
+Everything stays on your Home Assistant device. MeshBeacon connects only to the peers you choose,
+and the dashboard reads only your own Home Assistant. See the
+[integration guide](home-assistant-integration.md#privacy-and-security).
 
 ## Help
 
-- The app log explains each state in plain words. In the panel, **Diagnostics** shows versions,
-  start times and restarts.
+- The app log explains each state in plain words. In the dashboard, **Diagnostics** shows
+  versions, start times and restarts.
 - [Troubleshooting in the app's documentation](../meshbeacon/DOCS.md).
+- Already running the local prototype? Keep it for now: moving its identity to the published app
+  is planned separately (it must not lose your node's identity), and you will be told how.

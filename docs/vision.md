@@ -87,8 +87,12 @@ v0.3 decisions that could constrain these are reviewed in the
    [first-run UX](ux/first-run.md).
 2. **Works out of the box (permanent; maintainer, 18 Nov 2026).** Everything a first-time user
    needs comes with the standard app installation:
-   - MeshBeacon's own interface, with a sidebar entry, is part of the app. It needs no separately
-     installed custom integration, no HACS and no manual dashboard configuration.
+   - No terminal, no file copying, no third-party installer and no manual dashboard
+     configuration. **Amended (maintainer, 19 Nov 2026, decision D1):** MeshBeacon's interface,
+     with its sidebar entry, arrives through Home Assistant's own app store and Marketplace in at
+     most two guided steps ([ADR 0015](adr/0015-distribution-and-updates.md)). A one-step install
+     remains the goal (Ingress after upstream hardening, or an integration shipped with Home
+     Assistant), but never at the cost of security.
    - A first-time user can install, configure and start MeshBeacon within **five minutes**,
      without touching a terminal or editing YAML.
    - The Home Assistant integration remains an **optional enhancement**, for entities, custom

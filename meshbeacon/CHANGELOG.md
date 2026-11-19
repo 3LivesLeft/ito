@@ -1,5 +1,18 @@
 # Changelog
 
+## Next (v0.3 development; version number set at release)
+
+- **Install from Home Assistant's own stores** (prepared; available from the first release): the
+  app from the app store, the dashboard from Home Assistant's Marketplace (Home Assistant 2026.11
+  or newer). No terminal and no copying of files.
+- **Discovery over the Supervisor's local socket** where the Supervisor provides one: Home
+  Assistant is told about MeshBeacon without anything crossing the internal network, and the
+  Supervisor token is not used. Current Supervisors keep the previous method.
+- The dashboard's integration keeps your entity IDs and history if the app is ever reinstalled
+  from a different source, and it says which part to update when the app and the integration are
+  out of step.
+- No new permissions; the security rating is unchanged.
+
 ## 0.2.0 — unreleased (in development)
 
 - **New option: "Show MeshBeacon's status in Home Assistant"** (off by default). When it is on,

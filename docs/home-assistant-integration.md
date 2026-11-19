@@ -5,8 +5,9 @@
 
 # Home Assistant integration (v0.2)
 
-Status: **in development** on `feature/v0.2.0-observability` (draft PR #3). Not published. HACS
-compatibility is prepared but not offered ([HACS](hacs.md)). Design and security review: [v0.2 feasibility, architecture and security](research/v0.2-observability.md),
+Status: **in development** on `feature/v0.2.0-observability` (draft PR #3). Not published. From v0.3 the
+integration installs from Home Assistant's built-in Marketplace ([Marketplace](marketplace.md),
+[getting started](getting-started.md)); nothing is published until the first release. Design and security review: [v0.2 feasibility, architecture and security](research/v0.2-observability.md),
 [ADR 0006](adr/0006-local-metrics-api.md). Hardware test: [v0.2 hardware acceptance](testing/v0.2-hardware-acceptance.md).
 
 ## What it is
@@ -18,13 +19,16 @@ Assistant cannot control the node through it.
 
 ## Set-up
 
-1. **Install the integration once.** Copy `custom_components/meshbeacon` into Home Assistant's
-   `/config/custom_components/` (for example with the File editor or Samba app), then restart
-   Home Assistant.
+1. **Install the integration once**, from Home Assistant's Marketplace (Home Assistant 2026.11 or
+   newer): see [getting started](getting-started.md#2-add-the-meshbeacon-dashboard). Until the
+   first release, testers may still copy `custom_components/meshbeacon` into
+   `/config/custom_components/` by hand; a later Marketplace install takes over that folder
+   ([Marketplace](marketplace.md#moving-a-hand-copied-integration-to-the-marketplace)).
 2. **Switch it on in the app.** In the MeshBeacon app's Configuration tab, switch on **Show
    MeshBeacon's status in Home Assistant** (off by default), save, and restart the app.
 3. **Add it.** Settings → Devices & services shows **MeshBeacon discovered**. The dialog names the
-   app it came from (`local_meshbeacon` for a local install). Choose **Add**.
+   app it came from (`local_meshbeacon` for a local install, `ce27fbb5_meshbeacon` for the app
+   from this repository's app store entry). Choose **Add**.
 
 Nothing else needs configuring:
 - There is no key to copy or type. The key and the certificate fingerprint reach Home Assistant
@@ -36,7 +40,7 @@ Nothing else needs configuring:
   been told. If it has, the integration is probably not installed: repeat step 1.
 
 **To remove it:** switch the option off and restart the app, then delete the integration under
-Devices & services, and optionally its folder.
+Devices & services; Home Assistant then offers to uninstall it from the Marketplace.
 
 Once it is added, **MeshBeacon appears in the sidebar** for administrators (see below).
 

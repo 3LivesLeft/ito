@@ -1,6 +1,7 @@
 # ADR 0006: Read-only local status API, delivered to Home Assistant by Supervisor discovery
 
-- **Status:** **Accepted** (maintainer, 18 November 2026, after a positive independent review of
+- **Status:** **Accepted**; amended 19 Nov 2026 (discovery transport, below).
+- **Original status:** **Accepted** (maintainer, 18 November 2026, after a positive independent review of
   PR #3 with all 14 CI checks confirmed passing). The `home_assistant_integration` option stays
   **off by default, permanently**. That is a decision, not a placeholder until approval.
   Follow-up after acceptance: the client's response reading was made complete and bounded (threat
@@ -91,6 +92,30 @@ app); an Ingress UI (a second monitoring implementation). See
   The main one: anything that can read Home Assistant's configuration (admins, apps mapping
   `/config`, HA backups) can read the current token until the next app restart. It grants read-only
   access to non-identifying metrics.
+
+## Amendment (19 November 2026, M1): how discovery reaches the Supervisor
+
+Decision 4 says the token and fingerprint reach Home Assistant only through Supervisor discovery.
+That remains true of *reading* them, but the delivery path needs a precise statement:
+
+| | Status |
+|---|---|
+| On Supervisor 2026.11.0 and older, the app posts its discovery message to `http://supervisor` over the internal network in plain HTTP, with its Supervisor token | **Confirmed** from source |
+| Apps keep `NET_RAW` unless the Supervisor's opt-in `app_drop_net_raw` flag is set | **Confirmed** from source |
+| A co-installed app can intercept or alter that message on Home Assistant OS | **Not verified.** The same class as T34; not reproduced. A lab test is planned (W3-4) |
+| Impact if it can | Read-only, non-identifying metrics until the next app start (residual RR-9a, threat T28) |
+
+**Change (implemented in M1):** where the Supervisor gives the app its own Unix socket (newer
+Supervisors), the app posts discovery through it, via a small root-owned relay
+(`core/meshbeacon/discovery_relay.py`), because the socket is root-only and the core runs
+unprivileged. The token is then not used at all. Older Supervisors keep the compatibility path
+above. The relay adds no `config.yaml` privilege, sends only MeshBeacon's own validated message
+and serves only the core.
+
+**Rule carried forward:** no write-capable credential (for example a future messaging key) is ever
+delivered over the compatibility path ([secure interface options](../research/secure-interface-options.md),
+D7). Home Assistant keeps no field from a discovery message other than the status connection's
+(config entry v2, `ENTRY_KEYS`).
 
 ## Review triggers
 

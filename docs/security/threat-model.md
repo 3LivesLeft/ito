@@ -36,6 +36,8 @@ reference the [feasibility study](../research/feasibility.md) and
  [Browser: HA frontend + MeshBeacon panel (v0.2, ADR 0007)] ──B8── HA websocket (logged in)
  [Supervisor ingress proxy (proposed, ADR 0013)] ──B11── built-in UI listener (plain HTTP, read-only)
  [CI, registry, PyPI, AI tools] ──B6── source and image build
+ [Supervisor per-app socket (newer Supervisors)] ──B12── discovery relay (root) ◄── core (meshbeacon user)
+ [App store and Marketplace: this GitHub repository, GHCR images] ──B13── what users install and update
 ```
 
 ## 3. Threats and controls (v0.1)
@@ -116,6 +118,16 @@ reference the [feasibility study](../research/feasibility.md) and
 | T62 | B11 | E/T | **An action through Ingress** (write, configuration, message) forged on the unprotected hop | No actions through Ingress, permanently, while the hop is plain HTTP; writes only on the pinned-TLS path (ADR 0010, proposed) |
 | T63 | B11 | D | **Ingress listener flood** affects the core or watchdog | `BoundedHTTPServer` (≤ 4 connections, deadlines), separate from `/health`; page polls only while visible |
 | T64 | B8/B11 | T | **Script injection or clickjacking** in the built-in UI | `textContent` only (T38); CSP `default-src 'self'; frame-ancestors 'self'`; `nosniff`; no third-party code |
+
+### 4.0a v0.3 installation and distribution (M1; implemented unless marked)
+
+| ID | Boundary | STRIDE | Threat | Control | Status |
+|---|---|---|---|---|---|
+| T67 | B13/B6 | T/E | **A compromised release or image** reaches every installation through the normal update | Base image by digest, packages by hash, actions by SHA; reproducible builds compared in CI (`tools/verify_image.py`); SBOM and provenance attestations; release order and checks in [releasing](../releasing.md); cosign signatures and a protected release environment needing the maintainer's approval (M2); tags never deleted. The Supervisor does not verify signatures, so verification is documented for users | Dry run implemented; publishing controls M2 |
+| T68 | B13 | S | **A look-alike repository** (same name, different owner) offered through a copied link | The documentation's My links carry the exact owner and repository; a test checks them against `project.yaml`; the integration's discovery check accepts only MeshBeacon slugs and asks the user to confirm one from another repository (T35) | Implemented |
+| T72 | B12 | E/T | **The discovery relay**, a root process, is misused by the core or by another process in the container | Listens only for the `meshbeacon` user (peer credentials), socket 0660 in a 0750 directory; two fixed operations; rebuilds the message from validated fields (host, port, token, fingerprint; no other field); at most 8 KiB per request with a deadline; one connection at a time; logs no content; does not run where there is no Supervisor socket. It grants nothing the core could not already do over the compatibility path | Implemented (tests: `test_discovery_relay.py`, container test) |
+| T73 | B2/B12 | I | **Discovery hand-over on today's Supervisors** crosses the internal network in plain HTTP (see T28, RR-9a) | Newer Supervisors: the per-app socket through the relay, token unused. Older ones: the compatibility path, documented in the app's own documentation; no write-capable credential ever sent this way. Interception not demonstrated; lab test W3-4 (results kept private) | Partly mitigated |
+| T74 | B2 | I | **A credential in a discovery message is persisted by Home Assistant** (config entries are in `.storage` and in backups) | Config entry v2 keeps only allow-listed keys (`ENTRY_KEYS`); extra fields are dropped on set-up, rediscovery and migration; tested, including against a real Home Assistant 2026.11.2 | Implemented |
 
 ### 4.1 v0.3 messaging: proposed threats (status: proposed, awaiting independent review)
 
