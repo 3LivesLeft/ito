@@ -13,10 +13,13 @@ Checks, for the multi-arch image the Supervisor will pull (decision D3):
 - **reproducibility:** with a second archive from an independent build of the same commit, every
   platform's image manifest digest is identical (attestations carry timestamps and are excluded).
 
-It prints the digests to record in the release notes, and ``--write-digests`` records them. The
-**promotion rule** (M1.2, docs/releasing.md step 4): publishing pushes the verified archive
-itself, never a rebuild, and the image pulled back from the registry must pass
-``--expect-digests`` against that record. Nothing is pushed, signed or published here: that is
+It prints the digests to record in the release notes, and ``--write-digests`` records the
+**complete** set from the first archive: the image index, every platform manifest and every
+attestation manifest. The **promotion rule** (M1.2, docs/releasing.md step 4): publishing pushes
+the verified archive itself, never a rebuild, and the image pulled back from the registry must
+pass ``--expect-digests``, which requires every one of those digests to match exactly. (The
+reproducibility comparison between two independent builds still excludes attestations, which carry
+build times.) Nothing is pushed, signed or published here: that is
 M2's publishing step, after approval.
 """
 
@@ -50,11 +53,14 @@ class Archive:
     def close(self) -> None:
         self._tar.close()
 
-    def json(self, name: str) -> Any:
+    def file(self, name: str) -> bytes:
         member = self._tar.extractfile(name)
         if member is None:
             raise ValueError(f"{name} missing")
-        return json.loads(member.read())
+        return member.read()
+
+    def json(self, name: str) -> Any:
+        return json.loads(self.file(name))
 
     def raw(self, digest: str) -> bytes:
         algorithm, value = digest.split(":", 1)
@@ -130,6 +136,35 @@ def inspect(archive: Archive, version: str) -> tuple[dict[str, str], list[str]]:
     return {p: d["digest"] for p, d in images.items()}, problems
 
 
+def promotion_record(archive: Archive) -> dict[str, Any]:
+    """Everything a registry will serve for this image, by digest (M1.2): the image index the tag
+    resolves to, each platform's image manifest and each attestation manifest (SBOM, provenance).
+    Publishing the same archive reproduces all of them exactly; anything else changes at least one.
+    """
+    top = archive.json("index.json")["manifests"]
+    if len(top) == 1 and top[0].get("mediaType") in INDEX_TYPES:
+        index = top[0]["digest"]
+    else:  # a flat layout: the index is index.json itself
+        index = "sha256:" + hashlib.sha256(archive.file("index.json")).hexdigest()
+    descriptors = archive.descriptors()
+    platforms = {
+        platform_of(d): d["digest"]
+        for d in descriptors
+        if (d.get("annotations") or {}).get("vnd.docker.reference.type") != ATTESTATION
+    }
+    by_digest = {digest: platform for platform, digest in platforms.items()}
+    attestations = {
+        by_digest.get((d.get("annotations") or {}).get("vnd.docker.reference.digest"), "unknown"): d["digest"]
+        for d in descriptors
+        if (d.get("annotations") or {}).get("vnd.docker.reference.type") == ATTESTATION
+    }
+    return {
+        "index": index,
+        "platforms": dict(sorted(platforms.items())),
+        "attestations": dict(sorted(attestations.items())),
+    }
+
+
 def _layer_entries(archive: Archive, digest: str) -> dict[str, tuple[object, ...]]:
     data = archive.raw(digest)
     if data[:2] == b"\x1f\x8b":
@@ -184,11 +219,13 @@ def main(argv: list[str] | None = None) -> int:
     results = []
     problems: list[str] = []
     archives = [Archive(path) for path in args.archives]
+    record: dict[str, Any] = {}
     try:
         for path, archive in zip(args.archives, archives, strict=True):
             digests, found = inspect(archive, args.version)
             results.append(digests)
             problems += [f"{path.name}: {p}" for p in found]
+        record = {"version": args.version, **promotion_record(archives[0])}
         if len(results) == 2 and results[0] != results[1]:
             problems.append(f"not reproducible: {results[0]} != {results[1]}")
             for line in explain(archives[0], archives[1], results[0], results[1]):
@@ -200,10 +237,12 @@ def main(argv: list[str] | None = None) -> int:
         expected = json.loads(args.expect_digests.read_text())
         if expected.get("version") != args.version:
             problems.append(f"digest record is for version {expected.get('version')!r}, not {args.version!r}")
-        if expected.get("platforms") != results[0]:
-            problems.append(f"not the verified image: {results[0]} != {expected.get('platforms')}")
+        for key in ("index", "platforms", "attestations"):
+            if key not in expected:
+                problems.append(f"digest record has no {key!r} (incomplete record)")
+            elif expected[key] != record.get(key):
+                problems.append(f"not the verified image: {key} {record.get(key)} != {expected[key]}")
     if args.write_digests is not None and not problems:
-        record = {"version": args.version, "platforms": dict(sorted(results[0].items()))}
         args.write_digests.write_text(json.dumps(record, indent=2) + "\n")
     lines = [f"### {PROJECT['name']} {args.version}: image manifest digests", ""]
     lines += [f"- `{platform}`: `{digest}`" for platform, digest in sorted(results[0].items())]

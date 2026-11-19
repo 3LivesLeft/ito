@@ -151,3 +151,19 @@ def test_both_vulnerability_policies_gate_ci_and_the_release_dry_run():
         assert any(s.get("fail-build") and s.get("severity-cutoff") == "high" and s.get("only-fixed") for s in scans), (
             name
         )
+
+
+def test_the_release_candidate_is_scanned_for_each_platform():
+    """M1.2 re-review: both policies for amd64 and for arm64 (what a Raspberry Pi pulls), chosen
+    explicitly; a multi-platform archive is otherwise read for one platform only."""
+    release = yaml.safe_load((ROOT / ".github" / "workflows" / "release-dry-run.yaml").read_text())
+    scans = set()
+    for job in release["jobs"].values():
+        for step in job.get("steps", []):
+            with_ = step.get("with") or {}
+            if "anchore/scan-action" in str(step.get("uses", "")) and with_.get("fail-build"):
+                platform = (step.get("env") or {}).get("GRYPE_PLATFORM")
+                scans.add((platform, with_.get("severity-cutoff"), bool(with_.get("only-fixed"))))
+    for platform in ("linux/amd64", "linux/arm64"):
+        assert (platform, "critical", False) in scans, platform
+        assert (platform, "high", True) in scans, platform

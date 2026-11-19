@@ -43,8 +43,11 @@ release starts there.
    commit SHA. Release builds use no action cache. `tests/unit/test_hacs.py` enforces all of this.
 6. **Promote, never rebuild** (M1.2): publishing pushes the exact OCI archive the dry run verified
    (`candidate-1.tar`) and checks what the registry then serves against the recorded
-   `digests.json`. A publishing job must not build; `tests/unit/test_publishing_guards.py`
-   (`promotion_problems`) enforces this for any job with `packages: write`.
+   `digests.json`: the **image index, every platform manifest and every attestation manifest**
+   (SBOM, provenance) must match exactly. A publishing job must not build;
+   `tests/unit/test_publishing_guards.py` (`promotion_problems`) enforces this for any job with
+   `packages: write`, and only a workflow named in its `PUBLISHING_WORKFLOWS` list (empty until M2
+   is approved) may hold any write permission. Every other workflow stays exactly `contents: read`.
 7. **Never delete or move a published tag or image.** Restoring an app backup pulls that version's
    image again, and the Marketplace lists earlier releases.
 8. **The release commit's changelog entry has a date**, not "unreleased" (the check refuses it).
@@ -55,7 +58,7 @@ release starts there.
 |---|---|---|---|
 | 1 | Bump the version in the six places; date the changelog; run all CI on the branch | `tools/check_release.py` | Ready |
 | 2 | Tag `vX.Y.Z` (signed tag) on the release commit; do not move `main` yet | git | Ready |
-| 3 | **Dry run on the tag:** build both architectures twice from scratch with `SOURCE_DATE_EPOCH` = commit time and rewritten timestamps; verify platforms, labels, SBOM (SPDX) and provenance attestations, and that both builds give **identical image digests**; record them (`--write-digests digests.json`); vulnerability scans (any critical finding fails; a high finding with a fix available fails) | `.github/workflows/release-dry-run.yaml`, `tools/verify_image.py` | Ready (M1, M1.2) |
+| 3 | **Dry run on the tag:** build both architectures twice from scratch with `SOURCE_DATE_EPOCH` = commit time and rewritten timestamps; verify platforms, labels, SBOM (SPDX) and provenance attestations, and that both builds give **identical image digests**; record the complete set (`--write-digests digests.json`: index, platform manifests, attestations); vulnerability scans of **each platform explicitly** (amd64 and arm64; any critical finding fails; a high finding with a fix available fails) | `.github/workflows/release-dry-run.yaml`, `tools/verify_image.py` | Ready (M1, M1.2) |
 | 4 | **Publish the verified archive** to GHCR as a multi-arch image, without rebuilding: for example `skopeo copy --all --preserve-digests oci-archive:candidate-1.tar docker://ghcr.io/…:X.Y.Z`, in the same workflow run as step 3 (the archive never leaves that run) | Publishing job with `packages: write`, behind a protected `release` environment that needs the maintainer's approval; must not build (rule 6) | **M2, not written yet** |
 | 5 | **Sign** the pushed digests with cosign (keyless, GitHub OIDC), and attach the SBOM and provenance. Keyless signing records the signature in the public Rekor transparency log | cosign, pinned | **M2** |
 | 6 | **Verify what was published:** pull by tag into an OCI archive and run `tools/verify_image.py pulled.tar --version X.Y.Z --expect-digests digests.json`; verify the signature against this repository's workflow identity | `cosign verify`, `tools/verify_image.py` | **M2** (the digest check is ready) |

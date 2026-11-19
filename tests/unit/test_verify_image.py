@@ -193,20 +193,43 @@ def test_explain_names_the_files_that_differ(tmp_path):
 
 
 def test_the_verified_digests_are_recorded_and_promotion_is_checked(tmp_path):
-    """M1.2 (M-2): publishing pushes the verified archive; what comes back must match the record."""
+    """M1.2: publishing pushes the verified archive; the complete image served afterwards (index,
+    platform manifests and attestations) must match the record exactly."""
     one = build_archive(tmp_path / "1.tar", when="t1")
     two = build_archive(tmp_path / "2.tar", when="t2")
     record = tmp_path / "digests.json"
     assert verify_image.main([str(one), str(two), "--version", "0.3.0", "--write-digests", str(record)]) == 0
     saved = json.loads(record.read_text())
-    assert saved["version"] == "0.3.0" and set(saved["platforms"]) == {"linux/amd64", "linux/arm64"}
-    # The same image, pulled back after publishing (attestations may differ): accepted.
-    again = build_archive(tmp_path / "3.tar", when="t3")
-    assert verify_image.main([str(again), "--version", "0.3.0", "--expect-digests", str(record)]) == 0
+    assert saved["version"] == "0.3.0" and saved["index"].startswith("sha256:")
+    assert set(saved["platforms"]) == set(saved["attestations"]) == {"linux/amd64", "linux/arm64"}
+    # The very same archive, as a registry serves it back after promotion: accepted.
+    promoted = tmp_path / "promoted.tar"
+    promoted.write_bytes(one.read_bytes())
+    assert verify_image.main([str(promoted), "--version", "0.3.0", "--expect-digests", str(record)]) == 0
+    # Same image layers, but different attestations (for example a substituted SBOM): refused.
+    reattested = build_archive(tmp_path / "3.tar", when="t3")
+    assert verify_image.main([str(reattested), "--version", "0.3.0", "--expect-digests", str(record)]) == 1
     # A rebuild that differs, or a record for another version: refused.
     other = build_archive(tmp_path / "4.tar", layer_seed="rebuilt")
     assert verify_image.main([str(other), "--version", "0.3.0", "--expect-digests", str(record)]) == 1
-    assert verify_image.main([str(again), "--version", "0.3.1", "--expect-digests", str(record)]) == 1
+    assert verify_image.main([str(promoted), "--version", "0.3.1", "--expect-digests", str(record)]) == 1
+
+
+def test_an_incomplete_record_is_refused(tmp_path):
+    one = build_archive(tmp_path / "1.tar")
+    record = tmp_path / "digests.json"
+    assert verify_image.main([str(one), "--version", "0.3.0", "--write-digests", str(record)]) == 0
+    saved = json.loads(record.read_text())
+    del saved["attestations"]  # an old-style record: platforms only
+    record.write_text(json.dumps(saved))
+    assert verify_image.main([str(one), "--version", "0.3.0", "--expect-digests", str(record)]) == 1
+
+
+def test_a_flat_layout_records_its_index_too(tmp_path):
+    flat = build_archive(tmp_path / "flat.tar", nested=False)
+    record = tmp_path / "digests.json"
+    assert verify_image.main([str(flat), "--version", "0.3.0", "--write-digests", str(record)]) == 0
+    assert json.loads(record.read_text())["index"].startswith("sha256:")
 
 
 def test_no_record_is_written_for_a_failing_candidate(tmp_path):

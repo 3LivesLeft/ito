@@ -72,15 +72,38 @@ jobs:
         run: >-
           python tools/verify_image.py candidate-1.tar candidate-2.tar --version "$VERSION"
           --summary "$GITHUB_STEP_SUMMARY" --write-digests digests.json
-      - name: Vulnerability scan of the candidate (any critical finding fails)
+      - name: Vulnerability scan, amd64 (any critical finding fails)
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_PLATFORM: linux/amd64  # each platform's image explicitly; the log shows the digest read
         with:
           image: oci-archive:candidate-1.tar
           fail-build: true
           severity-cutoff: critical
           output-format: table
-      - name: Vulnerability scan of the candidate (a high finding with a fix available fails)
+      - name: Vulnerability scan, amd64 (a high finding with a fix available fails)
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_PLATFORM: linux/amd64
+        with:
+          image: oci-archive:candidate-1.tar
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true
+          output-format: table
+      - name: Vulnerability scan, arm64 (any critical finding fails)
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_PLATFORM: linux/arm64  # each platform's image explicitly; the log shows the digest read
+        with:
+          image: oci-archive:candidate-1.tar
+          fail-build: true
+          severity-cutoff: critical
+          output-format: table
+      - name: Vulnerability scan, arm64 (a high finding with a fix available fails)
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_PLATFORM: linux/arm64
         with:
           image: oci-archive:candidate-1.tar
           fail-build: true

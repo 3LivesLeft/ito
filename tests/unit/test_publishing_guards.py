@@ -21,6 +21,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.y*ml"))
+# The ONLY workflow files that may ever publish (M2, after the maintainer's approval). Empty until
+# then. Every workflow not named here must stay exactly read-only; one named here may give write
+# permissions only to jobs that pass promotion_problems (protected environment, no build, the
+# verified archive checked against digests.json).
+PUBLISHING_WORKFLOWS: frozenset[str] = frozenset()
 
 # Commands that publish, push, sign or release.
 PUBLISH_COMMANDS = re.compile(
@@ -102,9 +107,17 @@ def promotion_problems(workflow: dict[str, Any]) -> list[str]:
 
 @pytest.mark.parametrize("path", WORKFLOWS, ids=lambda p: p.name)
 def test_no_workflow_can_publish_sign_or_escalate(path):
+    """Every non-publishing workflow keeps exactly read-only permissions (M1.2 re-review)."""
     workflow = yaml.safe_load(path.read_text())
+    assert path.name not in PUBLISHING_WORKFLOWS  # none is exempt before M2
     assert publishing_problems(workflow) == [], path
     assert promotion_problems(workflow) == [], path
+
+
+def test_publishing_is_not_yet_approved():
+    """M2 needs the maintainer's approval. Adding a file here is that change, and it is reviewed."""
+    assert frozenset() == PUBLISHING_WORKFLOWS
+    assert all((ROOT / ".github" / "workflows" / name).exists() for name in PUBLISHING_WORKFLOWS)
 
 
 def _wf(steps: list[dict[str, Any]], **extra: Any) -> dict[str, Any]:
