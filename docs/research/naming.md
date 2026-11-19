@@ -1,6 +1,7 @@
 # Naming research: "MeshBeacon"
 
-Status: **Revised after independent review** · Research date: 18 November 2026
+Status: **Revised after independent review** · Research date: 18 November 2026 · Reassessed
+19 November 2026 for the community direction (§5)
 Decision record: [ADR 0003](../adr/0003-name.md)
 
 Labels: **[Verified]**, **[Assumption]**, **[Recommendation]**, **[Open]** (see
@@ -103,3 +104,69 @@ any of the triggers below as a compelling reason to rename:
 Rename triggers: the existing maintainers object; a conflicting registered mark is found; or
 users repeatedly confuse the projects. Renaming is cheapest before the first published image,
 because the slug, image name and `/data` paths are effectively permanent once users install it.
+
+## 5. Reassessment for the community direction (19 November 2026)
+
+Prompted by the long-term direction (offline-first community network, LoRa, community alerts and
+information). **No rename has been made; this section informs the maintainer's decision (Q-41).**
+Not legal advice.
+
+### 5.1 What changed since 18 November
+
+**[Verified]** by GitHub repository search and the organisation's GitHub page, 19 November 2026:
+
+| Finding | Relevance |
+|---|---|
+| The `MeshBeacon` organisation's tagline is *"Coordinate disaster response over a resilient mesh network."* It now lists LoRa device firmware (`meshbeacon-firmware`, ClusterDuck-based), a LoRa gateway layer (`meshbeacon-uplink`) and a survivor-facing mobile app the page says is on Google Play | They ship off-grid **LoRa** software and a public app under the name |
+| A third party publishes `meshbeacon-atak-bridge` ("converts MeshBeacon MQTT events into ATAK Cursor-on-Target") | An ecosystem is forming around their use of the name |
+| `salmancuso/MeshBeacon`: automated weather, earthquake and event-alert broadcasting over MeshCore LoRa meshes; a similar `MeshBeaconOKI` project exists | Overlaps proposed v0.5 community information and v0.7 local alerts |
+| No registered "MeshBeacon" mark found in general web searches; official registers still not searched (RG-8) | Unchanged |
+| Reports of a contested UK trademark application for "MeshCore"; Meshtastic is a registered mark | Name disputes do occur in this ecosystem **[Assumption]** about their outcome |
+
+### 5.2 Overlap, revised
+
+| Dimension | 18 Nov (household framing) | 19 Nov (community direction) |
+|---|---|---|
+| Problem space | High | **Very high**: communications that keep working without the internet |
+| Pitch | Very high (former tagline) | **Very high**: the vision's "continue operating without internet connectivity" echoes their "keeps working even when the internet doesn't" |
+| Radio | Medium | **High**: both off-grid LoRa |
+| Audience | Low–medium | **Medium**: communities preparing for outages overlap with disaster response |
+| Platform | Low | Low–medium: standalone Linux later, against their Docker and OpenWrt |
+
+### 5.3 Risks
+
+| ID | Risk | Severity |
+|---|---|---|
+| N-1 | Confusion and misdirected support, increased by app-store visibility from v0.3.0 | High |
+| N-2 | Their organisation, repository name and mobile app already own search results for the name | Medium |
+| N-3 | They hold earlier unregistered use; a later registration by them, or a passing-off claim, could force a rename after publication **[Assumption]** | Medium–high |
+| N-4 | Safety: in an emergency, someone may install the wrong tool, or blame one project for the other's failure | Medium |
+| N-5 | Permanence: slug, image name and `/data` location are fixed by the first published image (v0.3.0) | High |
+| N-6 | Cost of renaming rises sharply after v0.3.0; before it, the only installations are the maintainer's local prototype, whose `/data` would need a one-off migration under a new slug (principle 8) | — |
+
+### 5.4 Alternatives
+
+| Option | Description | Effect on risk | Cost |
+|---|---|---|---|
+| A | Keep "MeshBeacon for Home Assistant" with ADR 0003's conditions (status quo) | N-1 to N-5 remain | None now; highest later |
+| B | Keep MeshBeacon for the Home Assistant app; give the community network its own name | Partial; two names to explain | Low |
+| C | Rename before v0.3.0 | Removes N-1 to N-5 if the new name is clear | Low now (documentation, slug, package name, one prototype migration) |
+
+First-pass screening of possible names for option C (GitHub repository search and a general web
+search only; **not** trademark clearance):
+
+| Candidate | Screening result |
+|---|---|
+| Commonwave | Two unrelated, empty GitHub repositories; no web results found |
+| Fieldlantern / Lanternmesh | No GitHub repositories; but "Lantern" is an established censorship-circumvention brand, a risk in the same privacy space |
+| HearthMesh | **Rejected:** an existing project replicates verified public knowledge across resilient nodes, a direct overlap |
+| Hearthnet, Kinmesh, Waymesh | Existing repositories with the name; not examined further |
+
+Whatever the name, avoid upstream or ecosystem marks (Reticulum, LXMF, Nomad Network, Sideband,
+Meshtastic, MeshCore) that could imply endorsement.
+
+**[Recommendation]** Decide Q-41 before any v0.3.0 publication. If option A is kept, complete the
+courtesy contact (RG-9) and register searches (RG-8) first, and rewrite the vision's pitch so that it
+does not echo theirs. On current evidence, option C costs least now and removes most of the risk.
+Any candidate needs register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) and domain checks
+before adoption.

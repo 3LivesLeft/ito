@@ -2,7 +2,9 @@
 
 Status: **Provisional — revised after independent review; long-term direction added 19 November
 2026.** Every item remains open to challenge. Completed milestones and acceptance records below are
-unchanged. **v0.4 onwards are proposed milestones, not release commitments.**
+unchanged. **v0.4 onwards are proposed milestones, not release commitments; v1.0 is unscheduled.**
+Decisions of 19 November 2026: ADRs [0007](adr/0007-separate-identities.md) to
+[0010](adr/0010-v0.3-scope.md).
 
 ## Phase 0 — Research and foundations (complete once PR #1 is merged)
 
@@ -43,8 +45,10 @@ Explicitly **out of scope** for v0.1.0 (moved or deferred):
 | Remote automation | v0.6 | |
 | Raw RNS configuration | Not planned | Would bypass validation and privacy defaults |
 
-The "Where it went" column records the plan when v0.1.0 was scoped. I2P, RNode and remote
-automation are now unscheduled; see [previously planned items](#previously-planned-items).
+The "Where it went" column records the plan when v0.1.0 was scoped ([history](#roadmap-history)).
+Now: LXMF is the v0.3 messaging milestone; HA notifications are removed from committed scope;
+propagation is proposed v0.5; I2P, RNode and remote automation are
+[unscheduled future capabilities](#future-capabilities-unscheduled).
 
 ## v0.2.0 — Visibility (merged to `main` in PR #3; physical acceptance pending)
 
@@ -62,31 +66,42 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 - **Not** included: a forwarded-packet count (RNS exposes none through supported interfaces),
   identity import (deferred), any control from Home Assistant, HACS publication.
 
-## v0.3.0 — Installation and LXMF messaging (next)
+## v0.3.0 — Installation and distribution (next)
 
-Theme agreed by the maintainer (19 November 2026): native installation from a Home Assistant app
-repository, secure private messaging, contacts and delivery tracking.
+Decided by the maintainer, 19 November 2026 ([ADR 0010](adr/0010-v0.3-scope.md)). **No new
+application features.** The release makes MeshBeacon installable through Home Assistant's native
+app installation path:
 
-**This revision does not expand v0.3's implementation scope.** The committed items are those
-already agreed:
+- signed, multi-arch app images and the app repository (`repository.yaml`, already present),
+  added from the **App store**, with a one-click My Home Assistant link **[Verified]** (HA
+  developer documentation, "Create an app repository");
+- any further catalogue the maintainer names (Q-43); listing anywhere is submitted by the
+  maintainer personally (CLAUDE.md rule 10);
+- installation and update documentation; the v0.2 integration's installation path (Q-45).
 
-- LXMF send/receive; HA `notify` platform (HA composes plaintext; LXMF encrypts end to end — must
-  be documented).
-- Interoperability testing with Sideband, NomadNet, MeshChat and Ratspeak.
-- Optional propagation node with disk quota (placement under review: Q-40).
+**Gates:** every Tier A criterion (LP-1 to LP-20) and Tier B release gate (RG-1 to RG-12), the
+v0.2 physical acceptance still pending (OB-2, OB-9, OB-10, OB-13, OB-17, OB-20), the naming
+decision (Q-41), and the maintainer's explicit approval to publish.
 
-The theme's other elements are recorded, **not yet committed**; each needs scoping in the v0.3
-design and the maintainer's approval:
+## v0.3 messaging milestone — secure LXMF messaging (after v0.3.0, gated)
 
-| Element | Relation to the agreed scope | Condition |
-|---|---|---|
-| Installation from an app repository / store | Publication, not new features | Only after all Tier B release gates (RG-1 to RG-12) and explicit approval to publish; naming decision first (Q-41); route and submitter Q-43 |
-| Contacts | New | Scope and storage location (Q-39) |
-| Delivery tracking | Extends LXMF send/receive | Must express long, LoRa-scale delays (forward-compatibility review F-6) |
+Secure private LXMF messaging, contacts and delivery tracking, in a later v0.3 release. It ships
+only when **all** of these gates are met; the messaging design turns them into acceptance criteria.
 
-v0.3 decisions that could constrain later milestones are listed in the
-[forward-compatibility review](research/long-term-direction.md) (F-1 to F-11). They are to be
-settled in v0.3's ADRs, not redesigned in advance.
+| ID | Gate |
+|---|---|
+| MG-1 | **Authorisation:** sending can be restricted to callers the user explicitly approves. The Home Assistant / Supervisor capabilities this needs are identified on the HA release then current, and any permission they require is approved by ADR (hard rule 4). HA's default service-call permissions are not sufficient (maintainer decision, ADR 0010) |
+| MG-2 | An ADR for the Home Assistant → core path for sending; ADR 0006's status API stays read-only |
+| MG-3 | Separate messaging identity: [ADR 0007](adr/0007-separate-identities.md) validation IV-1 to IV-5 passed; transport identity unchanged on upgrade |
+| MG-4 | Announcing the messaging address is an explicit opt-in ([ADR 0008](adr/0008-opt-in-publication.md)) |
+| MG-5 | The process model does not prevent isolating later public services from transport ([ADR 0009](adr/0009-public-service-isolation.md), Q-35) |
+| MG-6 | No message content or metadata in logs or diagnostics; storage location (Q-39), quota and backup treatment (Q-44) decided |
+| MG-7 | Delivery states can express long, LoRa-scale delays (forward-compatibility review F-6) |
+| MG-8 | Interoperability with Sideband, NomadNet, MeshChat and Ratspeak on isolated networks |
+
+Removed from the committed v0.3 scope: the HA `notify` platform (its default service permissions
+do not satisfy the messaging authorisation requirements; it may return only through MG-1 and its
+own ADR) and the optional propagation node (now proposed v0.5).
 
 ## Long-term direction (proposed)
 
@@ -98,38 +113,47 @@ not depend on it. See the [vision](vision.md#long-term-direction) and its
 [architectural principles](vision.md#architectural-principles-for-the-long-term-direction).
 
 **These milestones are proposed, not release commitments.** Each needs its own design, ADRs and
-acceptance criteria, approved by the maintainer, before implementation starts.
+acceptance criteria, approved by the maintainer, before implementation starts. Every public
+service is subject to [ADR 0008](adr/0008-opt-in-publication.md) (opt-in announcement and
+publication) and [ADR 0009](adr/0009-public-service-isolation.md) (isolated from Home Assistant
+and from the transport failure domain).
 
 | Version | Theme | Proposed content |
 |---|---|---|
 | v0.4 | Public offline internet | Nomad Network-compatible page hosting, browsing, publishing and discovery; lightweight content suitable for LoRa |
-| v0.5 | Community services | Public bulletin boards, offline knowledge libraries, LXMF propagation services, community information sharing |
+| v0.5 | Community services | Public bulletin boards, offline knowledge libraries, **LXMF propagation services, including the optional propagation node** (moved from v0.3), community information sharing |
 | v0.6 | Voice messaging | Short push-to-talk voice bursts with low-bitrate codecs, asynchronous delivery, radio airtime limits |
 | v0.7 | Resilient infrastructure | Distributed content replication, selected sensor sharing, local alerts, network resilience |
 | v0.8+ | Advanced communications | *Investigation:* live push-to-talk group voice over suitable higher-bandwidth transports, intelligent transport selection, additional radio capabilities |
 
-### Previously planned items
+### Future capabilities (unscheduled)
 
-Items from the earlier roadmap that the new sequence does not name. None is dropped; their
-placement is **[Open] Q-42** for the maintainer.
+Kept explicitly so that nothing is dropped silently. Each needs its own design and ADRs.
 
-| Item | Previously | Now | Note |
-|---|---|---|---|
-| HA `notify` platform, interop testing | v0.3 | v0.3 | Unchanged |
-| Optional propagation node | v0.3 | v0.3, under review | Q-40: stay in v0.3 or join v0.5 propagation services |
-| Optional I2P (separate router); public-gateway investigation | v0.4 | Unscheduled | Candidate for v0.7 resilience or v0.8+ transport selection |
-| Tailscale guidance (documentation only) | v0.1 onwards | Unchanged | Once tested (feasibility Q-8) |
-| RNode / LoRa hardware support | v0.5 | Unscheduled | Needed before LoRa-aware features (v0.4+) can be validated on real radio; device access needs an ADR (hard rule 4) |
-| Authenticated remote automation | v0.6 | Unscheduled | Private and allow-listed, separate from public services (principle 4); external design review before implementation, as agreed |
-| Identity import from file | v0.2, then deferred | Unscheduled | Relevant to compatibility with existing identities (principle 8) |
-| TCP listener (inbound) | Later, if requested | Unchanged | Not needed to host services over outbound links **[Assumption]** |
+| Capability | Note |
+|---|---|
+| **RNode / LoRa radio hardware support** | Explicit future capability: RNode with explicit device mapping and regional parameter validation (UK: Ofcom IR 2030 **[Assumption]**). Device access changes the security posture and needs an ADR (hard rule 4). Needed before LoRa-aware features can be validated on air |
+| Optional I2P (separate router); public-gateway investigation | Candidate for v0.7 or v0.8+ (Q-42) |
+| Authenticated remote automation | Private and allow-listed, separate from public services (ADR 0009); external design review before implementation |
+| Identity import from file | Requirements in architecture §4.6; relevant to principle 8 |
+| TCP listener (inbound) | Later, if requested; not needed to host services over outbound links **[Assumption]** |
+| Tailscale guidance (documentation only) | Once tested (feasibility Q-8) |
 
-## v1.0.0 — Stable
+## v1.0.0 — Stable (unscheduled)
 
-External security audit, compatibility matrix, full documentation, standalone Docker image, and a
-published RNS-upgrade policy. Unchanged; standalone Raspberry Pi and other Linux deployments
-(architectural principle 7) build on the standalone image. Where v1.0 falls relative to v0.4–v0.8
-is part of Q-42.
+A stability milestone, **not scheduled and not a release commitment** ([ADR 0010](adr/0010-v0.3-scope.md)).
+Criteria unchanged: external security audit, compatibility matrix, full documentation, standalone
+Docker image (the basis for standalone Raspberry Pi and other Linux deployments, principle 7), and
+a published RNS-upgrade policy.
+
+## Roadmap history
+
+Superseded plans are kept here rather than deleted.
+
+| Date | Plan | Superseded by |
+|---|---|---|
+| 18 Nov 2026 | v0.3 Messaging (LXMF, HA `notify`, interop testing, optional propagation node); v0.4 Privacy and reachability (I2P, public-gateway investigation); v0.5 Off-grid (RNode); v0.6 Remote automation; v1.0 after v0.6 | Long-term direction, 19 Nov 2026 (commit `f409058`) |
+| 19 Nov 2026 (`f409058`) | v0.3 "Installation and LXMF messaging" as one release, still including `notify` and the propagation node; I2P, RNode and remote automation unscheduled; v1.0 position open | ADR 0010 (this revision) |
 
 ---
 

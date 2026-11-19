@@ -17,10 +17,10 @@ MeshBeacon is a free, open-source, privacy-first, decentralised communications g
 - Run a Reticulum node as a Home Assistant app (formerly "add-on"), on the machine you already
   have — no extra hardware required to start.
 - Show node and network health as Home Assistant entities.
-- Send end-to-end-encrypted notifications from Home Assistant to Reticulum messaging apps
-  (via [LXMF](https://github.com/markqvist/LXMF)).
-- Next (v0.3): installation from an app repository once release gates are met, and private LXMF
-  messaging.
+- Secure, end-to-end-encrypted messaging with Reticulum messaging apps
+  (via [LXMF](https://github.com/markqvist/LXMF)), once its authorisation gates are met.
+- Next: v0.3.0 makes it installable from the Home Assistant App store once every release gate
+  is met; secure LXMF messaging follows as a later v0.3 milestone, behind security gates.
 
 **Long-term direction (proposed, not committed):** an offline-first community network over
 Reticulum, including LoRa — Nomad Network-compatible pages, bulletin boards and offline libraries,
@@ -64,6 +64,10 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [ADR 0004](docs/adr/0004-public-peer-presets.md) | Optional verified presets; no default connection |
 | [ADR 0005](docs/adr/0005-bounded-recovery.md) | Bounded recovery that cannot loop with the Supervisor watchdog |
 | [ADR 0006](docs/adr/0006-local-metrics-api.md) | Read-only local status API, delivered by Supervisor discovery |
+| [ADR 0007](docs/adr/0007-separate-identities.md) | Separate identities for transport, messaging and public services |
+| [ADR 0008](docs/adr/0008-opt-in-publication.md) | Explicit opt-in for announcements and publication |
+| [ADR 0009](docs/adr/0009-public-service-isolation.md) | Public services isolated from Home Assistant and from transport |
+| [ADR 0010](docs/adr/0010-v0.3-scope.md) | v0.3.0 is a distribution release; messaging follows behind security gates |
 
 ## Credits
 

@@ -591,16 +591,17 @@ Status as of the review amendments (18 November 2026). Resolved items are kept f
 | Q-31 | Will the reference device move from Wi-Fi to Ethernet? | Open — maintainer; tests run on Wi-Fi meanwhile |
 | Q-32 | Is the reference 5G connection behind CGNAT? | Open — maintainer |
 | Q-33 | Does AdGuard Home serve DNS for apps on the reference device, and with which blocklists? | Open — maintainer; test C5–C8 |
-| Q-35 | Process model for LXMF and later services: in the RNS child, or separate processes on a shared instance? ([F-1](long-term-direction.md#f-1-process-model-for-lxmf-and-later-services)) | Open — v0.3 ADR |
-| Q-36 | Does LXMF get its own identity, managed like the transport identity? (F-2) | Open — v0.3 ADR |
-| Q-37 | One consent model for announcing, reusable by every service? (F-3) | Open — v0.3 ADR (hard rule 4) |
-| Q-38 | Design of the private HA → core path for sending messages; ADR 0006 is read-only (F-4) | Open — v0.3 ADR |
-| Q-39 | Where contacts, conversations and delivery state are stored (F-5) | Open — v0.3 design |
-| Q-40 | Optional propagation node: keep in v0.3 or move to v0.5 community services? (F-8) | Open — maintainer |
-| Q-41 | Do the name and tagline still fit the community direction, given the existing MeshBeacon project? Decide before any image is published (ADR 0003) | Open — maintainer |
-| Q-42 | Placement of previously planned I2P, RNode, remote automation, identity import, and of v1.0 relative to v0.4–v0.8 | Open — maintainer |
-| Q-43 | Distribution route for store installation (app repository, any store or HACS listing) and who submits it | Open — maintainer (CLAUDE.md rule 10) |
-| Q-44 | General per-service storage quota and whether messages are in HA backups (F-7) | Open — v0.3 design |
+| Q-35 | Process model for LXMF and later services: in the RNS child, or separate processes on a shared instance? ([F-1](long-term-direction.md#f-1-process-model-for-lxmf-and-later-services)) | **Constrained:** public services must not share the transport failure domain ([ADR 0009](../adr/0009-public-service-isolation.md)); mechanism open — messaging design (MG-5) |
+| Q-36 | Does LXMF get its own identity, managed like the transport identity? (F-2) | **Resolved, subject to validation IV-1–IV-5:** yes ([ADR 0007](../adr/0007-separate-identities.md)) |
+| Q-37 | One consent model for announcing, reusable by every service? (F-3) | **Resolved:** per-service explicit opt-in ([ADR 0008](../adr/0008-opt-in-publication.md)) |
+| Q-38 | Design of the private HA → core path for sending messages; ADR 0006 is read-only (F-4) | Open — messaging milestone ADR (gates MG-1, MG-2); `notify` removed from committed scope ([ADR 0010](../adr/0010-v0.3-scope.md)) |
+| Q-39 | Where contacts, conversations and delivery state are stored (F-5) | Open — messaging design (MG-6) |
+| Q-40 | Optional propagation node: keep in v0.3 or move to v0.5 community services? (F-8) | **Resolved:** proposed v0.5 ([ADR 0010](../adr/0010-v0.3-scope.md)) |
+| Q-41 | Do the name and tagline still fit the community direction, given the existing MeshBeacon project? Decide before any image is published (ADR 0003) | Open — maintainer; reassessment in [naming §5](naming.md#5-reassessment-for-the-community-direction-19-november-2026). **Blocks v0.3.0** |
+| Q-42 | Placement of previously planned I2P, RNode, remote automation, identity import, and of v1.0 relative to v0.4–v0.8 | **Partly resolved:** RNode an explicit unscheduled future capability; v1.0 unscheduled ([ADR 0010](../adr/0010-v0.3-scope.md)). I2P, remote automation, identity import: placement open |
+| Q-43 | Distribution route for store installation (app repository, any store or HACS listing) and who submits it | **Partly resolved:** app repository added from the App store (verified mechanism). Which further catalogue "Marketplace" means is open — maintainer; submissions by the maintainer personally (CLAUDE.md rule 10) |
+| Q-44 | General per-service storage quota and whether messages are in HA backups (F-7) | Open — messaging design (MG-6) |
+| Q-45 | How is the v0.2 integration (`custom_components/meshbeacon`) installed in v0.3.0? An app cannot install it (no `/config` write access, by design); options are manual copy, HACS (separate submission) or upstream inclusion (excluded by rule 10) | Open — maintainer; **blocks the v0.3.0 installation story** |
 
 ## 15. Risks
 

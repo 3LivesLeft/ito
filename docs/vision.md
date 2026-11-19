@@ -28,7 +28,8 @@ Over time it aims to let a household:
 
 - run a well-behaved Reticulum node on the Home Assistant machine it already has;
 - see the node's health and network status as ordinary Home Assistant entities;
-- receive end-to-end-encrypted notifications from Home Assistant in any Reticulum messaging app;
+- exchange end-to-end-encrypted messages with any Reticulum messaging app, with sending
+  authorised explicitly (ADR 0010);
 - keep communicating locally, and over radio, when the internet is unavailable;
 - eventually, monitor and control the home off-grid — with strong, explicit authorisation.
 
@@ -61,7 +62,11 @@ These add to the principles below; where they overlap, the stricter reading appl
 8. **Compatible with existing MeshBeacon installations and identities.**
 
 v0.3 decisions that could constrain these are reviewed in the
-[forward-compatibility review](research/long-term-direction.md).
+[forward-compatibility review](research/long-term-direction.md). Principles 4, 5 and 8 are made
+concrete by [ADR 0007](adr/0007-separate-identities.md) (separate identities; the transport
+identity is never replaced by that change), [ADR 0008](adr/0008-opt-in-publication.md) (opt-in
+announcement and publication) and [ADR 0009](adr/0009-public-service-isolation.md) (public
+services isolated from Home Assistant and from the transport process).
 
 ## What MeshBeacon is not
 
