@@ -14,8 +14,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
+import sqlite3
 import sys
+import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -79,6 +82,37 @@ def check_storage(paths: Paths, result: PrepareResult) -> bool:
     return True
 
 
+def check_sqlite_storage(paths: Paths, result: PrepareResult) -> bool:
+    """Exercise SQLite's persistent and temporary storage without touching RNS databases."""
+    try:
+        # RNS uses SQLite both for destination persistence and temporary announce tables.
+        # A successful directory check alone does not prove either operation works.
+        with tempfile.TemporaryDirectory(prefix=".sqlite-check-", dir=paths.storage) as folder:
+            db = Path(folder) / "check.db"
+            with sqlite3.connect(db) as conn:
+                conn.execute("PRAGMA temp_store=FILE")
+                conn.execute("CREATE TABLE check_data (value INTEGER)")
+                conn.execute("INSERT INTO check_data VALUES (1)")
+                conn.execute("CREATE TEMP TABLE check_temp (value INTEGER)")
+                conn.execute("INSERT INTO check_temp VALUES (1)")
+                conn.commit()
+            with sqlite3.connect(db) as conn:
+                if conn.execute("SELECT value FROM check_data").fetchone() != (1,):
+                    raise sqlite3.DatabaseError("SQLite persistence verification failed")
+        # Check the OS temporary directory too: SQLite can use it for temporary files.
+        with tempfile.TemporaryFile(dir=tempfile.gettempdir()) as temporary:
+            temporary.write(b"sqlite-temp-check")
+            temporary.flush()
+    except (OSError, sqlite3.Error) as exc:
+        return bool(result.fail(
+            "Reticulum's database storage is not writable or SQLite cannot use its temporary "
+            f"directory ({type(exc).__name__}). Check the app's storage permissions and free "
+            "space; existing identities and databases have not been modified.",
+            "storage",
+        ).ok)
+    return True
+
+
 def cap_regenerable(paths: Paths, result: PrepareResult) -> None:
     total = sum(fsutil.tree_size(d) for d in paths.regenerable_dirs)
     if total > REGENERABLE_CAP:
@@ -93,7 +127,7 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
         fsutil.ensure_dir(directory)
 
     settings = load_settings(paths, result)
-    if settings is None or not check_storage(paths, result):
+    if settings is None or not check_storage(paths, result) or not check_sqlite_storage(paths, result):
         return result
 
     manager = IdentityManager(paths)
