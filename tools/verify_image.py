@@ -19,7 +19,9 @@ that is M2's publishing step, after approval (docs/releasing.md).
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
+import io
 import json
 import sys
 import tarfile
@@ -50,7 +52,7 @@ class Archive:
             raise ValueError(f"{name} missing")
         return json.loads(member.read())
 
-    def blob(self, digest: str) -> Any:
+    def raw(self, digest: str) -> bytes:
         algorithm, value = digest.split(":", 1)
         member = self._tar.extractfile(f"blobs/{algorithm}/{value}")
         if member is None:
@@ -58,7 +60,10 @@ class Archive:
         data = member.read()
         if hashlib.sha256(data).hexdigest() != value:
             raise ValueError(f"blob {digest} does not match its digest")
-        return json.loads(data)
+        return data
+
+    def blob(self, digest: str) -> Any:
+        return json.loads(self.raw(digest))
 
     def descriptors(self) -> list[dict[str, Any]]:
         """Platform and attestation manifests, following one level of image index."""
@@ -121,6 +126,47 @@ def inspect(archive: Archive, version: str) -> tuple[dict[str, str], list[str]]:
     return {p: d["digest"] for p, d in images.items()}, problems
 
 
+def _layer_entries(archive: Archive, digest: str) -> dict[str, tuple[object, ...]]:
+    data = archive.raw(digest)
+    if data[:2] == b"\x1f\x8b":
+        data = gzip.decompress(data)
+    entries: dict[str, tuple[object, ...]] = {}
+    with tarfile.open(fileobj=io.BytesIO(data)) as layer:
+        for member in layer.getmembers():
+            content = layer.extractfile(member) if member.isfile() else None
+            digest_ = hashlib.sha256(content.read()).hexdigest()[:16] if content else ""
+            entries[member.name] = (digest_, member.mtime, member.mode, member.uid, member.gid, member.linkname)
+    return entries
+
+
+def explain(first: Archive, second: Archive, a: dict[str, str], b: dict[str, str], limit: int = 15) -> list[str]:
+    """Which layers and files differ between two builds, to find what is not reproducible."""
+    lines: list[str] = []
+    for platform in sorted(set(a) & set(b)):
+        if a[platform] == b[platform]:
+            continue
+        one, two = first.blob(a[platform]), second.blob(b[platform])
+        c1, c2 = first.blob(one["config"]["digest"]), second.blob(two["config"]["digest"])
+        lines += [
+            f"{platform}: config field {key!r} differs"
+            for key in sorted(set(c1) | set(c2))
+            if key != "rootfs" and c1.get(key) != c2.get(key)
+        ]
+        for index, (l1, l2) in enumerate(zip(one["layers"], two["layers"], strict=False)):
+            if l1["digest"] == l2["digest"]:
+                continue
+            try:
+                e1, e2 = _layer_entries(first, l1["digest"]), _layer_entries(second, l2["digest"])
+            except (tarfile.TarError, OSError, EOFError):
+                lines.append(f"{platform}: layer {index} differs (not a readable tar layer)")
+                continue
+            changed = sorted(name for name in set(e1) | set(e2) if e1.get(name) != e2.get(name))
+            lines.append(f"{platform}: layer {index} differs in {len(changed)} entries")
+            for name in changed[:limit]:
+                lines.append(f"    {name}: {e1.get(name)} != {e2.get(name)}")
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("archives", nargs="+", type=Path)
@@ -131,16 +177,19 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("one archive, or two independent builds to compare")
     results = []
     problems: list[str] = []
-    for path in args.archives:
-        archive = Archive(path)
-        try:
+    archives = [Archive(path) for path in args.archives]
+    try:
+        for path, archive in zip(args.archives, archives, strict=True):
             digests, found = inspect(archive, args.version)
-        finally:
+            results.append(digests)
+            problems += [f"{path.name}: {p}" for p in found]
+        if len(results) == 2 and results[0] != results[1]:
+            problems.append(f"not reproducible: {results[0]} != {results[1]}")
+            for line in explain(archives[0], archives[1], results[0], results[1]):
+                print(line)
+    finally:
+        for archive in archives:
             archive.close()
-        results.append(digests)
-        problems += [f"{path.name}: {p}" for p in found]
-    if len(results) == 2 and results[0] != results[1]:
-        problems.append(f"not reproducible: {results[0]} != {results[1]}")
     lines = [f"### {PROJECT['name']} {args.version}: image manifest digests", ""]
     lines += [f"- `{platform}`: `{digest}`" for platform, digest in sorted(results[0].items())]
     if len(results) == 2:

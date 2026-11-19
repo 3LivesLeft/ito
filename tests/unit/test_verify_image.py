@@ -120,7 +120,8 @@ def test_different_builds_are_not_reproducible(tmp_path, capsys):
     one = build_archive(tmp_path / "1.tar")
     two = build_archive(tmp_path / "2.tar", layer_seed="other")
     assert verify_image.main([str(one), str(two), "--version", "0.3.0"]) == 1
-    assert "not reproducible" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "not reproducible" in out and "layer 0 differs" in out  # says where
 
 
 @pytest.mark.parametrize(
@@ -150,3 +151,42 @@ def test_a_tampered_blob_is_caught(tmp_path):
             dst.addfile(member, io.BytesIO(data))
     with pytest.raises(ValueError, match="does not match"):
         verify_image.main([str(bad), "--version", "0.3.0"])
+
+
+def test_explain_names_the_files_that_differ(tmp_path):
+    """With real tar layers, the explanation lists the differing files (for CI diagnosis)."""
+
+    def tar_layer(content: bytes, mtime: int) -> bytes:
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w") as layer:
+            info = tarfile.TarInfo("lib/apk/db/installed")
+            info.size, info.mtime = len(content), mtime
+            layer.addfile(info, io.BytesIO(content))
+            same = tarfile.TarInfo("etc/same")
+            same.size = 1
+            layer.addfile(same, io.BytesIO(b"x"))
+        return buf.getvalue()
+
+    def archive(path: Path, layer: bytes) -> verify_image.Archive:
+        digest = "sha256:" + hashlib.sha256(layer).hexdigest()
+        config = json.dumps({"config": {"Labels": {}}}).encode()
+        cdigest = "sha256:" + hashlib.sha256(config).hexdigest()
+        manifest = json.dumps({"config": {"digest": cdigest}, "layers": [{"digest": digest}]}).encode()
+        mdigest = "sha256:" + hashlib.sha256(manifest).hexdigest()
+        with tarfile.open(path, "w") as tar:
+            for d, data in ((digest, layer), (cdigest, config), (mdigest, manifest)):
+                info = tarfile.TarInfo(f"blobs/sha256/{d.split(':')[1]}")
+                info.size = len(data)
+                tar.addfile(info, io.BytesIO(data))
+        return verify_image.Archive(path), mdigest
+
+    first, d1 = archive(tmp_path / "a.tar", tar_layer(b"one", 1))
+    second, d2 = archive(tmp_path / "b.tar", tar_layer(b"two", 2))
+    try:
+        lines = verify_image.explain(first, second, {"linux/amd64": d1}, {"linux/amd64": d2})
+    finally:
+        first.close()
+        second.close()
+    assert any("layer 0 differs in 1 entries" in line for line in lines)
+    assert any("lib/apk/db/installed" in line for line in lines)
+    assert not any("etc/same" in line for line in lines)
