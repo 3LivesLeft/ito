@@ -37,11 +37,17 @@ release starts there.
 4. **Compatibility:** integration N works with app N and N−1 (`compatibility.py`). A release that
    breaks that, or the status schema, needs a new major schema and the Supervisor's
    `breaking_versions` entry.
-5. **Pinned inputs:** the base image by digest (as now), Python packages by hash, actions by commit
-   SHA.
-6. **Never delete or move a published tag or image.** Restoring an app backup pulls that version's
+5. **Pinned inputs** (M1.2): the base image, the Dockerfile frontend (`# syntax=`), BuildKit, the
+   SBOM scanner and QEMU's binfmt image by digest; Python packages by hash, for the app **and** for
+   every CI and release tool (`requirements-*.txt`, compiled from `requirements-*.in`); actions by
+   commit SHA. Release builds use no action cache. `tests/unit/test_hacs.py` enforces all of this.
+6. **Promote, never rebuild** (M1.2): publishing pushes the exact OCI archive the dry run verified
+   (`candidate-1.tar`) and checks what the registry then serves against the recorded
+   `digests.json`. A publishing job must not build; `tests/unit/test_publishing_guards.py`
+   (`promotion_problems`) enforces this for any job with `packages: write`.
+7. **Never delete or move a published tag or image.** Restoring an app backup pulls that version's
    image again, and the Marketplace lists earlier releases.
-7. **The release commit's changelog entry has a date**, not "unreleased" (the check refuses it).
+8. **The release commit's changelog entry has a date**, not "unreleased" (the check refuses it).
 
 ## 3. Steps (from M2, with approval)
 
@@ -49,17 +55,30 @@ release starts there.
 |---|---|---|---|
 | 1 | Bump the version in the six places; date the changelog; run all CI on the branch | `tools/check_release.py` | Ready |
 | 2 | Tag `vX.Y.Z` (signed tag) on the release commit; do not move `main` yet | git | Ready |
-| 3 | **Dry run on the tag:** build both architectures twice from scratch with `SOURCE_DATE_EPOCH` = commit time and rewritten timestamps; verify platforms, labels, SBOM (SPDX) and provenance attestations, and that both builds give **identical image digests** | `.github/workflows/release-dry-run.yaml`, `tools/verify_image.py` | Ready (M1) |
-| 4 | **Publish the images** to GHCR from the verified build, as a multi-arch manifest | Publishing workflow with `packages: write`, behind a protected `release` environment that needs the maintainer's approval | **M2, not written yet** |
+| 3 | **Dry run on the tag:** build both architectures twice from scratch with `SOURCE_DATE_EPOCH` = commit time and rewritten timestamps; verify platforms, labels, SBOM (SPDX) and provenance attestations, and that both builds give **identical image digests**; record them (`--write-digests digests.json`); vulnerability scans (any critical finding fails; a high finding with a fix available fails) | `.github/workflows/release-dry-run.yaml`, `tools/verify_image.py` | Ready (M1, M1.2) |
+| 4 | **Publish the verified archive** to GHCR as a multi-arch image, without rebuilding: for example `skopeo copy --all --preserve-digests oci-archive:candidate-1.tar docker://ghcr.io/…:X.Y.Z`, in the same workflow run as step 3 (the archive never leaves that run) | Publishing job with `packages: write`, behind a protected `release` environment that needs the maintainer's approval; must not build (rule 6) | **M2, not written yet** |
 | 5 | **Sign** the pushed digests with cosign (keyless, GitHub OIDC), and attach the SBOM and provenance. Keyless signing records the signature in the public Rekor transparency log | cosign, pinned | **M2** |
-| 6 | **Verify what was published:** pull by tag, check that the tag resolves to the digests from step 3, verify the signature against this repository's workflow identity | `cosign verify`, `tools/verify_image.py` | **M2** |
+| 6 | **Verify what was published:** pull by tag into an OCI archive and run `tools/verify_image.py pulled.tar --version X.Y.Z --expect-digests digests.json`; verify the signature against this repository's workflow identity | `cosign verify`, `tools/verify_image.py` | **M2** (the digest check is ready) |
 | 7 | Record the digests in the release notes; create the GitHub release (stable, not pre-release, unless it is a release candidate) | release notes template below | **M2** |
 | 8 | Fast-forward `main` to the tag; the app store and the Marketplace now offer it | git | **M2** |
 | 9 | Install it in the isolated VM from both stores, as a new user would (acceptance IN-1 to IN-11) | VM | **M2** |
 
-**[Open]** whether step 4 uses Home Assistant's builder actions (their documented path) or the same
-`docker buildx` invocation as the dry run. Using the dry run's exact command keeps the verified
-digests identical to the published ones; that is the recommendation, decided at M2.
+**Decided (M1.2):** step 4 promotes the dry run's archive; it does not use Home Assistant's builder
+actions or any second build. That is the only way to guarantee that what is published is what was
+verified.
+
+### Reproducibility: what it does and does not show
+
+| Claim | Status |
+|---|---|
+| Two builds of one commit, on one runner, minutes apart, give identical image digests | **Verified** in every dry run |
+| A rebuild on another day, or by someone else, gives the same digests | **Not expected.** The `apk add --upgrade` security layer installs whatever Alpine serves that day (minimum versions only), and Alpine replaces package files in place. The layer goes once the base image carries the fixes; then only digest-pinned images and hash-pinned wheels remain |
+| Every image and package the build reads is pinned | **Verified**, except the Alpine packages above and the runner's own `docker buildx` client (the action uses the runner's copy) |
+| SBOM and provenance describe the published image | **Yes, by construction** under rule 6: they are produced in the verified build and pushed with it |
+
+Promotion (rule 6) makes cross-day reproducibility unnecessary for integrity: the published bytes
+are the verified bytes. Independent rebuilds remain a useful check for reviewers once the apk layer
+is gone.
 
 The Supervisor does not verify signatures (it has no signing support today). Signatures and SBOMs
 are for users and reviewers, and for MeshBeacon's own verification in step 6.
@@ -106,6 +125,10 @@ Use this structure so that every release looks and reads the same ([branding](br
 ```
 
 **Checklist before publishing (with approval):**
+- [ ] Repository settings (a test cannot check these): a protected `release` environment with the
+      maintainer as required reviewer; tag protection for `v*`; Actions' default token read-only.
+- [ ] The publishing job promotes `candidate-1.tar` from the same run and checks `--expect-digests`
+      (rule 6); `tests/unit/test_publishing_guards.py` passes with the new workflow.
 - [ ] `tools/check_release.py --ref <tag> --tag <tag>` passes; the release dry run is green on the tag.
 - [ ] Logo, name and tagline as in [branding](branding.md); no cropped or recoloured artwork.
 - [ ] `tools/brand/build.py --check` passes; the app's `icon.png` and `logo.png` are current.

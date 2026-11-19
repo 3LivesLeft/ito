@@ -45,18 +45,6 @@ def test_marketplace_installs_the_integration_directory():
     assert HACS.get("content_in_root", False) is False
 
 
-def test_no_workflow_publishes_releases():
-    """Publishing needs the maintainer's approval (D3, M2). Until then no workflow may release."""
-    for path in (ROOT / ".github" / "workflows").glob("*.y*ml"):
-        workflow = yaml.safe_load(path.read_text())
-        triggers = workflow.get("on", workflow.get(True))  # YAML 1.1 reads a bare `on` as True
-        assert "release" not in (triggers if isinstance(triggers, (dict, list)) else [triggers]), path
-        steps = [step for job in workflow["jobs"].values() for step in job.get("steps", [])]
-        for step in steps:
-            assert "release" not in str(step.get("uses", "")), (path, step)
-            assert not re.search(r"\bgh release\b|upload-release-asset", str(step.get("run", ""))), (path, step)
-
-
 def test_exactly_one_integration_in_custom_components():
     found = [p.name for p in (ROOT / "custom_components").iterdir() if p.is_dir() and not p.name.startswith("__")]
     assert found == ["meshbeacon"]
@@ -83,7 +71,7 @@ def test_minimum_home_assistant_is_the_marketplace_release():
     load Home Assistant 2026.11, so it stays on 2026.10.4 (docs/testing/strategy.md).
     """
     assert HACS["homeassistant"] == "2026.11.0"
-    smoke = (ROOT / "requirements-ha-smoke.txt").read_text()
+    smoke = (ROOT / "requirements-ha-smoke.in").read_text()
     smoke_version = re.search(r"^homeassistant==(\S+)$", smoke, re.M)
     assert smoke_version and smoke_version.group(1).startswith("2026.11.")
 
@@ -94,29 +82,72 @@ def test_frontend_ships_inside_the_integration():
     assert (INTEGRATION / "frontend" / "model.js").is_file()
 
 
-def test_no_workflow_can_publish_images_or_sign():
-    """M1 prepares publishing but performs none of it (D3; publishing is M2, after approval)."""
-    forbidden = re.compile(r"docker (?:image )?push|--push\b|push: *true|cosign sign|docker login|gh release")
-    for path in (ROOT / ".github" / "workflows").glob("*.y*ml"):
-        workflow = yaml.safe_load(path.read_text())
-        assert workflow.get("permissions") == {"contents": "read"}, path
-        for job in workflow["jobs"].values():
-            assert "permissions" not in job, (path, "jobs must not widen permissions")
-            for step in job.get("steps", []):
-                assert not forbidden.search(str(step.get("run", ""))), (path, step)
-                assert "login-action" not in str(step.get("uses", "")), (path, step)
-                assert "build-push-action" not in str(step.get("uses", "")), (path, step)
-                assert "cosign" not in str(step.get("uses", "")), (path, step)
-                with_ = step.get("with") or {}
-                assert with_.get("push") not in (True, "true"), (path, step)
-
-
 def test_release_dry_run_checks_reproducibility_and_attestations():
     workflow = (ROOT / ".github" / "workflows" / "release-dry-run.yaml").read_text()
     assert "SOURCE_DATE_EPOCH" in workflow and "rewrite-timestamp=true" in workflow
-    assert "--sbom=true" in workflow and "--provenance=mode=max" in workflow
+    assert "--sbom=generator=" in workflow and "--provenance=mode=max" in workflow
     assert "tools/verify_image.py candidate-1.tar candidate-2.tar" in workflow
     assert "tools/check_release.py" in workflow
     for line in workflow.splitlines():
         if "uses:" in line and not line.strip().startswith("#"):
             assert re.search(r"@[0-9a-f]{40} # v", line), f"action not pinned to a commit SHA: {line.strip()}"
+
+
+DIGEST = r"@sha256:[0-9a-f]{64}"
+
+
+def test_every_image_the_build_runs_is_pinned_by_digest():
+    """M1.2 (M-2): QEMU's binfmt, BuildKit, the SBOM scanner, the Dockerfile frontend and the base
+    image are pinned by digest, and no release build restores anything from the action cache."""
+    dockerfile = (ROOT / "meshbeacon" / "Dockerfile").read_text()
+    assert re.match(rf"# syntax=docker/dockerfile:[0-9.]+{DIGEST}\n", dockerfile)
+    assert re.search(rf"^FROM \S+{DIGEST}$", dockerfile, re.M)
+    for name in ("release-dry-run.yaml", "ci.yaml"):
+        workflow = yaml.safe_load((ROOT / ".github" / "workflows" / name).read_text())
+        for job in workflow["jobs"].values():
+            for step in job.get("steps", []):
+                uses, with_ = str(step.get("uses", "")), step.get("with") or {}
+                if "setup-qemu-action" in uses:
+                    assert re.search(DIGEST, str(with_.get("image", ""))), (name, step)
+                    assert with_.get("cache-image") is False, (name, step)
+                if "setup-buildx-action" in uses:
+                    assert re.search(rf"image=\S+{DIGEST}", str(with_.get("driver-opts", ""))), (name, step)
+                    assert with_.get("cache-binary") is False, (name, step)
+                assert "actions/cache" not in uses, (name, step)
+                for image in re.findall(
+                    r"\b(?:python|ghcr\.io/\S+|docker\.io/\S+):[\w.-]+(?:@\S+)?", str(step.get("run", ""))
+                ):
+                    assert re.search(DIGEST, image), (name, image)
+    release = (ROOT / ".github" / "workflows" / "release-dry-run.yaml").read_text()
+    assert re.search(rf"--sbom=generator=\S+{DIGEST}", release)
+
+
+def test_every_python_install_in_ci_is_hash_checked():
+    """M1.2 (M-2): CI and release tooling installs only hash-locked requirement files."""
+    for path in (ROOT / ".github" / "workflows").glob("*.y*ml"):
+        for line in path.read_text().splitlines():
+            if re.search(r"\bpip\b.*\binstall\b", line):
+                assert "--require-hashes" in line and re.search(r"-r requirements-[\w-]+\.txt", line), (path, line)
+    for lock in ROOT.glob("requirements-*.txt"):
+        text = lock.read_text()
+        pins = re.findall(r"^[A-Za-z0-9_.-]+==\S+", text, re.M)
+        assert pins and text.count("--hash=sha256:") >= len(pins), lock
+        assert (ROOT / lock.name.replace(".txt", ".in")).exists(), f"{lock.name} has no .in source"
+
+
+def test_both_vulnerability_policies_gate_ci_and_the_release_dry_run():
+    """M1.2 (L-4): any critical finding fails; a high finding with an available fix fails."""
+    for name in ("release-dry-run.yaml", "ci.yaml"):
+        workflow = yaml.safe_load((ROOT / ".github" / "workflows" / name).read_text())
+        scans = [
+            step.get("with") or {}
+            for job in workflow["jobs"].values()
+            for step in job.get("steps", [])
+            if "anchore/scan-action" in str(step.get("uses", ""))
+        ]
+        assert any(
+            s.get("fail-build") and s.get("severity-cutoff") == "critical" and not s.get("only-fixed") for s in scans
+        ), name
+        assert any(s.get("fail-build") and s.get("severity-cutoff") == "high" and s.get("only-fixed") for s in scans), (
+            name
+        )

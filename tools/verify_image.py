@@ -2,6 +2,7 @@
 """Verify a release candidate image, offline, from OCI archives made by ``docker buildx``.
 
     python tools/verify_image.py build1.tar [build2.tar] --version 0.3.0 [--summary out.md]
+        [--write-digests digests.json] [--expect-digests digests.json]
 
 Checks, for the multi-arch image the Supervisor will pull (decision D3):
 
@@ -12,8 +13,11 @@ Checks, for the multi-arch image the Supervisor will pull (decision D3):
 - **reproducibility:** with a second archive from an independent build of the same commit, every
   platform's image manifest digest is identical (attestations carry timestamps and are excluded).
 
-It prints the digests to record in the release notes. Nothing is pushed, signed or published:
-that is M2's publishing step, after approval (docs/releasing.md).
+It prints the digests to record in the release notes, and ``--write-digests`` records them. The
+**promotion rule** (M1.2, docs/releasing.md step 4): publishing pushes the verified archive
+itself, never a rebuild, and the image pulled back from the registry must pass
+``--expect-digests`` against that record. Nothing is pushed, signed or published here: that is
+M2's publishing step, after approval.
 """
 
 from __future__ import annotations
@@ -172,6 +176,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("archives", nargs="+", type=Path)
     parser.add_argument("--version", required=True)
     parser.add_argument("--summary", type=Path, help="write a Markdown summary (for example the CI job summary)")
+    parser.add_argument("--write-digests", type=Path, help="record the verified digests (JSON) for promotion")
+    parser.add_argument("--expect-digests", type=Path, help="fail unless the digests equal this record")
     args = parser.parse_args(argv)
     if len(args.archives) > 2:
         parser.error("one archive, or two independent builds to compare")
@@ -190,6 +196,15 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         for archive in archives:
             archive.close()
+    if args.expect_digests is not None:
+        expected = json.loads(args.expect_digests.read_text())
+        if expected.get("version") != args.version:
+            problems.append(f"digest record is for version {expected.get('version')!r}, not {args.version!r}")
+        if expected.get("platforms") != results[0]:
+            problems.append(f"not the verified image: {results[0]} != {expected.get('platforms')}")
+    if args.write_digests is not None and not problems:
+        record = {"version": args.version, "platforms": dict(sorted(results[0].items()))}
+        args.write_digests.write_text(json.dumps(record, indent=2) + "\n")
     lines = [f"### {PROJECT['name']} {args.version}: image manifest digests", ""]
     lines += [f"- `{platform}`: `{digest}`" for platform, digest in sorted(results[0].items())]
     if len(results) == 2:

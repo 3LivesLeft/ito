@@ -147,7 +147,10 @@ tools/brand/                       asset build (build.py, render.mjs, outline_wo
 ## Developing (Phase 1 and v0.2)
 
 ```sh
-python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+python3 -m venv .venv && .venv/bin/pip install --require-hashes -r requirements-dev.txt
+# Requirement files are hash-locked (M1.2): edit requirements-<name>.in, then regenerate, e.g.
+#   uv pip compile requirements-dev.in --generate-hashes --universal --python-version 3.13 --no-header -o requirements-dev.txt
+#   (requirements-ha-*.in: --python-version 3.14.2)
 .venv/bin/ruff check meshbeacon/core tests tools && .venv/bin/ruff format --check meshbeacon/core tests tools
 .venv/bin/mypy
 .venv/bin/pytest -m "not container"            # unit + isolated-network integration (loopback only)

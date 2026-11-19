@@ -190,3 +190,28 @@ def test_explain_names_the_files_that_differ(tmp_path):
     assert any("layer 0 differs in 1 entries" in line for line in lines)
     assert any("lib/apk/db/installed" in line for line in lines)
     assert not any("etc/same" in line for line in lines)
+
+
+def test_the_verified_digests_are_recorded_and_promotion_is_checked(tmp_path):
+    """M1.2 (M-2): publishing pushes the verified archive; what comes back must match the record."""
+    one = build_archive(tmp_path / "1.tar", when="t1")
+    two = build_archive(tmp_path / "2.tar", when="t2")
+    record = tmp_path / "digests.json"
+    assert verify_image.main([str(one), str(two), "--version", "0.3.0", "--write-digests", str(record)]) == 0
+    saved = json.loads(record.read_text())
+    assert saved["version"] == "0.3.0" and set(saved["platforms"]) == {"linux/amd64", "linux/arm64"}
+    # The same image, pulled back after publishing (attestations may differ): accepted.
+    again = build_archive(tmp_path / "3.tar", when="t3")
+    assert verify_image.main([str(again), "--version", "0.3.0", "--expect-digests", str(record)]) == 0
+    # A rebuild that differs, or a record for another version: refused.
+    other = build_archive(tmp_path / "4.tar", layer_seed="rebuilt")
+    assert verify_image.main([str(other), "--version", "0.3.0", "--expect-digests", str(record)]) == 1
+    assert verify_image.main([str(again), "--version", "0.3.1", "--expect-digests", str(record)]) == 1
+
+
+def test_no_record_is_written_for_a_failing_candidate(tmp_path):
+    one = build_archive(tmp_path / "1.tar")
+    other = build_archive(tmp_path / "2.tar", layer_seed="different")
+    record = tmp_path / "digests.json"
+    assert verify_image.main([str(one), str(other), "--version", "0.3.0", "--write-digests", str(record)]) == 1
+    assert not record.exists()
