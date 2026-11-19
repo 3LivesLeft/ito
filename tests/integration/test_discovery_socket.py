@@ -7,6 +7,7 @@ repeat this with the real users and the root-only relay.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import socket
 import stat
@@ -101,3 +102,60 @@ def test_socket_mode_without_a_link_never_falls_back_to_tcp(data, supervisor, ru
     )
     time.sleep(1.0)
     assert supervisor.attempts == 0 and supervisor.messages == []
+
+
+def test_compatibility_path_token_reaches_only_the_supervisor(data, supervisor, runner_factory):
+    """M1.2 re-review: the token arrives through the one-time pipe and goes to the Supervisor only.
+    The real Reticulum child holds no copy in its environment or descriptors."""
+    from meshbeacon import relay_link as link_mod
+    from meshbeacon.supervisor import discovery_transport
+
+    canary = "compat-canary-" + "0123456789abcdef" * 3
+    fd = link_mod.token_pipe(canary.encode())
+    pipe_inode = os.fstat(fd).st_ino
+    env = {"SUPERVISOR_TOKEN": "an-environment-token-is-ignored-xx", link_mod.TOKEN_FD_ENV: str(fd)}
+    token, link, socket_mode = discovery_transport(env)
+    assert (token, link, socket_mode) == (canary, None, False) and env == {}
+    write_options(data, home_assistant_integration=True)
+    r = runner_factory(
+        data,
+        supervisor_token=token,
+        supervisor_url=supervisor.url,
+        hostname=lambda: "local-meshbeacon",
+        discovery_timing=FAST_DISCOVERY,
+    )
+    assert wait_for(lambda: supervisor.messages, timeout=30), r.out.text()
+    assert supervisor.auth[0] == f"Bearer {canary}"
+    assert wait_for(lambda: r.sup.child is not None and r.sup.state == "running", timeout=60), r.out.text()
+    child = r.sup.child.proc.pid
+    assert canary.encode() not in Path(f"/proc/{child}/environ").read_bytes()
+    inodes = set()
+    for name in os.listdir(f"/proc/{child}/fd"):
+        with contextlib.suppress(OSError):
+            inodes.add(os.stat(f"/proc/{child}/fd/{name}").st_ino)
+    assert pipe_inode not in inodes  # the token pipe was read and closed before Reticulum started
+    assert canary not in r.out.text()
+
+
+def test_a_lost_relay_link_says_restart_the_app(data, relay, runner_factory):
+    """Reliability: if the relay restarts, the message says how to recover, and retries stop."""
+    supervisor, path = relay
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.connect(str(path))
+    link = RelayLink(sock)
+    write_options(data, home_assistant_integration=True)
+    r = runner_factory(
+        data,
+        discovery_relay=link,
+        socket_mode=True,
+        hostname=lambda: "local-meshbeacon",
+        discovery_timing={**FAST_DISCOVERY, "reannounce": 1.0},
+    )
+    assert wait_for(lambda: supervisor.requests, timeout=30), r.out.text()
+    sock.shutdown(socket.SHUT_RDWR)  # as when the relay process restarts
+    assert wait_for(lambda: r.out.has("link to the discovery relay was lost"), timeout=30), r.out.text()
+    assert not r.out.has("will keep trying by itself")
+    assert link.broken
+    count = len(supervisor.requests)
+    time.sleep(3)
+    assert len(supervisor.requests) == count  # no retries through a dead link

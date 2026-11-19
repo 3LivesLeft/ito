@@ -371,6 +371,8 @@ class Discovery:
         while not stop.is_set():
             ok = self.announce(host, port, api_token, cert_sha256)
             on_result(ok)
+            if self.relay is not None and self.relay.broken:
+                return  # a lost relay link cannot come back until the app restarts (MSG_RELAY_LOST)
             if ok:
                 delay = retry_initial
                 stop.wait(reannounce)

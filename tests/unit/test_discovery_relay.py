@@ -410,9 +410,15 @@ def test_socket_mode_never_uses_the_token_even_without_a_link():
 
 
 def test_the_core_uses_the_compatibility_path_without_a_socket():
-    env = {"SUPERVISOR_TOKEN": "tok", link_mod.RELAY_FD_ENV: "5"}
-    assert discovery_transport(env) == ("tok", None, False)
+    """The token comes only from the one-time pipe, never from the environment (M1.2)."""
+    token = "T" * 40
+    fd = link_mod.token_pipe(token.encode())
+    env = {"SUPERVISOR_TOKEN": "from-the-environment", link_mod.RELAY_FD_ENV: "5", link_mod.TOKEN_FD_ENV: str(fd)}
+    assert discovery_transport(env) == (token, None, False)
     assert env == {}
+    with pytest.raises(OSError):
+        os.fstat(fd)  # read once and closed
+    assert discovery_transport({"SUPERVISOR_TOKEN": "from-the-environment" * 2}) == (None, None, False)
     assert discovery_transport({}) == (None, None, False)
 
 
@@ -434,7 +440,7 @@ def test_relay_link_hands_the_core_a_link_to_root(relay, monkeypatch):
     monkeypatch.setattr(link_mod, "peer_uid", lambda sock: 0)  # the relay is root in production
     calls = _capture_exec(monkeypatch)
     monkeypatch.setenv(link_mod.RELAY_FD_ENV, "stale")
-    link_mod.main([str(relay.path), "--", "/command/s6-setuidgid", "meshbeacon", "python3"])
+    link_mod.main(["--relay", str(relay.path), "--", "/command/s6-setuidgid", "meshbeacon", "python3"])
     [(path, argv, env)] = calls
     assert path == "/command/s6-setuidgid" and argv == ["/command/s6-setuidgid", "meshbeacon", "python3"]
     fd = int(env[link_mod.RELAY_FD_ENV])
@@ -449,7 +455,7 @@ def test_relay_link_refuses_a_relay_that_is_not_root(relay, monkeypatch, capsys)
     if ME == 0:
         monkeypatch.setattr(link_mod, "peer_uid", lambda sock: 9100)
     calls = _capture_exec(monkeypatch)
-    link_mod.main([str(relay.path), "--", "/bin/true"])
+    link_mod.main(["--relay", str(relay.path), "--", "/bin/true"])
     [(_path, _argv, env)] = calls
     assert link_mod.RELAY_FD_ENV not in env
     assert "did not answer" in capsys.readouterr().out
@@ -457,14 +463,35 @@ def test_relay_link_refuses_a_relay_that_is_not_root(relay, monkeypatch, capsys)
 
 def test_relay_link_always_starts_the_core(monkeypatch, capsys, tmp_path):
     """A missing relay never stops the node (ADR 0005): the core starts without the link."""
-    monkeypatch.setattr(link_mod, "WAIT", 0.2)
+    monkeypatch.setattr(link_mod, "WAIT", 0.6)
+    monkeypatch.setattr(link_mod, "SLOW", 0.2)
     calls = _capture_exec(monkeypatch)
     started = time.monotonic()
-    link_mod.main([str(tmp_path / "missing.sock"), "--", "/bin/true"])
-    assert time.monotonic() - started < 5
+    link_mod.main(["--relay", str(tmp_path / "missing.sock"), "--", "/bin/true"])
+    assert time.monotonic() - started < 5  # bounded: never waits indefinitely
     assert calls and link_mod.RELAY_FD_ENV not in calls[0][2]
-    assert "did not answer" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "Waiting for the discovery relay" in out and "did not answer" in out
+
+
+def test_relay_link_waits_for_a_slow_relay(relay, monkeypatch, tmp_path):
+    """Slow hardware: a relay that appears after a few seconds is still found (bounded wait)."""
+    monkeypatch.setattr(link_mod, "peer_uid", lambda sock: 0)
+    late = tmp_path / "late.sock"
+
+    def appear() -> None:
+        time.sleep(1.0)
+        late.symlink_to(relay.path)  # the relay's socket shows up late
+
+    threading.Thread(target=appear, daemon=True).start()
+    calls = _capture_exec(monkeypatch)
+    link_mod.main(["--relay", str(late), "--", "/bin/true"])
+    assert link_mod.RELAY_FD_ENV in calls[0][2]
+    os.close(int(calls[0][2][link_mod.RELAY_FD_ENV]))
 
 
 def test_relay_link_usage():
     assert link_mod.main(["only-one"]) == 2
+    assert link_mod.main(["--relay", "/x", "--token-file", "/y", "--", "/bin/true"]) == 2
+    assert link_mod.main(["--relay", "--", "/bin/true"]) == 2
+    assert link_mod.main(["--other", "x", "--", "/bin/true"]) == 2

@@ -49,3 +49,24 @@ def die_with_parent(expected_parent: int) -> None:
         return
     if os.getppid() != expected_parent:  # parent already gone before prctl took effect
         os.kill(os.getpid(), signal.SIGTERM)
+
+
+def set_not_dumpable() -> bool:
+    """Mark this process non-dumpable (Linux PR_SET_DUMPABLE 0), before it starts any child.
+
+    The kernel then refuses every other process without CAP_SYS_PTRACE (including processes of the
+    same user, such as the Reticulum child) access to this process's memory, environment and
+    descriptors through /proc and ptrace, and writes no core dump of it (threat T72, M1.2). Its
+    children are unaffected: executing a program makes a process dumpable again. True if it took
+    effect.
+    """
+    import ctypes
+    import ctypes.util
+
+    pr_set_dumpable, pr_get_dumpable = 4, 3
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c") or None, use_errno=True)
+        libc.prctl(pr_set_dumpable, 0, 0, 0, 0)
+        return bool(libc.prctl(pr_get_dumpable, 0, 0, 0, 0) == 0)
+    except (OSError, AttributeError):
+        return False
