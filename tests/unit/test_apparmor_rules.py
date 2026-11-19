@@ -56,7 +56,9 @@ S6_RUN_PATHS = [
     "/run/s6/container_environment/SUPERVISOR_TOKEN",
     "/run/s6/basedir/bin/halt",
     "/run/s6/db/servicedirs/x",
+    "/run/",  # s6-linux-init's chmod and chown of /run itself (CI enforcement, M1.2)
     "/run/s6-rc",
+    "/run/s6-rc:s6-rc-init:BJBmMn/",  # s6-rc-init's live folder, created with a trailing slash
     "/run/s6-rc:s6-rc-init:AbCd/servicedirs/meshbeacon/supervise/status",
     "/run/service/meshbeacon/supervise/control",
     "/run/service/.s6-svscan/control",
@@ -72,6 +74,7 @@ def test_run_is_writable_only_where_s6_overlay_keeps_its_state():
     for path in ("/run/x", "/run/evil/discovery.sock", "/run/meshbeacon-other/x", "/run/supervisor/api/x"):
         assert "w" not in PROFILE.perms(path), path
     assert "r" in PROFILE.perms("/run/")
+    assert "x" not in PROFILE.perms("/run/x") and "k" not in PROFILE.perms("/run/x")
 
 
 def test_the_relay_folder_is_for_its_owner_only():

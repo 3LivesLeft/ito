@@ -73,11 +73,13 @@ profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
   # /run, as s6-overlay 3.2.3.2 uses it (libexec/preinit, s6-linux-init, s6-rc-init -c /run/s6/db
   # /run/service): it checks that /run is writable, then keeps its state in these folders.
   # Nothing else in /run is writable, so neither the core nor Reticulum can create files there.
-  /run/ r,
+  # s6-linux-init sets the owner and mode of /run itself ('w' on the folder is that change only;
+  # creating anything inside is checked against the rules below, seen under enforcement in CI).
+  /run/ rw,
   "/run/test of writability" rw,
   /run/s6/{,**} rwk,
   /run/s6-rc* rwk,
-  /run/s6-rc*/** rwk,
+  /run/s6-rc*/{,**} rwk,
   /run/service/{,**} rwk,
   /run/uncaught-logs/{,**} rwk,
   /run/s6-linux-init-container-results/{,**} rwk,
