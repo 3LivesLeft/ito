@@ -59,9 +59,12 @@ Research and design documents distinguish **[Verified]**, **[Assumption]**,
 AI tools may be used to *assist* contributions. In keeping with the expectations of the Reticulum
 and Home Assistant communities:
 
-- **Disclose it.** Say in the pull request if substantive parts were drafted with an AI tool. Do
-  not remove or obscure attribution (for example, an assistant's commit identity or co-author
-  line) that a tool adds.
+- **Authorship (maintainer decision, 19 Nov 2026).** Commits are made under the contributor's own
+  authenticated GitHub identity. Do not add AI co-author trailers to commits, and do not add AI
+  attribution to pull request descriptions. **Never falsify authorship:** a tool must not commit
+  under a person's identity without that person's own authentication, and existing history is not
+  rewritten (earlier commits made under an assistant's Git identity stay as they are). How the
+  project uses AI assistance is stated once, at project level, in the README.
 - **Own it.** You must have reviewed, understood and be able to explain and defend every line you
   submit, without the tool's help. Unreviewed AI output will be closed.
 - **No autonomous submissions.** Agents must not open issues or pull requests, or reply to review

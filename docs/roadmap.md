@@ -112,8 +112,11 @@ The maintainer approved the v0.3 implementation plan: **v0.3.0 is the installati
 distribution release** (app store + Marketplace, [ADR 0015](adr/0015-distribution-and-updates.md));
 the LXMF engine, Home Assistant messaging and migration of existing installations follow in later
 releases, each behind its own gate. **M1 (install-ready repository) is authorised** on
-`feature/v0.3.0-install-ready`. The two v0.3 sections below come from separate branches and are to
-be reconciled, with the final project name, before M2.
+`feature/v0.3.0-install-ready`; it is implementation-complete, subject to independent review
+and release acceptance testing. **M1.1 (security and release readiness)** comes next: an
+independent review ([handover](review/m1.1-handover.md)) and the VM acceptance tests, before M2. The
+two v0.3 sections below come from separate branches and are to be reconciled, with the final
+project name, before M2.
 
 ## v0.3.0 — Messaging (research and architecture; not authorised for implementation)
 

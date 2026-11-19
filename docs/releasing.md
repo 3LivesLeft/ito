@@ -21,6 +21,10 @@ One version number, **one git tag** `vX.Y.Z`, for both parts in this one reposit
 Identifiers (name, slug, repository, image) live in `project.yaml`; a rename before the first
 release starts there.
 
+**Pre-built images are the recommended public route.** On-device builds from the repository (no
+`image:` key yet) are for development and early testers only (decision A-4); `config.yaml` gains
+`image:` in the release that first publishes images, never before the images exist.
+
 ## 2. Rules
 
 1. **`main` carries releases only** (D11). The app store offers a new version as soon as

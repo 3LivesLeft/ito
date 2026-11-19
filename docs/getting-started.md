@@ -8,8 +8,8 @@
 **Decentralised connectivity for your home.**
 
 > **Status: prepared for the first release (v0.3.0), not yet available.** The buttons below work
-> once MeshBeacon's first release is published. Until then, testers follow the
-> [local prototype guide](install-local-prototype.md).
+> once MeshBeacon's first release is published, with pre-built images: that is the recommended way
+> to install it. Until then, see [early testers](#early-testers-before-the-first-release).
 
 You need **Home Assistant OS 2026.11 or newer** (or a supervised installation), and an
 administrator account. No terminal, no YAML and no copying of files.
@@ -71,6 +71,17 @@ is the way to return to an earlier version.
   offers to uninstall it from the Marketplace.
 - **The app:** Settings → Apps → MeshBeacon → **Uninstall**. This deletes the node's identity
   unless you keep a backup.
+
+## Early testers (before the first release)
+
+**For development and early testing only** (maintainer decision A-4, 19 Nov 2026). Until images are
+published, the app store can still install MeshBeacon from this repository by **building it on your
+device**: the same steps as above, but step 2 takes several minutes on a Raspberry Pi 4, needs
+internet access for the build, and is more likely to fail. Use a test installation, not one you
+depend on. To try an unreleased branch, add the repository as
+`https://github.com/3LivesLeft/meshbeacon#<branch>`: the app store treats it as a **different app,
+with its own data and identity**, so it never touches an installation from the main repository. The
+older [local prototype guide](install-local-prototype.md) (copying the folder) still works.
 
 ## Privacy
 

@@ -95,7 +95,9 @@ unrelated project with the same name.
 MeshBeacon is directed and maintained by a human maintainer, who is responsible for every change
 that is merged. The Phase 0 research and documents were drafted with an AI coding assistant
 (Claude, by Anthropic) and committed under its own Git identity so that this is visible in the
-history. They are subject to the maintainer's review before they are accepted. See
+history. They are subject to the maintainer's review before they are accepted. Later work is AI-assisted in
+the same way and reviewed by the maintainer; from 19 November 2026, commits carry no AI co-author
+lines and pull requests no AI attribution, and earlier history is left as it is. See
 [CONTRIBUTING.md](CONTRIBUTING.md#ai-assistance).
 
 ## Licence
