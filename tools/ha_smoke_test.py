@@ -35,6 +35,8 @@ from meshbeacon.tlscert import generate  # noqa: E402 - after the path is set
 from tests.ha.fixtures import snapshot  # noqa: E402
 
 TOKEN = "S" * 43
+STRAY = "M" * 43  # stands in for any credential that must not be stored in Home Assistant
+ENTRY_KEYS = {"host", "port", "token", "cert_sha256", "node_key", "app_slug"}
 HASS_URL = "http://127.0.0.1:8123"  # Home Assistant's default port, bound to loopback below
 EXPECTED_ENABLED = 23  # entities enabled by default, with one peer (keep in step with sensor.py)
 
@@ -80,7 +82,8 @@ def write_config(config: Path, port: int, fingerprint: str) -> None:
         "version": 1,
         "domain": "meshbeacon",
         "title": "MeshBeacon",
-        "data": {"host": "127.0.0.1", "port": port, "token": TOKEN, "cert_sha256": fingerprint},
+        # A v0.2 entry (version 1), plus a field that must never be kept (M1: only ENTRY_KEYS).
+        "data": {"host": "127.0.0.1", "port": port, "token": TOKEN, "cert_sha256": fingerprint, "stray": STRAY},
         "options": {},
         "pref_disable_new_entities": False,
         "pref_disable_polling": False,
@@ -161,6 +164,8 @@ def main() -> int:
         registry = config / ".storage" / "core.entity_registry"
         entities = json.loads(registry.read_text())["data"]["entities"] if registry.exists() else []
         ours = [e for e in entities if e["platform"] == "meshbeacon"]
+        stored = json.loads((config / ".storage" / "core.config_entries").read_text())["data"]["entries"]
+        storage_text = "\n".join(p.read_text(errors="replace") for p in (config / ".storage").iterdir() if p.is_file())
         hass_output = output.read_text(errors="replace")
     problems = ["panel not checked (Home Assistant stopped too early)"] if panel_problems is None else panel_problems
     if exited_early:
@@ -182,10 +187,22 @@ def main() -> int:
     for entity_id, value in expected.items():
         if states.get(entity_id) != value:
             problems.append(f"{entity_id} = {states.get(entity_id)!r}, expected {value!r}")
+    # Config entry migration v1 → v2 on this release (M1): the node key is the old unique ID, so no
+    # entity changes; only the allowed keys are kept.
+    entry = stored[0] if stored else {}
+    if entry.get("version") != 2:
+        problems.append(f"config entry version {entry.get('version')}, expected 2 after migration")
+    data = entry.get("data", {})
+    if data.get("node_key") != "local_meshbeacon" or data.get("app_slug") != "local_meshbeacon":
+        problems.append("config entry migration did not set node_key and app_slug")
+    if not set(data) <= ENTRY_KEYS or STRAY in storage_text:
+        problems.append("a field outside the allowed entry keys was kept in Home Assistant's storage")
+    if not ours or not all(e["unique_id"].startswith("local_meshbeacon_") for e in ours):
+        problems.append("entity unique IDs do not use the node key")
     bad = [line for line in log.splitlines() if "meshbeacon" in line and (" ERROR " in line or "Traceback" in line)]
     problems += [f"log: {line[:200]}" for line in bad]
-    if TOKEN in log:
-        problems.append("the key appears in Home Assistant's log")
+    if TOKEN in log or STRAY in log:
+        problems.append("a key appears in Home Assistant's log")
     print(
         f"Home Assistant {version}: {polls} polls, {len(ours)} entities registered "
         f"({sum(1 for e in ours if e.get('disabled_by'))} disabled by default), {len(states)} recorded, "

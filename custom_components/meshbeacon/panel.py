@@ -32,6 +32,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .coordinator import MeshBeaconConfigEntry
+from .nodes import app_slug, node_key
 
 PANEL_URL = DOMAIN  # /meshbeacon
 STATIC_URL = f"/{DOMAIN}_panel"
@@ -96,7 +97,7 @@ def _node_summary(hass: HomeAssistant, entry: MeshBeaconConfigEntry) -> dict[str
     """Map each enabled entity of ``entry`` to its role. Disabled entities are left out (they have
     no state or history), so the panel simply does not show them."""
     registry = er.async_get(hass)
-    node = entry.unique_id or entry.entry_id
+    node = node_key(entry)
     coordinator = getattr(entry, "runtime_data", None)
     reported = {p.name.casefold(): p.name for p in coordinator.data.peers} if coordinator and coordinator.data else {}
     entities: dict[str, str] = {}
@@ -120,7 +121,7 @@ def _node_summary(hass: HomeAssistant, entry: MeshBeaconConfigEntry) -> dict[str
     return {
         "entry_id": entry.entry_id,
         "title": entry.title,
-        "app": entry.unique_id,
+        "app": app_slug(entry),
         "entities": entities,
         "peers": sorted(peers.values(), key=lambda p: (not p["reported"], p["name"].casefold())),
     }
