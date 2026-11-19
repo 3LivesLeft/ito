@@ -13,6 +13,7 @@ from unittest.mock import patch
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import SOURCE_HASSIO, ConfigEntryState
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
@@ -54,6 +55,38 @@ async def test_v1_entry_migrates_without_changing_any_entity(hass, mock_entry, a
     after = er.async_entries_for_config_entry(registry, mock_entry.entry_id)
     assert all(item.unique_id.startswith("local_meshbeacon_") for item in after)
     assert len({item.unique_id for item in after}) == len(after) >= before  # no duplicates
+
+
+async def test_v1_migration_keeps_the_device_and_its_user_settings(hass, mock_entry, aioclient_mock):
+    """M1.2 (review L-6): the device registered by the v1 code is the one the v2 code uses. Its ID,
+    the user's name and area, and the link from every entity to it survive the migration."""
+    devices = dr.async_get(hass)
+    entities = er.async_get(hass)
+    old_device = devices.async_get_or_create(
+        config_entry_id=mock_entry.entry_id, identifiers={(DOMAIN, "local_meshbeacon")}, name="MeshBeacon"
+    )
+    devices.async_update_device(old_device.id, name_by_user="Loft node", area_id="loft")
+    status = entities.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        "local_meshbeacon_status",
+        config_entry=mock_entry,
+        device_id=old_device.id,
+        suggested_object_id="meshbeacon_status",
+    )
+    aioclient_mock.get(URL, json=snapshot())
+    assert await hass.config_entries.async_setup(mock_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert mock_entry.version == 2
+    mine = dr.async_entries_for_config_entry(devices, mock_entry.entry_id)
+    assert [d.id for d in mine] == [old_device.id]  # no second device
+    device = devices.async_get(old_device.id)
+    assert device.identifiers == {(DOMAIN, "local_meshbeacon")}
+    assert device.name_by_user == "Loft node" and device.area_id == "loft"
+    for item in er.async_entries_for_config_entry(entities, mock_entry.entry_id):
+        assert item.device_id == old_device.id, item.entity_id
+    assert entities.async_get(status.entity_id).device_id == old_device.id
 
 
 async def test_entities_follow_the_node_key_not_the_app_slug(hass, entry_data, aioclient_mock):
