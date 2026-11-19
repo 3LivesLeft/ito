@@ -71,3 +71,23 @@ MS-7, MS-11, MS-12, MS-13, MS-20 and MS-22 belong to M5 (Home Assistant). MS-17 
 | **D-M4-3** | Propagation node | Use a configured node in M4; hosting one later |
 | **D-M4-4** | Contacts in M4 | A development-only file; user-facing configuration with M5 |
 | **D-M4-5** | Order | WP1, then WP2, then WP3 to WP5, then WP6; one draft PR, opened only when asked |
+
+## Progress (19 Nov 2026)
+
+**WP1 (isolation) is complete:** `87a249e`. CI is green on the real base image, including amd64
+under AppArmor enforcement and aarch64. The core runs as 9100 and Reticulum as 9101 through s6.
+The isolation probe passes as each user and detects a deliberately weakened container. The identity
+is unchanged across upgrade and downgrade. Idle memory is 69.5 MiB (baseline 69.2 MiB).
+
+The isolation probe also found that s6-overlay leaves the container environment, which holds the
+Supervisor token, readable by every user. This is fixed here and on the v0.3.0 branch (`2fb2192`).
+
+**WP2 spike: two gate decisions needed.** Measured in a throwaway container, with LXMF 1.3.0 and
+RNS 1.6.0:
+
+| Question | Result |
+|---|---|
+| The engine (`mb-lxmf`) uses Reticulum (`mb-rns`) across users through the shared instance | **Works** |
+| Q-46: it survives a Reticulum restart | **Works:** offline during the restart, reconnected by itself about 16 s later |
+| Q-40: the engine's idle memory | **43.1 MiB** (RSS + swap, amd64); the go/no-go limit is +40 MiB |
+| IS-3: who can reach the shared instance | **Any process in the app container.** RNS 1.6.0 uses abstract Unix sockets on Linux (`RNS/Reticulum.py`, lines 369 and 816–826): no file permissions and no peer check. RPC needs a key that only `mb-rns` holds. Other apps cannot reach it (each container has its own network namespace) |
