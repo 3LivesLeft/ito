@@ -1,0 +1,17 @@
+#!/bin/sh
+# Discovery relay (core/meshbeacon/discovery_relay.py): runs as root only where the Supervisor
+# gives the app its own socket, so that the unprivileged core can announce itself without a token
+# crossing the internal network. Without a socket it waits and does nothing.
+exec 2>&1
+umask 077
+socket_file=/run/s6/container_environment/SUPERVISOR_SOCKET
+if [ -z "${SUPERVISOR_SOCKET:-}" ] && [ -r "$socket_file" ]; then
+    SUPERVISOR_SOCKET="$(cat "$socket_file")"
+fi
+if [ -z "${SUPERVISOR_SOCKET:-}" ] || [ ! -S "$SUPERVISOR_SOCKET" ]; then
+    exec /command/s6-pause
+fi
+export SUPERVISOR_SOCKET
+# The relay never needs the TCP token.
+unset SUPERVISOR_TOKEN
+exec /usr/local/bin/python3 -I -m meshbeacon.discovery_relay

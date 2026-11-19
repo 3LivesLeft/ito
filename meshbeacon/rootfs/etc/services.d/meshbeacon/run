@@ -11,4 +11,15 @@ if [ -z "${SUPERVISOR_TOKEN:-}" ] && [ -r "$token_file" ]; then
     SUPERVISOR_TOKEN="$(cat "$token_file")"
     export SUPERVISOR_TOKEN
 fi
+# Newer Supervisors also give the app its own socket. The core cannot open it (root-only, 0600), so
+# it uses the discovery relay (services.d/discovery-relay) and then ignores the token entirely.
+socket_file=/run/s6/container_environment/SUPERVISOR_SOCKET
+if [ -z "${SUPERVISOR_SOCKET:-}" ] && [ -r "$socket_file" ]; then
+    SUPERVISOR_SOCKET="$(cat "$socket_file")"
+fi
+if [ -n "${SUPERVISOR_SOCKET:-}" ] && [ -S "$SUPERVISOR_SOCKET" ]; then
+    export SUPERVISOR_SOCKET
+else
+    unset SUPERVISOR_SOCKET
+fi
 exec /command/s6-setuidgid meshbeacon /usr/local/bin/python3 -I -m meshbeacon.supervisor
