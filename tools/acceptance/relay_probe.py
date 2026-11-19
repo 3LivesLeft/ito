@@ -1,26 +1,43 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Relay-link probe, run INSIDE the MeshBeacon app container as the service user (M1.2).
+"""Credential-isolation probe, run INSIDE the MeshBeacon app container (M1.2, threat T72).
 
-    docker exec -u meshbeacon -i <container> python3 -I - < tools/acceptance/relay_probe.py
+Two views, each printing one JSON line and changing nothing:
 
-Used by the container tests and by VM acceptance test SO-1 (docs/testing/v0.3-vm-acceptance.md).
-It prints one JSON line and changes nothing. It reads only /proc entries of MeshBeacon's own
-processes and prints no secret: a descriptor number and booleans.
+    # what Reticulum's user can do (run as the service user, like a compromised Reticulum child):
+    docker exec -u meshbeacon -i <container> python3 -I - attacker [CANARY] < relay_probe.py
+    # what is really there (run with CAP_SYS_PTRACE, only to observe):
+    docker exec --privileged -i <container> python3 -I - observer [CANARY] < relay_probe.py
 
-- ``core_fd`` / ``core_is_socket``: the core holds the relay link (socket mode only);
-- ``node_shares_it``: the Reticulum child holds the same socket (must be false);
-- ``core_env_token`` / ``node_env_token``: the Supervisor token is in a process's environment
-  (must be false in socket mode);
-- ``same_user_can_take_link``: a process of the service user could copy the core's descriptor with
-  pidfd_getfd (must be false under AppArmor).
+``CANARY`` is the Supervisor token *of a test installation* (never a real one): the probe reports
+only whether it was found, never the value. Used by the container tests and by VM acceptance test
+SO-1 (docs/testing/v0.3-vm-acceptance.md). Every key must come out ``false`` except where noted.
+
+attacker:
+- ``core_environ`` / ``core_fds`` / ``core_maps`` / ``core_memory``: the core's /proc entries could be
+  read (the core is non-dumpable, so the kernel refuses them);
+- ``took_fd``: a descriptor of the core could be copied with pidfd_getfd;
+- ``canary_found``: the token was found anywhere this user could read.
+
+observer:
+- ``core_non_dumpable``: the core's /proc entries belong to root although it runs as the service
+  user (must be **true**);
+- ``core_env_token`` / ``node_env_token``: the token is in a process environment;
+- ``token_fd_open``: the one-time pipe is still open in the core: a pipe the core holds and no
+  other process shares (descriptor numbers are reused, so the number alone proves nothing), or any
+  such pipe from which the token can still be read;
+- ``core_holds_link`` (socket mode, must be **true**) / ``node_shares_link``: who holds the relay link;
+- ``node_holds_core_pipe_or_link``: Reticulum holds a descriptor that is also open in the core,
+  other than its own stdout and status pipes.
 """
 
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import json
 import os
 import stat
+import sys
 from pathlib import Path
 
 PIDFD_GETFD = 438  # the same number on x86-64 and arm64
@@ -37,53 +54,145 @@ def pid_of(module: bytes) -> str | None:
     return None
 
 
-def environ(pid: str) -> dict[bytes, bytes]:
-    entries = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
-    return dict(e.split(b"=", 1) for e in entries if b"=" in e)  # type: ignore[misc]
-
-
-def inode(pid: str, fd: str) -> int | None:
+def readable(action) -> bool:  # type: ignore[no-untyped-def]
     try:
-        info = os.stat(f"/proc/{pid}/fd/{fd}")
+        action()
     except OSError:
-        return None
-    return info.st_ino if stat.S_ISSOCK(info.st_mode) else None
+        return False
+    return True
 
 
-def take(pid: str, fd: str) -> bool:
-    """Try to copy the core's descriptor, as a compromised same-user process might."""
+def environ(pid: str) -> bytes:
+    return Path(f"/proc/{pid}/environ").read_bytes()
+
+
+def env_value(pid: str, name: bytes) -> str | None:
+    for entry in environ(pid).split(b"\0"):
+        if entry.startswith(name + b"="):
+            return entry.split(b"=", 1)[1].decode()
+    return None
+
+
+def fd_inodes(pid: str) -> dict[str, int]:
+    found = {}
+    for name in os.listdir(f"/proc/{pid}/fd"):
+        with contextlib.suppress(OSError):
+            found[name] = os.stat(f"/proc/{pid}/fd/{name}").st_ino
+    return found
+
+
+def read_memory(pid: str, canary: bytes) -> tuple[bool, bool]:
+    """(could read any memory, canary found in readable memory)."""
+    try:
+        maps = Path(f"/proc/{pid}/maps").read_text().splitlines()
+        mem = Path(f"/proc/{pid}/mem").open("rb")  # noqa: SIM115 - closed by the with block below
+    except OSError:
+        return False, False
+    read_any = found = False
+    with mem:
+        for line in maps:
+            addresses, perms = line.split()[:2]
+            if not perms.startswith("rw"):
+                continue
+            start, end = (int(x, 16) for x in addresses.split("-"))
+            try:
+                mem.seek(start)
+                data = mem.read(min(end - start, 64 << 20))
+            except OSError:
+                continue
+            read_any = True
+            if canary and canary in data:
+                found = True
+                break
+    return read_any, found
+
+
+def take_any_fd(pid: str) -> bool:
     libc = ctypes.CDLL(None, use_errno=True)
     try:
         pidfd = os.pidfd_open(int(pid))
     except OSError:
         return False
     try:
-        got = libc.syscall(PIDFD_GETFD, pidfd, int(fd), 0)
-        if got >= 0:
-            os.close(got)
-        return bool(got >= 0)
+        for fd in range(3, 64):
+            got = libc.syscall(PIDFD_GETFD, pidfd, fd, 0)
+            if got >= 0:
+                os.close(got)
+                return True
+        return False
     finally:
         os.close(pidfd)
 
 
+def attacker(core: str, node: str, canary: bytes) -> dict[str, bool]:
+    memory, in_memory = read_memory(core, canary)
+    core_env = readable(lambda: environ(core))
+    found = in_memory or (bool(canary) and (canary in environ(node) or (core_env and canary in environ(core))))
+    return {
+        "core_environ": core_env,
+        "core_fds": readable(lambda: os.listdir(f"/proc/{core}/fd")),
+        "core_maps": readable(lambda: Path(f"/proc/{core}/maps").read_bytes()),
+        "core_memory": memory,
+        "took_fd": take_any_fd(core),
+        "canary_found": bool(found),
+    }
+
+
+def unshared_pipe_with(core: str, core_fds: dict[str, int], node_fds: dict[str, int], canary: bytes) -> bool:
+    """True if the core holds a pipe shared with no other process, or one that still yields the
+    token. Reading is non-blocking and only from pipes nobody else uses, so nothing is disturbed."""
+    others = set(node_fds.values())
+    for name, inode in core_fds.items():
+        if name in ("0", "1", "2"):
+            continue  # the core's own stdio: its log pipe to s6, never read here
+        path = f"/proc/{core}/fd/{name}"
+        try:
+            if not stat.S_ISFIFO(os.stat(path).st_mode) or inode in others:
+                continue
+            fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+        except OSError:
+            continue
+        try:
+            with contextlib.suppress(BlockingIOError):
+                if canary and canary in os.read(fd, 65536):
+                    return True
+        finally:
+            os.close(fd)
+        return True  # an unshared pipe is still open in the core
+    return False
+
+
+def observer(core: str, node: str, canary: bytes) -> dict[str, bool]:
+    relay_fd = env_value(core, b"MESHBEACON_RELAY_FD")
+    token_fd = env_value(core, b"MESHBEACON_TOKEN_FD")
+    core_fds, node_fds = fd_inodes(core), fd_inodes(node)
+    link = core_fds.get(relay_fd) if relay_fd else None
+    node_own = {node_fds.get(n) for n in ("0", "1", "2")}  # its stdio, shared with the core by design
+    args = Path(f"/proc/{node}/cmdline").read_bytes().split(b"\0")
+    if b"--status-fd" in args:  # its own status pipe, also shared with the core by design
+        node_own.add(node_fds.get(args[args.index(b"--status-fd") + 1].decode()))
+    shared = (set(node_fds.values()) & set(core_fds.values())) - node_own
+    status = Path(f"/proc/{core}/status").read_text().splitlines()
+    uid = next(int(line.split()[1]) for line in status if line.startswith("Uid:"))
+    return {
+        "core_non_dumpable": os.stat(f"/proc/{core}/environ").st_uid == 0 and uid != 0,
+        "core_env_token": bool(canary) and canary in environ(core),
+        "node_env_token": bool(canary) and canary in environ(node),
+        "token_fd_open": bool(token_fd) and unshared_pipe_with(core, core_fds, node_fds, canary),
+        "core_holds_link": link is not None and stat.S_ISSOCK(os.stat(f"/proc/{core}/fd/{relay_fd}").st_mode),
+        "node_shares_link": link is not None and link in set(node_fds.values()),
+        "node_holds_core_pipe_or_link": bool({i for i in shared if i is not None}),
+    }
+
+
 def main() -> None:
+    mode = sys.argv[1] if len(sys.argv) > 1 else "attacker"
+    canary = sys.argv[2].encode() if len(sys.argv) > 2 else b""
     core, node = pid_of(b"meshbeacon.supervisor"), pid_of(b"meshbeacon.node")
     if core is None or node is None:
         print(json.dumps({"error": "the core or the Reticulum child is not running"}))
         return
-    raw = environ(core).get(b"MESHBEACON_RELAY_FD")
-    fd = raw.decode() if raw else None
-    core_inode = inode(core, fd) if fd else None
-    node_inodes = {inode(node, n) for n in os.listdir(f"/proc/{node}/fd")}
-    result = {
-        "same_user_can_take_link": take(core, fd) if fd else False,
-        "core_fd": fd,
-        "core_is_socket": core_inode is not None,
-        "node_shares_it": core_inode is not None and core_inode in node_inodes,
-        "core_env_token": b"SUPERVISOR_TOKEN" in environ(core),
-        "node_env_token": b"SUPERVISOR_TOKEN" in environ(node),
-    }
-    print(json.dumps(result))
+    print(json.dumps((observer if mode == "observer" else attacker)(core, node, canary)))
 
 
 main()

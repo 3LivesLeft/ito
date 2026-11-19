@@ -119,8 +119,7 @@ def test_idle_memory_under_128_mb(run):
     c = run(DEFAULTS)
     assert wait_for(lambda: "not connected to anyone" in c.logs())
     time.sleep(20)
-    out = c.exec("sh", "-c", "for p in $(pgrep -u meshbeacon); do grep -E '^(VmRSS|VmSwap)' /proc/$p/status; done")
-    total_kb = sum(int(line.split()[1]) for line in out.splitlines())
+    total_kb = app_memory_kib(c)
     label = "EMULATED (indicative only)" if EMULATED else "native"
     print(f"idle RSS+swap of app processes ({label}): {total_kb / 1024:.1f} MiB")
     if not EMULATED:
@@ -282,10 +281,7 @@ def test_low_memory_announce_flood(run, network, tmp_path):
         peak_kb = 0
         end = time.monotonic() + 55
         while time.monotonic() < end:
-            out = c.exec(
-                "sh", "-c", "for p in $(pgrep -u meshbeacon); do grep -E '^(VmRSS|VmSwap)' /proc/$p/status; done"
-            )
-            peak_kb = max(peak_kb, sum(int(line.split()[1]) for line in out.splitlines()))
+            peak_kb = max(peak_kb, app_memory_kib(c))
             time.sleep(2)
         stats = json.loads(
             sh("docker", "exec", peer, "python3", "-I", "-m", "RNS.Utilities.rnstatus", "--config", "/cfg", "-j")
@@ -455,9 +451,11 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
         assert "MESHBEACON_DATA" in environ  # the read worked
         assert SUPERVISOR_TOKEN not in environ
         assert SUPERVISOR_TOKEN not in c.logs() and token not in c.logs()
+        # M1.2 re-review: on this compatibility path the token reaches the core through a one-time
+        # pipe; Reticulum can find it neither in an environment nor in the core's memory or files.
+        assert_isolated(c, SUPERVISOR_TOKEN, socket_mode=False)
         time.sleep(20)
-        mem = c.exec("sh", "-c", "for p in $(pgrep -u meshbeacon); do grep -E '^(VmRSS|VmSwap)' /proc/$p/status; done")
-        total_kb = sum(int(line.split()[1]) for line in mem.splitlines())
+        total_kb = app_memory_kib(c)
         label = "EMULATED (indicative only)" if EMULATED else "native"
         print(f"idle RSS+swap with the Home Assistant integration on ({label}): {total_kb / 1024:.1f} MiB")
         if not EMULATED:
@@ -539,17 +537,9 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
                 capture_output=True, text=True,
             )  # fmt: skip
             assert probe.returncode != 0 and "Permission" in probe.stderr, probe
-        # The core holds the link; the Reticulum child has no part of it.
-        # Run as the service user: Reticulum's own user, and the only one allowed to read the core's
-        # /proc entries (root in the container lacks CAP_SYS_PTRACE).
-        link = json.loads(sh("docker", "exec", "-u", "meshbeacon", c.name, "python3", "-I", "-c", LINK_PROBE))
-        print(f"relay link probe: {link}")
-        assert link["core_fd"] is not None and link["core_is_socket"], link
-        assert not link["node_shares_it"], link
-        if APPARMOR:  # residual (threat T72): only AppArmor's ptrace denial stops this
-            assert not link["same_user_can_take_link"], link
-        # L-1: in socket mode the Supervisor token never enters the core's environment at all.
-        assert link["core_env_token"] is False and link["node_env_token"] is False, link
+        # The core holds the link; Reticulum has no part of it and cannot reach the core's /proc,
+        # memory or descriptors; the Supervisor token is in no process at all (L-1).
+        assert_isolated(c, SUPERVISOR_TOKEN, socket_mode=True)
     finally:
         sh("docker", "rm", "-f", sup, check=False)
         for path in api.iterdir():
@@ -560,14 +550,62 @@ def test_discovery_over_the_supervisor_socket(run, tmp_path):
 LINK_PROBE = (Path(__file__).resolve().parents[2] / "tools" / "acceptance" / "relay_probe.py").read_text()
 
 
+def app_memory_kib(c: Container) -> int:
+    """RSS + swap of the service user's processes, by their real UID (/proc/<pid>/status stays
+    readable for the non-dumpable core, whose /proc entries otherwise look root-owned)."""
+    script = (
+        "import os\n"
+        "total = 0\n"
+        "for pid in filter(str.isdigit, os.listdir('/proc')):\n"
+        "    try:\n"
+        "        status = open(f'/proc/{pid}/status').read().splitlines()\n"
+        "    except OSError:\n"
+        "        continue\n"
+        "    if int(next(x for x in status if x.startswith('Uid:')).split()[1]) == 9100:\n"
+        "        total += sum(int(x.split()[1]) for x in status if x.startswith(('VmRSS:', 'VmSwap:')))\n"
+        "print(total)\n"
+    )
+    return int(c.exec("python3", "-I", "-c", script).strip())
+
+
+def probe(c: Container, mode: str, canary: str = "") -> dict[str, bool]:
+    """tools/acceptance/relay_probe.py: the attacker view runs as the service user (Reticulum's
+    user); the observer view runs with CAP_SYS_PTRACE only to see what is really there."""
+    who = ["-u", "meshbeacon"] if mode == "attacker" else ["--privileged"]
+    out = sh("docker", "exec", *who, c.name, "python3", "-I", "-c", LINK_PROBE, mode, canary)
+    result = json.loads(out)
+    print(f"{mode} probe: {result}")
+    return result
+
+
+def assert_isolated(c: Container, canary: str, *, socket_mode: bool) -> None:
+    """M1.2 (threat T72): what a compromised Reticulum child could reach, in either transport."""
+    seen = probe(c, "observer", canary)
+    assert seen["core_non_dumpable"], seen
+    assert not seen["core_env_token"] and not seen["node_env_token"], seen  # in no environment
+    assert not seen["token_fd_open"], seen  # the one-time pipe was read and closed
+    assert not seen["node_shares_link"] and not seen["node_holds_core_pipe_or_link"], seen
+    assert seen["core_holds_link"] is socket_mode, seen
+    attack = probe(c, "attacker", canary)
+    assert attack == {
+        "core_environ": False,
+        "core_fds": False,
+        "core_maps": False,
+        "core_memory": False,
+        "took_fd": False,
+        "canary_found": False,
+    }, attack
+
+
 def processes(c: Container) -> dict[str, set[str]]:
-    """Owner of each MeshBeacon Python module running in the container, read from /proc."""
+    """Owner (real UID) of each MeshBeacon Python module running in the container."""
     script = (
         "import os, pwd\n"
         "for pid in filter(str.isdigit, os.listdir('/proc')):\n"
         "    try:\n"
         "        args = open(f'/proc/{pid}/cmdline', 'rb').read().split(b'\\0')\n"
-        "        uid = os.stat(f'/proc/{pid}').st_uid\n"
+        "        status = open(f'/proc/{pid}/status').read().splitlines()\n"
+        "        uid = int(next(x for x in status if x.startswith('Uid:')).split()[1])\n"
         "    except OSError:\n"
         "        continue\n"
         "    if b'-m' in args:\n"
