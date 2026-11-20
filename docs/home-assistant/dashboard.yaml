@@ -1,4 +1,4 @@
-# MeshBeacon overview: an example dashboard built only from Home Assistant's own cards.
+# ito overview: an example dashboard built only from Home Assistant's own cards.
 # It is a view of the integration's entities, not a second monitoring implementation: history and
 # statistics come from Home Assistant's recorder.
 #
@@ -6,12 +6,21 @@
 # dashboard → ⋮ → Raw configuration editor, and paste this file. Entity IDs assume the default names.
 # For each peer, copy the "Peer" card and replace "emerald" with the peer's name in lower case
 # (spaces become underscores). Only entities that are enabled by default are used here.
-title: MeshBeacon
+title: ito
 views:
   - title: Overview
     path: meshbeacon
     icon: mdi:access-point-network
     cards:
+      - type: markdown
+        content: >-
+          # ito
+
+          **The internet, reimagined.**
+
+          Private connectivity, powered by Reticulum.
+
+          [ito.earth](https://ito.earth)
       - type: tile
         entity: sensor.meshbeacon_status
       - type: tile
