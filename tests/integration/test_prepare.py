@@ -156,3 +156,24 @@ def test_the_shared_instance_follows_the_messaging_option(data):
     r3, _ = run_prepare(data)
     assert r3["identity"] == "unchanged"
     assert ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["share_instance"] == "No"
+
+
+def test_a_selected_public_network_reaches_the_reticulum_configuration(data):
+    """The network selector configures the real interface RNS reads; it is not just a label.
+    (Only the configuration is written here: prepare never starts Reticulum or connects.)"""
+    write_options(data, network="ratspeak_emerald", peers=[{"name": "Home", "host": "127.0.0.1", "port": 4242}])
+    r, _ = run_prepare(data)
+    assert r["ok"], r
+    cfg = ConfigObj(str(data / "reticulum" / "config"))
+    assert list(cfg["interfaces"]) == ["Ratspeak Emerald", "Home"]
+    emerald = cfg["interfaces"]["Ratspeak Emerald"]
+    endpoint = (emerald["type"], emerald["target_host"], emerald["target_port"])
+    assert endpoint == ("TCPClientInterface", "2.ratspeak.org", "4242")
+
+
+def test_an_unknown_network_needs_attention(data):
+    write_options(data, network="not-a-network")
+    r, _ = run_prepare(data)
+    assert not r["ok"] and r["problem"] == "options"
+    assert any("'network' must be one of" in m for m in r["attention"])
+    assert not (data / "reticulum" / "config").exists()

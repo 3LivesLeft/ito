@@ -29,7 +29,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import IO, Any
 
-from . import __version__, fsutil, procinfo
+from . import __version__, fsutil, networks, procinfo
 from .api import ApiServer, Discovery, RelayLink, StatusStore, TlsError, container_hostname, make_tls, new_token
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
 from .engine_supervisor import DISABLED, EngineSupervisor
@@ -313,6 +313,18 @@ class Supervisor:
         s = self.settings
         if s is not None:
             self.say(f"Transport mode: {'on — sharing your connection with others' if s.transport else 'off'}.")
+            preset = networks.presets().get(s.network)
+            self.say(
+                f"Public network: {preset.name} (run by {preset.operator})."
+                if preset
+                else "Public network: none (custom — only your own peers)."
+            )
+            if preset and preset.id == "ratspeak_diamond" and s.transport:
+                self.say(
+                    "⚠ Transport mode is on and Ratspeak Diamond is selected. Diamond bans nodes that "
+                    "relay for 50 remote peers; consider switching transport mode off or choosing "
+                    "another network."
+                )
             if s.peers:
                 for p in s.peers:
                     self.say(f"Peer configured: {p.name} ({p.host}, port {p.port}).")

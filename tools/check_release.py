@@ -240,6 +240,19 @@ def check(tree: Tree, tag: str | None = None) -> list[str]:
     if tag is not None and re.search(r"^## \d+\.\d+\.\d+ — unreleased", changelog, re.M | re.I):
         add("a release tag must not point at a changelog that still says 'unreleased'")
 
+    # -- Public network presets (ADR 0004): a tag ships only presets the maintainer verified ------
+    if tag is not None:
+        presets = tree.read(f"{DOMAIN}/core/meshbeacon/networks.json")
+        try:
+            listed = json.loads(presets)["networks"] if presets is not None else []
+        except (ValueError, KeyError, TypeError):
+            add("networks.json cannot be parsed")
+            listed = []
+        for item in listed:
+            if not isinstance(item, dict) or not item.get("release_checks_passed_on"):
+                name = item.get("id") if isinstance(item, dict) else item
+                add(f"network preset {name!r} has no recorded release checks (ADR 0004 V1–V7)")
+
     # -- No tests or test-only bindings in the image's build context -----------------------------
     for path in files:
         if path.startswith(f"{DOMAIN}/") and TEST_ONLY.search(path[len(DOMAIN) + 1 :]):

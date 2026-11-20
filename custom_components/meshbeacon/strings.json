@@ -199,7 +199,7 @@
   "issues": {
     "isolated": {
       "title": "MeshBeacon is not connected to anyone",
-      "description": "Your MeshBeacon node is running, but no peers are configured, so it is not part of any Reticulum network. Add a peer in the MeshBeacon app's Configuration tab."
+      "description": "Your MeshBeacon node is running, but no peers are configured, so it is not part of any Reticulum network. In the MeshBeacon app's Configuration tab, choose a public network or add a peer, then restart the app."
     },
     "peers_unreachable": {
       "title": "MeshBeacon cannot reach its peers",
