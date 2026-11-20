@@ -154,6 +154,8 @@ class World:
                 str(os.getuid()),
                 "--instance-name",
                 self.instance,
+                "--rpc-key-file",  # the hub's key, as the app's init step shares it (ADR 0023)
+                str(self.root / "hub" / "rpc_key"),
             ]
         )
         wait_for(lambda: self.sock.exists() or self.engine.p.poll() is not None, 60)  # type: ignore[union-attr]
@@ -219,7 +221,9 @@ def test_the_engine_is_a_client_of_the_shared_instance(world, peers):
     status = world.call(op="status")
     assert status["ok"] and status["connected"] is True and status["version"] == 1
     assert status["identity"] == "created"
-    assert "rpc_key" not in (world.data / "rns" / "config").read_text()  # IS-3a: no control of the node
+    # ADR 0023: the engine authenticates to the hub's shared instance with the hub's key.
+    assert "rpc_key" in (world.data / "rns" / "config").read_text()
+    wait_for(lambda: world.call(op="status")["rpc"] is True, 60)
     assert (world.data / "identity").stat().st_mode & 0o077 == 0
     assert (world.data / "identity.backup").read_bytes() == (world.data / "identity").read_bytes()
     contacts = world.call(op="contacts")["contacts"]

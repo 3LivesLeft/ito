@@ -11,8 +11,10 @@ from RNS.vendor.configobj import ConfigObj
 from .conftest import write_options
 
 
-def run_prepare(data, mode="start"):
+def run_prepare(data, mode="start", rpc_key_file=None):
     env = dict(os.environ, MESHBEACON_DATA=str(data))
+    # Never the container's real path: a key file of the test's own, or one that does not exist.
+    env["MESHBEACON_RPC_KEY_FILE"] = str(rpc_key_file or data.parent / "no-rpc-key")
     result = data.parent / "prepare-result.json"  # the core's channel, outside Reticulum's folders
     proc = subprocess.run(
         [sys.executable, "-m", "meshbeacon.prepare", "--mode", mode, "--result", str(result)],
@@ -156,6 +158,32 @@ def test_the_shared_instance_follows_the_messaging_option(data):
     r3, _ = run_prepare(data)
     assert r3["identity"] == "unchanged"
     assert ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["share_instance"] == "No"
+
+
+def test_with_messaging_on_the_node_uses_the_shared_rpc_key(data):
+    """ADR 0023: the key the engine is given too, the same across restarts of Reticulum (so that a
+    running engine is never locked out); with messaging off, a fresh key nobody else holds."""
+    key_file = data.parent / "rpc_key"
+    key = "5a" * 32
+    key_file.write_text(key + "\n")
+    write_options(data, messaging_enabled=True)
+    for mode in ("start", "restart"):
+        r, out = run_prepare(data, mode, rpc_key_file=key_file)
+        assert r["ok"], r
+        cfg = ConfigObj(str(data / "reticulum" / "config"))["reticulum"]
+        assert cfg["rpc_key"] == key and cfg["enable_interface_management"] == "No"
+        assert key not in out and key not in json.dumps(r)  # rule 5
+    write_options(data, messaging_enabled=False)
+    run_prepare(data, rpc_key_file=key_file)
+    assert ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["rpc_key"] != key
+
+
+def test_a_missing_shared_rpc_key_never_stops_reticulum(data):
+    """The gateway works on: a random key, and a plain warning that messaging cannot work."""
+    write_options(data, messaging_enabled=True)
+    r, _ = run_prepare(data)
+    assert r["ok"] and any("access key" in m for m in r["info"]), r
+    assert len(bytes.fromhex(ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["rpc_key"])) == 32
 
 
 def test_a_selected_public_network_reaches_the_reticulum_configuration(data):

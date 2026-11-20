@@ -87,6 +87,15 @@ def test_the_relay_folder_is_for_its_owner_only():
     assert "w" in PROFILE.perms(sock, owner=True) and "w" not in PROFILE.perms(sock, owner=False)
 
 
+def test_the_shared_rpc_key_folder_is_readable_and_never_executable():
+    """ADR 0023: root's init step writes the key; Reticulum and the engine read it (file modes and
+    the group mb-rpc decide who). Nothing in it can run, and nothing beside it is opened up."""
+    for path in ("/run/meshbeacon-rpc/", "/run/meshbeacon-rpc/rpc_key", "/run/meshbeacon-rpc/.rpc_key.new"):
+        perms = PROFILE.perms(path)
+        assert {"r", "w"} <= perms and "x" not in perms, path
+    assert "w" not in PROFILE.perms("/run/meshbeacon-rpc-other/x")
+
+
 def test_no_write_and_execute_on_app_data():
     for path in ("/data/meshbeacon/x", "/data/reticulum/storage/x", "/tmp/x"):
         assert "x" not in PROFILE.perms(path), path

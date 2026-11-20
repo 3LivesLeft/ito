@@ -89,6 +89,7 @@ class FakeEngine:
         self.sent: list[dict[str, Any]] = []
         self.acked: list[int] = []
         self.states: dict[str, str] = {}
+        self.rpc: bool | None = True
 
     def __call__(self, req: dict[str, Any]) -> dict[str, Any] | None:
         op = req["op"]
@@ -96,6 +97,7 @@ class FakeEngine:
             return {
                 "ok": True,
                 "connected": True,
+                "rpc": self.rpc,
                 "address": A,
                 "counters": {"inbound_received": 2, "inbound_refused_stranger": 3},
             }
@@ -178,8 +180,10 @@ def test_the_states_the_dashboard_shows():
     sup.healthy = True
     sup.view["connected"] = False
     assert sup.public()["state"] == "starting" and "shared instance" in sup.public()["message"]
-    sup.view["connected"] = True
-    assert sup.public()["state"] == "running"
+    sup.view["connected"], sup.view["rpc"] = True, None
+    assert sup.public()["state"] == "starting" and "checking" in sup.public()["message"]
+    sup.view["rpc"] = True
+    assert sup.public()["state"] == "running" and sup.public()["message"] is None
     sup._failed(es.EXIT_REASONS[3], 0.0)
     public = sup.public()
     assert public["state"] == "error" and "identity" in public["message"] and "Traceback" not in public["message"]
@@ -187,6 +191,23 @@ def test_the_states_the_dashboard_shows():
         sup._failed("x", 1.0)
     assert sup.public()["state"] == "paused"
     assert es.DISABLED == {"enabled": False, "state": "disabled", "message": None}
+
+
+def test_an_engine_that_reticulum_refuses_is_a_problem_never_running():
+    """ADR 0023: the process runs and is connected to the shared instance, but the node refuses its
+    RPC requests (the 0.3.0 failure: "digest sent was rejected"). The dashboard shows a problem."""
+    engine = FakeEngine()
+    engine.rpc = False
+    sup = supervisor(engine)
+    sup._sync(None)
+    public = sup.public()
+    assert public["state"] == "error" and public["message"] == es.MSG_RPC_REFUSED
+    engine.rpc = True  # the node accepts it again (e.g. after a restart): Running
+    sup._sync(None)
+    assert sup.public()["state"] == "running"
+    engine.rpc = "yes"  # type: ignore[assignment]  # anything but a boolean is "not checked yet"
+    sup._sync(None)
+    assert sup.public()["state"] == "starting"
 
 
 def test_settings_are_written_before_every_start():

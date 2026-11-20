@@ -16,6 +16,7 @@
   address to copy. Switching it off stops only messaging; Reticulum keeps running and the
   messaging address is kept. One standard app for everyone: nothing of messaging runs while it is
   off.
+- **Fixed: messaging could not talk to Reticulum** (seen on the first Raspberry Pi installation). Reticulum refused every request from the messaging service ("digest received was wrong" in the log, every ~10 s), while the dashboard still showed *Running*. The messaging service is now given Reticulum's access key, and nothing else of Reticulum's; the dashboard shows a problem if Reticulum ever refuses it. With messaging off nothing changes.
 - Each part of MeshBeacon (the core, Reticulum, messaging) runs as its own user; credentials and
   data are visible only to the part that needs them.
 - **Install from Home Assistant's own stores** (prepared; available from the first release): the

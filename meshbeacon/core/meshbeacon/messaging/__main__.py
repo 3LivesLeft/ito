@@ -30,6 +30,8 @@ def main(argv: list[str] | None = None) -> int:
     # The settings the core wrote from the app's options (D-M4-8); readable, never writable, here.
     parser.add_argument("--settings", type=Path, default=None, help="default: <data>/messaging.json")
     parser.add_argument("--instance-name", default=rnsconfig.INSTANCE_NAME)  # tests only
+    # The node's shared RPC key (ADR 0023): readable by this user through the group mb-rpc only.
+    parser.add_argument("--rpc-key-file", type=Path, default=rnsconfig.RPC_KEY_FILE)
     args = parser.parse_args(argv)
     os.umask(0o077)
     fsutil.ensure_dir(args.data)
@@ -40,7 +42,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     rns_config = args.data / "rns"
     fsutil.ensure_dir(rns_config)
-    text = rnsconfig.render_client(instance_name=args.instance_name)
+    rpc_key = rnsconfig.read_shared_rpc_key(args.rpc_key_file)
+    if rpc_key is None:
+        # Started all the same: the engine then reports that Reticulum refuses its requests, and
+        # the dashboard shows a problem instead of "Running".
+        print("meshbeacon-messaging: Reticulum's access key is missing or invalid", file=sys.stderr, flush=True)
+    text = rnsconfig.render_client(instance_name=args.instance_name, rpc_key=rpc_key)
     fsutil.atomic_write(rns_config / "config", text.encode())
     engine = Engine(args.data, settings, rns_config=rns_config)
     try:

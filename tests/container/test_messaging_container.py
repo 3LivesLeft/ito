@@ -53,13 +53,18 @@ def wait_for(pred: Callable[[], object], timeout: float = 60.0) -> bool:
 
 
 class App:
-    def __init__(self, image: str, options: dict | None = None, data: Path | None = None) -> None:
+    def __init__(
+        self, image: str, options: dict | None = None, data: Path | None = None, extra: tuple[str, ...] = ()
+    ) -> None:
         self.image = image
         self.data = data or Path(tempfile.mkdtemp(prefix="mb-m4-", dir="/tmp"))
         (self.data / "options.json").write_text(json.dumps(options or DEFAULTS))
         self.name = f"mb-m4-{uuid.uuid4().hex[:8]}"
         confine = ["--security-opt", f"apparmor={APPARMOR}"] if APPARMOR else []
-        sh("docker", "run", "-d", "--name", self.name, "--network", "none", "-v", f"{self.data}:/data", *confine, image)
+        sh(
+            "docker", "run", "-d", "--name", self.name, "--network", "none", "-v", f"{self.data}:/data",
+            *confine, *extra, image,
+        )  # fmt: skip
 
     def logs(self) -> str:
         return subprocess.run(["docker", "logs", self.name], capture_output=True, text=True).stdout
@@ -92,8 +97,8 @@ class App:
 def apps() -> Iterator[Callable[..., App]]:
     made: list[App] = []
 
-    def make(image: str, options: dict | None = None, data: Path | None = None) -> App:
-        app = App(image, options, data)
+    def make(image: str, options: dict | None = None, data: Path | None = None, extra: tuple[str, ...] = ()) -> App:
+        app = App(image, options, data, extra)
         made.append(app)
         return app
 
@@ -116,7 +121,8 @@ def test_the_standard_image_carries_the_messaging_engine():
         "  'init': os.path.isfile('/etc/cont-init.d/20-messaging'),\n"
         "  'marker': os.path.exists('/etc/meshbeacon/messaging'),\n"
         "  'engine_uid': pwd.getpwnam('mb-lxmf').pw_uid,\n"
-        "  'msg_group': sorted(grp.getgrnam('mb-msg').gr_mem)}))\n"
+        "  'msg_group': sorted(grp.getgrnam('mb-msg').gr_mem),\n"
+        "  'rpc_group': sorted(grp.getgrnam('mb-rpc').gr_mem)}))\n"
     )
     seen = json.loads(
         sh("docker", "run", "--rm", "--network", "none", "--entrypoint", "python3", IMAGE, "-I", "-c", script)
@@ -124,6 +130,7 @@ def test_the_standard_image_carries_the_messaging_engine():
     assert seen == {
         "engine": True, "lxmf": True, "service": True, "starts_down": True, "init": True, "marker": False,
         "engine_uid": 9102, "msg_group": ["mb-lxmf", "meshbeacon"],
+        "rpc_group": ["mb-lxmf", "mb-rns"],  # ADR 0023: never the core
     }  # fmt: skip
 
 
@@ -137,6 +144,8 @@ def test_messaging_is_off_by_default(apps):
     assert "meshbeacon.messaging" not in owners and set(owners.get("meshbeacon.node", ())) == {"mb-rns"}, owners
     assert not (app.data / "messaging").exists()
     assert not app.ok("test", "-e", "/run/meshbeacon-messaging")
+    assert not app.ok("test", "-e", "/run/meshbeacon-rpc")  # no shared instance, so no shared key
+    assert "enable_interface_management" not in app.exec("cat", "/data/reticulum/config")
     assert "share_instance = No" in app.exec("cat", "/data/reticulum/config")
     unix = app.exec("cat", "/proc/net/unix")
     assert "@rns" not in unix and "meshbeacon-messaging" not in unix
@@ -306,10 +315,13 @@ def test_the_engine_starts_after_reticulum_as_its_own_user(apps):
     for line in app.exec("find", "/data/messaging", "-exec", "stat", "-c", "%U|%a|%F|%n", "{}", "+").splitlines():
         owner, mode, kind, _name = line.split("|", 3)
         assert owner == "mb-lxmf" and mode == ("700" if kind == "directory" else "600"), line
-    # IS-3a: the node shares its instance; the engine holds no RPC key and no interfaces.
-    assert "share_instance = Yes" in app.exec("cat", "/data/reticulum/config")
+    # ADR 0023 (amends IS-3a): the node shares its instance with interface management off; the
+    # engine holds the node's RPC key (the same one, compared without printing it) and no interfaces.
+    node_config = app.exec("cat", "/data/reticulum/config")
+    assert "share_instance = Yes" in node_config and "enable_interface_management = No" in node_config
     engine_config = app.exec("cat", "/data/messaging/rns/config")
-    assert "rpc_key" not in engine_config and "share_instance = Yes" in engine_config
+    assert "share_instance = Yes" in engine_config and "[[" not in engine_config
+    assert same_rpc_key(app)
     # MS-2: a separate identity from the transport identity.
     transport = app.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0]
     messaging = app.exec("sha256sum", "/data/messaging/identity").split()[0]
@@ -491,13 +503,218 @@ def test_the_shared_instance_is_reachable_only_inside_the_app_container(apps):
         assert json.loads(outside) in ("ConnectionRefusedError", "FileNotFoundError"), (network, outside)
 
 
-def test_the_node_rpc_refuses_anyone_without_its_key(apps):
-    """IS-3a: the RPC listener is reachable inside the container, but only Reticulum's user holds
-    its key (in /data/reticulum/config, 0600). The engine has no key; a wrong key is refused."""
+# -- ADR 0023: the engine's authenticated RPC with the node's shared instance -------------------
+#
+# The 0.3.0 failure on the Raspberry Pi: the engine connected to the shared instance, but RNS 1.6.0
+# authenticates every local RPC client with the node's ``rpc_key``, and the engine had none, so it
+# derived a key of its own and every request was refused ("digest received was wrong" in the node,
+# "digest sent was rejected" in the engine) while the dashboard showed "Running".
+
+KEY_FILE = "/run/meshbeacon-rpc/rpc_key"
+RPC_WITH_KEY = (
+    "import json, multiprocessing.connection as mc, sys\n"
+    "try:\n"
+    "    key = bytes.fromhex(open(sys.argv[1]).read().strip()) if sys.argv[1] else b'0' * 32\n"
+    "except OSError as e:\n"
+    "    print(json.dumps(type(e).__name__)); sys.exit()\n"
+    "try:\n"
+    "    mc.Client('\\0rns/meshbeacon/rpc', family='AF_UNIX', authkey=key).close()\n"
+    "    print(json.dumps('authenticated'))\n"
+    "except Exception as e:\n"
+    "    print(json.dumps(type(e).__name__))\n"
+)
+RPC_FAILURES = ("digest received was wrong", "digest sent was rejected", "Shared instance RPC failed")
+SAME_KEY = (
+    "import sys\n"
+    "def key(path):\n"
+    "    for line in open(path):\n"
+    "        k, _, v = line.partition('=')\n"
+    "        if k.strip() == 'rpc_key': return v.strip()\n"
+    "shared = open(sys.argv[1]).read().strip()\n"
+    "print(key('/data/reticulum/config') == key('/data/messaging/rns/config') == shared)\n"
+)
+
+
+def same_rpc_key(app: App) -> bool:
+    """The node, the engine and the shared key file hold the same key (compared, never printed)."""
+    return app.exec("python3", "-I", "-c", SAME_KEY, KEY_FILE).strip() == "True"
+
+
+def engine_status(app: App) -> dict:
+    answer = request(app, {"op": "status"})
+    return answer if isinstance(answer, dict) else {}
+
+
+def rpc_failures(logs: str) -> list[str]:
+    return [line for line in logs.splitlines() if any(f in line for f in RPC_FAILURES)]
+
+
+def with_api(apps: Callable[..., App], options: dict, tmp: Path) -> tuple[App, str]:
+    """The app with its Home Assistant status API on, announced to a fake Supervisor through a
+    local socket (as on newer Supervisors; no network). Returns the app and the API token."""
+    out = tmp / "supervisor"
+    out.mkdir()
+    out.chmod(0o777)
+    api = Path(f"/tmp/mbsock-{uuid.uuid4().hex[:6]}")
+    api.mkdir(mode=0o755)
+    bind = "/run/os/supervisor/apps/ce27fbb5_meshbeacon"
+    sup = f"mbsup-{uuid.uuid4().hex[:6]}"
+    sh(
+        "docker", "run", "-d", "--name", sup, "--network", "none",
+        "-v", f"{REPO / 'tests' / 'container' / 'fake_supervisor.py'}:/fake.py:ro", "-v", f"{out}:/out",
+        "-v", f"{api}:{bind}", "--entrypoint", "python3", IMAGE, "-I", "/fake.py", "--unix", f"{bind}/supervisor.sock",
+    )  # fmt: skip
+    fake_supervisors.append(sup)
+    assert wait_for((api / "supervisor.sock").exists, 30)
+    app = apps(
+        IMAGE,
+        {**options, "home_assistant_integration": True},
+        extra=(
+            "-e", "SUPERVISOR_SOCKET=/run/supervisor/api/supervisor.sock", "-v", f"{api}:/run/supervisor/api:ro",
+            "--hostname", "ce27fbb5-meshbeacon",
+        ),
+    )  # fmt: skip
+    record = out / "discovery.json"
+    assert wait_for(lambda: record.exists() and record.read_text().endswith("}"), 90), app.logs()
+    return app, json.loads(record.read_text())["body"]["config"]["token"]
+
+
+fake_supervisors: list[str] = []  # fake Supervisor containers, removed after each test
+
+
+@pytest.fixture(autouse=True)
+def _remove_fake_supervisors() -> Iterator[None]:
+    yield
+    while fake_supervisors:
+        sh("docker", "rm", "-f", fake_supervisors.pop(), check=False)
+
+
+API = (
+    "import http.client, json, ssl, sys\n"
+    "c = ssl.create_default_context(); c.check_hostname = False; c.verify_mode = ssl.CERT_NONE\n"
+    "h = http.client.HTTPSConnection('127.0.0.1', 8100, timeout=10, context=c)\n"
+    "h.request('GET', '/api/v1/status', headers={'Authorization': 'Bearer ' + sys.argv[1]})\n"
+    "print(json.dumps(json.loads(h.getresponse().read()).get('messaging')))\n"
+)
+
+
+def dashboard(app: App, token: str) -> dict:
+    """The ``messaging`` section of the status API: what the integration and its panel show."""
+    out = app.exec("python3", "-I", "-c", API, token, check=False).strip()
+    try:
+        value = json.loads(out.splitlines()[-1])
+    except (ValueError, IndexError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def test_only_reticulum_and_the_engine_hold_the_shared_rpc_key(apps):
+    """ADR 0023: the key is root's file, readable by the group mb-rpc (Reticulum's and the engine's
+    users) only. With it the node's RPC listener authenticates; without it, it refuses."""
     app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     assert "@rns/meshbeacon/rpc" in app.exec("cat", "/proc/net/unix")
+    assert app.exec("stat", "-c", "%U:%G %a", "/run/meshbeacon-rpc").split() == ["root:mb-rpc", "750"]
+    assert app.exec("stat", "-c", "%U:%G %a", KEY_FILE).split() == ["root:mb-rpc", "640"]
+    for user in ("mb-lxmf", "mb-rns"):
+        assert json.loads(app.exec("python3", "-I", "-c", RPC_WITH_KEY, KEY_FILE, user=user)) == "authenticated", user
+        assert not app.ok("sh", "-c", f"echo x >> {KEY_FILE}", user=user), user  # read only
+    # The core may not use it: it cannot read it, and a guessed key is refused.
+    assert json.loads(app.exec("python3", "-I", "-c", RPC_WITH_KEY, KEY_FILE, user="meshbeacon")) == "PermissionError"
     for user in ("mb-lxmf", "meshbeacon"):
-        assert json.loads(app.exec("python3", "-I", "-c", RPC, user=user)) == "AuthenticationError", user
-        assert not app.ok("cat", "/data/reticulum/config", user=user), user
-    assert "rpc_key" not in app.exec("cat", "/data/messaging/rns/config")
+        assert json.loads(app.exec("python3", "-I", "-c", RPC_WITH_KEY, "", user=user)) == "AuthenticationError", user
+    # Reticulum's private files stay its own (the key gives the engine no access to them).
+    for path in ("/data/reticulum/config", "/data/reticulum/storage/transport_identity", "/data/reticulum/storage"):
+        assert not app.ok("cat", path, user="mb-lxmf") and not app.ok("ls", path, user="mb-lxmf"), path
+    assert same_rpc_key(app)
+    # The key survives a restart of Reticulum (the prepare step reuses it), so a running engine is
+    # never locked out by the node's restart policy.
+    app.exec("kill", "-9", str(app.pid("meshbeacon.node")))
+    assert wait_for(lambda: "Restarting the Reticulum service" in app.logs(), 60), app.logs()
+    assert wait_for(lambda: app.pid("meshbeacon.node") is not None, 120)
+    assert same_rpc_key(app)
+    assert wait_for(lambda: engine_status(app).get("rpc") is True, 120), app.logs()
+
+
+def test_messaging_talks_lxmf_over_the_shared_instance_with_authenticated_rpc(apps, tmp_path):
+    """The real users, the real RNS 1.6.0 shared instance and the LXMF engine: the engine creates
+    its LXMF delivery destination and announces it; a second local client of the same shared
+    instance (a reference LXMF peer, inside the container) sends it a message and gets the core's
+    automatic reply, signed by the engine. Throughout, the node accepts every RPC request of the
+    engine, and the dashboard shows Running."""
+    peer_dir = tmp_path / "peer"
+    peer_dir.mkdir()
+    script = REPO / "tests" / "container" / "lxmf_peer.py"
+    sh(
+        "docker", "run", "--rm", "--network", "none", "-v", f"{peer_dir}:/peer", "-v", f"{script}:/lxmf_peer.py:ro",
+        "--entrypoint", "python3", IMAGE, "-I", "/lxmf_peer.py", "identity", "/peer",
+    )  # fmt: skip
+    peer_address = (peer_dir / "address").read_text().strip()
+    options = {**ON, "messaging_contacts": [{"name": "Peer", "address": peer_address}], "messaging_auto_reply": True}
+    app, token = with_api(apps, options, tmp_path)
+    assert wait_for(lambda: engine_up(app), 90), app.logs()
+    assert wait_for(lambda: "Reticulum accepts the engine's requests" in app.logs(), 60), app.logs()
+    status = engine_status(app)
+    assert status.get("connected") is True and status.get("rpc") is True, status
+    engine_address = status["address"]
+    assert re.fullmatch(r"[0-9a-f]{32}", engine_address) and engine_address != peer_address  # LXMF destination
+    assert wait_for(lambda: dashboard(app, token).get("state") == "running", 60), dashboard(app, token)
+
+    app.exec("mkdir", "-p", "/tmp/peer")
+    sh("docker", "cp", str(script), f"{app.name}:/tmp/lxmf_peer.py")
+    sh("docker", "cp", str(peer_dir / "identity"), f"{app.name}:/tmp/peer/identity")
+    talk = 90 * SCALE
+    out = app.exec(
+        "python3", "-I", "/tmp/lxmf_peer.py", "talk", "/tmp/peer", engine_address, KEY_FILE, str(talk), check=False
+    )
+    lines = [line for line in out.splitlines() if line.startswith("{")]
+    assert lines, out
+    seen = json.loads(lines[-1])
+    assert seen["engine_heard"] is True, seen  # the engine's announce reached the other client
+    assert seen["delivered"] is True, seen  # a delivery proof from the engine's LXMF
+    assert seen["reply"] is True and seen["reply_verified"] is True, seen  # the engine sent, signed
+    assert seen["peer_rpc"] is True, seen
+    # The engine knows its contact (Identity.recall reports each use to the node over RPC: the
+    # request that failed every 10 s in 0.3.0), counted the message and saw the reply delivered.
+    assert wait_for(lambda: dashboard(app, token).get("contacts_reachable") == 1, 60), dashboard(app, token)
+    assert wait_for(lambda: dashboard(app, token).get("received") == 1, 60), dashboard(app, token)
+    assert wait_for(lambda: dashboard(app, token).get("last_reply_state") == "delivered", 60), dashboard(app, token)
+    time.sleep(25 * SCALE)  # several of the core's 10 s polls, each of which recalls the contact
+    final = dashboard(app, token)
+    assert final.get("state") == "running" and final.get("message") is None, final
+    assert engine_status(app).get("rpc") is True
+    logs = app.logs()
+    assert rpc_failures(logs) == [], rpc_failures(logs)
+    assert "Traceback" not in logs
+    assert not re.search(r"(?<![0-9a-f])[0-9a-f]{32,}(?![0-9a-f])", logs, re.I)  # rule 5
+    # Only the known RNS 1.6.0 limitation is left (ADR 0023): a client reads the shared instance's
+    # destination table from its *own* configuration folder, which the engine's user cannot share
+    # with Reticulum's without reaching into Reticulum's private storage. Once per engine start.
+    assert logs.count("Could not load known destinations from shared instance database") == 1
+
+
+def test_an_engine_that_reticulum_refuses_shows_a_problem_not_running(apps, tmp_path):
+    """Reproduces 0.3.0: the engine runs and is connected, but holds no valid key. The node refuses
+    its RPC requests with RNS's own errors, the engine says so in plain words, the dashboard shows
+    a problem instead of Running, and the gateway carries on unaffected."""
+    app, token = with_api(apps, ON, tmp_path)
+    assert wait_for(lambda: engine_up(app), 90), app.logs()
+    assert wait_for(lambda: dashboard(app, token).get("state") == "running", 60), dashboard(app, token)
+    node = app.pid("meshbeacon.node")
+    # As in 0.3.0: the engine starts without the node's key.
+    app.exec("rm", "-f", KEY_FILE)
+    engine = app.pid("meshbeacon.messaging")
+    app.exec("kill", "-9", str(engine))
+    assert wait_for(lambda: app.pid("meshbeacon.messaging") not in (None, engine), 90), app.logs()
+    assert wait_for(lambda: engine_status(app).get("rpc") is False, 90), app.logs()
+    logs = app.logs()
+    assert "access key is missing or invalid" in logs
+    assert "Reticulum refused the engine's requests (its shared-instance authentication was refused)" in logs
+    assert "digest received was wrong" in logs  # the node's side of the 0.3.0 error
+    status = engine_status(app)
+    assert status.get("connected") is True and status.get("rpc") is False, status  # connected, yet refused
+    # (The kill itself is reported first, as "stopped unexpectedly"; then the relaunched engine.)
+    refused = lambda: (d := dashboard(app, token)).get("state") == "error" and "refuses its requests" in d["message"]  # noqa: E731
+    assert wait_for(refused, 60), dashboard(app, token)
+    # The gateway is not affected: same Reticulum process, healthy app.
+    assert app.pid("meshbeacon.node") == node and app.health()

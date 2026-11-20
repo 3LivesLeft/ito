@@ -124,7 +124,7 @@ def test_fuzz_validated_input_always_renders_exact_structure(peers, transport):
 
 
 def test_the_messaging_client_config_is_a_client_only():
-    """M4/IS-3a: no interfaces, no transport, no RPC key; and the node shares only when asked."""
+    """M4: no interfaces and no transport; and the node shares only when asked."""
     cfg = parsed(rnsconfig.render_client())
     assert cfg["reticulum"]["share_instance"] == "Yes" and cfg["reticulum"]["enable_transport"] == "No"
     assert "rpc_key" not in cfg["reticulum"] and not cfg["interfaces"]
@@ -133,3 +133,34 @@ def test_the_messaging_client_config_is_a_client_only():
         rnsconfig.render_client(instance_name="../x")
     assert parsed(rnsconfig.render(Settings(), KEY))["reticulum"]["share_instance"] == "No"
     assert parsed(rnsconfig.render(Settings(), KEY, share_instance=True))["reticulum"]["share_instance"] == "Yes"
+
+
+def test_the_engine_is_given_the_nodes_rpc_key_and_nothing_else():
+    """ADR 0023: the client configuration carries the node's key (RNS 1.6.0 authenticates every
+    local client with it); a malformed key is refused rather than silently replaced by RNS."""
+    cfg = parsed(rnsconfig.render_client(rpc_key=KEY))
+    assert cfg["reticulum"]["rpc_key"] == KEY and not cfg["interfaces"]
+    expected = {"enable_transport", "share_instance", "instance_name", "panic_on_interface_error", "rpc_key"}
+    assert set(cfg["reticulum"]) == expected
+    for bad in ("", "zz" * 32, KEY[:-2], KEY + "00", KEY.upper(), KEY[:32] + "\n" + KEY[32:]):
+        with pytest.raises(rnsconfig.RenderError):
+            rnsconfig.render_client(rpc_key=bad)
+
+
+def test_interface_management_is_off_whenever_the_instance_is_shared():
+    """ADR 0023: what the key allows is narrowed on the node: no interface attach, detach or
+    reload over RPC. Without a shared instance there is no RPC listener, and nothing changes."""
+    shared = parsed(rnsconfig.render(Settings(), KEY, share_instance=True))["reticulum"]
+    assert shared["enable_interface_management"] == "No"
+    alone = parsed(rnsconfig.render(Settings(), KEY))["reticulum"]
+    assert "enable_interface_management" not in alone
+
+
+def test_the_shared_rpc_key_file_is_read_strictly(tmp_path):
+    path = tmp_path / "rpc_key"
+    assert rnsconfig.read_shared_rpc_key(path) is None  # missing
+    path.write_text(KEY + "\n")
+    assert rnsconfig.read_shared_rpc_key(path) == KEY
+    for bad in ("", "not a key", KEY[:-1], KEY + "0", KEY.upper(), "\xff" * 64):
+        path.write_text(bad, encoding="latin-1")
+        assert rnsconfig.read_shared_rpc_key(path) is None, bad

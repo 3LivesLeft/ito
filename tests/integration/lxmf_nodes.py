@@ -53,8 +53,8 @@ def hub(folder: Path, port: int, instance: str) -> None:
     }  # several new peers announcing at once would be held back
     import secrets
 
-    # A key of the hub's own. The engine is never given it, as on MeshBeacon's node (IS-3a); only
-    # the lxmd fixture is, because a propagation node must check its clients' link identities.
+    # A key of the hub's own, shared with its local clients (the engine and the lxmd fixture) as
+    # MeshBeacon's init step shares the node's key with the engine (ADR 0023).
     folder.mkdir(parents=True, exist_ok=True)
     key = secrets.token_hex(32)
     (folder / "rpc_key").write_text(key)
@@ -180,7 +180,7 @@ def lxmd(folder: Path, instance: str, rpc_key_file: Path) -> None:
     """Prepare an ``lxmd`` propagation node (the unmodified daemon) and run it in this process.
 
     It is a local client of the hub's shared instance, like the engine: a hub without transport
-    does not forward between two of its TCP peers. Unlike the engine it holds the hub's RPC key:
+    does not forward between two of its TCP peers. Like the engine it holds the hub's RPC key:
     without it RNS 1.6.0 drops the link identifications a propagation node depends on."""
     import os
 
