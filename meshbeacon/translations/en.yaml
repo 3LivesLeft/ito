@@ -6,7 +6,7 @@ configuration:
       a name you choose, a host (for example rns.example.org or an IP address) and a port. Network
       name and passphrase are only needed if the peer's operator gave you them.
       Privacy: the operator of each peer can see your home's public IP address and how much data
-      you exchange. They cannot read your end-to-end-encrypted Reticulum traffic. MeshBeacon makes
+      you exchange. They cannot read your end-to-end-encrypted Reticulum traffic. ito makes
       no connections until you add a peer.
   transport:
     name: Share my connection with others (transport mode)
@@ -18,25 +18,25 @@ configuration:
   log_level:
     name: Log detail
     description: >-
-      How much MeshBeacon and Reticulum write to the Log tab. "normal" is right for most people.
+      How much ito and Reticulum write to the Log tab. "normal" is right for most people.
       "detailed" helps with troubleshooting; addresses and keys are always removed from the log.
   memory_limit_mb:
     name: "Advanced: memory limit (MB)"
     description: >-
-      If the Reticulum service uses more memory than this, MeshBeacon restarts it to protect Home
+      If the Reticulum service uses more memory than this, ito restarts it to protect Home
       Assistant. The default (256 MB) suits almost everyone.
   replace_identity:
     name: "Advanced: replace identity on next start"
     description: >-
       Creates a new identity for your node, which gives it a new address. Only use this if you
       really want to start again. The previous identity is kept in the app's data folder. Switch
-      this off again after the restart; MeshBeacon will not start while it is left on.
+      this off again after the restart; ito will not start while it is left on.
   home_assistant_integration:
-    name: Show MeshBeacon's status in Home Assistant
+    name: Show ito's status in Home Assistant
     description: >-
-      Off by default. On: Home Assistant offers to add the MeshBeacon integration, which shows
+      Off by default. On: Home Assistant offers to add the ito integration, which shows
       your node's status, peers, traffic and resource use as sensors with history. The status
       is shared only with Home Assistant, over its internal network, encrypted and protected
       by a key that changes every time the app starts. Nothing is sent anywhere else, and Home
-      Assistant cannot control your node through it. You also need to install the MeshBeacon
+      Assistant cannot control your node through it. You also need to install the ito
       integration in Home Assistant once (see the Documentation tab).
