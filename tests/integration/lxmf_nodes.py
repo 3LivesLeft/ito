@@ -116,6 +116,11 @@ def peer(folder: Path, port: int, announce: bool) -> None:
             destination = RNS.Destination(
                 RNS.Identity.recall(target), RNS.Destination.OUT, RNS.Destination.SINGLE, "lxmf", "delivery"
             )
+            if command.get("unstamped"):
+                # MS-9, no stamp at all: forget the cost this peer heard in the recipient's announce
+                # (LXMRouter's public update_stamp_cost, on this test peer's own router). LXMF then
+                # sends without a stamp, as a sender that never heard, or ignores, the cost would.
+                router.update_stamp_cost(target, None)
             lxm = LXMF.LXMessage(
                 destination,
                 me,
@@ -131,12 +136,17 @@ def peer(folder: Path, port: int, announce: bool) -> None:
             else:
                 lxm.set_content_from_string(command["content"])
             tag = command.get("tag", "")
-            # stamp_value: the strength of the stamp LXMF made (LXMessage's public attribute).
+            # stamp_value: the strength of the stamp LXMF made; stamped: whether it made one at all
+            # (LXMessage's public attributes).
             lxm.register_delivery_callback(
-                lambda m, tag=tag: emit({"event": "delivered", "tag": tag, "stamp_value": m.stamp_value})
+                lambda m, tag=tag: emit(
+                    {"event": "delivered", "tag": tag, "stamp_value": m.stamp_value, "stamped": m.stamp is not None}
+                )
             )
             lxm.register_failed_callback(
-                lambda m, tag=tag: emit({"event": "failed", "tag": tag, "stamp_value": m.stamp_value})
+                lambda m, tag=tag: emit(
+                    {"event": "failed", "tag": tag, "stamp_value": m.stamp_value, "stamped": m.stamp is not None}
+                )
             )
             router.handle_outbound(lxm)
         elif command["cmd"] == "announced":  # MS-3: what the recipient's announce carries
