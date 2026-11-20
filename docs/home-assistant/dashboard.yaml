@@ -1,4 +1,6 @@
 # MeshBeacon overview: an example dashboard built only from Home Assistant's own cards.
+# Optional: MeshBeacon's own panel (sidebar) needs no dashboard. Branding: docs/branding.md (the
+# icon is mdi:lighthouse-on; native cards take their colours from your Home Assistant theme).
 # It is a view of the integration's entities, not a second monitoring implementation: history and
 # statistics come from Home Assistant's recorder.
 #
@@ -10,7 +12,7 @@ title: MeshBeacon
 views:
   - title: Overview
     path: meshbeacon
-    icon: mdi:access-point-network
+    icon: mdi:lighthouse-on
     cards:
       - type: tile
         entity: sensor.meshbeacon_status

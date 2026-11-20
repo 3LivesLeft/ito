@@ -1,0 +1,10 @@
+#!/bin/sh
+# Reticulum as its own user, mb-rns (ADR 0018). It starts only when the core asks for one run
+# (s6-svc -o): the "down" file keeps it from starting by itself, and the core applies the restart
+# policy (ADR 0005). Output and the status line go to FIFOs that this script opens as root, so
+# Reticulum's user cannot open them, or any other channel, itself.
+exec >/run/meshbeacon-io/reticulum/out 2>&1 3>/run/meshbeacon-io/reticulum/status
+umask 077
+# Low priority, as before (Home Assistant always wins CPU contention).
+exec nice -n 10 /command/s6-setuidgid mb-rns /usr/local/bin/python3 -I -u -m meshbeacon.node \
+    --config /data/reticulum --status-fd 3 --interval 10

@@ -28,12 +28,20 @@ jobs:
         with: { persist-credentials: false }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
-      - run: pip install -r requirements-dev.txt
+      - run: pip install --require-hashes -r requirements-dev.txt
       - run: ruff check meshbeacon/core custom_components tests tools
       - run: ruff format --check meshbeacon/core custom_components tests tools
       - run: mypy
+      - name: Release layout (app store, Marketplace, one version everywhere)
+        run: python tools/check_release.py
+      - name: Panel and design-token tests, including WCAG contrast (Node's built-in runner; no packages)
+        run: node --test tests/frontend/*.test.mjs
       - name: Shell scripts
-        run: shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/meshbeacon/run meshbeacon/rootfs/etc/services.d/meshbeacon/finish tests/container/build_localbase.sh
+        run: >-
+          shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/*/run
+          meshbeacon/rootfs/etc/services.d/*/finish tests/container/build_localbase.sh
+          meshbeacon/rootfs-messaging/etc/cont-init.d/20-messaging meshbeacon/rootfs-messaging/etc/services.d/*/run
+          meshbeacon/rootfs-messaging/etc/services.d/*/finish
       - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           dockerfile: meshbeacon/Dockerfile
@@ -47,12 +55,12 @@ jobs:
         with: { persist-credentials: false }
       - name: Download test dependencies (network allowed only for this step)
         run: |
-          docker run --rm -v "$PWD:/src" -w /src python:3.13-slim \
+          docker run --rm -v "$PWD:/src" -w /src python:3.13.18-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90 \
             pip download -q -d /src/.wheelhouse -r requirements-test.txt
       - name: Run tests with no network access
         run: |
-          docker run --rm --network none -v "$PWD:/src" -w /src python:3.13-slim sh -c '
-            pip install -q --no-index --find-links /src/.wheelhouse -r requirements-test.txt &&
+          docker run --rm --network none -v "$PWD:/src" -w /src python:3.13.18-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90 sh -c '
+            pip install -q --require-hashes --no-index --find-links /src/.wheelhouse -r requirements-test.txt &&
             python -m pytest -m "not container" -p no:cacheprovider'
 
   home-assistant:
@@ -63,10 +71,10 @@ jobs:
         with: { persist-credentials: false }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.14" }
-      - run: pip install -r requirements-ha-test.txt
+      - run: pip install --require-hashes -r requirements-ha-test.txt
       - name: Type check (strict, against Home Assistant's own types)
         run: mypy --strict --python-version 3.14 custom_components/meshbeacon
-      - name: Integration tests (HTTP is mocked; no network)
+      - name: Integration tests (HTTP mocked or on 127.0.0.1 only; no network)
         run: >-
           python -m pytest tests/ha -p no:cacheprovider
           -o "pythonpath=meshbeacon/core ." -o asyncio_mode=auto
@@ -80,7 +88,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.14" }
       - name: Install Home Assistant in a virtual environment (it refuses to run outside one)
-        run: python -m venv "$RUNNER_TEMP/ha" && "$RUNNER_TEMP/ha/bin/pip" install -r requirements-ha-smoke.txt
+        run: python -m venv "$RUNNER_TEMP/ha" && "$RUNNER_TEMP/ha/bin/pip" install --require-hashes -r requirements-ha-smoke.txt
       - name: Type check against this release
         run: '"$RUNNER_TEMP/ha/bin/mypy" --strict --python-version 3.14 custom_components/meshbeacon'
       - name: Real Home Assistant with the integration and a fake status API (127.0.0.1 only)
@@ -104,7 +112,13 @@ jobs:
         with: { persist-credentials: false }
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         if: matrix.emulated == '1'
+        with:
+          image: tonistiigi/binfmt:qemu-v10.2.3@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+          cache-image: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=moby/buildkit:v0.34.2@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe
+          cache-binary: false
       - name: Build image (pinned HA base image)
         run: |
           docker buildx build --load --platform "${{ matrix.platform }}" \
@@ -112,12 +126,48 @@ jobs:
             -t "meshbeacon:ci-${{ matrix.arch }}" meshbeacon
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
-      - run: pip install -r requirements-test.txt
+      - run: pip install --require-hashes -r requirements-test.txt
       - name: Container security and behaviour tests
         env:
           MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
           MESHBEACON_EMULATED: ${{ matrix.emulated }}
         run: python -m pytest -m container tests/container -s -p no:cacheprovider
+      - name: Build the messaging development image (M4; target messaging-dev, never released)
+        if: matrix.arch == 'amd64'
+        run: |
+          docker buildx build --load --platform "${{ matrix.platform }}" \
+            --build-arg BUILD_ARCH=${{ matrix.arch }} --target messaging-dev \
+            -t "meshbeacon:ci-messaging-dev" meshbeacon
+      - name: Messaging engine lifecycle, isolation and production exclusion (M4)
+        if: matrix.arch == 'amd64'
+        env:
+          MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
+          MESHBEACON_MESSAGING_IMAGE: meshbeacon:ci-messaging-dev
+        run: python -m pytest -m container tests/container/test_messaging_container.py -s -p no:cacheprovider -rA
+      - name: Messaging engine confined by AppArmor (development profile; production profile unchanged)
+        # The development image's profile is the production profile plus the engine's socket folder,
+        # derived here and never shipped. Denials other than none are reported and fail the job.
+        if: (success() || failure()) && matrix.arch == 'amd64'
+        env:
+          MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
+          MESHBEACON_MESSAGING_IMAGE: meshbeacon:ci-messaging-dev
+          MESHBEACON_APPARMOR: meshbeacon-dev-ci
+        run: |
+          sudo aa-status --enabled
+          sed -e 's/^profile meshbeacon /profile meshbeacon-dev-ci /' \
+              -e 's|^\(\s*\)/run/meshbeacon-io/{,\*\*} rw,|&\n\1/run/meshbeacon-messaging/{,**} rw,|' \
+              meshbeacon/apparmor.txt > "$RUNNER_TEMP/meshbeacon-dev-ci"
+          grep -q "/run/meshbeacon-messaging/" "$RUNNER_TEMP/meshbeacon-dev-ci"
+          sudo apparmor_parser --replace --write-cache "$RUNNER_TEMP/meshbeacon-dev-ci"
+          python -m pytest -m container tests/container/test_messaging_container.py -s -p no:cacheprovider -rA \
+            -k "not production and not options"
+          sleep 2
+          sudo journalctl -k --no-pager | grep -E 'apparmor="(DENIED|ALLOWED)".*meshbeacon-dev-ci' > "$RUNNER_TEMP/dev-denials" || true
+          if [ -s "$RUNNER_TEMP/dev-denials" ]; then
+            tail -50 "$RUNNER_TEMP/dev-denials"
+            echo "::error::AppArmor denials for the messaging development image (above)"
+            exit 1
+          fi
       - name: Load the AppArmor profile into the runner's kernel (enforce mode)
         if: (success() || failure()) && matrix.arch == 'amd64'
         run: |
@@ -170,13 +220,22 @@ jobs:
       - name: Licence allow-list check
         if: matrix.arch == 'amd64'
         run: python tools/check_licences.py sbom-amd64.spdx.json
-      - name: Image vulnerability scan
+      - name: Image vulnerability scan (any critical finding fails)
         if: matrix.arch == 'amd64'
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with:
           image: meshbeacon:ci-amd64
           fail-build: true
           severity-cutoff: critical
+          output-format: table
+      - name: Image vulnerability scan (a high finding with a fix available fails)
+        if: matrix.arch == 'amd64'
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: meshbeacon:ci-amd64
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true
           output-format: table
 
   security:
@@ -187,9 +246,17 @@ jobs:
         with: { persist-credentials: false, fetch-depth: 0 }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
-      - run: pip install pip-audit==2.10.0
+      - run: pip install --require-hashes -r requirements-dev.txt
       - name: Vulnerability scan of pinned runtime dependencies
-        run: pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements.txt
+        run: |
+          pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements.txt
+          # M4: the messaging development image's only extra dependency (never in production images)
+          pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements-messaging.txt
+      - name: Vulnerability scan of the hash-locked CI and release tooling
+        run: |
+          for lock in requirements-dev.txt requirements-test.txt requirements-release.txt; do
+            pip-audit --require-hashes --disable-pip --no-deps -r "$lock"
+          done
       - name: Secret scan (full history)
         run: |
           docker run --rm -v "$PWD:/repo" \

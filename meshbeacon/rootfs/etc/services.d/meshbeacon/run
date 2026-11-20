@@ -1,14 +1,41 @@
 #!/bin/sh
 # Start the MeshBeacon core as the unprivileged service user (architecture §4.7).
+#
+# A root start step (core/meshbeacon/relay_link.py) runs first and hands the core its discovery
+# credential without putting any secret in a process environment (M1.2, threat T72):
+# - newer Supervisors give the app its own socket, which only root can open: the start step opens
+#   the core's link to the root discovery relay (services.d/discovery-relay) and passes it on;
+#   the Supervisor token is not passed at all;
+# - otherwise (the compatibility path, ADR 0006) it reads the Supervisor token from s6-overlay's
+#   container environment, which only root can read, and passes it through a one-time pipe.
+# It always starts the core, so a relay or token problem never stops the node.
 exec 2>&1
 umask 077
-# Optional Home Assistant integration (ADR 0006): the core needs the Supervisor token only to send a
-# discovery message. s6-overlay keeps the container environment in this directory, readable by root.
-# The core removes the token from its environment at once, so neither the prepare step nor
-# Reticulum ever receives it.
-token_file=/run/s6/container_environment/SUPERVISOR_TOKEN
-if [ -z "${SUPERVISOR_TOKEN:-}" ] && [ -r "$token_file" ]; then
-    SUPERVISOR_TOKEN="$(cat "$token_file")"
-    export SUPERVISOR_TOKEN
+unset SUPERVISOR_TOKEN
+# ADR 0018: Reticulum and its prepare step are s6 services under their own user, which start down.
+# Let the core's group control exactly the services that start down (start once, stop, kill, status,
+# events), once s6 supervises them.
+for down in /etc/services.d/*/down; do
+    svc="$(basename "$(dirname "$down")")"
+    i=0
+    while [ ! -p "/run/service/$svc/supervise/control" ] && [ "$i" -lt 150 ]; do
+        sleep 0.1
+        i=$((i + 1))
+    done
+    /command/s6-svperms -G meshbeacon -E meshbeacon "/run/service/$svc" >/dev/null 2>&1 \
+        || echo "[meshbeacon] warning: could not hand the $svc service to the core"
+done
+export MESHBEACON_S6=1
+socket_file=/run/s6/container_environment/SUPERVISOR_SOCKET
+if [ -z "${SUPERVISOR_SOCKET:-}" ] && [ -r "$socket_file" ]; then
+    SUPERVISOR_SOCKET="$(cat "$socket_file")"
 fi
-exec /command/s6-setuidgid meshbeacon /usr/local/bin/python3 -I -m meshbeacon.supervisor
+if [ -n "${SUPERVISOR_SOCKET:-}" ] && [ -S "$SUPERVISOR_SOCKET" ]; then
+    export SUPERVISOR_SOCKET
+    exec /usr/local/bin/python3 -I -m meshbeacon.relay_link --relay /run/meshbeacon/discovery.sock -- \
+        /command/s6-setuidgid meshbeacon /usr/local/bin/python3 -I -m meshbeacon.supervisor
+fi
+unset SUPERVISOR_SOCKET
+exec /usr/local/bin/python3 -I -m meshbeacon.relay_link \
+    --token-file /run/s6/container_environment/SUPERVISOR_TOKEN -- \
+    /command/s6-setuidgid meshbeacon /usr/local/bin/python3 -I -m meshbeacon.supervisor

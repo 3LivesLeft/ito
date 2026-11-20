@@ -9,6 +9,7 @@ the intended structure before it is used.
 
 from __future__ import annotations
 
+import re
 import secrets
 from typing import Any
 
@@ -44,7 +45,8 @@ def new_rpc_key() -> str:
     return key
 
 
-def intended_structure(settings: Settings, rpc_key: str) -> dict[str, Any]:
+def intended_structure(settings: Settings, rpc_key: str, *, share_instance: bool = False) -> dict[str, Any]:
+    """``share_instance`` only for development images with the messaging engine (M4, IS-3a)."""
     bytes.fromhex(rpc_key)
     interfaces: dict[str, dict[str, str]] = {}
     for peer in settings.peers:
@@ -63,7 +65,9 @@ def intended_structure(settings: Settings, rpc_key: str) -> dict[str, Any]:
         "reticulum": {
             "enable_transport": "Yes" if settings.transport else "No",
             # No shared instance: no local sockets and no RPC listener are opened (verified).
-            "share_instance": "No",
+            # With messaging (development images only), the engine connects as a client of the
+            # shared instance; the RPC listener needs this key, which the engine never has (IS-3a).
+            "share_instance": "Yes" if share_instance else "No",
             "instance_name": INSTANCE_NAME,
             "rpc_key": rpc_key,
             "panic_on_interface_error": "No",
@@ -105,10 +109,45 @@ def _check_forbidden(structure: dict[str, Any]) -> None:
             raise RenderError("refusing to render an interface type that v0.1 does not allow")
 
 
-def render(settings: Settings, rpc_key: str) -> str:
+def render(settings: Settings, rpc_key: str, *, share_instance: bool = False) -> str:
     """Return the configuration text, verified to parse back to exactly the intended structure."""
-    expected = intended_structure(settings, rpc_key)
+    expected = intended_structure(settings, rpc_key, share_instance=share_instance)
     _check_forbidden(expected)
+    return _write(expected)
+
+
+def client_structure(loglevel: str = "quiet") -> dict[str, Any]:
+    """The messaging engine's own configuration: a client of the node's shared instance only.
+
+    No interfaces and no transport; ``instance_name`` must match the node's. No RPC key: the
+    engine has no business controlling the node (IS-3a). Verified with RNS 1.6.0 and LXMF 1.3.0
+    (tests/integration/test_messaging_lxmf.py): sending, receiving and propagation all work
+    without it. RNS then logs failed "destination used" updates (RNS/Reticulum.py
+    ``_used_destination_data``) and drops link identifications it cannot check against the
+    node's blackhole list (RNS/Link.py, ``is_blackholed``), which fails closed.
+    """
+    return {
+        "reticulum": {
+            "enable_transport": "No",
+            "share_instance": "Yes",
+            "instance_name": INSTANCE_NAME,
+            "panic_on_interface_error": "No",
+        },
+        "logging": {"loglevel": str(LOGLEVELS[loglevel])},
+        "interfaces": {},
+    }
+
+
+def render_client(loglevel: str = "quiet", *, instance_name: str = INSTANCE_NAME) -> str:
+    if not re.fullmatch(r"[a-z0-9_-]{1,32}", instance_name):
+        raise RenderError("invalid instance name")
+    expected = client_structure(loglevel)
+    expected["reticulum"]["instance_name"] = instance_name  # tests use a name of their own
+    _check_forbidden(expected)
+    return _write(expected)
+
+
+def _write(expected: dict[str, Any]) -> str:
     config_obj = _configobj()
     cfg = config_obj()
     cfg.initial_comment = [

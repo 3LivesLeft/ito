@@ -1,0 +1,7 @@
+# Home Assistant integration tests (tests/ha). Home Assistant needs Python 3.14, so these run in a
+# separate CI job from the app's Python 3.13 tests. Pinned by version.
+pytest-homeassistant-custom-component==0.13.375
+# The sidebar panel (ADR 0007) depends on the frontend; this is the version Home Assistant 2026.10.4 pins.
+home-assistant-frontend==20260930.5
+mypy==2.4.1
+pyyaml==6.0.3

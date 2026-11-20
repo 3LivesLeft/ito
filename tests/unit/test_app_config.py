@@ -86,8 +86,14 @@ def test_apparmor_profile_name_matches_slug():
 
 
 def test_dockerfile_base_pinned_by_digest():
-    first_from = next(line for line in (APP / "Dockerfile").read_text().splitlines() if line.startswith("FROM"))
-    assert re.search(r"@sha256:[0-9a-f]{64}$", first_from)
+    lines = [line for line in (APP / "Dockerfile").read_text().splitlines() if line.startswith("FROM")]
+    assert re.search(r"@sha256:[0-9a-f]{64}( AS app)?$", lines[0])
+    # Every later stage builds on an earlier one (M4: messaging-dev and production), never on an
+    # unpinned image; and the last stage, the default target, is the production image.
+    stages = {m.group(1) for line in lines if (m := re.search(r" AS (\S+)$", line))}
+    for line in lines[1:]:
+        assert line.split()[1] in stages, line
+    assert lines[-1] == "FROM app AS production"
 
 
 def test_requirements_hash_pinned_and_rns_unmodified():

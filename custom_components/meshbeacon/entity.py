@@ -9,10 +9,12 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .client import Peer
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import MeshBeaconCoordinator
+from .nodes import node_key
 
 
 def node_id(coordinator: MeshBeaconCoordinator) -> str:
-    return coordinator.config_entry.unique_id or coordinator.config_entry.entry_id
+    """The stable prefix of this node's unique IDs; never the app's slug as such (nodes.py)."""
+    return node_key(coordinator.config_entry)
 
 
 def node_device(coordinator: MeshBeaconCoordinator) -> DeviceInfo:

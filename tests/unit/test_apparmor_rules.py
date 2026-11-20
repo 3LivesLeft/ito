@@ -5,7 +5,8 @@ from pathlib import Path
 
 from tests.apparmor.rules import Profile, glob_to_regex, load
 
-PROFILE = load(Path(__file__).resolve().parents[2] / "meshbeacon" / "apparmor.txt")
+ROOT = Path(__file__).resolve().parents[2]
+PROFILE = load(ROOT / "meshbeacon" / "apparmor.txt")
 
 # Programs started during initialisation and at run time. Scripts need read AND execute.
 SCRIPTS = [
@@ -49,6 +50,43 @@ def test_writes_are_limited():
         assert "w" not in PROFILE.perms(path), path
 
 
+# s6-overlay 3.2.3.2's run-time paths (libexec/preinit, s6-linux-init's container skeleton, s6-rc).
+S6_RUN_PATHS = [
+    "/run/test of writability",
+    "/run/s6/container_environment/SUPERVISOR_TOKEN",
+    "/run/s6/basedir/bin/halt",
+    "/run/s6/db/servicedirs/x",
+    "/run/",  # s6-linux-init's chmod and chown of /run itself (CI enforcement, M1.2)
+    "/run/s6-rc",
+    "/run/s6-rc:s6-rc-init:BJBmMn/",  # s6-rc-init's live folder, created with a trailing slash
+    "/run/s6-rc:s6-rc-init:AbCd/servicedirs/meshbeacon/supervise/status",
+    "/run/service/meshbeacon/supervise/control",
+    "/run/service/.s6-svscan/control",
+    "/run/uncaught-logs/current",
+    "/run/s6-linux-init-container-results/exitcode",
+]
+
+
+def test_run_is_writable_only_where_s6_overlay_keeps_its_state():
+    """M1.2 (M-3): /run is no longer writable as a whole."""
+    for path in S6_RUN_PATHS:
+        assert "w" in PROFILE.perms(path), path
+    for path in ("/run/x", "/run/evil/discovery.sock", "/run/meshbeacon-other/x", "/run/supervisor/api/x"):
+        assert "w" not in PROFILE.perms(path), path
+    assert "r" in PROFILE.perms("/run/")
+    assert "x" not in PROFILE.perms("/run/x") and "k" not in PROFILE.perms("/run/x")
+
+
+def test_the_relay_folder_is_for_its_owner_only():
+    """M1.2 (M-1, M-3): an owner rule, so a process of another user (Reticulum) is refused even if
+    the folder's mode were wrong; the relay (root, the owner) keeps full use of it."""
+    for path in ("/run/meshbeacon/", "/run/meshbeacon/discovery.sock"):
+        assert "w" in PROFILE.perms(path, owner=True), path
+        assert not PROFILE.perms(path, owner=False) & {"w", "k"}, path
+    sock = "/run/os/supervisor/apps/ce27fbb5_meshbeacon/supervisor.sock"
+    assert "w" in PROFILE.perms(sock, owner=True) and "w" not in PROFILE.perms(sock, owner=False)
+
+
 def test_no_write_and_execute_on_app_data():
     for path in ("/data/meshbeacon/x", "/data/reticulum/storage/x", "/tmp/x"):
         assert "x" not in PROFILE.perms(path), path
@@ -72,3 +110,16 @@ def test_capabilities_are_exactly_the_reviewed_set():
     assert granted == {"chown", "fowner", "dac_override", "setuid", "setgid", "kill"}
     assert denied == {"fsetid"}
     assert not any(re.fullmatch(r"capability,", r) for r in rules), "blanket capability rule"
+
+
+def test_supervisor_socket_and_relay_rules():
+    """M1: the relay listens in /run/meshbeacon and connects to the Supervisor's per-app socket
+    (mounted at /run/supervisor/api). The relay's script must be runnable like the core's."""
+    for path in ("/run/meshbeacon/discovery.sock", "/run/supervisor/api/supervisor.sock"):
+        assert "w" in PROFILE.perms(path), path  # as their owner (root), see the test above
+        assert "x" not in PROFILE.perms(path), path
+    assert "network unix," in (ROOT / "meshbeacon" / "apparmor.txt").read_text()
+    # AppArmor checks the name the Supervisor bound the socket to, inside its own container.
+    assert "w" in PROFILE.perms("/run/os/supervisor/apps/ce27fbb5_meshbeacon/supervisor.sock")
+    for script in ("/etc/services.d/discovery-relay/run", "/etc/services.d/discovery-relay/finish"):
+        assert PROFILE.can_exec(script) and PROFILE.can_read(script), script

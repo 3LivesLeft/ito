@@ -33,7 +33,11 @@ reference the [feasibility study](../research/feasibility.md) and
  [Supervisor: watchdog, backups] ──B5── /data, health endpoint
  [Other apps on host] ──B4── namespaces, abstract sockets
  [HA Core + integration (v0.2)] ──B2── local API
+ [Browser: HA frontend + MeshBeacon panel (v0.2, ADR 0007)] ──B8── HA websocket (logged in)
+ [Supervisor ingress proxy (proposed, ADR 0013)] ──B11── built-in UI listener (plain HTTP, read-only)
  [CI, registry, PyPI, AI tools] ──B6── source and image build
+ [Supervisor per-app socket (newer Supervisors)] ──B12── discovery relay (root) ◄── link opened by root, held by core (meshbeacon user)
+ [App store and Marketplace: this GitHub repository, GHCR images] ──B13── what users install and update
 ```
 
 ## 3. Threats and controls (v0.1)
@@ -66,7 +70,7 @@ reference the [feasibility study](../research/feasibility.md) and
 | T24 | — | — | Upstream RNS unmaintained or slow to fix (mirror-only — **verified**) | Release monitoring; compatibility tests; ADR 0001 review triggers | Accepted residual risk |
 | **T26** | B4 | I/E | **High-privilege co-installed apps** (e.g. an SSH/terminal app with protection mode disabled) can reach the Docker daemon and read any app's `/data`, including the identity (**[Assumption]**) | Outside MeshBeacon's control: documented in `DOCS.md` and SECURITY.md; recommend keeping protection mode enabled | Accepted residual risk (documented) |
 | **T27** | B1 | I/D | **DNS resolver** (e.g. AdGuard Home) logs peer lookups or blocks a peer hostname | Document; plain "cannot resolve" message with no restart loop; reference tests C5–C8 | Planned |
-| **T28** | B2 | I | **Another app on the internal network reads the status API** | Bearer token; no listener while the option is off; token only in Supervisor discovery, which only HA Core can read (verified, Supervisor `e610ca8`) | Implemented (v0.2) |
+| **T28** | B2 | I | **Another app on the internal network reads the status API** | Bearer token; no listener while the option is off. The token and certificate fingerprint reach HA Core only through Supervisor discovery, which other apps cannot read through the Supervisor API (verified, Supervisor `e610ca8`). **Correction (19 Nov 2026):** the app posts the discovery message to `http://supervisor` over **plain HTTP on the internal bridge**. That request carries the status token, the fingerprint and the app's `SUPERVISOR_TOKEN` (`core/meshbeacon/api.py`, `SUPERVISOR_URL` and `Discovery._request`). An app able to observe that bridge (the `NET_RAW` spoofing of T34) could capture them. **Impact in v0.2:** the status token allows **reading** the non-identifying status only, until the next app start; the fingerprint cannot impersonate the API (no private key); the `SUPERVISOR_TOKEN` grants only what MeshBeacon's manifest allows (discovery; no `hassio_api`), and T35's host check stops a redirect. Accepted residual (RR-9a). **No write-capable credential may ever be sent this way** | Implemented (v0.2); residual RR-9a |
 | **T29** | B2 | I | **Token leaks** through logs, exceptions, flow listings, diagnostics or backups | Token in memory only in the app; never logged by app or integration (tested under every failure mode with debug logging); diagnostics redact it; rotated every start. HA's config entry holds it in plain JSON, so it is in `/config` and HA backups until the next app start (residual RR-1) | Implemented (v0.2); residual documented |
 | **T30** | B2 | D | **API request flood or slow clients** starve the core or the watchdog | API: ≤ 4 connections, 5 s inactivity timeout, 10 s absolute deadline, pre-built snapshot. `/health` on its own server: ≤ 16 connections, 5 s deadline. Errors counted, not printed. 30 s flood test: watchdog answered throughout, Reticulum unaffected | Implemented (v0.2); residual RR-2 (sustained flood above 16 connections) |
 | **T31** | B2 | I | **Identifier disclosure** through metrics (hashes, peer hosts, network names, passphrases) | Allow-listed counters only; no hosts, network names or hashes in the snapshot (asserted in tests); peer names only | Implemented (v0.2) |
@@ -75,15 +79,25 @@ reference the [feasibility study](../research/feasibility.md) and
 | **T34** | B2 | I/T/S | **Interception or impersonation on the internal network.** Apps keep `NET_RAW` unless the Supervisor's `app_drop_net_raw` flag is on (verified, default off), so an app can ARP-spoof and read or alter plain HTTP | TLS 1.3; throwaway certificate per start; fingerprint delivered by discovery and pinned before the token is sent | Implemented (v0.2) |
 | **T35** | B2 | S/T | **Discovery spoofing**: another app declares the `meshbeacon` service to redirect the integration or capture credentials | Only MeshBeacon slugs; host must be the sending app's own hostname; fingerprint required; entries keyed by the slug the Supervisor sets; a look-alike needs confirmation naming app and slug | Implemented (v0.2); residual RR-3 |
 | **T36** | B5 | D | **Monitoring failure disturbs Reticulum** | Every metrics call, snapshot and discovery step isolated from the supervision loop (a defect of this kind was found and fixed in review) | Implemented (v0.2) |
+| **T37** | B2 | D/T | **Truncated or oversized status response**: one stream read returns only what has arrived, so a fragmented reply was rejected, and an oversized one was misreported (found in the v0.2 review) | `read_bounded()` reads until end of stream, never more than 256 KiB + 1 byte, and refuses a declared oversize before reading; identity encoding; 10 s deadline. Tested over real TLS with 1-byte pieces, chunked, length-less, exact-limit, oversize and truncated replies | Implemented (v0.2, `tests/ha/test_client_reading.py`) |
+| **T38** | B8 | T/E | **Script injection through peer names or messages** in the panel (a peer name is user-chosen and travels through the app) | Every value written with `textContent`, SVG built element by element; a test forbids `innerHTML`, `eval` and similar in the panel's files; preview checked with a hostile name | Implemented (v0.2) |
+| **T39** | B8 | I | **Panel exposes data to the wrong users or to anyone on the LAN** | Panel and its websocket command are admin-only; the command returns only entity IDs and peer names; values travel only over HA's logged-in websocket; the static files (fetchable without login, as all HA frontend files are) hold no data, which a test checks | Implemented (v0.2) |
+| **T40** | B8 | I | **Third-party code or CDN requests** in the panel (tracking, supply chain) | Plain module, no dependencies, no build step; a test fails on any external URL, `fetch`, `XMLHttpRequest` or dynamic remote import | Implemented (v0.2) |
+| **T41** | B8 | I/D | **A second history store** (browser storage) or extra load on HA from the panel | No browser storage (tested); history only from HA's recorder, fetched at most once per chart bucket (≥ 60 s) and only while the page is visible | Implemented (v0.2) |
+| **T42** | B8 | T | **Static path serves more than intended** (for example the integration's other files) | Only `custom_components/meshbeacon/frontend/` is mapped; traversal attempts return 400/403/404 (tested) | Implemented (v0.2) |
 | **T25** | B6 | — | **AI-tool data use**: RNS source given to an AI tool whose provider trains on inputs would risk breaching the Reticulum License's AI condition | Project rules in licensing §6.4: training opted out; documentation rather than source; no datasets | Planned (process control) |
 
 ## 4. Later versions (outline)
 
-- **v0.2 local API and integration:** implemented as T11 and T28–T33 ([ADR 0006](../adr/0006-local-metrics-api.md)).
+- **v0.2 local API and integration:** implemented as T11 and T28–T37 ([ADR 0006](../adr/0006-local-metrics-api.md));
+  sidebar panel as T38–T42 ([ADR 0007](../adr/0007-sidebar-panel.md)).
   Identity import is deferred beyond v0.2.
-- **v0.3 messaging:** LXMF identity 0600; no message content in logs or diagnostics; document that
+- **v0.3 messaging:** proposed threats T43–T58 below (awaiting independent review, nothing implemented). Baseline: LXMF identity 0600; no message content in logs or diagnostics; document that
   HA composes notifications in plaintext before LXMF encrypts them; propagation node opt-in with
   disk quota.
+- **Long-term direction (proposed v0.4+):** public community services need their own threat
+  analysis before design (principles 4 and 5; [forward-compatibility review](../research/long-term-direction.md)).
+  The three items below are now unscheduled; their version labels record the earlier plan.
 - **v0.4 I2P / public gateway:** separate I2P router; public gateway only with RNS native filters,
   stamps enforcement, blackhole sources and a clear exposure statement.
 - **v0.5 RNode:** device access lowers isolation; validate LoRa parameters against regional rules
@@ -92,6 +106,69 @@ reference the [feasibility study](../research/feasibility.md) and
   per-command allowlist mapped to fixed HA actions (no free-form service calls, templates or
   shell); persisted replay protection; rate limiting; audit log; optional confirmation; no
   safety-critical actions by default; external design review before implementation.
+
+### 4.0 Built-in interface through Ingress: proposed threats (ADR 0013; validation in progress)
+
+| ID | Boundary | STRIDE | Threat | Proposed control |
+|---|---|---|---|---|
+| T59 | B11 | S/E | **Ingress header trust bypass**: another app or LAN client sends `X-Ingress-Path` or `X-Remote-User-*` to skip HA's login (a real class of bug elsewhere) | Accept connections only from `172.30.32.2`, checked on the socket peer; never trust forwarded or ingress headers for access; no published port |
+| T60 | B11 | I/T | **Plain-HTTP hop** read or altered by a `NET_RAW` app performing ARP spoofing (as T34) | Read-only; the v0.2 snapshot only (no secrets, hashes, hosts); document `app_drop_net_raw`; residual RR-9. Pending V-1 |
+| T61 | B11 | I/E | **Confidentiality of the plain-HTTP hop** beyond MeshBeacon's own data | **Confirmed from Supervisor 2026.11.0 source; blocking.** Not mitigable inside the app; read-only is **not** a mitigation. Details under responsible disclosure; Ingress not enabled ([options](../research/secure-interface-options.md)) |
+| T65 | B11 | T/E | **Integrity of Ingress content** on an unprotected hop (details under responsible disclosure) | Blocking for any Ingress use until the hop is protected upstream (option B) |
+| T62 | B11 | E/T | **An action through Ingress** (write, configuration, message) forged on the unprotected hop | No actions through Ingress, permanently, while the hop is plain HTTP; writes only on the pinned-TLS path (ADR 0010, proposed) |
+| T63 | B11 | D | **Ingress listener flood** affects the core or watchdog | `BoundedHTTPServer` (≤ 4 connections, deadlines), separate from `/health`; page polls only while visible |
+| T64 | B8/B11 | T | **Script injection or clickjacking** in the built-in UI | `textContent` only (T38); CSP `default-src 'self'; frame-ancestors 'self'`; `nosniff`; no third-party code |
+
+### 4.0a v0.3 installation and distribution (M1; implemented unless marked)
+
+| ID | Boundary | STRIDE | Threat | Control | Status |
+|---|---|---|---|---|---|
+| T67 | B13/B6 | T/E | **A compromised release or image** reaches every installation through the normal update | Base image by digest, packages by hash, actions by SHA; reproducible builds compared in CI (`tools/verify_image.py`); SBOM and provenance attestations; release order and checks in [releasing](../releasing.md); cosign signatures and a protected release environment needing the maintainer's approval (M2); tags never deleted. The Supervisor does not verify signatures, so verification is documented for users | Dry run implemented; publishing controls M2 |
+| T68 | B13 | S | **A look-alike repository** (same name, different owner) offered through a copied link | The documentation's My links carry the exact owner and repository; a test checks them against `project.yaml`; the integration's discovery check accepts only MeshBeacon slugs and asks the user to confirm one from another repository (T35) | Implemented |
+| T72 | B12 | E/T/I | **The discovery relay and the discovery credential**, misused or read by the core or by another process in the container, in particular by the Reticulum child, which handles untrusted network traffic and runs as the same user as the core | **Relay:** root-only socket (0600 in a 0700 root folder) and a peer check: only root may connect. The core never connects itself: its root start step (`relay_link.py`) opens the one link and hands it over. **Supervisor token:** in socket mode it is not passed at all; on the compatibility path the root start step passes it through a **one-time pipe** that the core reads once and closes, so it is in **no process environment**. **Core process:** non-dumpable (`PR_SET_DUMPABLE 0`) before it reads any credential or starts any child, so the kernel refuses other non-root processes, including Reticulum, access to the core's `/proc` environment, descriptors, memory map and memory, and ptrace (precisely: every non-root process without `CAP_SYS_PTRACE`, which is what Reticulum is; root in the container keeps some read access to `/proc/<pid>/environ` and `maps` even without that capability, but root already controls the container); descriptors are non-inheritable and children start with `close_fds`. **Container environment:** s6-overlay keeps a copy of the container's environment, the Supervisor token included, in `/run/s6/container_environment`, readable by every user by default; the root init step makes it root's alone (0700/0600), and the probes check it (M4 WP1; found by the isolation probe). **Result, in both transports:** Reticulum can neither announce nor withdraw, and cannot recover the token. Relay hardening: two fixed operations, rebuilt from validated fields; 8 KiB per request; unfinished requests dropped after 5 s; at most 4 connections served together; the run-time folder created without following links and refused if unexpected; no content logged. **ptrace read vs trace:** MeshBeacon's AppArmor profile denies ptrace *trace* (attach, memory, descriptor copying) but not *read*: in CI, under enforcement, a same-user process could read another's `/proc/<pid>/environ` and descriptor list. The non-dumpable core is therefore the control MeshBeacon owns; AppArmor, Docker's seccomp profile and Yama are further layers whose effect on Home Assistant OS is confirmed only by SO-1. In CI the profile also refused `CAP_SYS_PTRACE` to a privileged process inside the container, so even an administrator's `docker exec --privileged` cannot inspect the core there (observed). **Corrections (M1.2):** the M1 relay accepted any process of the `meshbeacon` user; the first M1.2 change closed that only in socket mode, because on the compatibility path the token stayed readable in the core's initial environment through `/proc` (shown in a container test against the previous image). Both were corrected before any release. **Residual:** the core and Reticulum share a Unix user, so isolation rests on the kernel's dumpable and ptrace rules; separate users are a mandatory gate before M4 or any community service (roadmap, isolation gate IS-1 to IS-4) | Implemented (tests: `test_discovery_relay.py`, `test_token_handoff.py`, `test_discovery_socket.py`, container `assert_isolated` in both transports) |
+| T73 | B2/B12 | I | **Discovery hand-over on today's Supervisors** crosses the internal network in plain HTTP (see T28, RR-9a) | Newer Supervisors: the per-app socket through the relay; the Supervisor token is not passed to the core at all, and a missing relay link never falls back to the internal network. Older ones (every released Supervisor today): the compatibility path, documented in the app's own documentation; no write-capable credential is ever sent this way. **The one-time pipe (T72) protects the token inside the container only; it does nothing for the network transport:** the token, the status token and the fingerprint still travel in plain HTTP to `http://supervisor`, where an app able to observe the bridge could capture them (residual RR-9a). Interception not demonstrated; lab test W3-4 (results kept private) | Partly mitigated |
+| T74 | B2 | I | **A credential in a discovery message is persisted by Home Assistant** (config entries are in `.storage` and in backups) | Config entry v2 keeps only allow-listed keys (`ENTRY_KEYS`); extra fields are dropped on set-up, rediscovery and migration; tested, including against a real Home Assistant 2026.11.2 | Implemented |
+
+### 4.1 v0.3 messaging: proposed threats (status: proposed, awaiting independent review)
+
+New boundaries: **B9** remote LXMF senders → messaging process → HA automations; **B10** HA →
+app messaging API (the first write path, [ADR 0010](../adr/0010-home-assistant-messaging-interface.md)).
+Design: [v0.3 messaging](../research/v0.3-messaging.md).
+
+| ID | Boundary | STRIDE | Threat | Proposed control | Acceptance |
+|---|---|---|---|---|---|
+| T43 | B9 | E/T | **Message content used as a command** by an automation (remote control by the back door) | Content delivered as untrusted text; no command helper; blueprint never acts on content; docs say match on contact only; commands remain v0.6 | MS-11 |
+| T44 | B9 | S | **Spoofed sender** | Accept only `signature_validated` messages from contacts; hold `SOURCE_UNKNOWN` ≤ 10 min, then drop and count | MS-8 |
+| T45 | B9 | D | **Spam and floods** exhaust CPU, disk or HA | Contacts-only by default; stamps in "anyone" mode; tickets for contacts; per-sender and global rate limits; size cap; bounded stores | MS-9, MS-10 |
+| T46 | B9 | T/E | **Malicious payloads** (oversized fields, attachments, crafted UTF-8) exploit parsing in the app, the integration or the panel | Only title and content read, length-capped, validated UTF-8; other fields ignored; panel writes text only (T38) | MS-10, MS-20 |
+| T47 | B10 | E | **The send path is abused** to message arbitrary addresses | Recipients are contact IDs from the app's allow-list only; raw addresses refused | MS-12 |
+| T48 | B10 | S | **Another app uses the messaging API** | Separate 256-bit messaging key, per start, only in discovery (as T28); pinned TLS (T34) | MS-12 |
+| T49 | B10 | D | **HA or an automation loop floods sends** (airtime, stamp CPU) | 10 a minute, 100 a day, per-contact limits; stamp CPU budget | MS-13 |
+| T50 | B10 | T | **Duplicate sends** after timeouts and retries | Idempotency keys (24 h) | MS-5 |
+| T51 | B10 | I | **Status key gains messaging access** | Keys scoped separately; tests that the status key gets 401 on messaging endpoints | MS-12 |
+| T52 | B10 | D | **Long poll starves the status API** | ≤ 1 long poll; one connection slot reserved for status | MS-13 |
+| T53 | — | I | **Message content in HA's recorder, logs, diagnostics or bus history** | Unrecorded attributes; no bus event with content; never logged; diagnostics counts only | MS-7 |
+| T54 | — | I | **Content via mobile push relays** (Apple/Google) | Blueprint omits content by default and explains why | MS-7 |
+| T55 | B5 | I | **Plaintext messages at rest** in `/data/messaging/queue.db` and in app backups | Acknowledged content deleted by default; bounded retention; documented; encrypted backups recommended | MS-4 |
+| T56 | B5 | I/T | **Messaging identity theft or silent replacement** | 0600, validated before start (rule 13), never logged, separate from transport identity ([ADR 0009](../adr/0009-messaging-identity.md)) | MS-2 |
+| T57 | B1 | I | **Metadata disclosure**: recipient hash, size and timing to propagation nodes; announce correlation with the transport identity; display name | Empty display name by default; no telemetry, location or icon fields; documented limits of separation | MS-3 |
+| T66 | B10 | I/T/E | **A new binding weakens messaging protection** (for example a delivery added for convenience whose channel lacks confidentiality, integrity or caller authentication) | Every binding must meet S1–S3 before it may carry content or accept a send; read-only is not an exception; bindings are thin and reviewed (ADR 0014) | MS-22 |
+| T58 | B5 | D | **Messaging failure disturbs transport** (crash, hang, stamp CPU, corrupt queue, full disk) | Separate process ([ADR 0008](../adr/0008-messaging-process.md)), bounded restarts, `nice`, CPU limit for stamps, quarantine of a corrupt queue | MS-15, MS-16 |
+
+### 4.1a M4 messaging engine, as implemented (development image only)
+
+The engine exists only in the `messaging-dev` image target (M4 WP5); production images contain
+none of it. Evidence: [M4 results](../testing/m4-results.md). Changes to the proposed controls above
+are marked.
+
+| ID | Boundary | STRIDE | Threat | Control | Status |
+|---|---|---|---|---|---|
+| T75 | B12 | S/T/D | **Another process uses the RNS shared instance** (IS-3a): in RNS 1.6.0 it is an abstract Unix socket with no peer check | It lives in the app container's own network namespace (no host network), so other containers and apps cannot reach it. The RPC listener needs a key that only Reticulum's user can read; the engine has none, and a wrong key is refused. The production image never shares its instance. **Residual:** any process inside the container can send packets through it | Implemented (container tests) |
+| T76 | B9 | R/I | **A delivery state is read as more than it is** (for example "delivered" as "read", or "stored on node" as "delivered") | Each state documents what it does and does not establish (`contract.STATE_MEANINGS`). LXMF proves delivery before the recipient's policy runs: the MS-9 test shows a sender told "delivered" for a message the engine refused | Implemented |
+| T77 | — | E | **The engine reaches a production image by mistake** | The default target never copies it; container tests scan the file system and every layer; release verification (`verify_image.py`) refuses any layer that holds it | Implemented |
+| T44 (change) | B9 | S | Spoofed sender | As proposed, except that `SOURCE_UNKNOWN` messages are held for **2 minutes** (at most 50) while the sender's key is requested, then re-verified with LXMF's public `unpack_from_bytes` or dropped and counted. Contacts' keys are requested at start and every 30 minutes | Implemented |
+| T45 (change) | B9 | D | Spam and floods | As proposed; tickets are given only to contacts, in "anyone" mode | Implemented (MS-9 negative and positive) |
+| T58 (change) | B5 | D | Messaging failure disturbs transport | As proposed, with health checks over the socket and a pause after five failures in 30 minutes | Implemented (MS-15) |
 
 ## 5. Privacy commitments
 

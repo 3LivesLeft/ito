@@ -2,7 +2,7 @@
   "entity": {
     "sensor": {
       "status": {
-        "default": "mdi:access-point-network"
+        "default": "mdi:lighthouse-on"
       },
       "connectivity": {
         "default": "mdi:lan-connect"

@@ -1,21 +1,65 @@
 #!/bin/sh
-# Root initialisation (architecture §4.7): only prepares MeshBeacon's data folders and hands them
-# to the unprivileged `meshbeacon` user. It never fails the container: if something here goes
-# wrong, the core reports it in plain language instead (ADR 0005 — no restart loops).
+# Root initialisation (architecture §4.7, ADR 0018): prepares the data and run-time folders and
+# hands each to the user that owns it. It never fails the container: if something here goes wrong,
+# the core reports it in plain language instead (ADR 0005 — no restart loops).
+#
+#   meshbeacon (9100)  the management core: /data/meshbeacon
+#   mb-rns     (9101)  Reticulum and its prepare step: /data/reticulum (identity, configuration)
 umask 077
-for dir in /data/meshbeacon /data/reticulum /data/reticulum/storage; do
+# s6-overlay keeps the container's environment (the Supervisor token among it) in this folder, and
+# leaves it readable by every user. Only root's start steps read it: make it root's alone (T72).
+if [ -d /run/s6/container_environment ]; then
+    chmod 0700 /run/s6/container_environment 2>/dev/null \
+        || echo "[meshbeacon] warning: could not protect the container environment"
+    find /run/s6/container_environment -type f -exec chmod 0600 {} + 2>/dev/null || true
+fi
+for dir in /data/meshbeacon /data/reticulum /data/reticulum/storage /data/reticulum/meshbeacon-identity; do
     mkdir -p "$dir" 2>/dev/null || echo "[meshbeacon] warning: could not create $dir"
 done
-chown -R meshbeacon:meshbeacon /data/meshbeacon /data/reticulum 2>/dev/null \
-    || echo "[meshbeacon] warning: could not set ownership of the data folders"
-chmod 0700 /data/meshbeacon /data/reticulum /data/reticulum/storage 2>/dev/null || true
-# options.json is written by the Supervisor; the service user only needs to read it.
+
+# Before ADR 0018 the identity's backup, staged replacement, state and archives were in the core's
+# folder. They belong with the identity, so move them (a rename: atomic, nothing is rewritten).
+# Never overwrite: a copy that is already in place wins, and a differing old copy is kept beside it.
+for old in /data/meshbeacon/identity.backup /data/meshbeacon/identity.pending /data/meshbeacon/identity.json \
+    /data/meshbeacon/identity.replaced-*; do
+    [ -f "$old" ] || continue
+    new="/data/reticulum/meshbeacon-identity/${old##*/}"
+    if [ ! -e "$new" ]; then
+        mv "$old" "$new" 2>/dev/null || echo "[meshbeacon] warning: could not move ${old##*/}"
+    elif cmp -s "$old" "$new"; then
+        rm -f "$old"
+    else
+        mv "$old" "$new.legacy-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null \
+            || echo "[meshbeacon] warning: could not move ${old##*/}"
+    fi
+done
+
+chown -R meshbeacon:meshbeacon /data/meshbeacon 2>/dev/null \
+    || echo "[meshbeacon] warning: could not set ownership of the core's data folder"
+chown -R mb-rns:mb-rns /data/reticulum 2>/dev/null \
+    || echo "[meshbeacon] warning: could not set ownership of Reticulum's data folder"
+chmod 0700 /data/meshbeacon /data/reticulum /data/reticulum/storage /data/reticulum/meshbeacon-identity \
+    2>/dev/null || true
+# options.json is written by the Supervisor; the core and the prepare step only need to read it.
 if [ -f /data/options.json ]; then
-    if chgrp meshbeacon /data/options.json 2>/dev/null; then
+    if chgrp mb-options /data/options.json 2>/dev/null; then
         chmod 0640 /data/options.json 2>/dev/null || true
     fi
 fi
-if chgrp meshbeacon /data 2>/dev/null; then
-    chmod 0750 /data 2>/dev/null || true
-fi
+# /data itself: each service may pass through it to its own folder, and nobody may list it.
+chgrp root /data 2>/dev/null || true
+chmod 0711 /data 2>/dev/null || true
+
+# Run-time channels between the core and its services (ADR 0018): folders root:meshbeacon 0750,
+# FIFOs and the mode file root:meshbeacon 0660. Only root (the services' run scripts, before they
+# drop privileges) and the core can open them; Reticulum's user cannot.
+io=/run/meshbeacon-io
+mkdir -p "$io/reticulum" "$io/prepare"
+for fifo in reticulum/out reticulum/status prepare/out prepare/result; do
+    [ -p "$io/$fifo" ] || mkfifo "$io/$fifo"
+done
+: > "$io/prepare/mode"
+chown -R root:meshbeacon "$io"
+chmod 0750 "$io" "$io/reticulum" "$io/prepare"
+chmod 0660 "$io/reticulum/out" "$io/reticulum/status" "$io/prepare/out" "$io/prepare/result" "$io/prepare/mode"
 exit 0
