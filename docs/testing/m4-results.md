@@ -39,6 +39,17 @@ production `sha256:c5c553ded482…`, messaging-dev `sha256:d7c33c7a68bc…`.
 | Container suite on the production image (every existing test and the production-exclusion tests) | 29 passed, 1 skipped (AppArmor enforcement: CI only) |
 | Messaging container tests on both images, final version | 16 passed |
 
+## CI on the real base image (`29d3824`)
+
+| Run | Result |
+|---|---|
+| CI run 78 | **All jobs green.** Lint, types and shell scripts. Unit and isolated-network integration tests, including the real-LXMF tests, with no network. Container tests on amd64 and aarch64 (QEMU) on the digest-pinned Home Assistant base. On amd64: the messaging tests on both images, unconfined; the development image **confined by AppArmor** (the production profile plus the engine's socket folder), with no denial; and the production image confined by the production profile |
+| Release dry run 32 | **Green.** Both architectures built twice from scratch, reproducible, verified (labels, SBOM, provenance), including the new check that no layer holds the engine |
+| CI run 77 (`1b7b529`) | **Failed, and led to a fix:** under AppArmor the setgid socket folder lost its setgid bit (the profile denies `CAP_FSETID`), so the core could not reach the engine. Fixed in `29d3824` with the `mb-msg` group |
+
+Real-base idle memory (CI run 77, amd64): production 65.9 MiB, development image 109.9 MiB
+(**+44.0 MiB**).
+
 ## Acceptance criteria
 
 | ID | Result | Evidence |
@@ -47,7 +58,7 @@ production `sha256:c5c553ded482…`, messaging-dev `sha256:d7c33c7a68bc…`.
 | IS-2 | **Pass** | The engine holds no Supervisor token, status token or RPC key; its identity is `mb-lxmf` 0600 |
 | IS-3 | **Pass** | Cross-user reads of identities, configs, queue and options fail; the socket serves only UID 9100 and the core accepts only 9102 (`SO_PEERCRED` both ways); `mb-rns` cannot reach the socket folder |
 | IS-3a | **Pass** | `\0rns/meshbeacon` is present inside the app container and unreachable from containers on `none` and `bridge` networks; the RPC refuses a wrong key for `mb-lxmf` and `meshbeacon`; no RPC key in the engine's configuration |
-| IS-4 | **Pass locally; CI pending** | A weakened installation (folders and socket made world-accessible) is detected; the peer check still refuses `mb-rns`. AppArmor enforcement for the dev image runs in CI with a derived profile; the production profile is unchanged |
+| IS-4 | **Pass (CI and local); VM pending** | A weakened installation (folders and socket made world-accessible) is detected; the peer check still refuses `mb-rns`. Under AppArmor enforcement in CI (run 78) with a derived profile; the production profile is unchanged. The Supervisor-loaded profile on a VM is part of RG-13 |
 | MS-1 | **Pass** | No engine file, package, user, service or marker in the production file system **or in any layer** (`docker save` scan); `import meshbeacon.messaging` and `import LXMF` fail; no messaging option; no engine process, no `/data/messaging`, `share_instance = No`, no `@rns` socket. Idle memory 68.8 MiB (WP1 baseline 69.5 MiB, within ±2 MiB). Release verification (`verify_image.py`) refuses any layer holding the engine |
 | MS-2 | **Pass** | Separate from the transport identity; replacing the transport identity leaves it unchanged; damaged copies are never replaced and the engine does not start (rule 13) |
 | MS-3 | **Pass** | A reference LXMF peer reads the engine's announce with LXMF's public helpers: no display name and no stamp cost by default. Messages carry no fields; in "anyone" mode only the ticket field (`FIELD_TICKET`), and only to contacts |
@@ -62,7 +73,7 @@ production `sha256:c5c553ded482…`, messaging-dev `sha256:d7c33c7a68bc…`.
 | MS-19 | **Pass** | Engine data tree, inotify: **0.20 writes/s idle, 0.50 writes/s** with one message each way every 20 s (only `queue.db-wal` and LXMF's `state.db-wal`) |
 | MS-21 | **Pass** | Source checks: the engine imports no Home Assistant, HTTP-server or UI code; only `engine.py` imports LXMF; the binding, contract, queue and settings import neither LXMF nor RNS; nothing outside the engine imports it. The contract runs against the real engine directly (no binding) and over the socket |
 | MS-14 | **Not run: acceptance blocker** | Needs Sideband 2.3.x and Ratspeak 1.1.x on devices on an isolated network |
-| MS-18 | **Not run: acceptance blocker** | Spare Pi. Container reading: dev image 113.6 MiB vs production 68.8 MiB, so **+44.8 MiB, above the +40 MiB criterion** (spike: 43.1 MiB). D-M4-7: decided on the Pi |
+| MS-18 | **Not run: acceptance blocker** | Spare Pi. Container readings: **+44.8 MiB** locally (113.6 vs 68.8 MiB) and **+44.0 MiB** on the real base in CI (109.9 vs 65.9 MiB), **above the +40 MiB criterion** (spike: 43.1 MiB). D-M4-7: decided on the Pi |
 
 ## Delivery semantics (what each state proves)
 
@@ -95,7 +106,8 @@ The meanings are in `contract.STATE_MEANINGS` and tested. Log lines and reasons 
    the tests use cost 10. Q-41 and MS-18 (stamp ≤ 30 s at the recipient's cost) need the Pi.
 5. **Memory** (above): +44.8 MiB in a container.
 6. **AppArmor for the dev image** is tested in CI only, with a profile derived from the production
-   one plus `/run/meshbeacon-messaging/`; the dev image is never installed by the Supervisor.
+   one plus `/run/meshbeacon-messaging/`; the dev image is never installed by the Supervisor. A
+   future production engine needs that rule in the shipped profile, through review.
 
 ## Deviations from the approved design
 
