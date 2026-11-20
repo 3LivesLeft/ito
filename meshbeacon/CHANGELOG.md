@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.1 — unreleased (develop)
+
+- **Fixed: messaging still could not talk to Reticulum after the 0.3.0 messaging fix** on Home
+  Assistant OS ("digest received was wrong", "Reticulum refused the engine's requests"). The fix
+  needs a new rule in MeshBeacon's security (AppArmor) profile, and Home Assistant loads a new
+  profile only when an app is installed or **updated**, not when it is rebuilt. This version
+  number makes Home Assistant offer the update.
+- **To update:** Settings → Apps → MeshBeacon → **Update** (not Rebuild), then start it. Your
+  node and messaging identities, contacts and settings are kept. The log then shows
+  "Reticulum accepts the engine's requests".
+- If messaging ever lacks its key again, the dashboard and the log say so and what to do, instead
+  of suggesting a restart that cannot help.
+
 ## 0.3.0 — unreleased (develop)
 
 - **Choose a public network from a list** (Configuration tab, **Public Reticulum network**):

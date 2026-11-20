@@ -51,6 +51,12 @@ release starts there.
 7. **Never delete or move a published tag or image.** Restoring an app backup pulls that version's
    image again, and the Marketplace lists earlier releases.
 8. **The release commit's changelog entry has a date**, not "unreleased" (the check refuses it).
+9. **A change to `apparmor.txt` needs a new version** [Verified, Supervisor
+   `supervisor/apps/app.py` on `main`, 20 Nov 2026: `install()` and `update()` call
+   `install_apparmor()`, `rebuild()` does not, and a rebuild is refused unless the installed and
+   store versions match]. Without one, Home Assistant offers only *Rebuild*, which builds the new
+   image but keeps enforcing the old profile (0.3.1: the RPC key folder of ADR 0023 was denied on
+   the Pi). The same applies to development installs from `develop`.
 
 ## 3. Steps (from M2, with approval)
 

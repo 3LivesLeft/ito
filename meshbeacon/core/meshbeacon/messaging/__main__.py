@@ -50,6 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     text = rnsconfig.render_client(instance_name=args.instance_name, rpc_key=rpc_key)
     fsutil.atomic_write(rns_config / "config", text.encode())
     engine = Engine(args.data, settings, rns_config=rns_config)
+    engine.has_rpc_key = rpc_key is not None
     try:
         engine.start()
     except EngineError as exc:

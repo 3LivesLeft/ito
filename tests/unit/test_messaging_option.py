@@ -90,6 +90,7 @@ class FakeEngine:
         self.acked: list[int] = []
         self.states: dict[str, str] = {}
         self.rpc: bool | None = True
+        self.rpc_key: bool | None = True
 
     def __call__(self, req: dict[str, Any]) -> dict[str, Any] | None:
         op = req["op"]
@@ -98,6 +99,7 @@ class FakeEngine:
                 "ok": True,
                 "connected": True,
                 "rpc": self.rpc,
+                "rpc_key": self.rpc_key,
                 "address": A,
                 "counters": {"inbound_received": 2, "inbound_refused_stranger": 3},
             }
@@ -208,6 +210,22 @@ def test_an_engine_that_reticulum_refuses_is_a_problem_never_running():
     engine.rpc = "yes"  # type: ignore[assignment]  # anything but a boolean is "not checked yet"
     sup._sync(None)
     assert sup.public()["state"] == "starting"
+
+
+def test_an_engine_without_its_key_says_what_to_do():
+    """0.3.1: on the Pi the key could not be created (Home Assistant kept the previous AppArmor
+    profile after a Rebuild). The dashboard must say so and point to Update, not to a restart."""
+    engine = FakeEngine()
+    engine.rpc, engine.rpc_key = False, False
+    sup = supervisor(engine)
+    sup._sync(None)
+    public = sup.public()
+    assert public["state"] == "error" and public["message"] == es.MSG_RPC_KEY_MISSING
+    assert "update the app" in public["message"] and "Rebuild is not enough" in public["message"]
+    assert "Restart" not in public["message"]
+    engine.rpc_key = True  # it has the key, yet is refused: the generic message
+    sup._sync(None)
+    assert sup.public()["message"] == es.MSG_RPC_REFUSED
 
 
 def test_settings_are_written_before_every_start():

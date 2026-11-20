@@ -96,6 +96,26 @@ def test_the_shared_rpc_key_folder_is_readable_and_never_executable():
     assert "w" not in PROFILE.perms("/run/meshbeacon-rpc-other/x")
 
 
+def test_every_run_folder_the_init_steps_create_is_writable():
+    """0.3.1: a folder the root init steps create in /run must be allowed by the profile, or the
+    step fails only under enforcement (on Home Assistant OS), never in a plain container."""
+    import re
+
+    created: set[str] = set()
+    for script in sorted((ROOT / "meshbeacon" / "rootfs" / "etc" / "cont-init.d").iterdir()):
+        text = script.read_text()
+        assignments = dict(re.findall(r"^\s*(\w+)=(/run/\S+)\s*$", text, re.M))
+        for line in re.findall(r"^\s*mkdir -p (.+)$", text, re.M):
+            for word in line.split():
+                path = re.sub(r"\$\{?(\w+)\}?", lambda m, a=assignments: a.get(m.group(1), m.group(0)), word.strip('"'))
+                if path.startswith("/run/"):
+                    created.add(path.rstrip("/") + "/")
+    assert "/run/meshbeacon-rpc/" in created and "/run/meshbeacon-io/reticulum/" in created, created
+    for folder in sorted(created):
+        for path in (folder, folder + "x"):
+            assert "w" in PROFILE.perms(path), path
+
+
 def test_no_write_and_execute_on_app_data():
     for path in ("/data/meshbeacon/x", "/data/reticulum/storage/x", "/tmp/x"):
         assert "x" not in PROFILE.perms(path), path

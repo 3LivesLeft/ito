@@ -299,8 +299,10 @@ def test_the_rpc_state_reaches_the_status_answer(tmp_path, clock, capsys):
         threading.Event().wait(0.05)
     e.stopping.set()
     thread.join(5)
+    e.has_rpc_key = False
     answer = e.handle({"op": "status"})
     assert answer["ok"] is True and answer["connected"] is True and answer["rpc"] is False
+    assert answer["rpc_key"] is False  # the core can tell a missing key from a refused one
     out = capsys.readouterr().out
     assert "Reticulum refused the engine's requests (its shared-instance authentication was refused)" in out
     assert "digest" not in out  # plain words only, never RNS's exception text

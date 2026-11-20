@@ -116,8 +116,9 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
         shared = rnsconfig.read_shared_rpc_key()
         if shared is None:
             result.info.append(
-                "⚠ Messaging's access key for Reticulum is missing, so messaging cannot work "
-                "properly. Restart the app; if this repeats, please report it."
+                "⚠ Messaging's access key for Reticulum is missing, so messaging cannot work. Home "
+                "Assistant is probably still using the app's previous security profile: update the "
+                "app to the latest version (Rebuild is not enough). Reticulum works normally."
             )
         else:
             rpc_key = shared

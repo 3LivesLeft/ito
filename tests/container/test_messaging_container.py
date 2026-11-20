@@ -39,6 +39,11 @@ pytestmark = [
     pytest.mark.skipif(not IMAGE or shutil.which("docker") is None, reason="needs Docker and MESHBEACON_IMAGE"),
 ]
 needs_previous = pytest.mark.skipif(not PREVIOUS, reason="needs MESHBEACON_PREVIOUS_IMAGE (v0.2)")
+# The 0.3.0 app as first installed on the Pi (messaging, but no shared RPC key: before ADR 0023).
+PREVIOUS_MESSAGING = os.environ.get("MESHBEACON_PREVIOUS_MESSAGING_IMAGE", "")
+needs_previous_messaging = pytest.mark.skipif(
+    not PREVIOUS_MESSAGING, reason="needs MESHBEACON_PREVIOUS_MESSAGING_IMAGE (0.3.0 before ADR 0023)"
+)
 ADDRESS = "a1" * 16  # a made-up contact address (no such node exists)
 ON = {**DEFAULTS, "messaging_enabled": True, "messaging_contacts": [{"name": "Phone", "address": ADDRESS}]}
 
@@ -549,7 +554,7 @@ def rpc_failures(logs: str) -> list[str]:
     return [line for line in logs.splitlines() if any(f in line for f in RPC_FAILURES)]
 
 
-def with_api(apps: Callable[..., App], options: dict, tmp: Path) -> tuple[App, str]:
+def with_api(apps: Callable[..., App], options: dict, tmp: Path, extra: tuple[str, ...] = ()) -> tuple[App, str]:
     """The app with its Home Assistant status API on, announced to a fake Supervisor through a
     local socket (as on newer Supervisors; no network). Returns the app and the API token."""
     out = tmp / "supervisor"
@@ -571,7 +576,7 @@ def with_api(apps: Callable[..., App], options: dict, tmp: Path) -> tuple[App, s
         {**options, "home_assistant_integration": True},
         extra=(
             "-e", "SUPERVISOR_SOCKET=/run/supervisor/api/supervisor.sock", "-v", f"{api}:/run/supervisor/api:ro",
-            "--hostname", "ce27fbb5-meshbeacon",
+            "--hostname", "ce27fbb5-meshbeacon", *extra,
         ),
     )  # fmt: skip
     record = out / "discovery.json"
@@ -718,3 +723,55 @@ def test_an_engine_that_reticulum_refuses_shows_a_problem_not_running(apps, tmp_
     assert wait_for(refused, 60), dashboard(app, token)
     # The gateway is not affected: same Reticulum process, healthy app.
     assert app.pid("meshbeacon.node") == node and app.health()
+
+
+# -- 0.3.1: an existing 0.3.0 installation, upgraded ---------------------------------------------
+
+
+def identities(app: App) -> tuple[str, str]:
+    """Digests of both identity files (compared, never printed in full)."""
+    out = app.exec("sha256sum", "/data/reticulum/storage/transport_identity", "/data/messaging/identity")
+    node, messaging = (line.split()[0] for line in out.splitlines())
+    return node, messaging
+
+
+@needs_previous_messaging
+def test_an_upgraded_0_3_0_installation_authenticates_and_keeps_both_identities(apps):
+    """The Pi's path: 0.3.0 with messaging on (identity created, the node's old random key in
+    /data/reticulum/config, the engine's keyless client configuration in /data/messaging/rns),
+    then this version on the same data. Both configurations are rewritten with the shared key, the
+    node accepts the engine, and neither identity is touched."""
+    old_options = {k: v for k, v in ON.items() if k != "network"}  # 0.3.0 predates the option
+    old = apps(PREVIOUS_MESSAGING, old_options)
+    assert wait_for(lambda: engine_up(old), 90), old.logs()
+    before = identities(old)
+    assert "rpc_key" not in old.exec("cat", "/data/messaging/rns/config")  # 0.3.0: no key
+    sh("docker", "stop", "-t", "30", old.name, timeout=60)
+    old.remove()
+
+    new = apps(IMAGE, ON, data=old.data)  # the Supervisor adds new options' defaults on update
+    assert wait_for(lambda: "Reticulum accepts the engine's requests" in new.logs(), 120), new.logs()
+    assert "meshbeacon-messaging: started (identity unchanged)" in new.logs()
+    assert identities(new) == before
+    assert same_rpc_key(new)
+    assert engine_status(new).get("rpc") is True and engine_status(new).get("rpc_key") is True
+    time.sleep(25 * SCALE)  # several of the core's 10 s polls
+    assert rpc_failures(new.logs()) == [], rpc_failures(new.logs())
+
+
+def test_a_key_the_init_step_cannot_create_is_reported_with_what_to_do(apps, tmp_path):
+    """0.3.1: on Home Assistant OS a Rebuild keeps the previous AppArmor profile, which does not let
+    root's init step write /run/meshbeacon-rpc. Simulated here with a read-only folder (the same
+    effect: the write fails). The gateway runs; the dashboard says to update, not to restart."""
+    empty = tmp_path / "no-write"
+    empty.mkdir()
+    app, token = with_api(apps, ON, tmp_path, extra=("-v", f"{empty}:/run/meshbeacon-rpc:ro"))
+    assert wait_for(lambda: engine_status(app).get("rpc") is False, 120), app.logs()
+    logs = app.logs()
+    assert "the app's security profile may be out of date" in logs and "Rebuild is not enough" in logs
+    assert "digest received was wrong" in logs  # what the Pi showed
+    status = engine_status(app)
+    assert status.get("rpc_key") is False and status.get("connected") is True, status
+    missing = lambda: "update the app" in (dashboard(app, token).get("message") or "")  # noqa: E731
+    assert wait_for(missing, 60), dashboard(app, token)
+    assert dashboard(app, token)["state"] == "error" and app.health()

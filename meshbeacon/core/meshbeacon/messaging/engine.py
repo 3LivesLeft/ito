@@ -124,6 +124,7 @@ class Engine:
         self.identity_hash: bytes | None = None
         self.rpc_ok: bool | None = None  # None until the first check has finished
         self.rpc_since: float | None = None  # when the check in progress began (monotonic)
+        self.has_rpc_key: bool | None = None  # whether it was given the node's key (set at start)
         self.rpc_refusal = ""
 
     # -- start and stop ---------------------------------------------------------------------
@@ -458,6 +459,7 @@ class Engine:
                 "connected": self.connected(),
                 # The node accepts the engine's authenticated RPC requests (ADR 0023).
                 "rpc": self.rpc(),
+                "rpc_key": self.has_rpc_key,
                 "identity": self.identity_event,
                 # The engine's own LXMF address, for the user to give to contacts (D-M4-8). Never a
                 # contact's address: those stay inside the engine (MS-12).
