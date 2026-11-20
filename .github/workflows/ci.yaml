@@ -136,6 +136,19 @@ jobs:
           grep -q '^version: "0.2.0"' previous/meshbeacon/config.yaml
           docker buildx build --load --platform "${{ matrix.platform }}" \
             --build-arg BUILD_ARCH=${{ matrix.arch }} -t "meshbeacon:previous" previous/meshbeacon
+      - name: The 0.3.0 app with messaging, before the shared RPC key (upgrade test of 0.3.1)
+        if: matrix.arch == 'amd64'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 74a5ad62ff93591c1ea9c88d6b650ca4ec11908f
+          path: previous-messaging
+          persist-credentials: false
+      - name: Build the 0.3.0 messaging image (upgrade test only; never released)
+        if: matrix.arch == 'amd64'
+        run: |
+          grep -q '^version: "0.3.0"' previous-messaging/meshbeacon/config.yaml
+          docker buildx build --load --platform "${{ matrix.platform }}" \
+            --build-arg BUILD_ARCH=${{ matrix.arch }} -t "meshbeacon:previous-messaging" previous-messaging/meshbeacon
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
       - run: pip install --require-hashes -r requirements-test.txt
@@ -143,6 +156,7 @@ jobs:
         env:
           MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
           MESHBEACON_PREVIOUS_IMAGE: ${{ matrix.arch == 'amd64' && 'meshbeacon:previous' || '' }}
+          MESHBEACON_PREVIOUS_MESSAGING_IMAGE: ${{ matrix.arch == 'amd64' && 'meshbeacon:previous-messaging' || '' }}
           MESHBEACON_EMULATED: ${{ matrix.emulated }}
         run: python -m pytest -m container tests/container -s -p no:cacheprovider -rA
       - name: Load the AppArmor profile into the runner's kernel (enforce mode)

@@ -52,7 +52,8 @@ try:
 finally:
     os.close(fd)
 os.replace(temporary, os.path.join(folder, "rpc_key"))
-' || echo "[meshbeacon] warning: could not create the messaging engine's access key for Reticulum"
+' || echo "[meshbeacon] warning: could not create the messaging engine's access key for Reticulum" \
+    "(the app's security profile may be out of date: update the app; Rebuild does not replace it)"
 # Its output FIFO, beside Reticulum's (root:meshbeacon, 0660; opened by root in the run script).
 mkdir -p /run/meshbeacon-io/messaging
 [ -p /run/meshbeacon-io/messaging/out ] || mkfifo /run/meshbeacon-io/messaging/out

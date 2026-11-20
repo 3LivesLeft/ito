@@ -78,6 +78,14 @@ MSG_RPC_REFUSED = (
     "Messaging is running, but Reticulum refuses its requests, so it cannot work properly. "
     "Restart the app; if this repeats, please report it."
 )
+# The key could not be created (ADR 0023). The usual cause: Home Assistant still enforces the app's
+# previous AppArmor profile, which it replaces on install and update but not on "Rebuild"
+# (Supervisor ``App.rebuild``), so the root init step may not write /run/meshbeacon-rpc.
+MSG_RPC_KEY_MISSING = (
+    "Messaging has no access key for Reticulum, so Reticulum refuses its requests. Home Assistant "
+    "is probably still using the app's previous security profile: update the app to the latest "
+    "version (Rebuild is not enough). Your node and messaging identities are kept."
+)
 DISABLED: dict[str, Any] = {"enabled": False, "state": "disabled", "message": None}
 
 Link = Callable[[dict[str, Any]], dict[str, Any] | None]
@@ -260,6 +268,8 @@ class EngineSupervisor:
             view["connected"] = status.get("connected") is True
             rpc = status.get("rpc")
             view["rpc"] = rpc if isinstance(rpc, bool) else None  # None: not checked yet
+            has_key = status.get("rpc_key")
+            view["rpc_key"] = has_key if isinstance(has_key, bool) else None
             view["received"] = _count(counters.get("inbound_received"))
             view["refused"] = sum(_count(v) for k, v in counters.items() if str(k).startswith("inbound_refused_"))
         contacts = self.link({"op": "contacts"})
@@ -348,7 +358,7 @@ class EngineSupervisor:
             state, message = "error", f"{self.reason} MeshBeacon will try again shortly."
         elif self.state == "running" and self.healthy and view.get("connected") and view.get("rpc") is False:
             # Connected, but the node refuses its RPC requests (ADR 0023): never "Running".
-            state, message = "error", MSG_RPC_REFUSED
+            state, message = "error", MSG_RPC_KEY_MISSING if view.get("rpc_key") is False else MSG_RPC_REFUSED
         elif self.state == "running" and self.healthy and view.get("connected") and view.get("rpc") is True:
             state, message = "running", None
         elif self.state == "running" and self.healthy and view.get("connected"):
