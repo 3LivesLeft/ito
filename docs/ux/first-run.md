@@ -7,7 +7,7 @@ Status: **Proposed (Phase 0 amendments)** · Applies to v0.1.0
 **Ease of use is a core project principle**, equal to privacy and security. When the two seem to
 conflict, the answer is a safe default plus one clearly explained choice — not more options.
 
-**Target:** a non-technical Home Assistant user can install MeshBeacon and establish a Reticulum
+**Target:** a non-technical Home Assistant user can install ito and establish a Reticulum
 connection **within five minutes**, without editing a file, opening a terminal or knowing what an
 interface is.
 
@@ -15,7 +15,7 @@ interface is.
 
 | Step | User action | Time budget | Notes |
 |---|---|---|---|
-| 1 | Add the MeshBeacon repository (one-click "Add repository" link in the README) | 0:30 | HA "My" link opens the right dialog |
+| 1 | Add the ito repository (one-click "Add repository" link in the README) | 0:30 | HA "My" link opens the right dialog |
 | 2 | Install the app | 1:30 | Image download over 5G; size target ≤ 80 MB compressed (**[Assumption]** — measure in Phase 1) |
 | 3 | Open **Configuration**, choose a connection | 1:00 | Either tick a preset, or enter a peer's host and port |
 | 4 | Read the one-paragraph privacy notice shown in the option description | 0:30 | |
@@ -57,7 +57,7 @@ Option description (draft):
 
 **[Verified]** behaviour to document truthfully: with transport off, RNS uses an *ephemeral*
 network-facing transport identity that changes on each start (feasibility §7.1); with transport
-on, the stored identity is used and stays the same. MeshBeacon persists and protects the stored
+on, the stored identity is used and stays the same. ito persists and protects the stored
 identity either way.
 
 ## 5. Plain-language status messages
@@ -67,15 +67,15 @@ detail on the next line.
 
 | Situation | Message (draft) |
 |---|---|
-| Started, no peers configured | ⚠ "MeshBeacon is running, but it is **not connected to anyone**. Add a public peer or one of your own peers in the Configuration tab." — repeated every 6 hours, not every minute |
-| Peers configured, none reachable | ⚠ "MeshBeacon is running, but cannot reach any of your peers. Check your internet connection. It will keep trying automatically." |
+| Started, no peers configured | ⚠ "ito is running, but it is **not connected to anyone**. Add a public peer or one of your own peers in the Configuration tab." — repeated every 6 hours, not every minute |
+| Peers configured, none reachable | ⚠ "ito is running, but cannot reach any of your peers. Check your internet connection. It will keep trying automatically." |
 | Some peers up | "Connected to 1 of 2 peers (Emerald). Your node is online." |
 | Recovering | "The Reticulum service stopped unexpectedly and has been restarted (attempt 2)." |
-| Breaker open (temporary) | ⚠ "The Reticulum service keeps failing. MeshBeacon will try again in 15 minutes. See the lines above for the cause." |
-| Gave up after repeated failures | ✖ "The Reticulum service keeps failing, so MeshBeacon has stopped trying. Fix the cause shown above, then restart the app." |
-| Safe mode after repeated app restarts | ✖ "MeshBeacon has been restarted many times in a short period, so it has paused. Restart it after 14:35, or change any option to try again now." |
+| Breaker open (temporary) | ⚠ "The Reticulum service keeps failing. ito will try again in 15 minutes. See the lines above for the cause." |
+| Gave up after repeated failures | ✖ "The Reticulum service keeps failing, so ito has stopped trying. Fix the cause shown above, then restart the app." |
+| Safe mode after repeated app restarts | ✖ "ito has been restarted many times in a short period, so it has paused. Restart it after 14:35, or change any option to try again now." |
 | Identity replaced as requested | "Your node's identity was replaced as you asked. The previous identity has been kept in the app's data folder. Switch off *Replace identity* before the next restart." |
-| Identity problem | ✖ "Your node's identity file is damaged. MeshBeacon has **not** created a new one, because that would change your node's address. To restore from backup, see the documentation; to start fresh, turn on *Advanced: replace identity*." |
+| Identity problem | ✖ "Your node's identity file is damaged. ito has **not** created a new one, because that would change your node's address. To restore from backup, see the documentation; to start fresh, turn on *Advanced: replace identity*." |
 
 **[Verified] limitation:** without `homeassistant_api` or `hassio_api` (which v0.1 deliberately
 does not request), the app cannot raise a Home Assistant notification or repair issue. The log
@@ -84,7 +84,7 @@ the same states as entities and repair issues.
 
 ## 6. Diagnostics (v0.1)
 
-- A startup report in the log: MeshBeacon version, RNS version, architecture, transport on/off,
+- A startup report in the log: ito version, RNS version, architecture, transport on/off,
   configured peers (names and hosts only), and the health state.
 - A periodic status line (default every 30 minutes): peers up/down, bytes sent/received since
   start, memory use.
