@@ -101,7 +101,9 @@ def test_every_image_the_build_runs_is_pinned_by_digest():
     image are pinned by digest, and no release build restores anything from the action cache."""
     dockerfile = (ROOT / "meshbeacon" / "Dockerfile").read_text()
     assert re.match(rf"# syntax=docker/dockerfile:[0-9.]+{DIGEST}\n", dockerfile)
-    assert re.search(rf"^FROM \S+{DIGEST}$", dockerfile, re.M)
+    assert re.search(rf"^FROM \S+{DIGEST}( AS \S+)?$", dockerfile, re.M)
+    external = [line for line in re.findall(r"^FROM (\S+)", dockerfile, re.M) if "/" in line or ":" in line]
+    assert all(re.search(DIGEST, image) for image in external), external
     for name in ("release-dry-run.yaml", "ci.yaml"):
         workflow = yaml.safe_load((ROOT / ".github" / "workflows" / name).read_text())
         for job in workflow["jobs"].values():

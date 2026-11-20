@@ -27,3 +27,18 @@ costs). On a home Pi it consumes disk, memory and bandwidth, and it accepts data
   outbound node (phase 3a).
 - Public-node operation (auto-peering, no authentication) needs its own review, like the v0.4
   public-gateway work.
+
+## M4 finding (20 Nov 2026): a constraint for any future design
+
+**[Verified]** with RNS 1.6.0 and LXMF 1.3.0 (`tests/integration/test_messaging_lxmf.py`):
+
+- A shared-instance client without the node's RPC key cannot check a remote party's link
+  identification against the node's blackhole list (`RNS/Link.py`, `is_blackholed`, which asks the
+  shared instance over RPC). RNS then drops the identification, which fails closed.
+- A propagation node depends on those identifications: an `lxmd` run as a key-less client
+  answered every download request with "no identity received" (`PR_NO_IDENTITY_RCVD`).
+- M4's engine deliberately holds no RPC key (IS-3a), and it needs none to send, receive or use a
+  configured node. **Hosting a node in the engine as designed is therefore not possible.** Any
+  proposal to host one must revisit IS-3a first: it would mean giving the key, which also allows
+  managing the node's interfaces, paths and blackhole list, or another design. This is recorded
+  only; nothing here is in scope before this ADR is reviewed.

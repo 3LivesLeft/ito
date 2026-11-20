@@ -50,7 +50,8 @@ least-privilege credentials, storage and IPC, proven by adversarial tests.
    downgrade keeps the identity.
 6. **IPC.** The engine's contract channel (ADR 0014) is a Unix socket owned by `mb-lxmf`, group
    `meshbeacon`, mode 0660, in a 0750 folder. Each end checks the other's user ID (`SO_PEERCRED`).
-   The engine needs no RNS RPC key: it is a shared-instance client only.
+   The engine needs no RNS RPC key: it is a shared-instance client only (verified in M4 with
+   RNS 1.6.0 and LXMF 1.3.0; see point 11 and IS-3a).
 7. **AppArmor.** There is still one profile (all services run `python3`), and no capability is
    added. **As implemented:** `/data/<service>/` cannot become `owner` rules, because the root init
    step must re-own files it does not own at every start, and a single profile cannot tell root
@@ -67,6 +68,23 @@ least-privilege credentials, storage and IPC, proven by adversarial tests.
     environment, the Supervisor token included, in `/run/s6/container_environment`, readable by every
     user. The root init step makes it root's alone (0700, files 0600). The isolation and credential
     probes check it.
+11. **The messaging engine (as implemented, M4).** Only in the `messaging-dev` image target; the
+    production target has no `messaging` service, no `mb-lxmf` user and no engine (WP5).
+    - The core starts the `messaging` service once Reticulum has reported its first status, checks
+      its health every 30 s over the contract socket (three missed answers count as a hang), and
+      restarts it with back-off (10 s to 5 min). After five failures in 30 minutes messaging pauses
+      until the app restarts. Reticulum and the status API are never touched (MS-15).
+    - **Socket path, changed from point 6:** `/run/meshbeacon-messaging/engine.sock`, in a folder
+      `mb-lxmf:meshbeacon` 2750 (the socket inherits the core's group), socket 0660. Point 6's
+      folder inside `/run/meshbeacon-io/` would have needed `mb-lxmf` in the core's group, because
+      that folder is root:meshbeacon 0750. The engine's output still goes through a FIFO in
+      `/run/meshbeacon-io/messaging/`, opened by root in the run script, and through the core's
+      redaction.
+    - The `s6-svperms` step now grants the core control of every service that starts down (each
+      service folder with a `down` file), so it names no messaging service in production.
+    - At a container stop s6-overlay stops every service at once, so the engine is not guaranteed
+      to stop before Reticulum then. It exits cleanly on SIGTERM either way (tested); the core stops
+      it first only when the core itself stops.
 
 ## Consequences
 

@@ -1,6 +1,7 @@
 # M4 — Standalone LXMF messaging engine: implementation plan
 
-**Status:** **for the maintainer's approval.** Nothing is implemented. **Branch:**
+**Status:** approved (D-M4-1 to D-M4-7); **WP1 to WP6 development-complete (20 Nov 2026)**, not
+yet accepted: see [M4 results](../testing/m4-results.md). **Branch:**
 `feature/m4-lxmf-engine`, from `feature/v0.3.0-install-ready` at `ff050d3`. **Date:** 19 November 2026.
 
 ## Goal
@@ -109,3 +110,19 @@ unit tests for the policy and the socket. Findings, all **[Verified]** with thes
 | A message can arrive before its sender's key does. LXMF marks it `SOURCE_UNKNOWN`, while the sender is told "delivered" | The engine holds such messages from contacts (or anyone, in "anyone" mode) for up to two minutes, at most 50, asks for the sender's key, and checks them again with `LXMessage.unpack_from_bytes`. Invalid signatures are refused at once |
 | LXMF 1.3.0 has no "propagate on failure" setting | The engine falls back itself, and reports `stored_on_node`, never `delivered` (MS-6) |
 | The hub's TCP peers cannot reach each other without transport | Test topology only: `lxmd` is a local client of the hub, as the engine is |
+
+**WP4 to WP6 are development-complete (20 Nov 2026).** Results, reproduction steps, deviations and
+limitations: [M4 results](../testing/m4-results.md). In short:
+
+- **WP4:** the `messaging` s6 service as `mb-lxmf`, started by the core after Reticulum's first
+  status, with health checks over the socket, back-off restarts and a pause after five failures in
+  30 minutes; Reticulum and the status API are never touched (MS-15). Socket peer checks both ways.
+- **WP5:** a `messaging-dev` Dockerfile target; the default target (production) never copies the
+  engine, LXMF or the service. Tests scan the production file system and every layer; release
+  verification refuses a layer holding any of it (MS-1).
+- **WP6:** MS-9 negative and positive with real LXMF, MS-19 (0.2 writes/s idle, 0.5 with
+  traffic), IS-3a container tests, and the meaning of every delivery state.
+
+**Still open, M4 acceptance blockers:** MS-14 (Sideband and Ratspeak on devices, isolated network)
+and MS-18 on the spare Pi. **Memory:** +44.8 MiB in a container, above the +40 MiB criterion;
+D-M4-7 decides it on the Pi.

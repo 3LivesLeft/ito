@@ -258,6 +258,10 @@ def test_the_engine_delivers_to_a_contact_directly(world, peers):
     assert again["message_id"] == sent["message_id"]  # idempotent: one message
     got = alice.wait_event(lambda e: e.get("event") == "received" and e["content"] == "hello alice")
     assert got["verified"] is True and got["title"] == "T"
+    assert got["fields"] == []  # MS-3: no telemetry, location, icon or any other field
+    alice.send({"cmd": "announced", "to": world.address()})
+    announced = alice.wait_event(lambda e: e.get("event") == "announced", 20)
+    assert announced["display_name"] is None and announced["stamp_cost"] is None  # MS-3: nothing by default
     wait_for(lambda: world.call(op="message", message_id=sent["message_id"])["state"] == "delivered")
     assert len([e for e in alice.events() if e.get("content") == "hello alice"]) == 1
 
@@ -468,7 +472,8 @@ def test_anyone_mode_rejects_messages_without_a_valid_stamp():
 
         # The engine writes to alice, which hands her a ticket; her weakly stamped reply is accepted.
         sent = w.call(op="send", contact="alice", text="here is a ticket", idempotency_key="key-ticket-01")
-        alice.wait_event(lambda e: e.get("event") == "received" and e["content"] == "here is a ticket", 60)
+        ticket = alice.wait_event(lambda e: e.get("event") == "received" and e["content"] == "here is a ticket", 60)
+        assert ticket["fields"] == [0x0C]  # LXMF.FIELD_TICKET only (anyone mode, contacts only)
         wait_for(lambda: w.call(op="message", message_id=sent["message_id"])["state"] == "delivered", 60)
         alice.send({"cmd": "send", "to": w.address(), "content": "ticketed reply", "stamp_cost": 1, "tag": "t"})
         ticketed = alice.wait_event(lambda e: e.get("tag") == "t", 120)

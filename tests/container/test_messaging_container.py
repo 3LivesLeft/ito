@@ -33,6 +33,9 @@ from .test_container import DEFAULTS, SCALE, app_memory_kib, processes, sh
 
 PRODUCTION = os.environ.get("MESHBEACON_IMAGE", "")
 DEV = os.environ.get("MESHBEACON_MESSAGING_IMAGE", "")
+# An AppArmor profile loaded on the host (CI: the production profile plus the engine's socket
+# folder, for the development image only). Empty: unconfined.
+APPARMOR = os.environ.get("MESHBEACON_APPARMOR", "")
 REPO = Path(__file__).resolve().parents[2]
 pytestmark = [pytest.mark.container, pytest.mark.skipif(shutil.which("docker") is None, reason="needs Docker")]
 needs_production = pytest.mark.skipif(not PRODUCTION, reason="needs MESHBEACON_IMAGE")
@@ -62,7 +65,8 @@ class App:
         self.data = data or Path(tempfile.mkdtemp(prefix="mb-m4-", dir="/tmp"))
         (self.data / "options.json").write_text(json.dumps(options or DEFAULTS))
         self.name = f"mb-m4-{uuid.uuid4().hex[:8]}"
-        sh("docker", "run", "-d", "--name", self.name, "--network", "none", "-v", f"{self.data}:/data", image)
+        confine = ["--security-opt", f"apparmor={APPARMOR}"] if APPARMOR else []
+        sh("docker", "run", "-d", "--name", self.name, "--network", "none", "-v", f"{self.data}:/data", *confine, image)
 
     def logs(self) -> str:
         return subprocess.run(["docker", "logs", self.name], capture_output=True, text=True).stdout
@@ -238,6 +242,9 @@ def test_the_engine_starts_after_reticulum_as_its_own_user(apps):
     transport = app.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0]
     messaging = app.exec("sha256sum", "/data/messaging/identity").split()[0]
     assert transport != messaging
+    # Rule 5: no hash (identity, destination, message) reaches the log; the engine's output goes
+    # through the core's redaction like Reticulum's.
+    assert not re.search(r"(?<![0-9a-f])[0-9a-f]{32,}(?![0-9a-f])", app.logs(), re.I), app.logs()
 
 
 @needs_dev
@@ -272,6 +279,14 @@ def test_users_cannot_read_each_others_data(apps):
             assert not app.ok("ls", path, user=user), (user, path)  # a folder: not even listed
     assert not app.ok("/command/s6-svc", "-d", "/run/service/reticulum", user="mb-lxmf")
     assert not app.ok("/command/s6-svc", "-d", "/run/service/messaging", user="mb-rns")
+    # IS-4: against a deliberately weakened installation the same checks must report the breach,
+    # or they would prove nothing. Weaken the engine's folders and socket.
+    app.exec("chmod", "-R", "a+rwX", "/data/messaging", "/run/meshbeacon-messaging")
+    assert app.ok("cat", "/data/messaging/identity", user="mb-rns")  # now readable: detected
+    assert app.ok("ls", "/run/meshbeacon-messaging", user="mb-rns")
+    # The socket is reachable now, but the engine's peer check still serves the core only.
+    weakened = status(app, "mb-rns")
+    assert weakened is not None and "error" not in weakened and weakened.get("answer") is None, weakened
 
 
 @needs_dev
@@ -370,3 +385,53 @@ def test_development_image_idle_memory(apps):
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     time.sleep(20)
     print(f"messaging-dev idle RSS+swap (core + Reticulum + engine): {app_memory_kib(app) / 1024:.1f} MiB")  # type: ignore[arg-type]
+
+
+ABSTRACT = (
+    "import json, socket, sys\n"
+    "name = sys.argv[1].encode()\n"
+    "s = socket.socket(socket.AF_UNIX)\n"
+    "try:\n"
+    "    s.connect(b'\\0' + name); print(json.dumps('connected'))\n"
+    "except OSError as e:\n"
+    "    print(json.dumps(type(e).__name__))\n"
+)
+RPC = (
+    "import json, os, multiprocessing.connection as mc\n"
+    "try:\n"
+    "    mc.Client('\\0rns/meshbeacon/rpc', family='AF_UNIX', authkey=os.urandom(32)).close()\n"
+    "    print(json.dumps('authenticated'))\n"
+    "except Exception as e:\n"
+    "    print(json.dumps(type(e).__name__))\n"
+)
+
+
+@needs_dev
+def test_the_shared_instance_is_reachable_only_inside_the_app_container(apps):
+    """IS-3a: the RNS 1.6.0 shared instance is an abstract Unix socket (``\\0rns/meshbeacon``,
+    RNS/Reticulum.py lines 369 and 825-826), which lives in the container's own network namespace
+    (the app has no host network). Another container cannot reach it; inside, it is there."""
+    app = apps(DEV)
+    assert wait_for(lambda: engine_up(app), 90), app.logs()
+    assert "@rns/meshbeacon" in app.exec("cat", "/proc/net/unix")
+    inside = json.loads(app.exec("python3", "-I", "-c", ABSTRACT, "rns/meshbeacon", user="mb-lxmf"))
+    assert inside == "connected"
+    for network in ("none", "bridge"):
+        outside = sh(
+            "docker", "run", "--rm", "--network", network, "--entrypoint", "python3", DEV,
+            "-I", "-c", ABSTRACT, "rns/meshbeacon",
+        )  # fmt: skip
+        assert json.loads(outside) in ("ConnectionRefusedError", "FileNotFoundError"), (network, outside)
+
+
+@needs_dev
+def test_the_node_rpc_refuses_anyone_without_its_key(apps):
+    """IS-3a: the RPC listener is reachable inside the container, but only Reticulum's user holds
+    its key (in /data/reticulum/config, 0600). The engine has no key; a wrong key is refused."""
+    app = apps(DEV)
+    assert wait_for(lambda: engine_up(app), 90), app.logs()
+    assert "@rns/meshbeacon/rpc" in app.exec("cat", "/proc/net/unix")
+    for user in ("mb-lxmf", "meshbeacon"):
+        assert json.loads(app.exec("python3", "-I", "-c", RPC, user=user)) == "AuthenticationError", user
+        assert not app.ok("cat", "/data/reticulum/config", user=user), user
+    assert "rpc_key" not in app.exec("cat", "/data/messaging/rns/config")

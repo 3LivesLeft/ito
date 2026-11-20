@@ -144,6 +144,30 @@ jobs:
           MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
           MESHBEACON_MESSAGING_IMAGE: meshbeacon:ci-messaging-dev
         run: python -m pytest -m container tests/container/test_messaging_container.py -s -p no:cacheprovider -rA
+      - name: Messaging engine confined by AppArmor (development profile; production profile unchanged)
+        # The development image's profile is the production profile plus the engine's socket folder,
+        # derived here and never shipped. Denials other than none are reported and fail the job.
+        if: (success() || failure()) && matrix.arch == 'amd64'
+        env:
+          MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
+          MESHBEACON_MESSAGING_IMAGE: meshbeacon:ci-messaging-dev
+          MESHBEACON_APPARMOR: meshbeacon-dev-ci
+        run: |
+          sudo aa-status --enabled
+          sed -e 's/^profile meshbeacon /profile meshbeacon-dev-ci /' \
+              -e 's|^\(\s*\)/run/meshbeacon-io/{,\*\*} rw,|&\n\1/run/meshbeacon-messaging/{,**} rw,|' \
+              meshbeacon/apparmor.txt > "$RUNNER_TEMP/meshbeacon-dev-ci"
+          grep -q "/run/meshbeacon-messaging/" "$RUNNER_TEMP/meshbeacon-dev-ci"
+          sudo apparmor_parser --replace --write-cache "$RUNNER_TEMP/meshbeacon-dev-ci"
+          python -m pytest -m container tests/container/test_messaging_container.py -s -p no:cacheprovider -rA \
+            -k "not production and not options"
+          sleep 2
+          sudo journalctl -k --no-pager | grep -E 'apparmor="(DENIED|ALLOWED)".*meshbeacon-dev-ci' > "$RUNNER_TEMP/dev-denials" || true
+          if [ -s "$RUNNER_TEMP/dev-denials" ]; then
+            tail -50 "$RUNNER_TEMP/dev-denials"
+            echo "::error::AppArmor denials for the messaging development image (above)"
+            exit 1
+          fi
       - name: Load the AppArmor profile into the runner's kernel (enforce mode)
         if: (success() || failure()) && matrix.arch == 'amd64'
         run: |

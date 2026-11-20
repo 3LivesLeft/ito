@@ -92,6 +92,7 @@ def peer(folder: Path, port: int, announce: bool) -> None:
                 "content": message.content.decode("utf-8", "replace"),
                 "verified": bool(message.signature_validated),
                 "method": message.method,
+                "fields": sorted(message.get_fields() or {}),  # MS-3: which fields were sent
             }
         )
 
@@ -138,6 +139,15 @@ def peer(folder: Path, port: int, announce: bool) -> None:
                 lambda m, tag=tag: emit({"event": "failed", "tag": tag, "stamp_value": m.stamp_value})
             )
             router.handle_outbound(lxm)
+        elif command["cmd"] == "announced":  # MS-3: what the recipient's announce carries
+            app_data = RNS.Identity.recall_app_data(bytes.fromhex(command["to"]))
+            emit(
+                {
+                    "event": "announced",
+                    "display_name": LXMF.display_name_from_app_data(app_data),
+                    "stamp_cost": LXMF.stamp_cost_from_app_data(app_data),
+                }
+            )
         elif command["cmd"] == "cost":  # what this peer's LXMF believes the recipient asks for
             emit({"event": "cost", "cost": router.get_outbound_stamp_cost(bytes.fromhex(command["to"]))})
         elif command["cmd"] == "sync":
