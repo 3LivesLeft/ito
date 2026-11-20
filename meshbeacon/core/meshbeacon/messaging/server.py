@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """The contract binding (ADR 0014): JSON lines over a Unix socket, for the core only.
 
-``/run/meshbeacon-messaging/engine.sock`` (0660, in a 2750 directory owned by
-``mb-lxmf:meshbeacon``, so that the socket's group is the core's). Every connection's peer is
+``/run/meshbeacon-messaging/engine.sock`` (0660, group ``mb-msg``, in a 0750 folder
+``mb-lxmf:mb-msg``; ``mb-msg`` holds only the core and the engine). Every connection's peer is
 checked with ``SO_PEERCRED``: only the allowed user (the core, ``meshbeacon``) is served; anyone
 else is disconnected without an answer. At most four connections at once; a request line is at
 most 16 KiB; each answer is one line. Nothing here is reachable from the network or from Home
@@ -54,6 +54,11 @@ class Server:
         finally:
             os.umask(old)
         os.chmod(self.path, SOCKET_MODE)
+        # The folder's group (mb-msg: the core and the engine). The engine belongs to it, so no
+        # privilege is needed; if it does not, this fails and the engine does not start.
+        folder_gid = self.path.parent.stat().st_gid
+        if self.path.stat().st_gid != folder_gid:
+            os.chown(self.path, -1, folder_gid)
         sock.listen(MAX_CONNECTIONS)
         self.sock = sock
 

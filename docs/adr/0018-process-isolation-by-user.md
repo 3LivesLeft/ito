@@ -74,12 +74,16 @@ least-privilege credentials, storage and IPC, proven by adversarial tests.
       its health every 30 s over the contract socket (three missed answers count as a hang), and
       restarts it with back-off (10 s to 5 min). After five failures in 30 minutes messaging pauses
       until the app restarts. Reticulum and the status API are never touched (MS-15).
-    - **Socket path, changed from point 6:** `/run/meshbeacon-messaging/engine.sock`, in a folder
-      `mb-lxmf:meshbeacon` 2750 (the socket inherits the core's group), socket 0660. Point 6's
-      folder inside `/run/meshbeacon-io/` would have needed `mb-lxmf` in the core's group, because
-      that folder is root:meshbeacon 0750. The engine's output still goes through a FIFO in
-      `/run/meshbeacon-io/messaging/`, opened by root in the run script, and through the core's
-      redaction.
+    - **Socket path and group, changed from point 6:** `/run/meshbeacon-messaging/engine.sock`,
+      socket 0660, in a folder `mb-lxmf:mb-msg` 0750. `mb-msg` (9111) is a group of exactly the
+      core and the engine, in the development image only; the engine gives its socket the folder's
+      group after binding (it is a member, so no privilege is needed). Point 6's folder inside
+      `/run/meshbeacon-io/` would have needed `mb-lxmf` in the core's own group (that folder is
+      root:meshbeacon 0750). A setgid folder was tried first and **failed under AppArmor
+      enforcement in CI**: the profile denies `CAP_FSETID`, so root's `chmod 2750` on a folder of a
+      group root is not in silently drops the setgid bit, and the core could not reach the socket.
+      The engine's output still goes through a FIFO in `/run/meshbeacon-io/messaging/`, opened by
+      root in the run script, and through the core's redaction.
     - The `s6-svperms` step now grants the core control of every service that starts down (each
       service folder with a `down` file), so it names no messaging service in production.
     - At a container stop s6-overlay stops every service at once, so the engine is not guaranteed

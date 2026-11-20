@@ -132,7 +132,7 @@ def test_the_production_image_has_no_messaging_files_users_or_packages():
     )
     assert [p for p in seen["paths"] if FORBIDDEN_PATHS.search(p)] == []
     assert "lxmf" not in seen["dists"] and not seen["engine_importable"] and not seen["lxmf_importable"]
-    assert "mb-lxmf" not in seen["users"] and "mb-lxmf" not in seen["groups"]
+    assert "mb-lxmf" not in seen["users"] and not {"mb-lxmf", "mb-msg"} & set(seen["groups"])
     assert [p for p in seen["paths"] if "lxmf" in p.lower() or "/messaging" in p.lower()] == []
 
 
@@ -225,9 +225,9 @@ def test_the_engine_starts_after_reticulum_as_its_own_user(apps):
     assert owners.get("meshbeacon.messaging") == {"mb-lxmf"} and owners.get("meshbeacon.node") == {"mb-rns"}
     assert owners.get("meshbeacon.supervisor") == {"meshbeacon"}
     # Socket and folders.
-    assert app.exec("stat", "-c", "%U:%G %a", "/run/meshbeacon-messaging").split() == ["mb-lxmf:meshbeacon", "2750"]
+    assert app.exec("stat", "-c", "%U:%G %a", "/run/meshbeacon-messaging").split() == ["mb-lxmf:mb-msg", "750"]
     assert app.exec("stat", "-c", "%U:%G %a %F", "/run/meshbeacon-messaging/engine.sock").split()[:3] == [
-        "mb-lxmf:meshbeacon",
+        "mb-lxmf:mb-msg",
         "660",
         "socket",
     ]
@@ -264,6 +264,9 @@ def test_only_the_core_can_use_the_engine_socket(apps):
 def test_users_cannot_read_each_others_data(apps):
     app = apps(DEV)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
+    # The socket's group holds exactly the core and the engine.
+    members = app.exec("python3", "-I", "-c", "import grp; print(' '.join(sorted(grp.getgrnam('mb-msg').gr_mem)))")
+    assert members.split() == ["mb-lxmf", "meshbeacon"], members
     for user, path in (
         ("mb-lxmf", "/data/reticulum/storage/transport_identity"),
         ("mb-lxmf", "/data/reticulum/config"),

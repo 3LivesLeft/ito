@@ -100,7 +100,10 @@ RUN set -eu; \
     mv /tmp/messaging "${site}/meshbeacon/messaging"; \
     python3 -I -m compileall -q "${site}/meshbeacon/messaging" "${site}/LXMF"; \
     addgroup -S -g 9102 mb-lxmf; \
-    adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9102 -G mb-lxmf mb-lxmf
+    adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9102 -G mb-lxmf mb-lxmf; \
+    addgroup -S -g 9111 mb-msg; \
+    addgroup meshbeacon mb-msg; \
+    addgroup mb-lxmf mb-msg
 COPY rootfs-messaging /
 RUN chmod 0755 /etc/cont-init.d/20-messaging /etc/services.d/messaging/run /etc/services.d/messaging/finish \
     && chmod 0644 /etc/meshbeacon/messaging

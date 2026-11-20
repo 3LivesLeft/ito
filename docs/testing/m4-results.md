@@ -101,7 +101,7 @@ The meanings are in `contract.STATE_MEANINGS` and tested. Log lines and reasons 
 
 | Approved | As built | Why |
 |---|---|---|
-| Socket in `/run/meshbeacon-io/messaging/` (ADR 0018 point 6) | `/run/meshbeacon-messaging/engine.sock` (2750 `mb-lxmf:meshbeacon`, socket 0660) | `/run/meshbeacon-io/` is root:meshbeacon 0750; the engine would have had to join the core's group |
+| Socket in `/run/meshbeacon-io/messaging/`, group `meshbeacon` (ADR 0018 point 6) | `/run/meshbeacon-messaging/engine.sock`, 0660, group `mb-msg` (only the core and the engine), folder `mb-lxmf:mb-msg` 0750 | `/run/meshbeacon-io/` is root:meshbeacon 0750 (the engine would have had to join the core's group); a setgid folder failed under AppArmor (no `CAP_FSETID`), found by CI |
 | `SOURCE_UNKNOWN` held ≤ 10 minutes (T44, proposed) | 2 minutes, at most 50, with path requests | A path answer arrives in seconds; a shorter hold bounds memory |
 | Core-side supervision in the core | Also present in production images, inert (`EngineSupervisor` is created only when the image's marker and the `messaging` service exist) | It is part of the core; tests prove nothing of the engine runs or exists in production |
 | `s6-svperms` for named services | For every service that starts down | The production script names no messaging service |
