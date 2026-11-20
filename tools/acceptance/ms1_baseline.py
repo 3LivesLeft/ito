@@ -9,6 +9,8 @@ waits 60 s, then measures for 120 s: CPU from the container's cgroup (v1 ``cpuac
 ``cpu.stat``), RSS + swap of every process in the container, the listening TCP and UDP ports and
 Unix sockets, and whether ``/data/messaging`` was created. One line per run; then the difference
 of the means. It prints no addresses, identities or keys (rule 5) and changes no image.
+It needs the Docker host (a development machine). On Home Assistant OS use
+docs/testing/m4-pi-acceptance.md instead, which needs no Docker access.
 """
 
 from __future__ import annotations
