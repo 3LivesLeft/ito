@@ -149,7 +149,8 @@ You get sensors for status, connectivity, peers, traffic, known paths, links rel
 processor and memory use and restarts. Home Assistant keeps their history and statistics itself. An
 example dashboard is in the repository (`docs/home-assistant/dashboard.yaml`).
 
-- **Read-only.** Home Assistant can see the status but cannot control your node.
+- **Status is read-only.** Home Assistant cannot control your node. With messaging on,
+  administrators can read and send messages and edit contacts in the Messages tab; nothing else.
 - **Private.** The status stays on Home Assistant's internal network, encrypted, and protected by
   a key and a certificate that change every time the app starts. It contains no addresses, keys,
   passphrases or network names. Nothing is sent anywhere else.
@@ -157,7 +158,10 @@ example dashboard is in the repository (`docs/home-assistant/dashboard.yaml`).
   Supervisor. Newer Supervisors provide a local socket for this, and MeshBeacon uses it
   automatically. On current Supervisors the hand-over crosses the internal network without
   encryption, so another installed app able to spoof on that network might read the key; this has
-  not been demonstrated. The key only allows reading the status, until the next app start. You can
+  not been demonstrated. The status key only allows reading the status, until the next app start.
+  With messaging on, a separate messaging key travels the same way and would allow reading and
+  sending messages until the next app start (an accepted risk; Home Assistant keeps that key in
+  memory only). You can
   reduce this risk with the Supervisor's advanced `app_drop_net_raw` feature flag.
 - **Honest numbers.** Anything Reticulum does not report is shown as "unknown". **Links relayed for
   others** shows that transport mode is carrying other people's connections. It is not a count of
@@ -175,14 +179,18 @@ MeshBeacon can run an LXMF messaging service, so that apps such as Sideband can 
 It is **off** unless you switch it on.
 
 1. Open the **Configuration** tab and tick **Enable LXMF messaging**.
-2. Under **Messaging: contacts**, add each person or device allowed to message MeshBeacon: a name
-   you choose and their LXMF address (32 characters, shown in their app).
+2. Make sure **Show MeshBeacon's status in Home Assistant** is on too (the Messages tab needs it).
 3. **Save**, then **Restart** the app. The log says `LXMF messaging: on`.
-4. Open the **MeshBeacon** dashboard in Home Assistant. Its **Messaging** card shows whether
-   messaging is starting, running or has a problem, and MeshBeacon's own messaging address with a
-   **Copy** button. Add that address as a contact in your app.
-5. Send MeshBeacon a message. Your app shows it as delivered, and MeshBeacon answers with a short
-   confirmation (switch this off with **Messaging: reply to confirm each message**).
+4. Open **MeshBeacon** in Home Assistant's sidebar → **Messages**. Copy MeshBeacon's address and add
+   it as a contact in your app.
+5. Choose **Add contact** and paste your app's own LXMF address (32 characters, shown in your app).
+6. Send MeshBeacon a message from your app. It appears in the Messages tab; type a reply and press
+   **Send**. Below each message you send, MeshBeacon says whether it is waiting, sending, delivered
+   (only when your app confirmed it) or stored on a propagation node.
+
+Contacts can also be listed under **Messaging: contacts**; they are added to the Messages tab when
+the app starts, and you manage them there afterwards. **Messaging: automatic reply** answers a
+contact at most once every six hours.
 
 Both sides must be on the same Reticulum network, for example connected to the same peer.
 
@@ -192,9 +200,10 @@ Both sides must be on the same Reticulum network, for example connected to the s
 - **Strangers.** Only your contacts can message MeshBeacon unless you switch on **Messaging: accept
   messages from anyone**; then each sender's app must do a small proof-of-work calculation
   ("stamp") per message, which keeps spam away.
-- **Message text.** Reading and sending messages from Home Assistant comes in a later version.
-  Until then MeshBeacon counts messages and can confirm them, but does not keep, show or log what
-  they say.
+- **Message text.** Conversations are kept by the app (up to 10,000 messages) so that they survive
+  restarts and updates; only Home Assistant administrators can read them, in the Messages tab.
+  They never appear in the app log or in Home Assistant's history, logbook or diagnostics. Delete a
+  conversation or remove a contact from the ⋮ menu. While messaging is off they are kept, not shown.
 - **Privacy.** With a display name left empty (the default), MeshBeacon's announcement carries no
   name. The messaging address is shown on the dashboard but not stored in Home Assistant's history.
 - **If something is wrong**, the Messaging card says what, in plain words (for example a contact

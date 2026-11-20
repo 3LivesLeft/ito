@@ -145,7 +145,9 @@ credentials, storage and IPC, proven by adversarial isolation tests, must be **i
 M4 is accepted or any additional community service is introduced. An ADR alone is not sufficient
 ([roadmap](../roadmap.md), isolation gate IS-1 to IS-4).
 
-**Rule carried forward:** no write-capable credential (for example a future messaging key) is ever
+**Amended by [ADR 0024](0024-messaging-in-home-assistant.md) (20 Nov 2026):** the messaging key is
+delivered over both transports, an approved trade-off (RR-9b); it is still never persisted by Home
+Assistant. Original rule, for the record: no write-capable credential (for example a future messaging key) is ever
 delivered over the compatibility path ([secure interface options](../research/secure-interface-options.md),
 D7). Home Assistant keeps no field from a discovery message other than the status connection's
 (config entry v2, `ENTRY_KEYS`).

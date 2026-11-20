@@ -124,6 +124,9 @@ docs/home-assistant-integration.md  v0.2 integration: set-up, entities, panel, d
 docs/marketplace.md                Marketplace compatibility (prepared, not published)
 docs/releasing.md                  release process: one version and tag, order, dry run, M2 steps
 docs/research/v0.3-install.md      verified Marketplace / app store / Supervisor-socket facts
+docs/adr/0024-messaging-in-home-assistant.md  M5: Messages tab, messaging key (memory-only in HA),
+                                   contact store and history in the engine's queue.db
+custom_components/meshbeacon/conversations.py  M5 admin-only websocket commands + live updates
 project.yaml                       project identifiers (name, slug, repository, image) in one place
 tools/check_release.py             release-layout check (app store, Marketplace, versions)
 tools/verify_image.py              release-candidate image check (platforms, labels, SBOM, reproducible)

@@ -28,7 +28,7 @@ from .const import (
     SCAN_INTERVAL,
     UNREACHABLE_GRACE,
 )
-from .messaging import MessagingHub, remember_key
+from .conversations import MessagingHub, remember_key
 from .nodes import app_slug
 
 _LOGGER = logging.getLogger(__name__)

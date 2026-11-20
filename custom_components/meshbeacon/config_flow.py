@@ -13,7 +13,7 @@ from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
 from .client import MeshBeaconClient, MeshBeaconError
 from .const import CONF_APP_SLUG, CONF_CERT, CONF_NODE_KEY, CONF_TOKEN, DOMAIN, ENTRY_VERSION
-from .messaging import remember_key
+from .conversations import remember_key
 
 _TOKEN = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
 _FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")

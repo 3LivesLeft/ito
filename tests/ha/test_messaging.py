@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
-from custom_components.meshbeacon import messaging
+from custom_components.meshbeacon import conversations as messaging
 from custom_components.meshbeacon.const import DOMAIN, ENTRY_KEYS
 from custom_components.meshbeacon.diagnostics import async_get_config_entry_diagnostics
 

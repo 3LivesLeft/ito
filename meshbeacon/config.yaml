@@ -5,7 +5,7 @@
 # discovery message needs no Supervisor API permission; only Home Assistant Core can read it.
 # M4 (D-M4-8): optional LXMF messaging, off by default; it needs no new permission either.
 name: MeshBeacon
-version: "0.3.1"
+version: "0.4.0"
 slug: meshbeacon
 description: Decentralised connectivity for your home.
 url: https://github.com/3LivesLeft/meshbeacon

@@ -4,7 +4,7 @@
 The integration polls the app's token-authenticated status interface on Home Assistant's internal
 network. It is set up only through Supervisor discovery, never imports Reticulum, and offers no
 way to control the node. With LXMF messaging on, administrators can read and send messages in the
-panel's Messages view (messaging.py); that is the only write path, and it reaches contacts only.
+panel's Messages view (conversations.py); that is the only write path, and it reaches contacts only.
 """
 
 from __future__ import annotations

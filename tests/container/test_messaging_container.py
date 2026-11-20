@@ -603,6 +603,24 @@ API = (
 )
 
 
+MESSAGES = (
+    "import http.client, json, ssl, sys\n"
+    "c = ssl.create_default_context(); c.check_hostname = False; c.verify_mode = ssl.CERT_NONE\n"
+    "h = http.client.HTTPSConnection('127.0.0.1', 8100, timeout=15, context=c)\n"
+    "h.request('POST', '/api/v1/messaging', body=sys.argv[2], headers={'Authorization': 'Bearer ' + sys.argv[1]})\n"
+    "r = h.getresponse(); print(json.dumps({'status': r.status, 'body': json.loads(r.read() or b'null')}))\n"
+)
+
+
+def messages(app: App, key: str, request: dict) -> dict:
+    """One request to the messaging endpoint (M5, ADR 0024), as Home Assistant makes it."""
+    out = app.exec("python3", "-I", "-c", MESSAGES, key, json.dumps(request), check=False).strip()
+    try:
+        return json.loads(out.splitlines()[-1])
+    except (ValueError, IndexError):
+        return {}
+
+
 def dashboard(app: App, token: str) -> dict:
     """The ``messaging`` section of the status API: what the integration and its panel show."""
     out = app.exec("python3", "-I", "-c", API, token, check=False).strip()
@@ -696,6 +714,21 @@ def test_messaging_talks_lxmf_over_the_shared_instance_with_authenticated_rpc(ap
     # destination table from its *own* configuration folder, which the engine's user cannot share
     # with Reticulum's without reaching into Reticulum's private storage. Once per engine start.
     assert logs.count("Could not load known destinations from shared instance database") == 1
+    # M5 (ADR 0024): the same conversation through the Home Assistant endpoint, with the separate
+    # messaging key from the discovery message; the status key is refused there.
+    config = json.loads((tmp_path / "supervisor" / "discovery.json").read_text())["body"]["config"]
+    key = config["messaging_key"]
+    assert key != token
+    assert messages(app, token, {"op": "conversations"})["status"] == 401
+    listed = messages(app, key, {"op": "conversations"})
+    assert listed["status"] == 200, listed
+    [peer] = [c for c in listed["body"]["conversations"] if c["name"] == "Peer"]
+    assert peer["address"] == peer_address and peer["origin"] == "configuration"
+    history = messages(app, key, {"op": "history", "contact": peer["id"]})["body"]["messages"]
+    assert [m["direction"] for m in history] == ["in", "out"] and history[1]["auto"] is True
+    assert history[1]["state"] == "delivered"
+    assert messages(app, key, {"op": "inbound", "cursor": 0})["status"] == 400  # the core's own operation
+    assert not re.search(r"(?<![0-9a-f])[0-9a-f]{32,}(?![0-9a-f])", app.logs(), re.I)  # rule 5
 
 
 def test_an_engine_that_reticulum_refuses_shows_a_problem_not_running(apps, tmp_path):

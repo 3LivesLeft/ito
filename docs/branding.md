@@ -166,6 +166,10 @@ without it (preview, a future built-in interface), the device's `prefers-color-s
 | Peer card | Name, status chip, facts list; coloured left edge | Status in words |
 | Banner | Problem or unavailable notice, coloured edge, plain-language next step | `role="status"` |
 | Empty, error, loading | Centred card with the mark, a heading, one sentence and at most one button; loading uses quiet pulsing skeletons | `role="alert"` for errors; `aria-busy` while loading; no motion with reduced motion |
+| Conversation list (M5) | Rows with an initials avatar (accent tint), name, one-line preview, time and an unread badge (accent pill); the open conversation is tinted | Each row a button with `aria-current`; badge has an `aria-label` ("3 unread") |
+| Message bubble (M5) | Incoming: neutral tint, left; outgoing: accent tint, right; time and delivery state in words below (tone colour plus words, a double tick only for Delivered); automatic replies italic with a label | Text only as text (`pre-wrap`); state never by colour alone; log is `role="log"` |
+| Composer (M5) | Growing textarea and a pill **Send** button; plain-language note when sending is unavailable; byte count only near the limit | Labelled; Enter sends, Shift+Enter new line; errors `role="alert"` |
+| Quiet button | Outlined pill in accent text (Add contact, Copy, Send again) | 36 px minimum height |
 
 New features (LXMF messaging, I2P, LoRa) add views made of these components and tokens. A new
 pattern is added here first, in the same change.
@@ -174,6 +178,8 @@ pattern is added here first, in the same change.
 
 - Content up to 1280 px wide, 16 px padding on phones and 24 px from 870 px.
 - Tiles: two columns on phones; four on desktops.
+- Messages: two columns from 870 px (conversations 280–360 px, then the conversation); below it
+  the list, and one conversation full width with a Back button.
 - Charts: one column below 900 px; traffic full width with processor and memory side by side
   above it. No horizontal scrolling at 320 px.
 
