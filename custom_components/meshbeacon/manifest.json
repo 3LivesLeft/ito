@@ -1,6 +1,6 @@
 {
   "domain": "meshbeacon",
-  "name": "MeshBeacon",
+  "name": "ito",
   "after_dependencies": [
     "hassio"
   ],
