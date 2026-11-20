@@ -1,8 +1,12 @@
-# MeshBeacon
+# ito
+
+**The internet, reimagined.** · [ito.earth](https://ito.earth)
+
+*Formerly MeshBeacon. The existing installation identifiers remain unchanged for compatibility.*
 
 **Decentralised connectivity for your home.**
 
-MeshBeacon is a free, open-source, privacy-first, decentralised communications gateway for
+ito is a free, open-source, privacy-first, decentralised communications gateway for
 [Home Assistant](https://www.home-assistant.io/), powered by the
 [Reticulum](https://github.com/markqvist/Reticulum) reference implementation.
 
@@ -38,7 +42,7 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 
 | Document | Purpose |
 |---|---|
-| [Vision](docs/vision.md) | Why MeshBeacon exists and what it is not |
+| [Vision](docs/vision.md) | Why ito exists and what it is not |
 | [Architecture](docs/architecture.md) | Proposed structure and boundaries |
 | [Roadmap](docs/roadmap.md) | Provisional versions and v0.1.0 acceptance criteria |
 | [Feasibility study](docs/research/feasibility.md) | Phase 0 research with verified facts, assumptions and open questions |
@@ -59,13 +63,13 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 
 ## Credits
 
-MeshBeacon builds on the work of others:
+ito builds on the work of others:
 
 - **Reticulum (RNS)** and **LXMF** by Mark Qvist, licensed under the Reticulum License.
 - **Home Assistant**, its Supervisor, base images and builder tooling, by the Open Home Foundation
   and contributors.
 
-MeshBeacon is an independent project and is not affiliated with or endorsed by the Reticulum
+ito is an independent project and is not affiliated with or endorsed by the Reticulum
 project, Home Assistant, the Open Home Foundation or Ratspeak. It is also **not affiliated with the
 MeshBeacon disaster-response project** ([meshbeacon.org](https://meshbeacon.org)), which is an
 unrelated project with the same name.
@@ -80,7 +84,7 @@ history. They are subject to the maintainer's review before they are accepted. S
 
 ## Licence
 
-MeshBeacon's own code and documentation are licensed under the
+ito's own code and documentation are licensed under the
 [Apache License, Version 2.0](LICENSE) ([ADR 0002](docs/adr/0002-licence.md)).
 
 Its container images (none published yet) will also contain third-party components under their
