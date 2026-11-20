@@ -3,10 +3,10 @@
 # or Home Assistant API access, no extra capabilities, no device access, custom AppArmor profile.
 # v0.2: Supervisor discovery for the optional Home Assistant integration (ADR 0006). Posting a
 # discovery message needs no Supervisor API permission; only Home Assistant Core can read it.
-name: MeshBeacon
+name: ito
 version: "0.2.0"
 slug: meshbeacon
-description: Decentralised connectivity for your home — a private Reticulum node.
+description: Private, decentralised connectivity for your home — powered by Reticulum.
 url: https://github.com/3LivesLeft/meshbeacon
 arch:
   - aarch64
