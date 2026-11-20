@@ -142,3 +142,7 @@ runs used the real pinned base image, and CI and the release dry run are green. 
 isolated network); MS-18 and MS-1's Pi half on the spare Pi; IS-4's VM run (RG-13). **Memory:**
 +44.0 MiB in a container on the real base, above the +40 MiB criterion; D-M4-7 decides it on the
 Pi.
+
+**Pi procedure (prepared, not run):** [M4 on the reference Pi](../testing/m4-pi-acceptance.md)
+measures MS-1 and MS-18 with three separate test apps beside the installed app. It needs the
+maintainer's decisions P-1 to P-4 and approval for each step that changes the installation.

@@ -178,8 +178,8 @@ accepted only when the maintainer has also recorded:
 | Item | What is needed | Where it is recorded |
 |---|---|---|
 | **MS-14** | The interoperability matrix both ways with Sideband 2.3.x and Ratspeak 1.1.x on an isolated network: direct, opportunistic, propagated, stamped and offline cases. Q-43 (LXMF 1.3.0 against 1.3.1) is part of it | Manual, here |
-| **MS-18** | On the spare Pi: idle memory added by messaging (criterion ≤ +40 MiB; containers read +44 MiB), the app ≤ 160 MiB, CPU added ≤ 0.5 %, and a stamp at the recipient's cost in ≤ 30 s or a clear failure (Q-41). D-M4-7 decides the memory criterion | Pi, here |
-| **MS-1 (Pi half)** | Idle memory and CPU with messaging off, unchanged from v0.2 on the Pi (`tools/acceptance/ms1_baseline.py` runs there as-is) | Pi, here |
+| **MS-18** | On the reference Pi ([procedure](m4-pi-acceptance.md); decision P-1: the live Pi, not a spare one, without disturbing the installed app): idle memory added by messaging (criterion ≤ +40 MiB; containers read +44 MiB), the app ≤ 160 MiB, CPU added ≤ 0.5 % (basis: P-2), and a stamp at the recipient's cost in ≤ 30 s or a clear failure (Q-41). D-M4-7 decides the memory criterion | Pi, here |
+| **MS-1 (Pi half)** | Idle memory and CPU with messaging off, unchanged from v0.2 on the Pi ([procedure](m4-pi-acceptance.md): Supervisor figures, since `ms1_baseline.py` needs Docker access, which the procedure does not use) | Pi, here |
 | **IS-4 (VM half)** | The isolation tests under the Supervisor-loaded AppArmor profile on a VM (RG-13) | VM, here |
 
 None of these can run in this sandbox or in CI. No further code change is known to be needed for
