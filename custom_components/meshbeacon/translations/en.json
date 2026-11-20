@@ -152,6 +152,47 @@
       },
       "peer_reconnections": {
         "name": "{peer} reconnections"
+      },
+      "messaging": {
+        "name": "Messaging",
+        "state": {
+          "disabled": "Off",
+          "starting": "Starting",
+          "running": "Running",
+          "error": "Problem",
+          "paused": "Paused"
+        }
+      },
+      "messages_received": {
+        "name": "Messages received"
+      },
+      "messaging_contacts_reachable": {
+        "name": "Messaging contacts reachable"
+      },
+      "messaging_last_received": {
+        "name": "Last message received"
+      },
+      "messaging_replies_sent": {
+        "name": "Confirmation replies sent"
+      },
+      "messaging_last_reply": {
+        "name": "Last confirmation reply",
+        "state": {
+          "queued": "Queued",
+          "sending": "Sending",
+          "sent_unconfirmed": "Sent, not confirmed",
+          "delivered": "Delivered",
+          "stored_on_node": "Stored on propagation node",
+          "failed": "Failed",
+          "rejected": "Refused",
+          "expired": "Expired"
+        }
+      },
+      "messages_refused": {
+        "name": "Messages refused"
+      },
+      "messaging_memory": {
+        "name": "Memory use (messaging)"
       }
     }
   },

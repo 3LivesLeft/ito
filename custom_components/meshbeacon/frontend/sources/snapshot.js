@@ -7,7 +7,7 @@
 // Units match what the integration's sensors present in Home Assistant, so both sources look
 // identical: data sizes in MB (10^6 bytes), rates in kB/s (10^3 B/s), memory in MiB (2^20).
 
-import { ABSENT, HISTORY_KEYS, LABELS } from "../model.js";
+import { ABSENT, HISTORY_KEYS, LABELS, messagingSummary } from "../model.js";
 
 const SCHEMA = 1;
 const MB = 1e6;
@@ -144,6 +144,13 @@ export class SnapshotSource {
 
   _peer(name) {
     return this.snapshot.peers.find((p) => p && p.name === name) || null;
+  }
+
+  /** The optional messaging engine (M4), or null when the app has none. */
+  messaging() {
+    const m = this.snapshot && this.snapshot.messaging;
+    if (!m || typeof m !== "object") return null;
+    return messagingSummary(this.reachable ? m : { ...m, state: "unavailable" });
   }
 
   peers() {

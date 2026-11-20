@@ -109,6 +109,12 @@ dl { margin: 0; }
 .banner { display: flex; gap: var(--mb-space-md); align-items: flex-start; border-left: 4px solid var(--tone); }
 .banner strong { display: block; margin-bottom: 2px; font-weight: 600; }
 .rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.messaging { display: grid; gap: 10px; border-left: 4px solid var(--tone); }
+.messaging .address { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.messaging code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; overflow-wrap: anywhere; user-select: all; padding: 4px 6px; border: 1px solid var(--mb-line); border-radius: 6px; }
+.messaging .copy { font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--mb-line); background: transparent; color: inherit; cursor: pointer; min-height: 32px; }
+.messaging ol { margin: 8px 0; padding-left: 20px; display: grid; gap: 4px; }
+.messaging summary { cursor: pointer; font-weight: 500; }
 .rows dt, .rows dd { padding: 10px 0; border-bottom: 1px solid var(--mb-line); margin: 0; font-size: 14px; }
 .rows dt { color: var(--mb-muted); }
 .rows dd { text-align: right; font-variant-numeric: tabular-nums; padding-left: var(--mb-space-md); font-weight: 500; }
