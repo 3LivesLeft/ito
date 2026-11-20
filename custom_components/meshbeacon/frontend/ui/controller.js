@@ -4,7 +4,7 @@
 // source, the root to render into, its own header extras and its own wording.
 
 import { RANGES, TABS, bucket } from "../model.js";
-import { brandTitle, message, skeletonPage, tabs } from "./components.js";
+import { brandTitle, message, skeletonPage, tabs as tabsBar } from "./components.js";
 import { h } from "./dom.js";
 import { STYLE } from "./style.js";
 import { diagnostics, overview } from "./views.js";
@@ -21,9 +21,17 @@ export class InterfaceController {
    * @param {() => Node[]} [o.headerExtras] e.g. Home Assistant's menu button, an app picker
    * @param {(tab: string) => void} [o.onNavigate]
    * @param {() => void} [o.onRetry]
+   * @param {object} [o.messages] the Messages view (ui/messages.js), when the delivery offers messaging
+   * @param {(shown: boolean) => void} [o.onMessages] told when the Messages view is shown or hidden
    */
-  constructor({ root, source, copy, headerExtras = () => [], onNavigate = () => {}, onRetry = () => {} }) {
-    Object.assign(this, { root, source, copy, headerExtras, onNavigate, onRetry });
+  constructor({ root, source, copy, headerExtras = () => [], onNavigate = () => {}, onRetry = () => {}, messages = null, onMessages = () => {} }) {
+    Object.assign(this, { root, source, copy, headerExtras, onNavigate, onRetry, messages, onMessages });
+    this.unread = () => 0;
+    this._messagesShown = false;
+    // Persistent slots: the Messages view stays mounted across renders, so a message being written,
+    // the focus and the scroll position survive live updates.
+    this._slots = { header: h("div", { class: "slot" }), nav: h("div", { class: "slot" }), main: h("div", { class: "slot" }) };
+    this._mounted = false;
     this.tab = "overview";
     this.range = copy.ranges.includes("24h") ? "24h" : copy.ranges[0];
     this.history = { state: "idle", values: {} };
@@ -75,25 +83,53 @@ export class InterfaceController {
     this.render();
   }
 
+  /** The tabs this app offers: Messages only for an app with messaging. */
+  tabs() {
+    const hasMessaging = Boolean(this.messages && this.source.messaging && this.source.messaging());
+    return TABS.filter((t) => t.key !== "messages" || hasMessaging).map((t) => {
+      const unread = t.key === "messages" ? this.unread() : 0;
+      return unread ? { ...t, label: `${t.label} (${unread > 99 ? "99+" : unread})` } : t;
+    });
+  }
+
   render() {
     const phase = this.source.phase;
     let main;
     let showTabs = false;
+    const tabs = this.tabs();
+    const tab = tabs.some((t) => t.key === this.tab) ? this.tab : "overview";
+    const messagesShown = phase === "ready" && tab === "messages";
+    if (messagesShown !== this._messagesShown) {
+      this._messagesShown = messagesShown;
+      this.onMessages(messagesShown);
+    }
     if (phase === "error") main = message({ ...this.copy.loadError(this.source.error), alert: true, action: { label: "Try again", onClick: this.onRetry } });
     else if (phase === "loading") main = skeletonPage("Loading MeshBeacon");
     else if (phase === "empty") main = message(this.copy.notSetUp);
     else {
       showTabs = true;
-      const ctx = { source: this.source, now: Date.now(), range: this.range, history: this.history, onRange: (r) => this.setRange(r), copy: this.copy };
-      main = h("main", { id: "content", role: "tabpanel" }, this.tab === "diagnostics" ? diagnostics(ctx) : overview(ctx));
+      if (messagesShown) {
+        this.messages.update({ summary: this.source.messaging(), language: this.source.language, now: Date.now() });
+        const current = this._slots.main.firstElementChild;
+        main = current && current.dataset.tab === "messages" ? current : h("main", { id: "content", role: "tabpanel", class: "messages-main", "data-tab": "messages" }, this.messages.element);
+      } else {
+        const ctx = { source: this.source, now: Date.now(), range: this.range, history: this.history, onRange: (r) => this.setRange(r), copy: this.copy };
+        main = h("main", { id: "content", role: "tabpanel" }, tab === "diagnostics" ? diagnostics(ctx) : overview(ctx));
+      }
     }
     const header = h("header", {}, ...this.headerExtras().slice(0, 1), brandTitle(), ...this.headerExtras().slice(1));
     const nav = showTabs
-      ? tabs("MeshBeacon sections", TABS, this.tab, (t) => {
+      ? tabsBar("MeshBeacon sections", tabs, tab, (t) => {
           this.setTab(t);
           this.onNavigate(t);
         })
       : null;
-    this.root.replaceChildren(...[h("style", { text: STYLE }), header, nav, main].filter(Boolean));
+    if (!this._mounted) {
+      this.root.replaceChildren(h("style", { text: STYLE }), this._slots.header, this._slots.nav, this._slots.main);
+      this._mounted = true;
+    }
+    this._slots.header.replaceChildren(header);
+    this._slots.nav.replaceChildren(...(nav ? [nav] : []));
+    if (this._slots.main.firstElementChild !== main) this._slots.main.replaceChildren(main);
   }
 }

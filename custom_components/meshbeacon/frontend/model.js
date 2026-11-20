@@ -81,6 +81,7 @@ export const RANGES = [
 
 export const TABS = [
   { key: "overview", label: "Overview" },
+  { key: "messages", label: "Messages" }, // shown only for an app with messaging (M5)
   { key: "diagnostics", label: "Diagnostics" },
 ];
 
@@ -297,11 +298,11 @@ export const MESSAGING_OFF_TEXT =
 export const MESSAGING_STEPS = Object.freeze([
   "In your LXMF app (for example Sideband), connect to the same Reticulum network as MeshBeacon, for example through the same peer.",
   "Add MeshBeacon as a contact in that app, using the address above.",
-  "In MeshBeacon's Configuration tab, add your app's own LXMF address under “Messaging: contacts”, save, and restart the app.",
-  "Send MeshBeacon a message. Your app shows it as delivered, and MeshBeacon answers with a short confirmation.",
+  "In MeshBeacon's Messages tab, choose “Add contact” and enter your app's own LXMF address.",
+  "Send MeshBeacon a message from your app. It appears in the Messages tab, where you can reply.",
 ]);
 export const MESSAGING_NOTE =
-  "Reading and sending messages from Home Assistant comes in a later version. Until then MeshBeacon does not keep or show message text.";
+  "Read and answer messages in the Messages tab. Conversations are kept by the MeshBeacon app, never in Home Assistant's history.";
 
 const ADDRESS = /^[0-9a-f]{32}$/;
 const count = (v) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : null);
@@ -331,4 +332,114 @@ export function messagingSummary(raw) {
     lastReplyLabel: reply ? LABELS.delivery[reply] : null,
     autoReply: typeof raw.auto_reply === "boolean" ? raw.auto_reply : null,
   };
+}
+
+// -- Messages (M5, ADR 0024) ----------------------------------------------------------------------
+// What each outbound state means to the user. "Delivered" only for LXMF's delivery proof.
+export const DELIVERY_TEXT = Object.freeze({
+  queued: "Waiting to send",
+  sending: "Sending…",
+  delivered: "Delivered",
+  stored_on_node: "Stored on a propagation node, not yet delivered",
+  sent_unconfirmed: "Sent, no delivery confirmation",
+  failed: "Not sent",
+  rejected: "Refused",
+  expired: "Not delivered within 7 days",
+});
+export const RETRYABLE = Object.freeze(["failed", "rejected", "expired", "sent_unconfirmed"]);
+export const DELIVERY_TONE = Object.freeze({
+  queued: "neutral",
+  sending: "info",
+  delivered: "good",
+  stored_on_node: "info",
+  sent_unconfirmed: "warn",
+  failed: "bad",
+  rejected: "bad",
+  expired: "bad",
+});
+// Plain-English messages for the codes the integration and the app return.
+export const MESSAGING_ERRORS = Object.freeze({
+  not_enabled: "Messaging is off in the MeshBeacon app.",
+  unavailable: "Messaging is not running right now. It usually comes back by itself within a minute.",
+  unreachable: "Home Assistant cannot reach the MeshBeacon app. It may be restarting.",
+  unauthorised: "MeshBeacon has a new key and Home Assistant is fetching it. Try again in a moment.",
+  rate_limited: "Too many messages in a short time. Wait a minute, then try again.",
+  queue_full: "Too many messages are waiting to be sent. Wait until some are delivered.",
+  too_long: "This message is too long. Keep it under about 8,000 characters.",
+  invalid_address: "That is not an LXMF address. It has 32 characters, using 0–9 and a–f.",
+  invalid_name: "Give the contact a name of up to 32 characters.",
+  contact_exists: "This address is already one of your contacts.",
+  too_many_contacts: "You have reached the limit of 100 contacts.",
+  own_address: "That is MeshBeacon's own address. Enter your contact's address instead.",
+  unknown_contact: "This contact no longer exists.",
+  unknown_message: "This message no longer exists.",
+  not_retryable: "This message cannot be sent again.",
+  not_found: "MeshBeacon is not set up in Home Assistant.",
+});
+export const MESSAGE_MAX_BYTES = 8192;
+const LXMF_ADDRESS = /^[0-9a-f]{32}$/;
+
+export function errorText(code) {
+  return MESSAGING_ERRORS[code] || "Something went wrong. Try again in a moment.";
+}
+
+/** An LXMF address as people paste it: spaces, angle brackets and capitals are allowed. */
+export function normaliseAddress(text) {
+  const value = String(text || "")
+    .trim()
+    .replace(/^<|>$/g, "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+  return LXMF_ADDRESS.test(value) ? value : null;
+}
+
+export function byteLength(text) {
+  return new TextEncoder().encode(String(text)).length;
+}
+
+/** A random idempotency key: the same Send, retried or double-clicked, is one message. */
+export function newIdempotencyKey() {
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  return `ui-${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** A conversation list entry, from the integration's answer, cleaned and bounded. */
+export function conversationItem(raw) {
+  if (!raw || typeof raw !== "object" || typeof raw.id !== "string") return null;
+  const last = raw.last && typeof raw.last === "object" ? messageItem(raw.last) : null;
+  return {
+    id: raw.id,
+    name: typeof raw.name === "string" && raw.name ? raw.name.slice(0, 32) : raw.id === "unknown" ? "Other senders" : raw.id,
+    address: typeof raw.address === "string" && LXMF_ADDRESS.test(raw.address) ? raw.address : null,
+    fromConfiguration: raw.origin === "configuration",
+    strangers: raw.id === "unknown",
+    heard: raw.heard === true,
+    unread: typeof raw.unread === "number" && raw.unread > 0 ? Math.round(raw.unread) : 0,
+    last,
+  };
+}
+
+/** One message, from the integration's answer. Text is shown as text only, never as markup. */
+export function messageItem(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const state = typeof raw.state === "string" && DELIVERY_TEXT[raw.state] ? raw.state : null;
+  return {
+    seq: typeof raw.seq === "number" ? raw.seq : 0,
+    id: typeof raw.message_id === "string" ? raw.message_id : "",
+    outgoing: raw.direction === "out",
+    text: typeof raw.text === "string" ? raw.text : "",
+    at: typeof raw.at === "number" && Number.isFinite(raw.at) ? raw.at * 1000 : null,
+    state,
+    retrying: state === "queued" && raw.reason === "retrying",
+    auto: raw.auto === true,
+    unread: raw.unread === true,
+  };
+}
+
+/** The words under an outgoing message. */
+export function deliveryWords(m) {
+  if (!m.state) return "";
+  if (m.retrying) return "Not reached yet, trying again";
+  return DELIVERY_TEXT[m.state];
 }

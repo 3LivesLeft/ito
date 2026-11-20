@@ -162,7 +162,8 @@ test("the known-paths note appears at Reticulum's unused-path target", () => {
 test("tabs come from the route path, defaulting to the overview", () => {
   assert.equal(tabFromPath("/diagnostics"), "diagnostics");
   assert.equal(tabFromPath(""), "overview");
-  assert.equal(tabFromPath("/messages"), "overview"); // no placeholder tabs
+  assert.equal(tabFromPath("/messages"), "messages"); // M5
+  assert.equal(tabFromPath("/compose"), "overview"); // no placeholder tabs
 });
 
 test("frontend files make no external requests and never use innerHTML", () => {
@@ -181,8 +182,8 @@ test("frontend files make no external requests and never use innerHTML", () => {
 test("the frontend folder holds only code and the bundled Inter font with its licence", () => {
   const top = readdirSync(FRONTEND).sort();
   assert.deepEqual(top, ["brand-mark.js", "fonts", "fonts.js", "meshbeacon-panel.js", "model.js", "sources", "tokens.js", "ui"]);
-  assert.deepEqual(readdirSync(new URL("sources/", FRONTEND)).sort(), ["hass.js", "snapshot.js"]);
-  assert.deepEqual(readdirSync(new URL("ui/", FRONTEND)).sort(), ["components.js", "controller.js", "dom.js", "style.js", "views.js"]);
+  assert.deepEqual(readdirSync(new URL("sources/", FRONTEND)).sort(), ["hass.js", "messaging.js", "snapshot.js"]);
+  assert.deepEqual(readdirSync(new URL("ui/", FRONTEND)).sort(), ["components.js", "controller.js", "dom.js", "messages.js", "style.js", "views.js"]);
   const fonts = readdirSync(new URL("fonts/inter-5.3.0/", FRONTEND)).sort();
   assert.deepEqual(fonts, [
     "OFL.txt",

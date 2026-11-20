@@ -54,7 +54,9 @@ async def test_module_is_served_and_holds_no_data(hass, hass_client, mock_entry,
         "ui/style.js",
         "ui/dom.js",
         "sources/hass.js",
+        "sources/messaging.js",
         "sources/snapshot.js",
+        "ui/messages.js",
     ):
         response = await client.get(f"/meshbeacon_panel/{name}")
         assert response.status == 200

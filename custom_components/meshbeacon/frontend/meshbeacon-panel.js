@@ -9,7 +9,9 @@
 import { RANGES, tabFromPath } from "./model.js";
 import { loadFonts } from "./fonts.js";
 import { HassSource } from "./sources/hass.js";
+import { HassMessaging } from "./sources/messaging.js";
 import { InterfaceController } from "./ui/controller.js";
+import { MessagesView } from "./ui/messages.js";
 import { h } from "./ui/dom.js";
 
 const COPY = {
@@ -41,7 +43,10 @@ class MeshBeaconPanel extends HTMLElement {
   constructor() {
     super();
     this._source = new HassSource();
+    this._messaging = new HassMessaging();
     this._ui = new InterfaceController({
+      messages: new MessagesView({ messaging: this._messaging }),
+      onMessages: (shown) => shown && this._messaging.refresh(),
       root: this.attachShadow({ mode: "open" }),
       source: this._source,
       copy: COPY,
@@ -49,8 +54,23 @@ class MeshBeaconPanel extends HTMLElement {
       onNavigate: (tab) => this._navigate(tab),
       onRetry: () => this._load(),
     });
+    this._ui.unread = () => this._messaging.unread;
+    this._messaging.onChange(() => this._ui.render());
     this._timer = null;
-    this._onVisible = () => !document.hidden && this._refresh();
+    this._onVisible = () => {
+      if (!document.hidden) this._refresh();
+      this._live();
+    };
+  }
+
+  /** Live messaging updates only while the panel is open, visible and the app has messaging. */
+  _live() {
+    const node = this._source.node;
+    const summary = this._source.phase === "ready" ? this._source.messaging() : null;
+    const wanted = this.isConnected && !document.hidden && node && summary && summary.state !== "disabled";
+    if (node) this._messaging.bind(this._hass, node.entry_id);
+    if (wanted) this._messaging.start();
+    else this._messaging.stop();
   }
 
   set hass(hass) {
@@ -62,7 +82,10 @@ class MeshBeaconPanel extends HTMLElement {
     else this.removeAttribute("data-theme");
     const changed = this._source.update(hass);
     if (first) this._load();
-    else if (changed) this._ui.render();
+    else if (changed) {
+      this._ui.render();
+      this._live();
+    }
     this._ui.maybeRefreshHistory();
   }
 
@@ -87,12 +110,16 @@ class MeshBeaconPanel extends HTMLElement {
     loadFonts();
     document.addEventListener("visibilitychange", this._onVisible);
     this._timer = setInterval(() => !document.hidden && this._refresh(), 30_000);
-    if (this._hass) this._ui.render();
+    if (this._hass) {
+      this._ui.render();
+      this._live();
+    }
   }
 
   disconnectedCallback() {
     document.removeEventListener("visibilitychange", this._onVisible);
     clearInterval(this._timer);
+    this._messaging.stop();
   }
 
   async _load() {
@@ -100,6 +127,7 @@ class MeshBeaconPanel extends HTMLElement {
     await this._source.load();
     this._ui.render();
     this._ui.loadHistory(true);
+    this._live();
   }
 
   async _refresh() {
@@ -125,6 +153,7 @@ class MeshBeaconPanel extends HTMLElement {
               onchange: (ev) => {
                 this._source.select(Number(ev.target.value));
                 this._source.update(this._hass);
+                this._live();
                 this._ui.loadHistory(true);
               },
             },

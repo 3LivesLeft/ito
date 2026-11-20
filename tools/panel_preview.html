@@ -114,7 +114,44 @@
         if (scenario === "ok") rows.splice(600, 40, { s: "unavailable", lu: rows[600].lu });
         return rows;
       };
+      // &messaging=running: a made-up conversation for the Messages tab (M5). In memory only.
+      const conv = q.get("conversations") === "none" ? [] : [
+        { id: "my-phone", name: "My phone", address: "7d1e0b9a4c3f28e6a5b0d9c8e7f61a2b", origin: "dashboard", heard: true, unread: 1 },
+        { id: "alex", name: "Alex (Sideband)", address: "c0ffee00c0ffee00c0ffee00c0ffee00", origin: "configuration", heard: false, unread: 0 },
+      ];
+      const t0 = now / 1000;
+      let seq = 10;
+      const histories = {
+        "my-phone": [
+          { seq: 1, message_id: "1".repeat(32), direction: "in", text: "Is the heating on at home?", at: t0 - 26 * 3600, unread: false },
+          { seq: 2, message_id: "2".repeat(32), direction: "out", text: "Yes, since 6 pm. 21 °C in the living room.", at: t0 - 25.9 * 3600, state: "delivered" },
+          { seq: 3, message_id: "3".repeat(32), direction: "out", text: "MeshBeacon received your message. (This is an automatic reply.)", at: t0 - 3600, state: "delivered", auto: true },
+          { seq: 4, message_id: "4".repeat(32), direction: "out", text: "Back by 8?", at: t0 - 3000, state: "stored_on_node" },
+          { seq: 5, message_id: "5".repeat(32), direction: "out", text: "Did the parcel arrive?", at: t0 - 1800, state: "expired", reason: "expired" },
+          { seq: 6, message_id: "6".repeat(32), direction: "in", text: q.get("hostile") ? "<img src=x onerror=alert(1)> plain text only" : "Testing from Ratspeak 👋\nSecond line.", at: t0 - 120, unread: true },
+        ],
+        alex: [],
+      };
+      for (const c of conv) { const h = histories[c.id] || []; c.last = h.length ? h[h.length - 1] : null; }
+      const previewMessaging = async (msg) => {
+        const kind = msg.type.split("/").pop();
+        if (kind === "conversations") return { conversations: conv, revision: seq };
+        if (kind === "history") return { messages: histories[msg.contact] || [] };
+        if (kind === "read") { const c = conv.find((x) => x.id === msg.contact); if (c) c.unread = 0; return { read: 1 }; }
+        if (kind === "send") {
+          const h = histories[msg.contact] ||= [];
+          const m = { seq: ++seq, message_id: seq.toString(16).padStart(32, "0"), direction: "out", text: msg.text, at: Date.now() / 1000, state: "sending" };
+          h.push(m);
+          conv.find((x) => x.id === msg.contact).last = m;
+          setTimeout(() => { m.state = "delivered"; preview.notify(); }, 1500);
+          return { message_id: m.message_id, state: "queued" };
+        }
+        if (kind === "contact_add") { const id = msg.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"); conv.push({ id, name: msg.name, address: msg.address, origin: "dashboard", heard: false, unread: 0, last: null }); histories[id] = []; return { contact: id }; }
+        return {};
+      };
+      const preview = { listeners: [], notify() { for (const l of this.listeners) l({ type: "changed" }); } };
       const hass = {
+        connection: { subscribeMessage: async (cb) => { preview.listeners.push(cb); setTimeout(() => cb({ type: "changed" }), 0); return () => {}; } },
         language: "en-GB",
         themes: { darkMode: q.get("theme") === "dark" },
         states,
@@ -127,6 +164,7 @@
             if (scenario === "error") throw { code: "unknown_command", message: "Unknown command." };
             return { nodes: scenario === "empty" ? [] : [node] };
           }
+          if (msg.type.startsWith("meshbeacon/messaging/")) return previewMessaging(msg);
           if (scenario === "nohistory") throw { code: "unknown_command" };
           if (msg.type === "history/history_during_period") {
             return {
