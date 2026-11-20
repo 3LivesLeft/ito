@@ -93,6 +93,9 @@ profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
   # created only when messaging is on). File modes (mb-lxmf:mb-msg and meshbeacon:mb-msg, 0750)
   # keep Reticulum's user out; nothing here runs. Validated under enforcement in CI since M4 WP6.
   /run/meshbeacon-messaging/{,**} rw,
+  # The shared instance's RPC key while messaging is on (ADR 0023): written by root's init step,
+  # read by Reticulum's user and the engine's user through the group mb-rpc (0750/0640).
+  /run/meshbeacon-rpc/{,**} rw,
   /dev/tty rw,
 
   # The Supervisor's per-app socket (newer Supervisors; used only by the discovery relay).

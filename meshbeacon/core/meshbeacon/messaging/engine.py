@@ -49,6 +49,8 @@ RATE_PER_SENDER = (20, 60.0)  # at most 20 messages a minute from one sender
 RATE_TOTAL = (60, 60.0)  # and 60 a minute in all
 HOLD_MAX = 50  # messages waiting for their sender's key, at most
 HOLD_FOR = 120.0
+RPC_CHECK_INTERVAL = 30.0  # how often the engine checks that the node accepts its RPC requests
+RPC_CHECK_TIMEOUT = 15.0  # a check still waiting after this long counts as refused
 SOURCE_UNKNOWN = 0x01  # LXMF.LXMessage.SOURCE_UNKNOWN (checked against LXMF in the tests)
 
 
@@ -119,6 +121,10 @@ class Engine:
         self.last_announce = 0.0
         self.last_maintenance = 0.0
         self.last_contact_paths = 0.0
+        self.identity_hash: bytes | None = None
+        self.rpc_ok: bool | None = None  # None until the first check has finished
+        self.rpc_since: float | None = None  # when the check in progress began (monotonic)
+        self.rpc_refusal = ""
 
     # -- start and stop ---------------------------------------------------------------------
     def start(self) -> None:
@@ -135,6 +141,7 @@ class Engine:
             self.reticulum = RNS.Reticulum(configdir=str(self.rns_config), require_shared_instance=True)
         except SystemError as exc:
             raise EngineError("the Reticulum node is not running") from exc
+        self.identity_hash = identity.hash
         anyone = self.settings.inbound == "anyone"
         self.router = LXMF.LXMRouter(
             storagepath=str(self.data),
@@ -156,6 +163,7 @@ class Engine:
             now = self.clock()
             for message in self.queue.pending():
                 self.due[message.message_id] = now  # resubmitted after a restart (ADR 0011)
+        threading.Thread(target=self._watch_rpc, name="rpc-check", daemon=True).start()
         self.announce()
 
     def stop(self) -> None:
@@ -168,6 +176,50 @@ class Engine:
 
     def connected(self) -> bool:
         return bool(self.reticulum is not None and self.reticulum.is_connected_to_shared_instance)
+
+    # -- RPC with the node (ADR 0023) --------------------------------------------------------
+    def check_rpc(self) -> bool | None:
+        """One authenticated request to the node's shared instance: the read-only blackhole check
+        of the engine's own identity (``Reticulum.is_blackholed``, public API). True only when the
+        node accepted the request and answered; a wrong key raises ``AuthenticationError``.
+        None while the engine is not connected to the shared instance (nothing to check)."""
+        import multiprocessing
+
+        self.rpc_refusal = ""
+        if self.reticulum is None or self.identity_hash is None or not self.connected():
+            return None
+        try:
+            self.reticulum.is_blackholed(self.identity_hash)
+        except multiprocessing.AuthenticationError:
+            self.rpc_refusal = "its shared-instance authentication was refused"
+            return False
+        except Exception:
+            self.rpc_refusal = "it did not answer"
+            return False
+        return True
+
+    def _watch_rpc(self) -> None:
+        while not self.stopping.is_set():
+            self.rpc_since = time.monotonic()
+            ok = self.check_rpc()
+            self.rpc_since = None
+            if ok is not None and ok != self.rpc_ok:
+                # Plain words, never a key, an address or exception text (rule 5).
+                print(
+                    "meshbeacon-messaging: Reticulum accepts the engine's requests"
+                    if ok
+                    else f"meshbeacon-messaging: Reticulum refused the engine's requests ({self.rpc_refusal})",
+                    flush=True,
+                )
+            self.rpc_ok = ok
+            self.stopping.wait(RPC_CHECK_INTERVAL if ok is not None else TICK * 5)
+
+    def rpc(self) -> bool | None:
+        """Whether the node accepts the engine's RPC requests; None before the first answer."""
+        since = self.rpc_since
+        if since is not None and time.monotonic() - since > RPC_CHECK_TIMEOUT:
+            return False  # the node has not answered for too long
+        return self.rpc_ok
 
     def announce(self) -> None:
         if self.router is not None and self.delivery is not None:
@@ -404,6 +456,8 @@ class Engine:
             return {
                 "version": contract.VERSION,
                 "connected": self.connected(),
+                # The node accepts the engine's authenticated RPC requests (ADR 0023).
+                "rpc": self.rpc(),
                 "identity": self.identity_event,
                 # The engine's own LXMF address, for the user to give to contacts (D-M4-8). Never a
                 # contact's address: those stay inside the engine (MS-12).

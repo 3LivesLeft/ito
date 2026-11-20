@@ -14,7 +14,9 @@ on.
 - **Start.** Once Reticulum is running and has reported its first status (its shared instance is
   then up), as the ``messaging`` s6 service under its own user, ``mb-lxmf``.
 - **Health.** Every 10 s, on a background thread, a ``status`` request over the engine's socket,
-  which must be served by ``mb-lxmf``. Three missed answers in a row count as a hang.
+  which must be served by ``mb-lxmf``. Three missed answers in a row count as a hang. The engine
+  reports whether the node accepts its authenticated RPC requests (ADR 0023); until it does, the
+  dashboard never shows "Running", and while the node refuses them it shows a problem.
 - **Link** (the M4 binding, ADR 0014). With the same answers the core reports the engine's state,
   its own address and its counters; it reads arrivals to count them and to send each contact the
   optional confirmation reply, then acknowledges them, which deletes them (MS-4). **The core never
@@ -72,6 +74,10 @@ EXIT_REASONS = {
         "(MeshBeacon never replaces it: restore the app from a backup). The app log says which."
     ),
 }
+MSG_RPC_REFUSED = (
+    "Messaging is running, but Reticulum refuses its requests, so it cannot work properly. "
+    "Restart the app; if this repeats, please report it."
+)
 DISABLED: dict[str, Any] = {"enabled": False, "state": "disabled", "message": None}
 
 Link = Callable[[dict[str, Any]], dict[str, Any] | None]
@@ -252,6 +258,8 @@ class EngineSupervisor:
             address = status.get("address")
             view["address"] = address if isinstance(address, str) and ADDRESS.match(address) else None
             view["connected"] = status.get("connected") is True
+            rpc = status.get("rpc")
+            view["rpc"] = rpc if isinstance(rpc, bool) else None  # None: not checked yet
             view["received"] = _count(counters.get("inbound_received"))
             view["refused"] = sum(_count(v) for k, v in counters.items() if str(k).startswith("inbound_refused_"))
         contacts = self.link({"op": "contacts"})
@@ -338,8 +346,13 @@ class EngineSupervisor:
             state, message = "paused", MSG_PAUSED.lstrip("⚠ ")
         elif self.state == "backoff":
             state, message = "error", f"{self.reason} MeshBeacon will try again shortly."
-        elif self.state == "running" and self.healthy and view.get("connected"):
+        elif self.state == "running" and self.healthy and view.get("connected") and view.get("rpc") is False:
+            # Connected, but the node refuses its RPC requests (ADR 0023): never "Running".
+            state, message = "error", MSG_RPC_REFUSED
+        elif self.state == "running" and self.healthy and view.get("connected") and view.get("rpc") is True:
             state, message = "running", None
+        elif self.state == "running" and self.healthy and view.get("connected"):
+            state, message = "starting", "Messaging is checking its connection to Reticulum."
         elif self.state == "running" and self.healthy:
             state, message = "starting", "Messaging is waiting for Reticulum's shared instance."
         else:

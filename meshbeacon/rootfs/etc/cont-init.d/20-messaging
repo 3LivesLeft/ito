@@ -28,6 +28,31 @@ chmod 0750 /run/meshbeacon-messaging
 mkdir -p /run/meshbeacon-messaging/config
 chown meshbeacon:mb-msg /run/meshbeacon-messaging/config
 chmod 0750 /run/meshbeacon-messaging/config
+# The shared instance's RPC key (ADR 0023): new at every container start, root's file, readable by
+# the group mb-rpc only (Reticulum's user, for the node's configuration, and the engine's user,
+# for its client configuration). RNS 1.6.0 authenticates every local client of the shared
+# instance with this one key. It is written by Python, never passed through the shell or printed.
+mkdir -p /run/meshbeacon-rpc
+chown root:mb-rpc /run/meshbeacon-rpc
+chmod 0750 /run/meshbeacon-rpc
+/usr/local/bin/python3 -I -c '
+import grp, os, secrets
+folder = "/run/meshbeacon-rpc"
+temporary = os.path.join(folder, ".rpc_key.new")
+try:
+    os.unlink(temporary)
+except FileNotFoundError:
+    pass
+fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+try:
+    os.write(fd, (secrets.token_hex(32) + "\n").encode())
+    os.fchown(fd, 0, grp.getgrnam("mb-rpc").gr_gid)
+    os.fchmod(fd, 0o640)
+    os.fsync(fd)
+finally:
+    os.close(fd)
+os.replace(temporary, os.path.join(folder, "rpc_key"))
+' || echo "[meshbeacon] warning: could not create the messaging engine's access key for Reticulum"
 # Its output FIFO, beside Reticulum's (root:meshbeacon, 0660; opened by root in the run script).
 mkdir -p /run/meshbeacon-io/messaging
 [ -p /run/meshbeacon-io/messaging/out ] || mkfifo /run/meshbeacon-io/messaging/out

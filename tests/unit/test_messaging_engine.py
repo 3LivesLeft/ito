@@ -248,3 +248,61 @@ def test_the_socket_refuses_long_lines_and_bad_json(tmp_path):
             assert b"invalid" in s.makefile("rb").readline()
     finally:
         server.stop()
+
+
+class FakeReticulum:
+    """Stands in for ``RNS.Reticulum`` as a shared-instance client (public attributes only)."""
+
+    def __init__(self, failure: BaseException | None = None, connected: bool = True) -> None:
+        self.failure = failure
+        self.is_connected_to_shared_instance = connected
+        self.asked: list[bytes] = []
+
+    def is_blackholed(self, identity_hash: bytes) -> bool:
+        self.asked.append(identity_hash)
+        if self.failure is not None:
+            raise self.failure
+        return False
+
+
+def test_the_engine_reports_whether_the_node_accepts_its_rpc(tmp_path, clock):
+    """ADR 0023: a refused key (RNS raises multiprocessing's AuthenticationError, "digest sent was
+    rejected") is a refusal; an answer is acceptance; not connected is "not checked"."""
+    import multiprocessing
+
+    e = make(tmp_path, clock)
+    e.identity_hash = b"\x01" * 16
+    assert e.rpc() is None  # nothing checked yet
+    e.reticulum = FakeReticulum()
+    assert e.check_rpc() is True and e.reticulum.asked == [b"\x01" * 16]
+    e.reticulum = FakeReticulum(multiprocessing.AuthenticationError("digest sent was rejected"))
+    assert e.check_rpc() is False and "authentication" in e.rpc_refusal
+    e.reticulum = FakeReticulum(ConnectionRefusedError())
+    assert e.check_rpc() is False and "did not answer" in e.rpc_refusal
+    e.reticulum = FakeReticulum(connected=False)
+    assert e.check_rpc() is None
+
+
+def test_the_rpc_state_reaches_the_status_answer(tmp_path, clock, capsys):
+    import multiprocessing
+
+    e = make(tmp_path, clock)
+    e.identity_hash = b"\x01" * 16
+    e.reticulum = FakeReticulum(multiprocessing.AuthenticationError("digest sent was rejected"))
+    e.stopping.set()  # one round of the watcher only
+    e.stopping.clear()
+    thread = threading.Thread(target=e._watch_rpc)
+    thread.start()
+    for _ in range(100):
+        if e.rpc_ok is not None:
+            break
+        threading.Event().wait(0.05)
+    e.stopping.set()
+    thread.join(5)
+    answer = e.handle({"op": "status"})
+    assert answer["ok"] is True and answer["connected"] is True and answer["rpc"] is False
+    out = capsys.readouterr().out
+    assert "Reticulum refused the engine's requests (its shared-instance authentication was refused)" in out
+    assert "digest" not in out  # plain words only, never RNS's exception text
+    e.rpc_since = 0.0  # a check that has hung for far longer than RPC_CHECK_TIMEOUT
+    assert e.rpc() is False

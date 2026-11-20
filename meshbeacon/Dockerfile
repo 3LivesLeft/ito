@@ -52,7 +52,8 @@ RUN --mount=type=secret,id=build_ca,required=false \
 
 # MeshBeacon core and its messaging engine, installed into site-packages so that they run under
 # `python3 -I`. Users (ADR 0018): the core 9100, Reticulum 9101, the messaging engine 9102; the
-# group mb-msg (9111) holds only the core and the engine (its socket and settings folder).
+# group mb-msg (9111) holds only the core and the engine (its socket and settings folder); the
+# group mb-rpc (9112) only Reticulum and the engine (the shared instance's RPC key, ADR 0023).
 COPY --exclude=**/__pycache__ core/meshbeacon /tmp/meshbeacon
 RUN set -eu; \
     site="$(python3 -I -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"; \
@@ -69,7 +70,10 @@ RUN set -eu; \
     adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9102 -G mb-lxmf mb-lxmf; \
     addgroup -S -g 9111 mb-msg; \
     addgroup meshbeacon mb-msg; \
-    addgroup mb-lxmf mb-msg
+    addgroup mb-lxmf mb-msg; \
+    addgroup -S -g 9112 mb-rpc; \
+    addgroup mb-rns mb-rpc; \
+    addgroup mb-lxmf mb-rpc
 
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES /usr/share/doc/meshbeacon/
 COPY rootfs /
