@@ -1,8 +1,21 @@
 configuration:
+  network:
+    name: Public Reticulum network
+    description: >-
+      Choose a public network to join it with one click, then save and restart the app.
+      "custom" (the default) joins no public network: MeshBeacon connects only to the peers you
+      add below, and to nobody if you add none. ratspeak_ruby, ratspeak_emerald and
+      ratspeak_diamond are run by Ratspeak; reticulumnet is run by Reticulum Netherlands.
+      Diamond bans nodes that relay for 50 others or open more than 20 connections from one IP
+      address, so do not use it with transport mode. Your own peers below are always used as
+      well. Privacy: the network's operator can see your home's public IP address and how much
+      data you exchange, and may keep logs; they cannot read your end-to-end-encrypted
+      Reticulum traffic. Public networks are run by volunteers with no uptime guarantee.
   peers:
     name: Your own peers
     description: >-
-      Reticulum nodes to connect to, such as a friend's node or your own node elsewhere. Each needs
+      Reticulum nodes to connect to, such as a friend's node or your own node elsewhere. They are
+      used together with the public network chosen above, if any. Each needs
       a name you choose, a host (for example rns.example.org or an IP address) and a port. Network
       name and passphrase are only needed if the peer's operator gave you them.
       Privacy: the operator of each peer can see your home's public IP address and how much data

@@ -34,12 +34,37 @@ After the first successful start, switch on **Watchdog** on the app's Info tab (
 MeshBeacon is designed so that the watchdog only restarts it if MeshBeacon itself stops
 responding, never because your internet is down.
 
-## Connect to a peer
+## Join a public network
 
-A **peer** is another Reticulum node — for example a friend's node, your own node elsewhere, or a
-public entry point you have chosen to trust.
+The quickest way to get connected. No addresses to type.
 
-1. Open the **Configuration** tab and add an entry under **Your own peers**:
+1. Open the **Configuration** tab and choose one under **Public Reticulum network**:
+
+   | Choice | Network | Run by | Address it connects to |
+   |---|---|---|---|
+   | `custom` (default) | none: only your own peers below | — | — |
+   | `ratspeak_ruby` | Ruby | Ratspeak | `1.ratspeak.org`, port 4141 |
+   | `ratspeak_emerald` | Emerald | Ratspeak | `2.ratspeak.org`, port 4242 |
+   | `ratspeak_diamond` | Diamond | Ratspeak | `3.ratspeak.org`, port 4343 |
+   | `reticulumnet` | ReticulumNet | Reticulum Netherlands | `node.reticulumnet.nl`, port 4242 |
+
+   None of them needs a network name or passphrase. **Diamond** bans nodes that relay for 50
+   remote peers or open more than 20 connections from one IP address, so do not combine it with
+   transport mode (MeshBeacon warns you if you do).
+2. **Save**, then **Restart** the app.
+3. In the **Log** tab, look for *"Public network: Ratspeak Emerald"* and then *"Connected to
+   Ratspeak Emerald. Your node is online."* The network also appears as a peer, with its
+   connection status, in the MeshBeacon dashboard and in Home Assistant's entities.
+
+Public networks are run by volunteers, with no uptime guarantee. If one is down, choose another.
+
+## Connect to your own peers
+
+A **peer** is another Reticulum node — for example a friend's node or your own node elsewhere.
+Your own peers are used **together with** the public network you chose, if any. Leave the network
+on `custom` to connect only to them.
+
+1. Open the **Configuration** tab and add an entry under **Your own peers** (up to 10):
    - **name**: anything you like, e.g. `Home peer`
    - **host**: the peer's address, e.g. `rns.example.org` or an IP address
    - **port**: the peer's port, e.g. `4242`
@@ -47,16 +72,18 @@ public entry point you have chosen to trust.
 2. **Save**, then **Restart** the app.
 3. In the **Log** tab, look for *"Connected to Home peer. Your node is online."*
 
-MeshBeacon keeps reconnecting automatically if the peer or your internet connection drops.
+MeshBeacon keeps reconnecting automatically if a peer or your internet connection drops. Peers you
+added before the network selector existed keep working unchanged; if one of them is a network in
+the list above, selecting it does not add it twice.
 
-### Privacy when connecting to a peer
+### Privacy when connecting to a public network or peer
 
-- **The peer's operator can see your home's public IP address**, when you are connected, and how
+- **The operator can see your home's public IP address**, when you are connected, and how
   much data passes through the connection.
 - **They cannot read** your end-to-end-encrypted Reticulum traffic.
 - They may keep logs; MeshBeacon cannot control what an operator records.
 - They may go offline at any time, or ban connections that break their rules.
-- MeshBeacon v0.1.0 ships **no preset public peers**: you decide whom to connect to.
+- MeshBeacon connects to **nobody** until you choose a network or add a peer.
 
 ## Transport mode
 
@@ -92,7 +119,7 @@ folder. MeshBeacon will not start while the option is left on after a replacemen
 
 | Message | What to do |
 |---|---|
-| ⚠ not connected to anyone | Add a peer (see above). Repeated every 6 hours as a reminder. |
+| ⚠ not connected to anyone | Choose a public network or add a peer (see above). Repeated every 6 hours as a reminder. |
 | ⚠ cannot reach any of your peers | Check your internet connection and the peer details. MeshBeacon keeps trying. |
 | ⚠ will try again in 15 minutes | Reticulum keeps failing; the lines above show why. |
 | ✖ has stopped trying | Fix the cause shown above, then restart the app. |

@@ -28,6 +28,7 @@ backup_exclude:
 ulimits:
   nofile: 4096
 options:
+  network: custom
   peers: []
   transport: false
   log_level: normal
@@ -39,6 +40,7 @@ options:
   messaging_accept_anyone: false
   messaging_auto_reply: true
 schema:
+  network: list(custom|ratspeak_ruby|ratspeak_emerald|ratspeak_diamond|reticulumnet)
   peers:
     - name: "match(^[A-Za-z0-9](?:[A-Za-z0-9 _.-]{0,30}[A-Za-z0-9_.-])?$)"
       host: "match(^[A-Za-z0-9.:-]{1,253}$)"

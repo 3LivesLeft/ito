@@ -54,7 +54,7 @@ def describe(s: Snapshot) -> str:
     if s.state is Connectivity.ISOLATED:
         return (
             "⚠ MeshBeacon is running, but it is not connected to anyone. "
-            "Add a peer in the Configuration tab to join a Reticulum network."
+            "Choose a public network, or add a peer, in the Configuration tab to join a Reticulum network."
         )
     if s.state is Connectivity.OFFLINE:
         return (

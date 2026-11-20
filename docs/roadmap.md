@@ -265,7 +265,7 @@ All of tier A (LP-1 to LP-20), plus:
 | RG-7 | Distribution compliance: `THIRD_PARTY_NOTICES` with full Reticulum License text; GPL corresponding-source bundle; licence allow-list (licensing O1–O7; Q-17, Q-19) | Maintainer + CI | Not started |
 | RG-8 | Trademark register searches (UK IPO, EUIPO, WIPO, USPTO, MyIPO) — Q-23 | Maintainer | Not started |
 | RG-9 | Courtesy contact with the existing MeshBeacon project; outcome recorded — Q-29 | Maintainer | Not started |
-| RG-10 | Public peer presets: only if verified (V1–V7, two independent operators, operator consent — Q-13, Q-28); otherwise none shipped | Maintainer | Not started |
+| RG-10 | Public peer presets: only if verified (V1–V7, two independent operators, operator consent — Q-13, Q-28); otherwise none shipped | Maintainer | In progress: selector and data ready; V1–V7 pending |
 | RG-11 | Private vulnerability reporting enabled — Q-27 | Maintainer | Not started |
 | RG-12 | AI assistance disclosed; every merged change reviewed by the named human maintainer | Maintainer | Not started |
 | RG-13 | **v0.3 VM acceptance** on isolated VMs ([procedures](testing/v0.3-vm-acceptance.md)): real Supervisor compatibility and security controls (SO-1, SO-1b, SO-1c, SO-1d, SO-2, SO-3, AA-1, TM-1, with the credential-isolation probe in both transports); terminal-free installation (IN-1 to IN-11, AP-1); migration and rollback (MG-9 to MG-11) | Maintainer (needs a VM host; not runnable in the cloud sessions used so far) | Not started |

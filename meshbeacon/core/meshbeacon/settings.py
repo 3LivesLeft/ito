@@ -12,6 +12,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+from . import networks
+
 LogLevel = Literal["quiet", "normal", "detailed"]
 LOG_LEVELS: tuple[LogLevel, ...] = ("quiet", "normal", "detailed")
 
@@ -29,6 +31,7 @@ _LABEL_RE = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
 _PASSPHRASE_FORBIDDEN = set("\"'#,%$\\")
 
 ALLOWED_TOP_LEVEL = {
+    "network",
     "peers",
     "transport",
     "log_level",
@@ -88,7 +91,10 @@ class Messaging:
 
 @dataclass(frozen=True)
 class Settings:
+    # Every Reticulum interface to configure: the selected public network (if any) first, then
+    # the user's own peers. ``network`` is the selected preset id, or ``custom``.
     peers: tuple[Peer, ...] = ()
+    network: str = networks.CUSTOM
     transport: bool = False
     log_level: LogLevel = "normal"
     memory_limit_mb: int = MEMORY_LIMIT_DEFAULT_MB
@@ -255,6 +261,31 @@ def _parse_peer(index: int, raw: Any, problems: list[str]) -> Peer | None:
     return Peer(name=name, host=host, port=port, network_name=network_name, passphrase=passphrase)
 
 
+def _apply_network(value: Any, peers: list[Peer], problems: list[str]) -> tuple[str, list[Peer]]:
+    """Add the selected public network as the first peer (ADR 0004; ``custom`` adds none).
+
+    If the user already has a peer with the same host and port (for example one they typed in
+    before the selector existed), theirs is kept as it is and the preset is not added twice.
+    """
+    if value is None or value == "":
+        value = networks.CUSTOM
+    if not isinstance(value, str) or value not in networks.choices():
+        problems.append("'network' must be one of: " + ", ".join(networks.choices()) + ".")
+        return networks.CUSTOM, peers
+    preset = networks.presets().get(value)
+    if preset is None:
+        return value, peers
+    if any(p.host.casefold() == preset.host and p.port == preset.port for p in peers):
+        return value, peers
+    if any(p.name.casefold() == preset.name.casefold() for p in peers):
+        problems.append(
+            f"One of your own peers is called '{preset.name}', the same as the public network you "
+            "selected. Rename that peer, or remove it."
+        )
+        return value, peers
+    return value, [Peer(name=preset.name, host=preset.host, port=preset.port), *peers]
+
+
 def parse_options(raw: Any) -> Settings:
     """Validate the Supervisor ``options.json`` content and return typed settings."""
     if not isinstance(raw, dict):
@@ -282,6 +313,8 @@ def parse_options(raw: Any) -> Settings:
                 problems.append(f"Two peers are called '{peer.name}'. Each peer needs a different name.")
             seen.add(key)
 
+    network, peers = _apply_network(raw.get("network", networks.CUSTOM), peers, problems)
+
     log_level = raw.get("log_level", "normal")
     if log_level not in LOG_LEVELS:
         problems.append("'log_level' must be quiet, normal or detailed.")
@@ -305,6 +338,7 @@ def parse_options(raw: Any) -> Settings:
         raise ValidationError(problems)
     return Settings(
         peers=tuple(peers),
+        network=network,
         transport=transport,
         log_level=log_level,
         memory_limit_mb=memory,

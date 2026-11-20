@@ -39,7 +39,7 @@ Few options, plain names, safe defaults. Illustrative only — not an implementa
 
 | Option (UI label) | Type | Default | Notes |
 |---|---|---|---|
-| **Public peers** | Multi-select from verified presets | *none* | Description includes the privacy notice. Diamond shows its rules. |
+| **Public Reticulum network** | Single choice (dropdown): `custom` or one preset | `custom` (none) | Implemented (ADR 0004 amendment, 20 Nov 2026). Description includes the privacy notice and Diamond's rules. Own peers are added alongside. |
 | **Your own peers** | List of { name, host, port, network name (optional), passphrase (optional) } | *empty* | Always available. Passphrase is a `password` field, never logged. |
 | **Share my connection with others (transport mode)** | On/off | **Off** | See §4. |
 | **Log detail** | quiet / normal / detailed | normal | Maps to RNS log levels 2 / 4 / 5; never higher by default |
