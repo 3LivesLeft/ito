@@ -6,11 +6,54 @@
 none`); throwaway identities; no live Reticulum network and no Home Assistant installation was
 used. No household identifiers are recorded (CLAUDE.md rule 15).
 
-**Status: every automated M4 criterion passes, locally on the real base image and in CI. M4 is
-not accepted.** Four items remain, and only the maintainer can run them: MS-14 (Sideband and
-Ratspeak, on devices), MS-18 and the Pi half of MS-1 (the spare Pi), and IS-4's VM run. The dev
-image's idle memory is above the +40 MiB criterion in a container; D-M4-7 decides it on the Pi.
-See [Outstanding before acceptance](#outstanding-before-acceptance).
+**Status: D-M4-8 implemented (one standard image, messaging behind a checkbox; ADR 0022). Every
+automated M4 criterion passes, locally on the real base image and in CI. M4 is not accepted.**
+Four items remain, and only the maintainer can run them: MS-14 (Sideband and Ratspeak, on
+devices), MS-18 and the Pi half of MS-1 (the reference Pi), and IS-4's VM run. With messaging on,
+idle memory is above the +40 MiB criterion in a container (+43.8 MiB); D-M4-7 decides it on the
+Pi. See [D-M4-8](#d-m4-8-one-standard-image-20-november-2026) and
+[Outstanding before acceptance](#outstanding-before-acceptance).
+
+## D-M4-8: one standard image (20 November 2026)
+
+The maintainer replaced the production and development images with one standard image in which
+LXMF messaging is off until the user ticks *Enable LXMF messaging*
+([ADR 0022](../adr/0022-standard-image-optional-messaging.md)). The sections after this one record
+the earlier two-image work; where they speak of a production image without messaging, or of
+release verification refusing the engine, that is **superseded** and kept as history.
+
+**What changed.** One Dockerfile stage; the engine, LXMF, its s6 service (starts down), users and
+the one AppArmor rule are in every image. Options `messaging_enabled` (off), `messaging_contacts`,
+`messaging_accept_anyone`, `messaging_auto_reply` (on), and optional `messaging_display_name` and
+`messaging_propagation_node`, validated by the core. The core writes the engine's settings to
+`/run/meshbeacon-messaging/config/settings.json` (its own, group `mb-msg`, 0640); the engine never
+reads `options.json`. Reticulum shares its instance only while messaging is on. The core reports
+messaging in the status API (state, own address, counts; never content) and can answer contacts
+with a fixed confirmation. The dashboard has a Messaging card. Release verification requires the
+engine and its `down` file. Version 0.3.0 (unreleased).
+
+| Check | Where | Result |
+|---|---|---|
+| `ruff`, `ruff format`, `mypy` (core, tools); `mypy --strict` (integration, Python 3.14) | local | Clean |
+| Unit and isolated-network integration, real LXMF and `lxmd` | local | **533 passed, 1 skipped** (needs an unprivileged user) |
+| Container suite on the standard image, with the v0.2.0 image for the upgrade test | local | **33 passed, 1 skipped** (AppArmor enforcement: CI). One test first failed on a version number hard-coded as 0.2.0; it now reads `config.yaml` and also checks the status API's messaging section |
+| Home Assistant integration tests | local | **101 passed** |
+| Panel tests (`node --test`) | local | **44 passed**; card rendered at 1280 and 390 px, light and dark, both data sources: no console errors, no horizontal scrolling |
+| Release layout (`check_release.py`), release-gate unit tests | local | Passed |
+| CI and release dry run | CI | See the PR #8 record; filled in when they finish |
+
+| ID | Criterion (replaces WP5's exclusion checks) | Result | Evidence |
+|---|---|---|---|
+| SI-1 | The image carries the engine, LXMF, the service and its `down` file; release verification requires them | **Pass** | Container test of the image; `verify_image.py` refuses a candidate missing any part (unit tests with real tar layers) |
+| SI-2 | Off by default: no engine process, no messaging data or folders, no shared instance | **Pass** | Fresh container with default options: no `meshbeacon.messaging` process, no `/data/messaging`, no `/run/meshbeacon-messaging`, `share_instance = No`, no `@rns` socket, log `LXMF messaging: off`; status API `{"enabled": false, "state": "disabled"}` |
+| SI-3 | On: exactly one engine; off again stops only messaging; on again keeps the messaging identity; the node identity never changes | **Pass** | Container test: on → one engine as `mb-lxmf`; off → none, data kept, `share_instance = No`; on → `identity unchanged`, same messaging and node identities. Prepare test: the shared instance follows the option, the node identity is unchanged |
+| SI-4 | A v0.2.0 installation upgrades with its identity and options, messaging off | **Pass** | v0.2.0 image built from `80e9f59` creates the node; the standard image takes its data and options (no messaging keys): `unchanged since last start`, same node identity, no engine, no `/data/messaging`; switching messaging on then creates the messaging identity |
+| Settings handover | The engine reads the core's settings and cannot change them | **Pass** | `config` 0750 `meshbeacon:mb-msg`, file 0640; `mb-lxmf` reads it, cannot append or create; `mb-rns` cannot read it; `mb-lxmf` cannot read `options.json`; contacts from the options appear in the engine |
+| Plain-language errors | No tracebacks for the user | **Pass** | Invalid contact address: needs attention with a plain message, no engine, healthy; damaged messaging identity: "Messaging could not start: … the messaging identity is damaged (MeshBeacon never replaces it …)", no traceback, Reticulum untouched |
+
+Memory in a container on the real base (RSS + swap of the app's processes): **messaging off
+65.1 MiB; messaging on 108.9 MiB, so +43.8 MiB**, above the +40 MiB criterion. MS-18 decides it on
+the Pi (D-M4-7).
 
 ## How to reproduce
 
@@ -110,7 +153,7 @@ runs both. CI runs 81 and 82 were cancelled by CI's concurrency rule when a newe
 | IS-2 | **Pass** | The engine holds no Supervisor token, status token or RPC key; its identity is `mb-lxmf` 0600 |
 | IS-3 | **Pass** | Cross-user reads of identities, configs, queue and options fail; the socket serves only UID 9100 and the core accepts only 9102 (`SO_PEERCRED` both ways); `mb-rns` cannot reach the socket folder |
 | IS-3a | **Pass** | `\0rns/meshbeacon` is present inside the app container and unreachable from containers on `none` and `bridge` networks; the RPC refuses a wrong key for `mb-lxmf` and `meshbeacon`; no RPC key in the engine's configuration |
-| IS-4 | **Pass (CI and local); VM pending** | A weakened installation (folders and socket made world-accessible) is detected; the peer check still refuses `mb-rns`. Under AppArmor enforcement in CI (run 78) with a derived profile; the production profile is unchanged. The Supervisor-loaded profile on a VM is part of RG-13 |
+| IS-4 | **Pass (CI and local); VM pending** | A weakened installation (folders and socket made world-accessible) is detected; the peer check still refuses `mb-rns`. Under AppArmor enforcement in CI (run 78) with a derived profile, and since D-M4-8 with the app's own profile (which now carries that one rule). The Supervisor-loaded profile on a VM is part of RG-13 |
 | MS-1 | **Automated: pass. Pi: pending** (criterion: "Automated + Pi") | **Against v0.2, final run, same host, real base** (`tools/acceptance/ms1_baseline.py`; v0.2 = `main` at `80e9f59`, two runs each, 60 s settle, 120 s sample, every process in the container): memory 72.6 / 72.9 MiB (v0.2) vs 73.4 / 72.7 MiB (M4), **+0.3 MiB**; CPU 0.117 / 0.116 % vs 0.122 / 0.125 %, **+0.007 percentage points**; listening endpoints identical (TCP 8099, and the Unix socket of s6-overlay's `s6rc-oneshot-runner`); no `/data/messaging`. Earlier: no engine file, package, user, service or marker in the production file system **or in any layer** (`docker save` scan); `import meshbeacon.messaging` and `import LXMF` fail; no messaging option; no engine process, no `/data/messaging`, `share_instance = No`, no `@rns` socket. Idle memory 68.8 MiB (WP1 baseline 69.5 MiB, within ±2 MiB). Release verification (`verify_image.py`) refuses any layer holding the engine |
 | MS-2 | **Pass** | Separate from the transport identity; replacing the transport identity leaves it unchanged; damaged copies are never replaced and the engine does not start (rule 13) |
 | MS-3 | **Pass** | A reference LXMF peer reads the engine's announce with LXMF's public helpers: no display name and no stamp cost by default. Messages carry no fields; in "anyone" mode only the ticket field (`FIELD_TICKET`), and only to contacts |
@@ -178,8 +221,8 @@ accepted only when the maintainer has also recorded:
 | Item | What is needed | Where it is recorded |
 |---|---|---|
 | **MS-14** | The interoperability matrix both ways with Sideband 2.3.x and Ratspeak 1.1.x on an isolated network: direct, opportunistic, propagated, stamped and offline cases. Q-43 (LXMF 1.3.0 against 1.3.1) is part of it | Manual, here |
-| **MS-18** | On the reference Pi ([procedure](m4-pi-acceptance.md); decision P-1: the live Pi, not a spare one, without disturbing the installed app): idle memory added by messaging (criterion ≤ +40 MiB; containers read +44 MiB), the app ≤ 160 MiB, CPU added ≤ 0.5 % (basis: P-2), and a stamp at the recipient's cost in ≤ 30 s or a clear failure (Q-41). D-M4-7 decides the memory criterion | Pi, here |
-| **MS-1 (Pi half)** | Idle memory and CPU with messaging off, unchanged from v0.2 on the Pi ([procedure](m4-pi-acceptance.md): Supervisor figures, since `ms1_baseline.py` needs Docker access, which the procedure does not use) | Pi, here |
+| **MS-18** | On the reference Pi with the standard app ([procedure](m4-pi-acceptance.md)): idle memory added by switching messaging on (criterion ≤ +40 MiB; containers read +43.8 MiB), the app ≤ 160 MiB, CPU added ≤ 0.5 percentage points, and a stamp at the recipient's cost in ≤ 30 s or a clear failure (Q-41: observed through MS-14's stamped case). D-M4-7 decides the memory criterion | Pi, here |
+| **MS-1 (Pi half)** | Idle memory and CPU with messaging off, against the v0.2 readings on the same Pi ([procedure](m4-pi-acceptance.md), dashboard figures) | Pi, here |
 | **IS-4 (VM half)** | The isolation tests under the Supervisor-loaded AppArmor profile on a VM (RG-13) | VM, here |
 
 None of these can run in this sandbox or in CI. No further code change is known to be needed for

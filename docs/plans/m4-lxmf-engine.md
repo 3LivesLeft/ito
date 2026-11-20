@@ -1,6 +1,7 @@
 # M4 — Standalone LXMF messaging engine: implementation plan
 
-**Status:** approved (D-M4-1 to D-M4-7). **WP1 to WP6 are development-complete, and every automated
+**Status:** approved (D-M4-1 to D-M4-8). **WP1 to WP6 are development-complete; D-M4-8 (one
+standard image, messaging behind a checkbox, ADR 0022) is implemented, and every automated
 acceptance criterion passes (20 Nov 2026).** M4 is not yet accepted: four manual, Pi and VM items
 remain. See [M4 results](../testing/m4-results.md#outstanding-before-acceptance). **Branches:**
 `feature/m4-lxmf-engine` (PR #7), from `feature/v0.3.0-install-ready` at `ff050d3`; final acceptance
@@ -10,8 +11,9 @@ evidence on `feature/m4-final-acceptance`, stacked on it. **Date:** 19 November 
 
 A messaging engine that runs on its own, independently of Home Assistant: its own process and
 user, its own identity, a persistent queue with honest receipts, and the versioned Messaging
-Service contract v1 (ADR 0014). It is **off by default** and **absent from production images**
-until M4's gate is passed. It is built only through public LXMF and RNS APIs (CLAUDE.md rules 1,
+Service contract v1 (ADR 0014). It is **off by default**: since D-M4-8 it is in the one standard
+image and runs only when the user ticks *Enable LXMF messaging* (until then it was kept out of
+production images, WP5). It is built only through public LXMF and RNS APIs (CLAUDE.md rules 1,
 3 and 11).
 
 ## Scope
@@ -22,8 +24,8 @@ until M4's gate is passed. It is built only through public LXMF and RNS APIs (CL
 | Engine process `meshbeacon.messaging` (ADR 0008) with contract v1 (ADR 0014) | Hosting a propagation node (ADR 0012: after core messaging) |
 | Messaging identity (ADR 0009): separate, 0600, validated before every start | Per-person identities (Q-45), telemetry, location, LXST voice |
 | Queue and receipts (ADR 0011); **use** of a configured propagation node | Ingress or any built-in interface (ADR 0013 is blocked) |
-| Engine–core binding: the local socket of ADR 0018 | Any user-facing option in production `config.yaml` |
-| A development image and a development-only CLI for tests | Publishing anything |
+| Engine–core binding: the local socket of ADR 0018 | Reading or sending messages from Home Assistant |
+| D-M4-8: the *Enable LXMF messaging* option, contact options, a confirmation reply and the dashboard's messaging card | Publishing anything |
 
 ## Work packages
 
@@ -33,7 +35,7 @@ until M4's gate is passed. It is built only through public LXMF and RNS APIs (CL
 | **WP2 Spike** (time-boxed, go/no-go) | Engine as `mb-lxmf` reaching the RNS shared instance across users; Q-40 (memory), Q-46 (survives RNS restarts), Q-41 (stamp time) | ≤ +40 MiB idle with messaging on, or the plan returns for review |
 | **WP3 Engine** | Router through the public API; identity (ADR 0009); contacts from a development-only file in `/data/messaging/`; inbound policy (contacts only, signature-validated; stamps for "anyone"; size and rate limits); queue and receipts (ADR 0011) | MS-2 to MS-6, MS-8 to MS-10 and MS-16 pass with real LXMF on loopback, and `lxmd` for MS-6 |
 | **WP4 Contract and binding** | Contract v1 over the ADR 0018 socket, with peer checks both ways; the core supervises the engine (bounded restarts) and exposes **nothing** new to Home Assistant | MS-15 and MS-21 pass; contract tests run against the real engine behind a fake binding |
-| **WP5 Packaging** | `lxmf` hash-pinned in a separate `meshbeacon/requirements-messaging.txt`; Dockerfile build argument, off by default; CI builds a development image for messaging tests | A test proves the production image contains no LXMF, no `messaging` service and no messaging option (MS-1 also measured); the release dry run is unchanged |
+| **WP5 Packaging** (revised by D-M4-8) | ~~A development image; the production image without messaging~~ **One standard image** with the engine, `lxmf` (hash-pinned in `meshbeacon/requirements-messaging.txt`), its service and users; messaging off by default | **SI-1** the image carries the engine, LXMF, the service and its `down` file, and release verification requires them; **SI-2** off by default: no engine process, no messaging data or folders, no shared instance (MS-1); **SI-3** on: exactly one engine, and toggling off and on keeps both identities; **SI-4** a v0.2 installation upgrades with its identity and options and messaging off |
 | **WP6 Evidence** | MS-19 (SD-card writes); the isolated interoperability set-up for MS-14 | Automated results in CI; manual and hardware items recorded as M4 acceptance blockers |
 
 ## Acceptance
@@ -42,6 +44,7 @@ until M4's gate is passed. It is built only through public LXMF and RNS APIs (CL
 
 - IS-1 to IS-4;
 - MS-1 to MS-6, MS-8 to MS-10, MS-15, MS-16, MS-19 and MS-21;
+- SI-1 to SI-4 (D-M4-8; they replace WP5's exclusion checks);
 - **MS-14:** interoperability with Sideband 2.3.x and Ratspeak 1.1.x on an isolated network (manual, needs devices);
 - **MS-18:** Pi resources on a spare Pi.
 
@@ -74,6 +77,17 @@ MS-7, MS-11, MS-12, MS-13, MS-20 and MS-22 belong to M5 (Home Assistant). MS-17 
 | **D-M4-3** | Propagation node | Use a configured node in M4; hosting one later |
 | **D-M4-4** | Contacts in M4 | A development-only file; user-facing configuration with M5 |
 | **D-M4-5** | Order | WP1, then WP2, then WP3 to WP5, then WP6; one draft PR, opened only when asked |
+
+## Decision D-M4-8 (maintainer, 20 Nov 2026): one standard image
+
+One MeshBeacon image with optional LXMF messaging behind a checkbox (`messaging_enabled`, off by
+default), configured only through app options; WP5's exclusion requirement is superseded by
+SI-1 to SI-4. The architecture and boundaries stay as built: separate process, user, identity and
+socket; no node RPC key in the engine; the engine reads only the settings the core writes for it.
+Record: [ADR 0022](../adr/0022-standard-image-optional-messaging.md). To make messaging testable
+with Sideband or Ratspeak before Home Assistant messaging (M5), the core counts arrivals, can
+answer contacts with a fixed confirmation, and shows state and address on the dashboard; it never
+keeps or shows message content.
 
 ## Decisions after the spike (maintainer, 19 Nov 2026)
 
@@ -119,7 +133,7 @@ limitations: [M4 results](../testing/m4-results.md). In short:
 - **WP4:** the `messaging` s6 service as `mb-lxmf`, started by the core after Reticulum's first
   status, with health checks over the socket, back-off restarts and a pause after five failures in
   30 minutes; Reticulum and the status API are never touched (MS-15). Socket peer checks both ways.
-- **WP5:** a `messaging-dev` Dockerfile target; the default target (production) never copies the
+- **WP5 (superseded by D-M4-8):** a `messaging-dev` Dockerfile target; the default target (production) never copies the
   engine, LXMF or the service. Tests scan the production file system and every layer; release
   verification refuses a layer holding any of it (MS-1).
 - **WP6:** MS-9 negative and positive with real LXMF, MS-19 (0.2 writes/s idle, 0.5 with
@@ -134,7 +148,7 @@ runs used the real pinned base image, and CI and the release dry run are green. 
 | Item | Done |
 |---|---|
 | **MS-9 negative, no stamp** | A real LXMF stranger sends with no stamp at all; the engine does not accept it, and the same stranger's stamped message is accepted. The test fails when enforcement is turned off |
-| **WP5 verification** | Release verification's patterns are tied to the sources by a test. Every layer's passwd and group files are scanned. A positive control on the dev image shows the scans find the engine. An empirical image diff found no uncovered path |
+| **WP5 verification** (superseded by D-M4-8; release verification now requires the engine) | Release verification's patterns are tied to the sources by a test. Every layer's passwd and group files are scanned. A positive control on the dev image shows the scans find the engine. An empirical image diff found no uncovered path |
 | **WP6 evidence** | Full local and CI results on the real base. **MS-1 against v0.2** on the same host, with `tools/acceptance/ms1_baseline.py`: no change in memory, CPU or endpoints |
 | **Correction** | MS-1 had been reported as a plain pass. It now records its Pi half as outstanding, as the criterion requires ("Automated + Pi") |
 

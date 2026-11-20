@@ -67,7 +67,7 @@ recorder rows; enable them on the entity's settings page if you need them.
 | Receive rate, Send rate | Bytes per second, averaged over the last minute | On |
 | Known paths | Size of Reticulum's path table (its routing table) | On |
 | **Links relayed for others** | Links that other people's traffic is using *through* your node in transport mode | On |
-| Memory use | RSS + swap of all the app's processes, in whole MiB | On |
+| Memory use | RSS + swap of all the app's processes (the messaging engine included when it runs), in whole MiB | On |
 | Processor use | Percentage of one CPU core over the last minute | On |
 | Reticulum restarts, Memory-limit restarts | Automatic restarts since the app started | On |
 | Packets received / sent (all traffic) | Every packet, your node's own included | Off |
@@ -76,6 +76,10 @@ recorder rows; enable them on the entity's settings page if you need them.
 | *Peer* connected, *peer* connected since | Per peer, checked every 10 s by the app (a drop shorter than 10 s may be missed) | On |
 | *Peer* reconnections | Times the peer reconnected since the app started | On |
 | *Peer* data received / sent, receive / send rate, announces | Per-peer traffic detail | Off |
+| **Messaging** | Off, Starting, Running, Problem or Paused. Attributes: the messaging address (to give to contacts), the problem in plain words, and the number of contacts. The address and the message are **not stored in history** | On (only with an app that has messaging, 0.3 and later) |
+| Messages received, Messaging contacts reachable, Last message received | Counts and time; never the content | On |
+| Confirmation replies sent, Last confirmation reply, Messages refused | The confirmation reply and its delivery state ("Delivered" means the contact's app confirmed it; "Stored on propagation node" means it has not reached the contact yet) | On |
+| Memory use (messaging) | The messaging engine's memory | Off |
 
 **Links relayed, not packets forwarded.** Reticulum reports how many links pass *through* your
 node, not how many packets it forwarded for others, so MeshBeacon shows the former and does not
