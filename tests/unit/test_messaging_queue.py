@@ -236,3 +236,12 @@ def test_the_queue_file_is_private(tmp_path, clock):
         q.close()
     finally:
         os.umask(old)
+
+
+def test_every_state_says_what_it_does_and_does_not_establish():
+    """Delivery semantics (M4): each state is documented, and none claims more than LXMF reports."""
+    assert set(contract.STATE_MEANINGS) == set(contract.STATES)
+    assert "does not mean" in contract.STATE_MEANINGS["delivered"]
+    assert "has not reached the recipient" in contract.STATE_MEANINGS["stored_on_node"]
+    for meaning in contract.STATE_MEANINGS.values():
+        assert "read by" not in meaning and "accepted by the recipient" not in meaning

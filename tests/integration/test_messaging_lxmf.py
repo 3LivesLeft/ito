@@ -394,7 +394,7 @@ def test_the_engine_refuses_to_start_without_the_node(tmp_path):
 
 def test_anyone_mode_holds_an_unheard_sender_until_its_key_arrives():
     """``inbound: anyone``: a stranger who never announced is held, asked for, verified and then
-    delivered as ``unknown``; LXMF applies the stamp cost (MS-9)."""
+    accepted as ``unknown``."""
     import LXMF
 
     from meshbeacon.messaging import engine
@@ -410,7 +410,177 @@ def test_anyone_mode_holds_an_unheard_sender_until_its_key_arrives():
         items = wait_for(lambda: inbound(w), 120, why=lambda: w.call(op="status")["counters"])
         assert [(i["contact"], i["content"]) for i in items] == [("unknown", "hello stranger")]
         counters = w.call(op="status")["counters"]
-        assert counters.get("inbound_held_unverified", 0) >= 1 or counters.get("inbound_received") == 1
+        assert counters.get("inbound_held_unverified", 0) >= 1 and counters.get("inbound_received") == 1
+    finally:
+        w.close()
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_anyone_mode_rejects_messages_without_a_valid_stamp():
+    """MS-9, negative and positive, against the unmodified LXMF 1.3.0.
+
+    With ``inbound: anyone`` and a stamp cost of 10, a stranger's message whose stamp is weaker
+    than 10 is not accepted, and the same stranger's properly stamped message is. A contact
+    holding the engine's ticket is not charged: its weakly stamped reply is accepted. The weak
+    stamp comes from LXMF's public ``stamp_cost`` argument (cost 1); only a message whose reported
+    ``stamp_value`` is really below 10 counts as a negative case (a cost-1 stamp reaches 10 about
+    once in 500 tries, and is then sent again).
+
+    Delivery semantics: the stranger's LXMF reports the rejected message as delivered. Transport
+    delivery is not application acceptance (contract.STATE_MEANINGS).
+    """
+    required = 10
+    root = Path(tempfile.mkdtemp(prefix="mb-lxmf-stamps-"))
+    w = World(root)
+    try:
+        eve, _ = w.peer("eve")  # a stranger, heard (announces), so nothing is held
+        alice, alice_address = w.peer("alice")
+        w.start_engine(
+            {
+                "inbound": "anyone",
+                "stamp_cost": required,
+                "contacts": [{"id": "alice", "name": "Alice", "destination": alice_address}],
+            }
+        )
+        wait_for(lambda: all(c["heard"] for c in w.call(op="contacts")["contacts"]))
+        time.sleep(6)  # both peers have heard the engine's announce, with its stamp cost
+        eve.send({"cmd": "cost", "to": w.address()})
+        assert eve.wait_event(lambda e: e.get("event") == "cost", 20)["cost"] == required
+
+        weak = None
+        for attempt in range(3):
+            tag = f"weak{attempt}"
+            eve.send({"cmd": "send", "to": w.address(), "content": tag, "stamp_cost": 1, "tag": tag})
+            outcome = eve.wait_event(lambda e, tag=tag: e.get("tag") == tag, 120)
+            if outcome["stamp_value"] is not None and outcome["stamp_value"] < required:
+                weak = (tag, outcome)
+                break
+        assert weak is not None, "could not make a weak stamp"
+        time.sleep(10)  # time for the engine to have accepted it, if it were going to
+        assert all(i["content"] != weak[0] for i in inbound(w)), "an under-stamped message was accepted"
+        print(f"MS-9: stamp value {weak[1]['stamp_value']} < {required}: refused; sender saw {weak[1]['event']!r}")
+
+        eve.send({"cmd": "send", "to": w.address(), "content": "proper stamp", "tag": "good"})
+        good = eve.wait_event(lambda e: e.get("tag") == "good", 300)
+        assert good["stamp_value"] >= required
+        items = wait_for(lambda: [i for i in inbound(w) if i["content"] == "proper stamp"], 60)
+        assert items[0]["contact"] == "unknown"
+
+        # The engine writes to alice, which hands her a ticket; her weakly stamped reply is accepted.
+        sent = w.call(op="send", contact="alice", text="here is a ticket", idempotency_key="key-ticket-01")
+        alice.wait_event(lambda e: e.get("event") == "received" and e["content"] == "here is a ticket", 60)
+        wait_for(lambda: w.call(op="message", message_id=sent["message_id"])["state"] == "delivered", 60)
+        alice.send({"cmd": "send", "to": w.address(), "content": "ticketed reply", "stamp_cost": 1, "tag": "t"})
+        ticketed = alice.wait_event(lambda e: e.get("tag") == "t", 120)
+        items = wait_for(lambda: [i for i in inbound(w) if i["content"] == "ticketed reply"], 60)
+        assert items[0]["contact"] == "alice"
+        print(f"MS-9: the contact's reply used a ticket (stamp value {ticketed['stamp_value']}) and was accepted")
+        assert all(i["content"] != weak[0] for i in inbound(w))
+    finally:
+        w.close()
+        shutil.rmtree(root, ignore_errors=True)
+
+
+class WriteCounter:
+    """File writes in a folder tree, counted with Linux inotify (MS-19). Events are read every
+    0.2 s, so repeated writes to one file within that window count once: a "write" here is a
+    burst of writes to one file, the unit that matters for SD-card wear."""
+
+    IN_MODIFY, IN_CREATE, IN_MOVED_TO, IN_DELETE = 0x2, 0x100, 0x80, 0x200
+
+    def __init__(self, root: Path) -> None:
+        import ctypes
+        import ctypes.util
+
+        self.libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+        self.fd = self.libc.inotify_init1(os.O_NONBLOCK)
+        assert self.fd >= 0
+        mask = self.IN_MODIFY | self.IN_CREATE | self.IN_MOVED_TO | self.IN_DELETE
+        self.paths: dict[int, str] = {}
+        for folder in [root, *[p for p in root.rglob("*") if p.is_dir()]]:
+            wd = self.libc.inotify_add_watch(self.fd, str(folder).encode(), mask)
+            self.paths[wd] = str(folder.relative_to(root))
+        self.events: list[tuple[float, str]] = []
+        self.stop = threading.Event()
+        self.thread = threading.Thread(target=self._read, daemon=True)
+        self.thread.start()
+
+    def _read(self) -> None:
+        import struct
+
+        while not self.stop.is_set():
+            try:
+                data = os.read(self.fd, 65536)
+            except BlockingIOError:
+                time.sleep(0.2)
+                continue
+            offset = 0
+            while offset < len(data):
+                wd, _mask, _cookie, size = struct.unpack_from("iIII", data, offset)
+                name = data[offset + 16 : offset + 16 + size].rstrip(b"\0").decode()
+                self.events.append((time.monotonic(), f"{self.paths.get(wd, '?')}/{name}"))
+                offset += 16 + size
+            time.sleep(0.2)
+
+    def rate(self, since: float, until: float) -> float:
+        return sum(1 for t, _ in self.events if since <= t < until) / (until - since)
+
+    def close(self) -> None:
+        self.stop.set()
+        self.thread.join(2)
+        os.close(self.fd)
+
+
+def test_sd_card_writes_stay_at_or_below_one_a_second():
+    """MS-19: the engine's file writes, idle and under steady two-way traffic (one message each
+    way every 20 s), averaged over a minute each."""
+    root = Path(tempfile.mkdtemp(prefix="mb-lxmf-writes-"))
+    w = World(root)
+    counter = None
+    try:
+        alice, alice_address = w.peer("alice")
+        w.start_engine({"contacts": [{"id": "alice", "name": "Alice", "destination": alice_address}]})
+        wait_for(lambda: w.call(op="contacts")["contacts"][0]["heard"])
+        time.sleep(10)  # settle: first-start writes (identity, stores) are not steady state
+        counter = WriteCounter(w.data)
+        start = time.monotonic()
+        time.sleep(60)
+        idle_end = time.monotonic()
+        cursor = 0
+        for n in range(3):
+            w.call(op="send", contact="alice", text=f"out {n}", idempotency_key=f"key-writes-{n:04d}")
+            alice.send({"cmd": "send", "to": w.address(), "content": f"in {n}", "tag": f"w{n}"})
+            time.sleep(20)
+            items = inbound(w, cursor)
+            if items:
+                cursor = items[-1]["cursor"]
+                w.call(op="ack", cursor=cursor)
+        busy_end = time.monotonic()
+        idle, busy = counter.rate(start, idle_end), counter.rate(idle_end, busy_end)
+        files = sorted({p for _, p in counter.events})
+        print(f"MS-19: {idle:.2f} writes/s idle, {busy:.2f} writes/s with traffic; files written: {files}")
+        assert idle <= 1.0 and busy <= 1.0
+    finally:
+        if counter is not None:
+            counter.close()
+        w.close()
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_sigterm_stops_the_engine_cleanly():
+    """s6 stops the engine with SIGTERM: it closes its socket and queue, lets LXMF persist, exits 0."""
+    root = Path(tempfile.mkdtemp(prefix="mb-lxmf-term-"))
+    w = World(root)
+    try:
+        w.start_engine({})
+        engine = w.engine
+        assert engine is not None
+        engine.p.terminate()
+        assert engine.p.wait(30) == 0
+        engine.events()
+        assert "meshbeacon-messaging: stopped" in engine.seen, engine.seen
+        assert not w.sock.exists()
+        w.engine = None
     finally:
         w.close()
         shutil.rmtree(root, ignore_errors=True)

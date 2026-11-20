@@ -114,6 +114,12 @@ class Services:
         self.node_status = open_fifo(io_root / "reticulum" / "status")
         self.prepare_out = open_fifo(io_root / "prepare" / "out")
         self.prepare_result = open_fifo(io_root / "prepare" / "result")
+        # The messaging engine's output, only in a development image that carries it (M4).
+        engine_out = io_root / "messaging" / "out"
+        self.engine_out = open_fifo(engine_out) if engine_out.exists() else None
+
+    def has(self, name: str) -> bool:
+        return (self.service_root / name / "supervise" / "control").exists()
 
     @classmethod
     def available(cls, service_root: Path = SERVICE_ROOT, io_root: Path = IO_ROOT) -> bool:

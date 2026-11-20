@@ -122,15 +122,24 @@ def peer(folder: Path, port: int, announce: bool) -> None:
                 command.get("title", ""),
                 fields=command.get("fields") and {int(k): v for k, v in command["fields"].items()},
                 desired_method=LXMF.LXMessage.DIRECT,
+                # A deliberately low cost makes LXMF stamp below what the recipient asks for (MS-9).
+                stamp_cost=command.get("stamp_cost"),
             )
             if "content_hex" in command:
                 lxm.set_content_from_bytes(bytes.fromhex(command["content_hex"]))
             else:
                 lxm.set_content_from_string(command["content"])
             tag = command.get("tag", "")
-            lxm.register_delivery_callback(lambda m, tag=tag: emit({"event": "delivered", "tag": tag}))
-            lxm.register_failed_callback(lambda m, tag=tag: emit({"event": "failed", "tag": tag}))
+            # stamp_value: the strength of the stamp LXMF made (LXMessage's public attribute).
+            lxm.register_delivery_callback(
+                lambda m, tag=tag: emit({"event": "delivered", "tag": tag, "stamp_value": m.stamp_value})
+            )
+            lxm.register_failed_callback(
+                lambda m, tag=tag: emit({"event": "failed", "tag": tag, "stamp_value": m.stamp_value})
+            )
             router.handle_outbound(lxm)
+        elif command["cmd"] == "cost":  # what this peer's LXMF believes the recipient asks for
+            emit({"event": "cost", "cost": router.get_outbound_stamp_cost(bytes.fromhex(command["to"]))})
         elif command["cmd"] == "sync":
             node = bytes.fromhex(command["node"])
             while RNS.Identity.recall(node) is None or not RNS.Transport.has_path(node):

@@ -238,3 +238,27 @@ def test_no_record_is_written_for_a_failing_candidate(tmp_path):
     record = tmp_path / "digests.json"
     assert verify_image.main([str(one), str(other), "--version", "0.3.0", "--write-digests", str(record)]) == 1
     assert not record.exists()
+
+
+def test_a_layer_with_the_messaging_engine_is_refused():
+    """M4: release verification refuses any candidate whose layers carry the engine or LXMF."""
+
+    def layer(*names: str) -> bytes:
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w") as tar:
+            for name in names:
+                tar.addfile(tarfile.TarInfo(name), io.BytesIO(b""))
+        return buf.getvalue()
+
+    site = "usr/local/lib/python3.13/site-packages"
+    assert verify_image.messaging_paths(layer(f"{site}/meshbeacon/supervisor.py", "etc/services.d/reticulum/run")) == []
+    for bad in (
+        f"{site}/meshbeacon/messaging/engine.py",
+        f"{site}/LXMF/LXMRouter.py",
+        f"{site}/lxmf-1.3.0.dist-info/METADATA",
+        "usr/local/bin/lxmd",
+        "etc/services.d/messaging/run",
+        "etc/meshbeacon/messaging",
+    ):
+        assert verify_image.messaging_paths(layer(bad)) == [bad], bad
+    assert verify_image.messaging_paths(b"not a tar") == []

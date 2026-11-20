@@ -13,7 +13,8 @@ Policy, as decided in the M4 plan:
   and the engine as a whole, is rate-limited. Every refusal is counted, never logged with an
   address (rule 5).
 * **Outbound.** Direct delivery first. If it fails and a propagation node is configured, the
-  message is handed to that node and reported as ``stored_on_node``: never as ``delivered``. An
+  message is handed to that node and reported as ``stored_on_node``: never as ``delivered``.
+  ``delivered`` means a delivery proof from the recipient's LXMF, no more (``STATE_MEANINGS``). An
   unknown path is requested and retried; failures back off until the queue's seven-day expiry.
   Pending messages are resubmitted after a restart (at least once: the recipient may see a
   duplicate if the engine stopped between sending and the receipt).
@@ -231,7 +232,16 @@ class Engine:
             return
         destination = RNS.Destination(recipient, RNS.Destination.OUT, RNS.Destination.SINGLE, APP_NAME, "delivery")
         method = LXMF.LXMessage.PROPAGATED if propagated else LXMF.LXMessage.DIRECT
-        lxm = LXMF.LXMessage(destination, self.delivery, message.content, message.title, desired_method=method)
+        # In "anyone" mode strangers must pay the stamp cost; a contact gets a ticket with every
+        # message, so that its replies are not charged (MS-9; LXMF's public include_ticket).
+        lxm = LXMF.LXMessage(
+            destination,
+            self.delivery,
+            message.content,
+            message.title,
+            desired_method=method,
+            include_ticket=self.settings.inbound == "anyone",
+        )
         lxm.register_delivery_callback(lambda m, mid=message.message_id: self._on_outbound_done(mid, m))
         lxm.register_failed_callback(lambda m, mid=message.message_id: self._on_outbound_failed(mid, m))
         self.queue.set_state(message.message_id, "sending", propagated=propagated)
@@ -260,7 +270,8 @@ class Engine:
             if message is None or message.state not in ("queued", "sending"):
                 return
             if lxm.state == LXMF.LXMessage.REJECTED:
-                self.queue.set_state(message_id, "rejected", "rejected_by_recipient")
+                by_node = lxm.method == LXMF.LXMessage.PROPAGATED
+                self.queue.set_state(message_id, "rejected", "refused_by_node" if by_node else "transfer_refused")
                 return
             if lxm.method != LXMF.LXMessage.PROPAGATED and self.settings.propagation_node:
                 self._submit(message, propagated=True)  # direct failed: hand it to the node

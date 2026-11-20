@@ -37,7 +37,11 @@ jobs:
       - name: Panel and design-token tests, including WCAG contrast (Node's built-in runner; no packages)
         run: node --test tests/frontend/*.test.mjs
       - name: Shell scripts
-        run: shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/*/run meshbeacon/rootfs/etc/services.d/*/finish tests/container/build_localbase.sh
+        run: >-
+          shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/*/run
+          meshbeacon/rootfs/etc/services.d/*/finish tests/container/build_localbase.sh
+          meshbeacon/rootfs-messaging/etc/cont-init.d/20-messaging meshbeacon/rootfs-messaging/etc/services.d/*/run
+          meshbeacon/rootfs-messaging/etc/services.d/*/finish
       - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           dockerfile: meshbeacon/Dockerfile
@@ -128,6 +132,18 @@ jobs:
           MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
           MESHBEACON_EMULATED: ${{ matrix.emulated }}
         run: python -m pytest -m container tests/container -s -p no:cacheprovider
+      - name: Build the messaging development image (M4; target messaging-dev, never released)
+        if: matrix.arch == 'amd64'
+        run: |
+          docker buildx build --load --platform "${{ matrix.platform }}" \
+            --build-arg BUILD_ARCH=${{ matrix.arch }} --target messaging-dev \
+            -t "meshbeacon:ci-messaging-dev" meshbeacon
+      - name: Messaging engine lifecycle, isolation and production exclusion (M4)
+        if: matrix.arch == 'amd64'
+        env:
+          MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
+          MESHBEACON_MESSAGING_IMAGE: meshbeacon:ci-messaging-dev
+        run: python -m pytest -m container tests/container/test_messaging_container.py -s -p no:cacheprovider -rA
       - name: Load the AppArmor profile into the runner's kernel (enforce mode)
         if: (success() || failure()) && matrix.arch == 'amd64'
         run: |
@@ -208,7 +224,10 @@ jobs:
         with: { python-version: "3.13" }
       - run: pip install --require-hashes -r requirements-dev.txt
       - name: Vulnerability scan of pinned runtime dependencies
-        run: pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements.txt
+        run: |
+          pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements.txt
+          # M4: the messaging development image's only extra dependency (never in production images)
+          pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements-messaging.txt
       - name: Vulnerability scan of the hash-locked CI and release tooling
         run: |
           for lock in requirements-dev.txt requirements-test.txt requirements-release.txt; do

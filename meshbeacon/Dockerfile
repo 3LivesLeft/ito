@@ -1,6 +1,10 @@
 # syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 # MeshBeacon app image. Base image pinned by multi-arch digest (Python 3.13, Alpine 3.24).
-FROM ghcr.io/home-assistant/base-python:3.13-alpine3.24@sha256:c7d34ae22a87275d46deb65bcb0511b389d7bc6eb8dccb28d44dd7cb8616e603
+FROM ghcr.io/home-assistant/base-python:3.13-alpine3.24@sha256:c7d34ae22a87275d46deb65bcb0511b389d7bc6eb8dccb28d44dd7cb8616e603 AS app
+# Stages (M4, WP5): `app` is the production image and the default (the last stage below is an alias
+# of it). `messaging-dev` adds the M4 messaging engine for development and tests only. The engine's
+# source is excluded from `app`'s COPY, so no production layer ever contains it, and nothing in
+# `app` installs LXMF or defines the messaging service (tests/container: production exclusion).
 
 ARG BUILD_VERSION=0.2.0
 ARG BUILD_ARCH
@@ -47,8 +51,9 @@ RUN --mount=type=secret,id=build_ca,required=false \
         -r /tmp/requirements.txt \
     && rm -f /tmp/requirements.txt
 
-# MeshBeacon core, installed into site-packages so that it runs under `python3 -I`.
-COPY core/meshbeacon /tmp/meshbeacon
+# MeshBeacon core, installed into site-packages so that it runs under `python3 -I`. Never the
+# messaging engine (M4): it is excluded here and added only by the messaging-dev stage.
+COPY --exclude=messaging --exclude=**/__pycache__ core/meshbeacon /tmp/meshbeacon
 RUN set -eu; \
     site="$(python3 -I -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"; \
     mv /tmp/meshbeacon "${site}/meshbeacon"; \
@@ -76,3 +81,30 @@ LABEL \
     org.opencontainers.image.description="Decentralised connectivity for your home" \
     org.opencontainers.image.source="https://github.com/3LivesLeft/meshbeacon" \
     org.opencontainers.image.licenses="Apache-2.0 AND LicenseRef-Reticulum"
+
+# ---------------------------------------------------------------------------------------------
+# M4 messaging development image: never published, never built by the release workflow.
+#   docker buildx build --target messaging-dev -t meshbeacon:messaging-dev meshbeacon
+FROM app AS messaging-dev
+COPY requirements-messaging.txt /tmp/requirements-messaging.txt
+RUN --mount=type=secret,id=build_ca,required=false \
+    if [ -s /run/secrets/build_ca ]; then export PIP_CERT=/run/secrets/build_ca; fi; \
+    pip install \
+        --index-url https://pypi.org/simple \
+        --require-hashes --no-deps --only-binary=:all: \
+        -r /tmp/requirements-messaging.txt \
+    && rm -f /tmp/requirements-messaging.txt
+COPY --exclude=**/__pycache__ core/meshbeacon/messaging /tmp/messaging
+RUN set -eu; \
+    site="$(python3 -I -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"; \
+    mv /tmp/messaging "${site}/meshbeacon/messaging"; \
+    python3 -I -m compileall -q "${site}/meshbeacon/messaging" "${site}/LXMF"; \
+    addgroup -S -g 9102 mb-lxmf; \
+    adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9102 -G mb-lxmf mb-lxmf
+COPY rootfs-messaging /
+RUN chmod 0755 /etc/cont-init.d/20-messaging /etc/services.d/messaging/run /etc/services.d/messaging/finish \
+    && chmod 0644 /etc/meshbeacon/messaging
+LABEL org.opencontainers.image.title="MeshBeacon (messaging development image, not for release)"
+
+# The production image (default target): exactly `app`.
+FROM app AS production

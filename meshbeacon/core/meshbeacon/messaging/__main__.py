@@ -25,7 +25,7 @@ CORE_UID = 9100
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="meshbeacon.messaging")
     parser.add_argument("--data", type=Path, default=Path("/data/messaging"))
-    parser.add_argument("--socket", type=Path, default=Path("/run/meshbeacon-io/messaging/engine.sock"))
+    parser.add_argument("--socket", type=Path, default=Path("/run/meshbeacon-messaging/engine.sock"))
     parser.add_argument("--allow-uid", type=int, action="append", default=None)
     parser.add_argument("--instance-name", default=rnsconfig.INSTANCE_NAME)  # tests only
     args = parser.parse_args(argv)

@@ -28,6 +28,35 @@ STATES: Final = (
 )
 FINAL_STATES: Final = frozenset({"delivered", "stored_on_node", "sent_unconfirmed", "failed", "rejected", "expired"})
 
+# What each state does and does not establish (M4). No state says that the recipient's application
+# accepted, showed or read a message: nothing in LXMF reports that.
+STATE_MEANINGS: Final = {
+    "queued": "Waiting to be sent: not yet attempted, or waiting to try again.",
+    "sending": "Handed to LXMF; no outcome yet.",
+    "delivered": (
+        "The recipient's LXMF returned a delivery proof for this message: it reached the recipient's "
+        "LXMF. It does not mean that the recipient's application accepted, "
+        "showed or read it (the recipient may still refuse it under its own policy)."
+    ),
+    "stored_on_node": (
+        "A propagation node accepted the message for storage. It has not reached the recipient, and "
+        "the engine is not told whether it ever does."
+    ),
+    "sent_unconfirmed": "LXMF reported the message sent, without a delivery proof.",
+    "failed": "Not sent and not retried (the contact was removed).",
+    "rejected": "Refused before delivery: by the propagation node (stamp) or by the recipient's transfer.",
+    "expired": "Not delivered within seven days; its content has been deleted.",
+}
+
+# What an inbound message (``inbound``) has passed. Its ``contact`` is the contact whose key signed
+# it, or "unknown" in "anyone" mode: a sender whose signature is valid, but not a known person.
+INBOUND_GUARANTEE: Final = (
+    "LXMF validated its signature against the sender's announced key, it met the stamp cost where "
+    "one applies, and it passed the engine's policy (contacts, size, text, rate)."
+)
+# LXMF proves delivery to the sender before the engine applies its policy, so a sender may see
+# "delivered" for a message that the engine then refused and counted. Refusals are never signalled.
+
 MAX_TEXT_BYTES: Final = 8192  # inbound and outbound content (MS-10)
 MAX_TITLE_BYTES: Final = 256
 MAX_WAIT: Final = 25.0  # long poll (ADR 0014)

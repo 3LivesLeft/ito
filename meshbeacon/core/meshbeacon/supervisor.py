@@ -32,6 +32,7 @@ from typing import IO, Any
 from . import __version__, fsutil, procinfo
 from .api import ApiServer, Discovery, RelayLink, StatusStore, TlsError, container_hostname, make_tls, new_token
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
+from .engine_supervisor import EngineSupervisor
 from .health import HealthServer, Heartbeat
 from .logfilter import RateLimiter, Redactor
 from .metrics import Collector
@@ -193,6 +194,7 @@ class Supervisor:
         require_services: bool = False,
         hostname: Callable[[], str] = container_hostname,
         discovery_timing: dict[str, float] | None = None,
+        engine: EngineSupervisor | None = None,
     ) -> None:
         self.paths = paths
         self.t = timings or Timings()
@@ -240,6 +242,13 @@ class Supervisor:
         self.discovery_ok: bool | None = None
         self.discovery_stop = threading.Event()
         self.discovery_timing = discovery_timing or {}  # shorter back-off in tests only
+        # M4: the messaging engine, only in a development image that carries it (else None).
+        self.engine = engine
+        if engine is not None:
+            engine.say = self.say  # through the core's redaction
+        self.engine_buf = LineBuffer()
+        if engine is not None and services is not None and services.engine_out is not None:
+            self.selector.register(services.engine_out, selectors.EVENT_READ, "engine")
 
     # -- output ------------------------------------------------------------------------------
     def say(self, message: str) -> None:
@@ -813,8 +822,13 @@ class Supervisor:
     def step(self, timeout: float = 1.0) -> None:
         self.heartbeat.beat()
         for key, _mask in self.selector.select(timeout):
+            if key.data == "engine":
+                with contextlib.suppress(BlockingIOError, OSError):
+                    for line in self.engine_buf.feed(os.read(key.fd, 65536)):
+                        self.forward("messaging", line)
+                continue
             if self.child is None:
-                break
+                continue
             buf = self.child.out_buf if key.data == "out" else self.child.status_buf
             try:
                 data = os.read(key.fd, 65536)
@@ -824,6 +838,8 @@ class Supervisor:
                 self._handle_lines(key.data, buf.feed(data))
         self.flush_suppressed()
         self.api_housekeeping()
+        if self.engine is not None:
+            self.engine.step(self.node_ready())
         if self.attention is not None:
             if self.due("attention", self.t.attention_reminder):
                 for m in self.attention:
@@ -838,6 +854,16 @@ class Supervisor:
             if self.prepare_or_attention("restart"):
                 self.start_child()
         self.periodic_report()
+
+    def drain_engine_output(self) -> None:
+        if self.services is None or self.services.engine_out is None:
+            return
+        for line in self.engine_buf.feed(drain(self.services.engine_out)):
+            self.forward("messaging", line)
+
+    def node_ready(self) -> bool:
+        """Reticulum is running and has reported at least once: its shared instance is up."""
+        return self.attention is None and self.child is not None and self.snapshot is not None
 
     def boot(self) -> bool:
         """Start-up sequence. Returns False if MeshBeacon is waiting for the user."""
@@ -892,6 +918,9 @@ class Supervisor:
                 self.step()
         finally:
             self.say("Stopping MeshBeacon.")
+            if self.engine is not None:
+                self.engine.stop()  # before Reticulum, so that it leaves cleanly
+                self.drain_engine_output()
             self.stop_child()
             self.discovery_stop.set()
             if self.api_server is not None:
@@ -972,6 +1001,14 @@ def main() -> int:
                 services = Services()
                 break
             time.sleep(0.1)
+    engine = None
+    if services is not None and EngineSupervisor.enabled() and services.has("messaging"):
+        engine_services = services
+        engine = EngineSupervisor(
+            lambda: engine_services.start("messaging"),
+            print,  # replaced by the supervisor's own output
+            time.monotonic,
+        )
     return Supervisor(
         Paths.from_env(),
         health_host=host,
@@ -984,6 +1021,7 @@ def main() -> int:
         socket_mode=socket_mode,
         services=services,
         require_services=require_services,
+        engine=engine,
     ).run()
 
 

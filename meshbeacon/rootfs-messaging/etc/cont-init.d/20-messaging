@@ -1,0 +1,17 @@
+#!/bin/sh
+# M4 development image only: folders for the messaging engine (ADR 0018). Runs as root after
+# 10-meshbeacon, at every start, so ownership is always right whatever an upgrade left behind.
+set -u
+mkdir -p /data/messaging
+chown -R mb-lxmf:mb-lxmf /data/messaging
+chmod 0700 /data/messaging
+# The engine's socket: only the engine's user can create it, only the core's group can reach it.
+mkdir -p /run/meshbeacon-messaging
+chown mb-lxmf:meshbeacon /run/meshbeacon-messaging
+chmod 2750 /run/meshbeacon-messaging
+# Its output FIFO, beside Reticulum's (root:meshbeacon, 0660; opened by root in the run script).
+mkdir -p /run/meshbeacon-io/messaging
+[ -p /run/meshbeacon-io/messaging/out ] || mkfifo /run/meshbeacon-io/messaging/out
+chown -R root:meshbeacon /run/meshbeacon-io/messaging
+chmod 0750 /run/meshbeacon-io/messaging
+chmod 0660 /run/meshbeacon-io/messaging/out

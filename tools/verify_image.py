@@ -30,6 +30,7 @@ import gzip
 import hashlib
 import io
 import json
+import re
 import sys
 import tarfile
 from pathlib import Path
@@ -91,6 +92,26 @@ def platform_of(descriptor: dict[str, Any]) -> str:
     return f"{platform.get('os')}/{platform.get('architecture')}"
 
 
+# The M4 messaging engine, its dependency and its service: never in a release candidate, in any
+# layer (it is built only by the Dockerfile's messaging-dev target, which is never released).
+MESSAGING_PATHS = re.compile(
+    r"(^|/)(site-packages/meshbeacon/messaging(/|$)|site-packages/LXMF(/|$)|site-packages/lxmf-[^/]*\.dist-info"
+    r"|bin/lxmd$|etc/services\.d/messaging(/|$)|etc/cont-init\.d/20-messaging$|etc/meshbeacon/messaging$)",
+    re.IGNORECASE,
+)
+
+
+def messaging_paths(data: bytes) -> list[str]:
+    """Paths of the messaging engine in one layer (empty for anything that is not a tar layer)."""
+    if data[:2] == b"\x1f\x8b":
+        data = gzip.decompress(data)
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data)) as layer:
+            return [n for n in layer.getnames() if MESSAGING_PATHS.search(n)]
+    except tarfile.ReadError:
+        return []
+
+
 def inspect(archive: Archive, version: str) -> tuple[dict[str, str], list[str]]:
     """(platform → image manifest digest, problems)."""
     problems: list[str] = []
@@ -121,6 +142,10 @@ def inspect(archive: Archive, version: str) -> tuple[dict[str, str], list[str]]:
                 problems.append(f"{platform}: label {key}={labels.get(key)!r}, expected {value!r}")
         if not str(labels.get("org.opencontainers.image.licenses", "")).startswith("Apache-2.0"):
             problems.append(f"{platform}: licence label missing")
+        for layer in manifest.get("layers", []):
+            found = messaging_paths(archive.raw(layer["digest"]))
+            if found:
+                problems.append(f"{platform}: the messaging engine is in a layer: {found[:3]}")
         attestation = attestations.get(descriptor["digest"])
         if attestation is None:
             problems.append(f"{platform}: no attestations (SBOM and provenance)")

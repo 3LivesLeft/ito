@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 """The contract binding (ADR 0014): JSON lines over a Unix socket, for the core only.
 
-``/run/meshbeacon-io/messaging/engine.sock`` (0660, in a 0750 setgid directory owned by
-``mb-lxmf:meshbeacon``). Every connection's peer is checked with ``SO_PEERCRED``: only the allowed
-user (the core, ``meshbeacon``) is served; anyone else is disconnected without an answer. At most
-four connections at once; a request line is at most 16 KiB; each answer is one line. Nothing here
-is reachable from the network or from Home Assistant.
+``/run/meshbeacon-messaging/engine.sock`` (0660, in a 2750 directory owned by
+``mb-lxmf:meshbeacon``, so that the socket's group is the core's). Every connection's peer is
+checked with ``SO_PEERCRED``: only the allowed user (the core, ``meshbeacon``) is served; anyone
+else is disconnected without an answer. At most four connections at once; a request line is at
+most 16 KiB; each answer is one line. Nothing here is reachable from the network or from Home
+Assistant.
 """
 
 from __future__ import annotations
