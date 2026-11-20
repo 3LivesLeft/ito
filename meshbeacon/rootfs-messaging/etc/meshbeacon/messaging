@@ -1,2 +1,0 @@
-# This image carries the M4 messaging engine (development only; never in production images).
-# The core starts the engine and Reticulum shares its instance only when this file exists.

@@ -1,7 +1,18 @@
 # Changelog
 
-## Next (v0.3 development; version number set at release)
+## 0.3.0 — unreleased (develop)
 
+- **Optional LXMF messaging** (off by default). Tick **Enable LXMF messaging** in the
+  Configuration tab and restart the app: MeshBeacon starts its own messaging service, with its own
+  address, which LXMF apps such as Sideband can message. Add the people allowed to message it under
+  **Messaging: contacts**. By default it answers each of their messages with a short confirmation,
+  so you can check both directions; reading and sending messages from Home Assistant comes later.
+  The dashboard shows whether messaging is off, starting, running or has a problem, and its
+  address to copy. Switching it off stops only messaging; Reticulum keeps running and the
+  messaging address is kept. One standard app for everyone: nothing of messaging runs while it is
+  off.
+- Each part of MeshBeacon (the core, Reticulum, messaging) runs as its own user; credentials and
+  data are visible only to the part that needs them.
 - **Install from Home Assistant's own stores** (prepared; available from the first release): the
   app from the app store, the dashboard from Home Assistant's Marketplace (Home Assistant 2026.11
   or newer). No terminal and no copying of files.

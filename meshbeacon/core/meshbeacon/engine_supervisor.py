@@ -1,15 +1,24 @@
 # SPDX-License-Identifier: Apache-2.0
-"""The core's supervision of the messaging engine (M4 WP4; MS-15).
+"""The core's supervision of the optional messaging engine (M4 WP4, MS-15; D-M4-8).
 
-Used only in a development image that carries messaging: production images contain no engine, no
-``messaging`` service and no marker, and then this module does nothing at all (MS-1). It never
-imports the engine or LXMF (MS-21) and never touches Reticulum: an engine that fails, hangs or is
-killed is stopped and started again on its own, and Reticulum and the status API carry on.
+Every MeshBeacon image carries the engine, but it runs only when the user ticks "Enable LXMF
+messaging" (``messaging_enabled``, off by default). When it is off, this module does nothing at
+all. It never imports the engine or LXMF (MS-21) and never touches Reticulum: an engine that fails,
+hangs or is killed is stopped and started again on its own, and Reticulum and the status API carry
+on.
 
-- The engine starts once Reticulum is running and has reported its first status (its shared
-  instance is then up), as the ``messaging`` s6 service under its own user, ``mb-lxmf``.
-- Health: every 30 s, on a background thread, a ``status`` request over the engine's socket,
+- **Settings.** Before each start, the core writes the engine's settings from the validated
+  options to ``/run/meshbeacon-messaging/config/settings.json`` (0640, the core's, group
+  ``mb-msg``): the engine can read it and nothing else of the options. The engine never sees
+  ``options.json``, which holds peer passphrases (IS-2).
+- **Start.** Once Reticulum is running and has reported its first status (its shared instance is
+  then up), as the ``messaging`` s6 service under its own user, ``mb-lxmf``.
+- **Health.** Every 10 s, on a background thread, a ``status`` request over the engine's socket,
   which must be served by ``mb-lxmf``. Three missed answers in a row count as a hang.
+- **Link** (the M4 binding, ADR 0014). With the same answers the core reports the engine's state,
+  its own address and its counters; it reads arrivals to count them and to send each contact the
+  optional confirmation reply, then acknowledges them, which deletes them (MS-4). **The core never
+  logs, stores or forwards message content** (reading messages in Home Assistant is M5).
 - Restarts back off (10 s to 5 min). After five failures in 30 minutes messaging pauses until the
   app is restarted; nothing else is affected.
 - Output reaches the app log through the core's redaction, like Reticulum's.
@@ -18,7 +27,9 @@ killed is stopped and started again on its own, and Reticulum and the status API
 from __future__ import annotations
 
 import contextlib
+import grp
 import json
+import re
 import socket
 import struct
 import subprocess
@@ -28,20 +39,42 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
 
-MARKER = Path("/etc/meshbeacon/messaging")  # only in the messaging development image
+from . import fsutil, procinfo
+from .settings import Messaging
+
 SOCKET = Path("/run/meshbeacon-messaging/engine.sock")
+SETTINGS_FILE = Path("/run/meshbeacon-messaging/config/settings.json")
+SETTINGS_GROUP = "mb-msg"  # the core and the engine only (ADR 0018)
 ENGINE_UID = 9102
+STAMP_COST = 8  # what strangers must spend when "accept messages from anyone" is on (MS-9)
 BACKOFF = (10.0, 30.0, 60.0, 120.0, 300.0)
 PAUSE_AFTER = 5
 PAUSE_WINDOW = 1800.0
-HEALTH_INTERVAL = 30.0
+HEALTH_INTERVAL = 10.0
 HEALTH_TIMEOUT = 5.0
 HEALTH_MISSES = 3
 STOP_GRACE = 10.0
+MAX_LINE = 4 * 1024 * 1024
+ADDRESS = re.compile(r"^[0-9a-f]{32}$")
 
+REPLY_TEXT = (
+    "MeshBeacon received your message. This is an automatic reply: reading messages in Home "
+    "Assistant comes in a later version."
+)
 MSG_PAUSED = (
     "⚠ Messaging stopped after repeated failures and is paused until the app is restarted. Reticulum is not affected."
 )
+# What the dashboard shows for each way the engine can stop (exit codes of meshbeacon.messaging).
+EXIT_REASONS = {
+    2: "Messaging could not start: its settings were refused. Check the messaging options.",
+    3: (
+        "Messaging could not start: Reticulum was not reachable, or the messaging identity is damaged "
+        "(MeshBeacon never replaces it: restore the app from a backup). The app log says which."
+    ),
+}
+DISABLED: dict[str, Any] = {"enabled": False, "state": "disabled", "message": None}
+
+Link = Callable[[dict[str, Any]], dict[str, Any] | None]
 
 
 class Process(Protocol):
@@ -51,20 +84,63 @@ class Process(Protocol):
     def kill(self) -> None: ...
 
 
-def probe(path: Path, expected_uid: int, timeout: float = HEALTH_TIMEOUT) -> bool:
-    """One ``status`` request; True only for a well-formed answer from the engine's user."""
+def request(payload: dict[str, Any], path: Path = SOCKET, expected_uid: int = ENGINE_UID) -> dict[str, Any] | None:
+    """One contract request; the answer only if the engine's own user served it (peer check)."""
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-            sock.settimeout(timeout)
+            sock.settimeout(HEALTH_TIMEOUT)
             sock.connect(str(path))
             creds = sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i"))
             if struct.unpack("3i", creds)[1] != expected_uid:
-                return False  # not the engine: refuse to talk to it (peer check, both ways)
-            sock.sendall(b'{"op": "status"}\n')
-            answer = json.loads(sock.makefile("rb").readline(65536))
+                return None  # not the engine: refuse to talk to it (peer check, both ways)
+            sock.sendall(json.dumps(payload).encode() + b"\n")
+            answer = json.loads(sock.makefile("rb").readline(MAX_LINE))
     except (OSError, ValueError):
-        return False
-    return isinstance(answer, dict) and answer.get("ok") is True
+        return None
+    return answer if isinstance(answer, dict) else None
+
+
+def probe(path: Path, expected_uid: int) -> bool:
+    """One ``status`` request; True only for a well-formed answer from the engine's user."""
+    answer = request({"op": "status"}, path, expected_uid)
+    return answer is not None and answer.get("ok") is True
+
+
+def contact_ids(messaging: Messaging) -> list[str]:
+    """A stable contract ID for each contact, from its name (``a-z0-9_-``, unique)."""
+    ids: list[str] = []
+    for contact in messaging.contacts:
+        base = re.sub(r"[^a-z0-9_-]+", "-", contact.name.lower()).strip("-_")[:28] or "contact"
+        candidate, n = base, 2
+        while candidate in ids or candidate == "unknown":
+            candidate, n = f"{base}-{n}", n + 1
+        ids.append(candidate)
+    return ids
+
+
+def engine_settings(messaging: Messaging) -> dict[str, Any]:
+    """The engine's settings (``meshbeacon.messaging.settings``) from the validated options."""
+    return {
+        "display_name": messaging.display_name,
+        "inbound": "anyone" if messaging.accept_anyone else "contacts",
+        "stamp_cost": STAMP_COST,
+        "propagation_node": messaging.propagation_node,
+        "retention_days": 0,
+        "contacts": [
+            {"id": cid, "name": c.name, "destination": c.address}
+            for cid, c in zip(contact_ids(messaging), messaging.contacts, strict=True)
+        ],
+    }
+
+
+def write_settings(messaging: Messaging, path: Path = SETTINGS_FILE, group: str | None = SETTINGS_GROUP) -> None:
+    gid = grp.getgrnam(group).gr_gid if group else None
+    data = (json.dumps(engine_settings(messaging), sort_keys=True, indent=2) + "\n").encode()
+    fsutil.atomic_write(path, data, mode=0o640, group=gid)
+
+
+def _count(value: Any) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
 
 
 class EngineSupervisor:
@@ -74,12 +150,18 @@ class EngineSupervisor:
         say: Callable[[str], None],
         clock: Callable[[], float],
         *,
+        messaging: Messaging | None = None,
         health: Callable[[], bool] | None = None,
+        link: Link | None = None,
+        settings_writer: Callable[[Messaging], None] | None = None,
     ) -> None:
         self._start = start
         self.say = say
         self.clock = clock
-        self.health = health or (lambda: probe(SOCKET, ENGINE_UID))
+        self.messaging = messaging or Messaging(enabled=True)
+        self._health = health
+        self.link: Link = link or request
+        self.write_settings = settings_writer or write_settings
         self.proc: Process | None = None
         self.state = "waiting"  # waiting | running | backoff | paused | stopped
         self.failures: deque[float] = deque()
@@ -89,10 +171,13 @@ class EngineSupervisor:
         self.lock = threading.Lock()
         self.probing = False
         self.result: bool | None = None
-
-    @classmethod
-    def enabled(cls, marker: Path = MARKER) -> bool:
-        return marker.exists()
+        self.reason: str | None = None
+        self.healthy = False  # answered since its last start
+        ids = contact_ids(self.messaging)
+        self.names = dict(zip(ids, (c.name for c in self.messaging.contacts), strict=True))
+        self.view: dict[str, Any] = {}  # what the engine last reported (under the lock)
+        self.replies: deque[str] = deque(maxlen=20)
+        self.replies_sent = 0
 
     # -- the core calls step() on every loop ---------------------------------------------------
     def step(self, node_ready: bool) -> None:
@@ -103,7 +188,7 @@ class EngineSupervisor:
             code = self.proc.poll()
             if code is not None:
                 self.proc = None
-                self._failed(f"Messaging stopped unexpectedly (exit code {code}).", now)
+                self._failed(EXIT_REASONS.get(code, f"Messaging stopped unexpectedly (exit code {code})."), now)
                 return
             self._check_health(now)
             return
@@ -112,13 +197,15 @@ class EngineSupervisor:
 
     def _launch(self, now: float) -> None:
         try:
+            self.write_settings(self.messaging)
             self.proc = self._start()
-        except OSError:
+        except (OSError, KeyError):
             self._failed("Messaging could not be started.", now)
             return
         self.state = "running"
         self.misses = 0
-        self.next_health = now + HEALTH_INTERVAL
+        self.healthy = False
+        self.next_health = now + 2.0  # a first answer soon after the start
 
     def _check_health(self, now: float) -> None:
         with self.lock:
@@ -126,6 +213,8 @@ class EngineSupervisor:
             probing = self.probing
         if result is not None:
             self.misses = 0 if result else self.misses + 1
+            if result:
+                self.healthy, self.reason = True, None
             if self.misses >= HEALTH_MISSES:
                 proc, self.proc = self.proc, None
                 if proc is not None:
@@ -141,14 +230,77 @@ class EngineSupervisor:
     def _probe(self) -> None:
         ok = False
         with contextlib.suppress(Exception):
-            ok = bool(self.health())
+            status: dict[str, Any] | None = None
+            if self._health is not None:
+                ok = bool(self._health())
+            else:
+                status = self.link({"op": "status"})
+                ok = status is not None and status.get("ok") is True
+            if ok:
+                self._sync(status)
         with self.lock:
             self.result, self.probing = ok, False
+
+    def _sync(self, status: dict[str, Any] | None) -> None:
+        """Read the engine's view, count arrivals, reply to contacts, acknowledge (link thread)."""
+        if status is None:
+            status = self.link({"op": "status"})
+        view: dict[str, Any] = {}
+        if status and status.get("ok"):
+            counters = status.get("counters")
+            counters = counters if isinstance(counters, dict) else {}
+            address = status.get("address")
+            view["address"] = address if isinstance(address, str) and ADDRESS.match(address) else None
+            view["connected"] = status.get("connected") is True
+            view["received"] = _count(counters.get("inbound_received"))
+            view["refused"] = sum(_count(v) for k, v in counters.items() if str(k).startswith("inbound_refused_"))
+        contacts = self.link({"op": "contacts"})
+        if contacts and contacts.get("ok") and isinstance(contacts.get("contacts"), list):
+            view["contacts_reachable"] = sum(
+                1 for c in contacts["contacts"] if isinstance(c, dict) and c.get("heard") is True
+            )
+        arrivals = self.link({"op": "inbound", "cursor": 0, "wait": 0})
+        messages = arrivals.get("messages") if arrivals and arrivals.get("ok") else None
+        if isinstance(messages, list) and messages:
+            self._arrived([m for m in messages if isinstance(m, dict)], view)
+        if self.replies:
+            answer = self.link({"op": "message", "message_id": self.replies[-1]})
+            if answer and answer.get("ok") and isinstance(answer.get("state"), str):
+                view["last_reply_state"] = answer["state"]
+        with self.lock:
+            self.view.update(view)
+
+    def _arrived(self, messages: list[dict[str, Any]], view: dict[str, Any]) -> None:
+        last = 0
+        for item in messages:  # content is never read here, only who and when
+            last = max(last, _count(item.get("cursor")))
+            raw_contact = item.get("contact")
+            contact = raw_contact if isinstance(raw_contact, str) and raw_contact in self.names else None
+            received = item.get("received")
+            view["last_received_at"] = received if isinstance(received, (int, float)) else None
+            view["last_received_from"] = self.names[contact] if contact is not None else None
+            if self.messaging.auto_reply and contact is not None and isinstance(item.get("message_id"), str):
+                sent = self.link(
+                    {
+                        "op": "send",
+                        "contact": contact,
+                        "title": "",
+                        "text": REPLY_TEXT,
+                        "idempotency_key": f"reply-{item['message_id']}"[:64],
+                    }
+                )
+                if sent and sent.get("ok") and isinstance(sent.get("message_id"), str):
+                    self.replies.append(sent["message_id"])
+                    self.replies_sent += 1
+        if last:
+            self.link({"op": "ack", "cursor": last})  # deletes the content at once (MS-4)
 
     def _failed(self, reason: str, now: float) -> None:
         self.failures.append(now)
         while self.failures and self.failures[0] <= now - PAUSE_WINDOW:
             self.failures.popleft()
+        self.reason = reason
+        self.healthy = False
         self.say(f"⚠ {reason}")
         if len(self.failures) >= PAUSE_AFTER:
             self.state = "paused"
@@ -174,5 +326,42 @@ class EngineSupervisor:
         self.state = "stopped"
         self._stop_process()
 
-    def snapshot(self) -> dict[str, Any]:  # for tests and logs; never sent to Home Assistant
+    def memory_bytes(self) -> int | None:
+        pid = getattr(self.proc, "pid", None)
+        return procinfo.memory_bytes(pid) if isinstance(pid, int) and pid > 0 else None
+
+    def public(self) -> dict[str, Any]:
+        """The ``messaging`` section of the status API: plain states and counts, never content."""
+        with self.lock:
+            view = dict(self.view)
+        if self.state == "paused":
+            state, message = "paused", MSG_PAUSED.lstrip("⚠ ")
+        elif self.state == "backoff":
+            state, message = "error", f"{self.reason} MeshBeacon will try again shortly."
+        elif self.state == "running" and self.healthy and view.get("connected"):
+            state, message = "running", None
+        elif self.state == "running" and self.healthy:
+            state, message = "starting", "Messaging is waiting for Reticulum's shared instance."
+        else:
+            state, message = "starting", None
+        return {
+            "enabled": True,
+            "state": state,
+            "message": message,
+            "address": view.get("address"),
+            "contacts_configured": len(self.messaging.contacts),
+            "contacts_reachable": view.get("contacts_reachable"),
+            "accept_anyone": self.messaging.accept_anyone,
+            "auto_reply": self.messaging.auto_reply,
+            "received": view.get("received"),
+            "refused": view.get("refused"),
+            "replies_sent": self.replies_sent,
+            "last_reply_state": view.get("last_reply_state"),
+            "last_received_at": view.get("last_received_at"),
+            "last_received_from": view.get("last_received_from"),
+            "memory_bytes": self.memory_bytes(),
+            "restarts": len(self.failures),
+        }
+
+    def snapshot(self) -> dict[str, Any]:  # for tests and logs
         return {"state": self.state, "recent_failures": len(self.failures)}

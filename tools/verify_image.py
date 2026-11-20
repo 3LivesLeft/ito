@@ -92,24 +92,28 @@ def platform_of(descriptor: dict[str, Any]) -> str:
     return f"{platform.get('os')}/{platform.get('architecture')}"
 
 
-# The M4 messaging engine, its dependency and its service: never in a release candidate, in any
-# layer (it is built only by the Dockerfile's messaging-dev target, which is never released).
-MESSAGING_PATHS = re.compile(
-    r"(^|/)(site-packages/meshbeacon/messaging(/|$)|site-packages/LXMF(/|$)|site-packages/lxmf-[^/]*\.dist-info"
-    r"|bin/lxmd$|etc/services\.d/messaging(/|$)|etc/cont-init\.d/20-messaging$|etc/meshbeacon/messaging$)",
-    re.IGNORECASE,
-)
+# The optional messaging engine (M4, D-M4-8) is part of every release candidate: its code, LXMF, its
+# s6 service and the service's "down" file, which keeps it from ever starting by itself (the core
+# starts it only when the user switches messaging on).
+MESSAGING_PARTS = {
+    "engine": re.compile(r"(^|/)site-packages/meshbeacon/messaging/engine\.py$"),
+    "LXMF": re.compile(r"(^|/)site-packages/LXMF/LXMRouter\.py$"),
+    "service": re.compile(r"(^|/)etc/services\.d/messaging/run$"),
+    "service starts down": re.compile(r"(^|/)etc/services\.d/messaging/down$"),
+    "folders only when on": re.compile(r"(^|/)etc/cont-init\.d/20-messaging$"),
+}
 
 
-def messaging_paths(data: bytes) -> list[str]:
-    """Paths of the messaging engine in one layer (empty for anything that is not a tar layer)."""
+def messaging_parts(data: bytes) -> set[str]:
+    """Which parts of the messaging engine one layer holds (none for anything not a tar layer)."""
     if data[:2] == b"\x1f\x8b":
         data = gzip.decompress(data)
     try:
         with tarfile.open(fileobj=io.BytesIO(data)) as layer:
-            return [n for n in layer.getnames() if MESSAGING_PATHS.search(n)]
+            names = layer.getnames()
     except tarfile.ReadError:
-        return []
+        return set()
+    return {part for part, pattern in MESSAGING_PARTS.items() if any(pattern.search(n) for n in names)}
 
 
 def inspect(archive: Archive, version: str) -> tuple[dict[str, str], list[str]]:
@@ -142,10 +146,12 @@ def inspect(archive: Archive, version: str) -> tuple[dict[str, str], list[str]]:
                 problems.append(f"{platform}: label {key}={labels.get(key)!r}, expected {value!r}")
         if not str(labels.get("org.opencontainers.image.licenses", "")).startswith("Apache-2.0"):
             problems.append(f"{platform}: licence label missing")
+        present: set[str] = set()
         for layer in manifest.get("layers", []):
-            found = messaging_paths(archive.raw(layer["digest"]))
-            if found:
-                problems.append(f"{platform}: the messaging engine is in a layer: {found[:3]}")
+            present |= messaging_parts(archive.raw(layer["digest"]))
+        missing = sorted(set(MESSAGING_PARTS) - present)
+        if missing:
+            problems.append(f"{platform}: the messaging engine is incomplete: {', '.join(missing)} missing")
         attestation = attestations.get(descriptor["digest"])
         if attestation is None:
             problems.append(f"{platform}: no attestations (SBOM and provenance)")

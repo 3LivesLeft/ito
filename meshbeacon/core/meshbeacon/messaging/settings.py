@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Engine settings and contacts (M4: a development-only file, D-M4-4).
 
-``/data/messaging/messaging.json``, owned by the engine's user. In M4 there is no user-facing
-option: messaging is absent from production images, and a test or developer writes this file.
-The user-facing configuration arrives with M5. Every field is validated against an allow-list.
+Written by the core from the app's options (``messaging_*``, D-M4-8) to
+``/run/meshbeacon-messaging/config/settings.json``, which the engine can read but not change; tests
+may still use ``<data>/messaging.json``. The core validates the options first; this parser is the
+engine's own allow-list, and the authority.
 
     {
       "display_name": "",                   # empty by default (ADR 0009); announced only if set
