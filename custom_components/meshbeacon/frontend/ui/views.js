@@ -5,7 +5,7 @@
 //
 // ctx = { source, now, range, history: {state, values}, onRange, copy }
 
-import { CONNECTIVITY_TEXT, RANGES, TONES, duration, formatNumber, pathsNote, precision } from "../model.js";
+import { CONNECTIVITY_TEXT, MESSAGING_NOTE, MESSAGING_OFF_TEXT, MESSAGING_STEPS, RANGES, TONES, duration, formatNumber, pathsNote, precision } from "../model.js";
 import { banner, chartCard, chip, segmented, statusMark, tile, value } from "./components.js";
 import { h } from "./dom.js";
 
@@ -172,6 +172,59 @@ function peerCard(ctx, peer) {
   );
 }
 
+/** Copy text to the clipboard; the button says whether it worked. */
+function copyButton(text) {
+  const button = h("button", { type: "button", class: "copy", text: "Copy" });
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      button.textContent = "Copied";
+    } catch (_err) {
+      button.textContent = "Select and copy";
+    }
+  });
+  return button;
+}
+
+/** The optional LXMF messaging engine (M4): its state, address, counts and how to connect. */
+function messagingCard(ctx) {
+  const m = ctx.source.messaging ? ctx.source.messaging() : null;
+  if (!m) return null; // an app without messaging (v0.2)
+  const lang = ctx.source.language;
+  const head = h("div", { class: "section-head" }, h("h2", { text: "Messaging" }), chip(m.tone, m.label));
+  if (m.state === "disabled") {
+    return h("section", { class: "card messaging", "data-tone": m.tone, "aria-label": "Messaging" }, head, h("p", { class: "muted small", text: MESSAGING_OFF_TEXT }));
+  }
+  const rows = [];
+  const add = (label, text) => rows.push(h("dt", { text: label }), h("dd", { text }));
+  const n = (v) => (v === null ? "—" : formatNumber(v, lang, 0));
+  const reported = m.received !== null || m.reachable !== null; // counts once the engine has answered
+  if (reported && m.contacts !== null) add("Contacts reachable", m.reachable === null ? `— of ${n(m.contacts)}` : `${n(m.reachable)} of ${n(m.contacts)}`);
+  if (reported) add("Messages received", n(m.received));
+  if (m.lastReceived !== null) add("Last message", `${duration(Math.max(0, (ctx.now - m.lastReceived) / 1000))} ago${m.lastFrom ? `, from ${m.lastFrom}` : ""}`);
+  if (reported && m.autoReply !== false) add("Confirmation replies sent", n(m.replies));
+  if (m.lastReplyLabel) add("Last confirmation", m.lastReplyLabel);
+  const address = m.address
+    ? h("div", { class: "address" }, h("code", { text: m.address, "aria-label": "Messaging address" }), copyButton(m.address))
+    : h("p", { class: "muted small", text: m.state === "running" ? "The address is not known yet." : "The address appears once messaging is running." });
+  return h(
+    "section",
+    { class: "card messaging", "data-tone": m.tone, "aria-label": "Messaging" },
+    head,
+    m.message ? h("p", { class: "small", role: m.state === "error" || m.state === "paused" ? "alert" : null, text: m.message }) : null,
+    h("div", { class: "label small", text: "MeshBeacon's messaging address" }),
+    address,
+    rows.length ? h("dl", { class: "rows" }, rows) : null,
+    h(
+      "details",
+      {},
+      h("summary", { text: "How to connect an LXMF app" }),
+      h("ol", { class: "small" }, MESSAGING_STEPS.map((step) => h("li", { text: step }))),
+      h("p", { class: "muted small", text: MESSAGING_NOTE }),
+    ),
+  );
+}
+
 function peers(ctx) {
   const list = ctx.source.peers();
   return h(
@@ -186,7 +239,7 @@ function peers(ctx) {
 
 export function overview(ctx) {
   const unavailable = ctx.source.availability() === "unavailable";
-  return [unavailable ? unavailableBanner(ctx) : problemBanner(ctx), hero(ctx), tiles(ctx), charts(ctx), peers(ctx)].filter(Boolean);
+  return [unavailable ? unavailableBanner(ctx) : problemBanner(ctx), hero(ctx), tiles(ctx), messagingCard(ctx), charts(ctx), peers(ctx)].filter(Boolean);
 }
 
 export function diagnostics(ctx) {
@@ -213,6 +266,7 @@ export function diagnostics(ctx) {
   add("Memory use (total)", "memory");
   add("Memory use (MeshBeacon core)", "core_memory");
   add("Memory use (Reticulum)", "reticulum_memory");
+  add("Memory use (messaging)", "messaging_memory");
   add("Processor use", "cpu");
   add("Packets received (all traffic)", "packets_received");
   add("Packets sent (all traffic)", "packets_sent");

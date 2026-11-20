@@ -486,6 +486,47 @@ def test_anyone_mode_rejects_messages_without_a_valid_stamp():
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_anyone_mode_rejects_messages_with_no_stamp_at_all():
+    """MS-9, negative: a message that carries **no** proof-of-work stamp is not accepted.
+
+    The engine (``inbound: anyone``, cost 8) announces its cost and the stranger's unmodified LXMF
+    1.3.0 hears it. The stranger then forgets that cost (``LXMRouter.update_stamp_cost``, public, on
+    the stranger's own router), so LXMF sends without a stamp, as a sender that never heard or
+    ignores the cost would. The test proves the message really left with no stamp (``LXMessage.stamp``
+    is ``None``), that the engine never offers it, and, as a control, that the same stranger's
+    properly stamped message on the same path is accepted. Nothing in the engine is changed or
+    patched; LXMF's own ``enforce_stamps`` refuses it.
+    """
+    required = 8
+    root = Path(tempfile.mkdtemp(prefix="mb-lxmf-nostamp-"))
+    w = World(root)
+    try:
+        eve, _ = w.peer("eve")  # a stranger, heard (announces), so nothing is held
+        w.start_engine({"inbound": "anyone", "stamp_cost": required})
+        time.sleep(6)  # eve has heard the engine's announce, with its stamp cost
+        eve.send({"cmd": "cost", "to": w.address()})
+        assert eve.wait_event(lambda e: e.get("event") == "cost", 20)["cost"] == required
+
+        eve.send({"cmd": "send", "to": w.address(), "content": "no stamp", "unstamped": True, "tag": "none"})
+        bare = eve.wait_event(lambda e: e.get("tag") == "none", 120)
+        assert bare["stamped"] is False and bare["stamp_value"] is None, "the message was stamped after all"
+        time.sleep(10)  # time for the engine to have accepted it, if it were going to
+        assert all(i["content"] != "no stamp" for i in inbound(w)), "a message with no stamp was accepted"
+        assert counter(w, "inbound_received") == 0
+        print(f"MS-9: a message with no stamp was refused; the sender's LXMF saw {bare['event']!r}")
+
+        # Control: the same stranger, the same path, a proper stamp. Accepted.
+        eve.send({"cmd": "send", "to": w.address(), "content": "proper stamp", "stamp_cost": required, "tag": "ok"})
+        good = eve.wait_event(lambda e: e.get("tag") == "ok", 300)
+        assert good["stamped"] is True and good["stamp_value"] >= required
+        items = wait_for(lambda: [i for i in inbound(w) if i["content"] == "proper stamp"], 60)
+        assert items[0]["contact"] == "unknown"
+        assert all(i["content"] != "no stamp" for i in inbound(w))
+    finally:
+        w.close()
+        shutil.rmtree(root, ignore_errors=True)
+
+
 class WriteCounter:
     """File writes in a folder tree, counted with Linux inotify (MS-19). Events are read every
     0.2 s, so repeated writes to one file within that window count once: a "write" here is a

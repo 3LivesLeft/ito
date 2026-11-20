@@ -7,6 +7,7 @@ import {
   HISTORY_KEYS,
   LABELS,
   UNAVAILABLE,
+  messagingSummary,
   nodeState,
   peerState,
   seriesFromHistory,
@@ -14,7 +15,7 @@ import {
 } from "../model.js";
 
 const ENUM_GROUPS = { status: "status", connectivity: "connectivity", problem: "problem" };
-const TIMESTAMPS = new Set(["app_started", "reticulum_started", "connected_since"]);
+const TIMESTAMPS = new Set(["app_started", "reticulum_started", "connected_since", "messaging_last_received"]);
 
 export class HassSource {
   constructor() {
@@ -118,6 +119,33 @@ export class HassSource {
       label,
       time: Number.isFinite(time) ? time : null,
     };
+  }
+
+  /** The optional messaging engine (M4) from its entities, or null when there are none. */
+  messaging() {
+    const id = this._id("messaging");
+    const st = id && this.hass ? this.hass.states[id] : undefined;
+    if (!st) return null;
+    const attrs = st.attributes || {};
+    const value = (key) => {
+      const r = this.reading(key);
+      return r.known ? r.value : null;
+    };
+    const lastReceived = this.reading("messaging_last_received");
+    const lastReply = this.reading("messaging_last_reply");
+    return messagingSummary({
+      state: st.state === "unavailable" ? "unavailable" : st.state,
+      message: attrs.message,
+      address: attrs.address,
+      contacts_configured: attrs.contacts,
+      contacts_reachable: value("messaging_contacts_reachable"),
+      received: value("messages_received"),
+      last_received_at: lastReceived.time === null ? null : lastReceived.time / 1000,
+      last_received_from: attrs.last_received_from,
+      replies_sent: value("messaging_replies_sent"),
+      last_reply_state: lastReply.known ? lastReply.state : null,
+      auto_reply: attrs.auto_reply,
+    });
   }
 
   peers() {

@@ -335,7 +335,7 @@ Measured on isolated networks and on the reference Pi. "Pi" figures are release 
 
 | ID | Criterion | Evidence |
 |---|---|---|
-| MS-1 | With messaging off: no messaging process, no `/data/messaging/` writes, no new endpoints, memory and CPU unchanged from v0.2 (±2 MiB) | Automated + Pi |
+| MS-1 | With messaging off (the default; D-M4-8): no messaging process, no `/data/messaging/` writes, no new endpoints, memory and CPU unchanged from v0.2 (±2 MiB) | Automated + Pi |
 | MS-2 | The messaging identity is 0600, validated before every start, never logged, and independent of the transport identity (replacing either leaves the other unchanged) | Automated |
 | MS-3 | Announces carry no display name by default, and no telemetry, location or icon fields are ever sent | Automated (inspect packed announces and messages) |
 | MS-4 | Acknowledged inbound content is deleted by default; retention ≤ 30 days when chosen; `queue.db` ≤ 16 MiB under a flood | Automated |

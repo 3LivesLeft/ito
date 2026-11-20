@@ -155,17 +155,20 @@ Design: [v0.3 messaging](../research/v0.3-messaging.md).
 | T66 | B10 | I/T/E | **A new binding weakens messaging protection** (for example a delivery added for convenience whose channel lacks confidentiality, integrity or caller authentication) | Every binding must meet S1–S3 before it may carry content or accept a send; read-only is not an exception; bindings are thin and reviewed (ADR 0014) | MS-22 |
 | T58 | B5 | D | **Messaging failure disturbs transport** (crash, hang, stamp CPU, corrupt queue, full disk) | Separate process ([ADR 0008](../adr/0008-messaging-process.md)), bounded restarts, `nice`, CPU limit for stamps, quarantine of a corrupt queue | MS-15, MS-16 |
 
-### 4.1a M4 messaging engine, as implemented (development image only)
+### 4.1a M4 messaging engine, as implemented (standard image, off by default)
 
-The engine exists only in the `messaging-dev` image target (M4 WP5); production images contain
-none of it. Evidence: [M4 results](../testing/m4-results.md). Changes to the proposed controls above
-are marked.
+Since D-M4-8 ([ADR 0022](../adr/0022-standard-image-optional-messaging.md)) the engine is in the one
+standard image and runs only when the user switches messaging on; until then it was in the
+`messaging-dev` target only. Evidence: [M4 results](../testing/m4-results.md). Changes to the
+proposed controls above are marked.
 
 | ID | Boundary | STRIDE | Threat | Control | Status |
 |---|---|---|---|---|---|
-| T75 | B12 | S/T/D | **Another process uses the RNS shared instance** (IS-3a): in RNS 1.6.0 it is an abstract Unix socket with no peer check | It lives in the app container's own network namespace (no host network), so other containers and apps cannot reach it. The RPC listener needs a key that only Reticulum's user can read; the engine has none, and a wrong key is refused. The production image never shares its instance. **Residual:** any process inside the container can send packets through it | Implemented (container tests) |
+| T75 | B12 | S/T/D | **Another process uses the RNS shared instance** (IS-3a): in RNS 1.6.0 it is an abstract Unix socket with no peer check | It lives in the app container's own network namespace (no host network), so other containers and apps cannot reach it. The RPC listener needs a key that only Reticulum's user can read; the engine has none, and a wrong key is refused. Reticulum shares its instance only while messaging is switched on (off by default). **Residual:** any process inside the container can send packets through it | Implemented (container tests) |
 | T76 | B9 | R/I | **A delivery state is read as more than it is** (for example "delivered" as "read", or "stored on node" as "delivered") | Each state documents what it does and does not establish (`contract.STATE_MEANINGS`). LXMF proves delivery before the recipient's policy runs: the MS-9 test shows a sender told "delivered" for a message the engine refused | Implemented |
-| T77 | — | E | **The engine reaches a production image by mistake** | The default target never copies it; container tests scan the file system and every layer; release verification (`verify_image.py`) refuses any layer that holds it | Implemented |
+| T77 | — | E | ~~The engine reaches a production image by mistake~~ **Superseded by D-M4-8:** the engine is in every image. **New threat: it runs, or its data is created, while messaging is off** | The service ships with a `down` file and the core starts it only when the validated option is on; the root init step creates no messaging folder or data while it is off; Reticulum shares its instance only while it is on. Container tests check all of it with the option off, on and toggled; release verification requires the `down` file | Implemented |
+| T78 | B12 | I/T | **The engine reads secrets meant for others, or changes its own settings** (D-M4-8: its settings now come from the app's options, which hold peer passphrases) | The engine never reads `options.json`; the core writes only the engine's settings to a folder it owns (group `mb-msg`, 0750; file 0640), which the engine reads but cannot change and Reticulum's user cannot reach; the engine's own parser validates them again. Tested in the container | Implemented |
+| T79 | B9 | I | **The messaging address or message content reaches Home Assistant's history, logs or diagnostics** | The core never keeps or forwards content (it reads only who and when, then acknowledges, which deletes it); the address is an attribute excluded from the recorder, and diagnostics redact it and contact names; addresses never reach the app log (redaction) | Implemented (unit and HA tests) |
 | T44 (change) | B9 | S | Spoofed sender | As proposed, except that `SOURCE_UNKNOWN` messages are held for **2 minutes** (at most 50) while the sender's key is requested, then re-verified with LXMF's public `unpack_from_bytes` or dropped and counted. Contacts' keys are requested at start and every 30 minutes | Implemented |
 | T45 (change) | B9 | D | Spam and floods | As proposed; tickets are given only to contacts, in "anyone" mode | Implemented (MS-9 negative and positive) |
 | T58 (change) | B5 | D | Messaging failure disturbs transport | As proposed, with health checks over the socket and a pause after five failures in 30 minutes | Implemented (MS-15) |

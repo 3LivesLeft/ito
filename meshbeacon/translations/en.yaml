@@ -40,3 +40,38 @@ configuration:
       by a key that changes every time the app starts. Nothing is sent anywhere else, and Home
       Assistant cannot control your node through it. You also need to install the MeshBeacon
       integration in Home Assistant once (see the Documentation tab).
+  messaging_enabled:
+    name: Enable LXMF messaging
+    description: >-
+      Off by default. On: after you save and restart the app, MeshBeacon starts its LXMF messaging
+      service, which apps such as Sideband can message. It has its own address, separate from your
+      node's, created the first time. The MeshBeacon dashboard in Home Assistant shows whether it
+      is running and its address. Turning it off stops only messaging; Reticulum keeps running and
+      the messaging address is kept for next time.
+  messaging_contacts:
+    name: "Messaging: contacts"
+    description: >-
+      The people or devices allowed to message MeshBeacon. Each needs a name you choose and their
+      LXMF address (32 characters, shown in their app). Messages from anyone else are refused
+      unless "accept messages from anyone" is on.
+  messaging_accept_anyone:
+    name: "Messaging: accept messages from anyone"
+    description: >-
+      Off (recommended): only your contacts can message MeshBeacon. On: anyone can, but their app
+      must do a small proof-of-work calculation ("stamp") for each message, which keeps spam away.
+  messaging_auto_reply:
+    name: "Messaging: reply to confirm each message"
+    description: >-
+      On: MeshBeacon answers each message from a contact with a short automatic confirmation, so you
+      can check that messaging works in both directions. Reading and sending messages from Home
+      Assistant comes in a later version; until then MeshBeacon does not keep or show message text.
+  messaging_display_name:
+    name: "Messaging: display name (optional)"
+    description: >-
+      A name other LXMF apps show for MeshBeacon when it announces itself, for example "Home".
+      Empty by default, so nothing about your home is announced.
+  messaging_propagation_node:
+    name: "Messaging: propagation node (optional)"
+    description: >-
+      The LXMF address of a propagation node to hold messages for contacts who are offline. Leave
+      empty unless you run or trust one.

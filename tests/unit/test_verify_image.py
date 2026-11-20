@@ -30,6 +30,24 @@ def labels(version: str = "0.3.0") -> dict[str, str]:
     }
 
 
+SITE = "usr/local/lib/python3.13/site-packages"
+MESSAGING_LAYER = (
+    f"{SITE}/meshbeacon/messaging/engine.py",
+    f"{SITE}/LXMF/LXMRouter.py",
+    "etc/services.d/messaging/run",
+    "etc/services.d/messaging/down",
+    "etc/cont-init.d/20-messaging",
+)
+
+
+def tar_layer(*names: str) -> bytes:
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tar:
+        for name in names:
+            tar.addfile(tarfile.TarInfo(name), io.BytesIO(b""))
+    return buf.getvalue()
+
+
 def build_archive(
     path: Path,
     *,
@@ -40,6 +58,7 @@ def build_archive(
     provenance=True,
     when="t1",
     nested=True,
+    messaging=MESSAGING_LAYER,
 ) -> Path:
     blobs: dict[str, bytes] = {}
 
@@ -49,11 +68,17 @@ def build_archive(
         blobs[digest] = data
         return {"digest": digest, "size": len(data)}
 
+    def put_raw(data: bytes) -> dict[str, object]:
+        digest = "sha256:" + hashlib.sha256(data).hexdigest()
+        blobs[digest] = data
+        return {"digest": digest, "size": len(data)}
+
     entries = []
     for arch in platforms:
         config = put({"config": {"Labels": labels(version)}, "architecture": arch})
         layer = put({"layer": f"{layer_seed}-{arch}"})
-        manifest = put({"schemaVersion": 2, "config": config, "layers": [layer]})
+        engine = put_raw(tar_layer(*messaging))
+        manifest = put({"schemaVersion": 2, "config": config, "layers": [layer, engine]})
         entries.append(
             {
                 "mediaType": "application/vnd.oci.image.manifest.v1+json",
@@ -240,25 +265,28 @@ def test_no_record_is_written_for_a_failing_candidate(tmp_path):
     assert not record.exists()
 
 
-def test_a_layer_with_the_messaging_engine_is_refused():
-    """M4: release verification refuses any candidate whose layers carry the engine or LXMF."""
+def test_every_candidate_carries_the_whole_messaging_engine(tmp_path):
+    """D-M4-8: the engine is part of the standard image. A candidate missing any part of it, or
+    the service's "down" file that keeps it from starting by itself, is refused."""
+    assert verify_image.messaging_parts(tar_layer(*MESSAGING_LAYER)) == set(verify_image.MESSAGING_PARTS)
+    assert verify_image.messaging_parts(tar_layer(f"{SITE}/meshbeacon/supervisor.py")) == set()
+    assert verify_image.messaging_parts(b"not a tar") == set()
+    for index, missing in enumerate(MESSAGING_LAYER):
+        parts = tuple(n for n in MESSAGING_LAYER if n != missing)
+        a = build_archive(tmp_path / f"without-{index}.tar", messaging=parts)
+        _digests, problems = verify_image.inspect(verify_image.Archive(a), "0.3.0")
+        assert any("messaging engine is incomplete" in p for p in problems), missing
+    whole = build_archive(tmp_path / "whole.tar")
+    _digests, problems = verify_image.inspect(verify_image.Archive(whole), "0.3.0")
+    assert not any("messaging" in p for p in problems), problems
 
-    def layer(*names: str) -> bytes:
-        buf = io.BytesIO()
-        with tarfile.open(fileobj=buf, mode="w") as tar:
-            for name in names:
-                tar.addfile(tarfile.TarInfo(name), io.BytesIO(b""))
-        return buf.getvalue()
 
-    site = "usr/local/lib/python3.13/site-packages"
-    assert verify_image.messaging_paths(layer(f"{site}/meshbeacon/supervisor.py", "etc/services.d/reticulum/run")) == []
-    for bad in (
-        f"{site}/meshbeacon/messaging/engine.py",
-        f"{site}/LXMF/LXMRouter.py",
-        f"{site}/lxmf-1.3.0.dist-info/METADATA",
-        "usr/local/bin/lxmd",
-        "etc/services.d/messaging/run",
-        "etc/meshbeacon/messaging",
-    ):
-        assert verify_image.messaging_paths(layer(bad)) == [bad], bad
-    assert verify_image.messaging_paths(b"not a tar") == []
+def test_the_release_gate_matches_the_sources():
+    """The parts release verification requires exist in the repository at those paths."""
+    app = ROOT / "meshbeacon"
+    assert (app / "core" / "meshbeacon" / "messaging" / "engine.py").is_file()
+    assert (app / "rootfs" / "etc" / "services.d" / "messaging" / "run").is_file()
+    assert (app / "rootfs" / "etc" / "services.d" / "messaging" / "down").is_file()
+    assert (app / "rootfs" / "etc" / "cont-init.d" / "20-messaging").is_file()
+    assert "lxmf==" in (app / "requirements-messaging.txt").read_text()
+    assert "requirements-messaging.txt" in (app / "Dockerfile").read_text()

@@ -278,3 +278,57 @@ export function pathsNote(paths) {
   if (paths === null || paths < PATH_POOL_TARGET) return null;
   return `Normal on a busy network: Reticulum trims paths it has never used to about ${formatNumber(PATH_POOL_TARGET, "en-GB")}.`;
 }
+
+// -- Optional LXMF messaging (M4) ---------------------------------------------------------------
+LABELS.messaging = { disabled: "Off", starting: "Starting", running: "Running", error: "Problem", paused: "Paused", unavailable: "Unavailable" };
+LABELS.delivery = {
+  queued: "Queued",
+  sending: "Sending",
+  sent_unconfirmed: "Sent, not confirmed",
+  delivered: "Delivered",
+  stored_on_node: "Stored on a propagation node",
+  failed: "Failed",
+  rejected: "Refused",
+  expired: "Expired",
+};
+export const MESSAGING_TONES = { disabled: "neutral", starting: "info", running: "good", error: "bad", paused: "bad", unavailable: "neutral" };
+export const MESSAGING_OFF_TEXT =
+  "LXMF messaging is off. To use it, open Settings → Apps → MeshBeacon → Configuration, tick “Enable LXMF messaging”, save, and restart the app.";
+export const MESSAGING_STEPS = Object.freeze([
+  "In your LXMF app (for example Sideband), connect to the same Reticulum network as MeshBeacon, for example through the same peer.",
+  "Add MeshBeacon as a contact in that app, using the address above.",
+  "In MeshBeacon's Configuration tab, add your app's own LXMF address under “Messaging: contacts”, save, and restart the app.",
+  "Send MeshBeacon a message. Your app shows it as delivered, and MeshBeacon answers with a short confirmation.",
+]);
+export const MESSAGING_NOTE =
+  "Reading and sending messages from Home Assistant comes in a later version. Until then MeshBeacon does not keep or show message text.";
+
+const ADDRESS = /^[0-9a-f]{32}$/;
+const count = (v) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : null);
+
+/**
+ * The messaging card's data, the same whichever source it comes from. `raw` uses the status API's
+ * field names; times are in seconds. Returns null when the app has no messaging at all (v0.2).
+ */
+export function messagingSummary(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const state = typeof raw.state === "string" && LABELS.messaging[raw.state] ? raw.state : "unavailable";
+  const reply = typeof raw.last_reply_state === "string" && LABELS.delivery[raw.last_reply_state] ? raw.last_reply_state : null;
+  const at = typeof raw.last_received_at === "number" && Number.isFinite(raw.last_received_at) ? raw.last_received_at * 1000 : null;
+  return {
+    state,
+    label: LABELS.messaging[state],
+    tone: MESSAGING_TONES[state],
+    message: typeof raw.message === "string" && raw.message ? raw.message.slice(0, 500) : null,
+    address: typeof raw.address === "string" && ADDRESS.test(raw.address) ? raw.address : null,
+    contacts: count(raw.contacts_configured),
+    reachable: count(raw.contacts_reachable),
+    received: count(raw.received),
+    lastReceived: at,
+    lastFrom: typeof raw.last_received_from === "string" && raw.last_received_from ? raw.last_received_from.slice(0, 32) : null,
+    replies: count(raw.replies_sent),
+    lastReply: reply,
+    lastReplyLabel: reply ? LABELS.delivery[reply] : null,
+    autoReply: typeof raw.auto_reply === "boolean" ? raw.auto_reply : null,
+  };
+}

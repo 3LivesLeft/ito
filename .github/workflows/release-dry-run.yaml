@@ -10,7 +10,7 @@ name: Release dry run
 on:
   workflow_dispatch:
   push:
-    branches: [main, "feature/**"]
+    branches: [main, develop, "feature/**"]
   pull_request:
     paths:
       - "meshbeacon/**"

@@ -18,7 +18,8 @@ in later versions of MeshBeacon, over radio as well.
 - Optionally **shares your connection** with others (transport mode, off by default).
 
 From v0.2 it can also **show its status in Home Assistant** (optional, off by default; see
-below). It does not yet send messages or use radio.
+below). From v0.3 it can also run an **LXMF messaging service** (optional, off by default; see
+below). It does not use radio.
 
 ## Installing and updating
 
@@ -141,10 +142,42 @@ example dashboard is in the repository (`docs/home-assistant/dashboard.yaml`).
 
 Full details: `docs/home-assistant-integration.md` in the repository.
 
+## LXMF messaging (optional, experimental)
+
+MeshBeacon can run an LXMF messaging service, so that apps such as Sideband can send it messages.
+It is **off** unless you switch it on.
+
+1. Open the **Configuration** tab and tick **Enable LXMF messaging**.
+2. Under **Messaging: contacts**, add each person or device allowed to message MeshBeacon: a name
+   you choose and their LXMF address (32 characters, shown in their app).
+3. **Save**, then **Restart** the app. The log says `LXMF messaging: on`.
+4. Open the **MeshBeacon** dashboard in Home Assistant. Its **Messaging** card shows whether
+   messaging is starting, running or has a problem, and MeshBeacon's own messaging address with a
+   **Copy** button. Add that address as a contact in your app.
+5. Send MeshBeacon a message. Your app shows it as delivered, and MeshBeacon answers with a short
+   confirmation (switch this off with **Messaging: reply to confirm each message**).
+
+Both sides must be on the same Reticulum network, for example connected to the same peer.
+
+- **Its own address.** Messaging has its own identity, separate from your node's, created the first
+  time and kept in the app's data and backups. Switching messaging off stops only messaging;
+  Reticulum keeps running, and the address is kept for next time.
+- **Strangers.** Only your contacts can message MeshBeacon unless you switch on **Messaging: accept
+  messages from anyone**; then each sender's app must do a small proof-of-work calculation
+  ("stamp") per message, which keeps spam away.
+- **Message text.** Reading and sending messages from Home Assistant comes in a later version.
+  Until then MeshBeacon counts messages and can confirm them, but does not keep, show or log what
+  they say.
+- **Privacy.** With a display name left empty (the default), MeshBeacon's announcement carries no
+  name. The messaging address is shown on the dashboard but not stored in Home Assistant's history.
+- **If something is wrong**, the Messaging card says what, in plain words (for example a contact
+  address that is not 32 characters, or a damaged messaging identity, which MeshBeacon never
+  replaces: restore the app from a backup). Reticulum is never stopped because of messaging.
+
 ## Resource use
 
 MeshBeacon is designed to be light: about 65–70 MB of memory when idle (measured in containers on
-x86-64; Raspberry Pi measurement pending). It runs Reticulum at low priority, restarts it if it uses
+x86-64; Raspberry Pi measurement pending). With messaging on, about 45 MB more. It runs Reticulum at low priority, restarts it if it uses
 more memory than the limit you set (default 256 MB), limits how much it writes to the log, and stops
 Reticulum if free storage falls below 200 MB.
 
@@ -160,7 +193,7 @@ Report security problems privately — see `SECURITY.md` in the repository.
 
 ## Licences
 
-MeshBeacon is licensed under Apache-2.0. It includes Reticulum (RNS), licensed under the
+MeshBeacon is licensed under Apache-2.0. It includes Reticulum (RNS) and LXMF, licensed under the
 **Reticulum License**, which is not an OSI-approved open-source licence: it forbids use in systems
 designed to harm human beings and use in creating AI or machine-learning training datasets. Those
 conditions apply to you as a user of this app. Full notices: `THIRD_PARTY_NOTICES`.

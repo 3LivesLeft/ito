@@ -44,6 +44,19 @@ PROBLEMS: Final = (
     "unexpected",
 )
 
+# The optional LXMF messaging engine (M4, D-M4-8). Keep in step with engine_supervisor.public().
+MESSAGING_STATES: Final = ("disabled", "starting", "running", "error", "paused")
+DELIVERY_STATES: Final = (
+    "queued",
+    "sending",
+    "sent_unconfirmed",
+    "delivered",
+    "stored_on_node",
+    "failed",
+    "rejected",
+    "expired",
+)
+
 # Repair issues and the problem codes that raise them.
 ISSUE_ISOLATED: Final = "isolated"
 ISSUE_UNREACHABLE: Final = "peers_unreachable"

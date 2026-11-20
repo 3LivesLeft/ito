@@ -32,7 +32,7 @@ from typing import IO, Any
 from . import __version__, fsutil, procinfo
 from .api import ApiServer, Discovery, RelayLink, StatusStore, TlsError, container_hostname, make_tls, new_token
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
-from .engine_supervisor import EngineSupervisor
+from .engine_supervisor import DISABLED, EngineSupervisor
 from .health import HealthServer, Heartbeat
 from .logfilter import RateLimiter, Redactor
 from .metrics import Collector
@@ -41,7 +41,7 @@ from .policy import RestartPolicy, StartHistory, Timings
 from .prepare import FREE_SPACE_FLOOR, FREE_SPACE_WARN
 from .relay_link import RELAY_FD_ENV, TOKEN, TOKEN_FD_ENV
 from .services import Services, drain
-from .settings import Settings, ValidationError, parse_options
+from .settings import Messaging, Settings, ValidationError, parse_options
 
 MSG_GAVE_UP = (
     "✖ The Reticulum service keeps failing, so MeshBeacon has stopped trying. "
@@ -195,6 +195,7 @@ class Supervisor:
         hostname: Callable[[], str] = container_hostname,
         discovery_timing: dict[str, float] | None = None,
         engine: EngineSupervisor | None = None,
+        engine_factory: Callable[[Messaging], EngineSupervisor] | None = None,
     ) -> None:
         self.paths = paths
         self.t = timings or Timings()
@@ -242,13 +243,19 @@ class Supervisor:
         self.discovery_ok: bool | None = None
         self.discovery_stop = threading.Event()
         self.discovery_timing = discovery_timing or {}  # shorter back-off in tests only
-        # M4: the messaging engine, only in a development image that carries it (else None).
-        self.engine = engine
-        if engine is not None:
-            engine.say = self.say  # through the core's redaction
+        # M4: the optional messaging engine (D-M4-8). Built in boot() from the factory, and only
+        # when the validated options switch it on; otherwise None and nothing of it runs.
+        self.engine: EngineSupervisor | None = None
+        self.engine_factory = engine_factory
         self.engine_buf = LineBuffer()
-        if engine is not None and services is not None and services.engine_out is not None:
-            self.selector.register(services.engine_out, selectors.EVENT_READ, "engine")
+        if engine is not None:
+            self.attach_engine(engine)
+
+    def attach_engine(self, engine: EngineSupervisor) -> None:
+        self.engine = engine
+        engine.say = self.say  # through the core's redaction
+        if self.services is not None and self.services.engine_out is not None:
+            self.selector.register(self.services.engine_out, selectors.EVENT_READ, "engine")
 
     # -- output ------------------------------------------------------------------------------
     def say(self, message: str) -> None:
@@ -625,11 +632,13 @@ class Supervisor:
             return
         cpu = procinfo.cpu_seconds(child.proc.pid)
         core_cpu = procinfo.cpu_seconds(os.getpid())
+        engine_pid = getattr(self.engine.proc, "pid", 0) if self.engine is not None else 0
+        engine_cpu = procinfo.cpu_seconds(engine_pid) if isinstance(engine_pid, int) and engine_pid > 0 else None
         self.monitor(
             self.collector.resources,
             procinfo.memory_bytes(os.getpid()),
             mem,
-            None if cpu is None or core_cpu is None else cpu + core_cpu,
+            None if cpu is None or core_cpu is None else cpu + core_cpu + (engine_cpu or 0.0),
         )
         if cpu is not None:
             now = self.clock()
@@ -676,6 +685,9 @@ class Supervisor:
         memory = f"memory {core_mem // 1048576} MB core"
         if child_mem:
             memory += f" + {child_mem // 1048576} MB Reticulum"
+        engine_mem = self.engine.memory_bytes() if self.engine is not None else None
+        if engine_mem:
+            memory += f" + {engine_mem // 1048576} MB messaging"
         parts.append(memory)
         self.say("Status: " + "; ".join(parts) + ".")
 
@@ -697,7 +709,31 @@ class Supervisor:
         }.get(snap.state, "none")
         return code, None if code == "none" else self.redact(describe(snap).lstrip("⚠ "))
 
+    def messaging_status(self) -> dict[str, Any]:
+        if self.engine is not None:
+            return self.engine.public()
+        if self.settings is not None and self.settings.messaging.enabled:
+            return {
+                "enabled": True,
+                "state": "error" if self.attention is None else "starting",
+                "message": None
+                if self.attention is not None
+                else "Messaging is switched on but is not available in this installation.",
+            }
+        return dict(DISABLED)
+
     def build_snapshot(self) -> dict[str, Any]:
+        document = self._node_snapshot()
+        messaging = self.messaging_status()
+        document["messaging"] = messaging
+        engine_memory = messaging.get("memory_bytes")
+        resources = document["resources"]
+        resources["messaging_memory_bytes"] = engine_memory
+        if isinstance(engine_memory, int) and isinstance(resources.get("memory_bytes"), int):
+            resources["memory_bytes"] += engine_memory
+        return document
+
+    def _node_snapshot(self) -> dict[str, Any]:
         code, message = self.problem()
         snap = self.snapshot
         return self.collector.snapshot(
@@ -901,6 +937,13 @@ class Supervisor:
         if self.settings is None:  # pragma: no cover - prepare validated the same file
             self.enter_attention(["✖ The app options could not be read."], "options")
             return False
+        if self.settings.messaging.enabled and self.engine is None and self.engine_factory is not None:
+            self.attach_engine(self.engine_factory(self.settings.messaging))
+        self.say(
+            "LXMF messaging: on — it starts once Reticulum is running."
+            if self.settings.messaging.enabled
+            else "LXMF messaging: off (tick “Enable LXMF messaging” in the Configuration tab to use it)."
+        )
         if not self.settings.peers:
             self.snapshot = evaluate((), None)
             self.say(describe(self.snapshot))
@@ -1001,14 +1044,18 @@ def main() -> int:
                 services = Services()
                 break
             time.sleep(0.1)
-    engine = None
-    if services is not None and EngineSupervisor.enabled() and services.has("messaging"):
+    factory = None
+    if services is not None and services.has("messaging"):
         engine_services = services
-        engine = EngineSupervisor(
-            lambda: engine_services.start("messaging"),
-            print,  # replaced by the supervisor's own output
-            time.monotonic,
-        )
+
+        def factory(messaging: Messaging) -> EngineSupervisor:
+            return EngineSupervisor(
+                lambda: engine_services.start("messaging"),
+                print,  # replaced by the supervisor's own output
+                time.monotonic,
+                messaging=messaging,
+            )
+
     return Supervisor(
         Paths.from_env(),
         health_host=host,
@@ -1021,7 +1068,7 @@ def main() -> int:
         socket_mode=socket_mode,
         services=services,
         require_services=require_services,
-        engine=engine,
+        engine_factory=factory,
     ).run()
 
 

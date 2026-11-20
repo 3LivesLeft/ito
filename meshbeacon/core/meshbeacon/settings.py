@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 LogLevel = Literal["quiet", "normal", "detailed"]
@@ -35,8 +35,18 @@ ALLOWED_TOP_LEVEL = {
     "memory_limit_mb",
     "replace_identity",
     "home_assistant_integration",
+    "messaging_enabled",
+    "messaging_display_name",
+    "messaging_contacts",
+    "messaging_accept_anyone",
+    "messaging_auto_reply",
+    "messaging_propagation_node",
 }
 ALLOWED_PEER_KEYS = {"name", "host", "port", "network_name", "passphrase"}
+ALLOWED_CONTACT_KEYS = {"name", "address"}
+MAX_CONTACTS = 20
+# An LXMF address (a destination hash): 32 hexadecimal characters. Shown to the user as such.
+_ADDRESS_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 
 
 class ValidationError(Exception):
@@ -57,6 +67,26 @@ class Peer:
 
 
 @dataclass(frozen=True)
+class Contact:
+    """A messaging contact: a label the user chose and the contact's LXMF address."""
+
+    name: str
+    address: str  # 32 lower-case hex characters
+
+
+@dataclass(frozen=True)
+class Messaging:
+    """The optional LXMF messaging engine (M4, D-M4-8): off unless the user ticks the box."""
+
+    enabled: bool = False
+    display_name: str = ""
+    contacts: tuple[Contact, ...] = ()
+    accept_anyone: bool = False
+    auto_reply: bool = True
+    propagation_node: str | None = None
+
+
+@dataclass(frozen=True)
 class Settings:
     peers: tuple[Peer, ...] = ()
     transport: bool = False
@@ -64,6 +94,7 @@ class Settings:
     memory_limit_mb: int = MEMORY_LIMIT_DEFAULT_MB
     replace_identity: bool = False
     home_assistant_integration: bool = False
+    messaging: Messaging = field(default_factory=Messaging)
 
     @property
     def secrets(self) -> tuple[str, ...]:
@@ -114,6 +145,69 @@ def _bool(raw: dict[str, Any], key: str, default: bool, problems: list[str]) -> 
         problems.append(f"'{key}' must be on or off.")
         return default
     return value
+
+
+def _address(value: Any) -> str | None:
+    """An LXMF address as the user may paste it (spaces and angle brackets around it are fine)."""
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip().strip("<>").strip()
+    return cleaned.lower() if _ADDRESS_RE.match(cleaned) else None
+
+
+def _parse_messaging(raw: dict[str, Any], problems: list[str]) -> Messaging:
+    enabled = _bool(raw, "messaging_enabled", False, problems)
+    accept_anyone = _bool(raw, "messaging_accept_anyone", False, problems)
+    auto_reply = _bool(raw, "messaging_auto_reply", True, problems)
+    display = raw.get("messaging_display_name") or ""
+    if not isinstance(display, str) or (display and not valid_name(display)):
+        problems.append(
+            "Messaging: the display name must be 1–32 letters, digits, spaces, dots, dashes or "
+            "underscores, starting with a letter or digit (or left empty)."
+        )
+        display = ""
+    node_raw = raw.get("messaging_propagation_node") or None
+    node = _address(node_raw) if node_raw is not None else None
+    if node_raw is not None and node is None:
+        problems.append("Messaging: the propagation node must be an LXMF address of 32 hexadecimal characters.")
+    contacts: list[Contact] = []
+    items = raw.get("messaging_contacts", [])
+    if not isinstance(items, list):
+        problems.append("'messaging_contacts' must be a list.")
+        items = []
+    elif len(items) > MAX_CONTACTS:
+        problems.append(f"At most {MAX_CONTACTS} messaging contacts can be configured.")
+        items = []
+    names: set[str] = set()
+    addresses: set[str] = set()
+    for index, item in enumerate(items):
+        where = f"Messaging contact {index + 1}"
+        if not isinstance(item, dict) or set(item) - ALLOWED_CONTACT_KEYS:
+            problems.append(f"{where} is not in the expected format (a name and an address).")
+            continue
+        name, address = item.get("name"), _address(item.get("address"))
+        if not isinstance(name, str) or not valid_name(name):
+            problems.append(
+                f"{where}: the name must be 1–32 letters, digits, spaces, dots, dashes or underscores, "
+                "starting with a letter or digit."
+            )
+            continue
+        if address is None:
+            problems.append(
+                f"Messaging contact '{name}': the address must be the contact's LXMF address, 32 hexadecimal "
+                "characters, as the contact's LXMF app shows it."
+            )
+            continue
+        if name.casefold() in names:
+            problems.append(f"Two messaging contacts are called '{name}'. Each needs a different name.")
+            continue
+        if address in addresses:
+            problems.append(f"Messaging contact '{name}' has the same address as another contact.")
+            continue
+        names.add(name.casefold())
+        addresses.add(address)
+        contacts.append(Contact(name, address))
+    return Messaging(enabled, display, tuple(contacts), accept_anyone, auto_reply, node)
 
 
 def _parse_peer(index: int, raw: Any, problems: list[str]) -> Peer | None:
@@ -205,6 +299,7 @@ def parse_options(raw: Any) -> Settings:
     transport = _bool(raw, "transport", False, problems)
     replace_identity = _bool(raw, "replace_identity", False, problems)
     integration = _bool(raw, "home_assistant_integration", False, problems)
+    messaging = _parse_messaging(raw, problems)
 
     if problems:
         raise ValidationError(problems)
@@ -215,4 +310,5 @@ def parse_options(raw: Any) -> Settings:
         memory_limit_mb=memory,
         replace_identity=replace_identity,
         home_assistant_integration=integration,
+        messaging=messaging,
     )

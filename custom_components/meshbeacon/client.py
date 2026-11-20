@@ -10,15 +10,17 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from dataclasses import dataclass
 from typing import Any
 
 import aiohttp
 
-from .const import CONNECTIVITY, PROBLEMS, REQUEST_TIMEOUT, SCHEMA_VERSION, STATES
+from .const import CONNECTIVITY, DELIVERY_STATES, MESSAGING_STATES, PROBLEMS, REQUEST_TIMEOUT, SCHEMA_VERSION, STATES
 
 API_PATH = "/api/v1/status"
 MAX_PEERS = 10
+ADDRESS = re.compile(r"^[0-9a-f]{32}$")  # an LXMF address
 MAX_RESPONSE = 256 * 1024
 
 
@@ -81,6 +83,53 @@ class Peer:
 
 
 @dataclass(frozen=True)
+class Messaging:
+    """The optional messaging engine, as the app reports it (M4). ``address`` is the engine's own
+    LXMF address, for the user to give to contacts; it is kept out of the recorder (sensor.py)."""
+
+    enabled: bool
+    state: str
+    message: str | None
+    address: str | None
+    contacts_configured: int | None
+    contacts_reachable: int | None
+    accept_anyone: bool | None
+    auto_reply: bool | None
+    received: int | None
+    refused: int | None
+    replies_sent: int | None
+    last_reply_state: str | None
+    last_received_at: float | None
+    last_received_from: str | None
+    memory_bytes: int | None
+
+
+def parse_messaging(value: Any) -> Messaging | None:
+    """``None`` for an app without messaging (v0.2), so no messaging entity is created."""
+    if not isinstance(value, dict):
+        return None
+    address = value.get("address")
+    reply = value.get("last_reply_state")
+    return Messaging(
+        enabled=value.get("enabled") is True,
+        state=_enum(value.get("state"), MESSAGING_STATES, "error" if value.get("enabled") else "disabled"),
+        message=_text(value.get("message"), 500),
+        address=address if isinstance(address, str) and ADDRESS.match(address) else None,
+        contacts_configured=_int(value.get("contacts_configured")),
+        contacts_reachable=_int(value.get("contacts_reachable")),
+        accept_anyone=_bool(value.get("accept_anyone")),
+        auto_reply=_bool(value.get("auto_reply")),
+        received=_int(value.get("received")),
+        refused=_int(value.get("refused")),
+        replies_sent=_int(value.get("replies_sent")),
+        last_reply_state=reply if isinstance(reply, str) and reply in DELIVERY_STATES else None,
+        last_received_at=_num(value.get("last_received_at")),
+        last_received_from=_text(value.get("last_received_from"), 32),
+        memory_bytes=_int(value.get("memory_bytes")),
+    )
+
+
+@dataclass(frozen=True)
 class Status:
     generated_at: float | None
     version: str | None
@@ -113,6 +162,7 @@ class Status:
     reticulum_memory_bytes: int | None
     cpu_percent: float | None
     peers: tuple[Peer, ...]
+    messaging: Messaging | None = None
 
     def peer(self, name: str) -> Peer | None:
         return next((p for p in self.peers if p.name == name), None)
@@ -184,6 +234,7 @@ def parse_status(data: Any) -> Status:
         reticulum_memory_bytes=_int(res.get("reticulum_memory_bytes")),
         cpu_percent=None if cpu is None else min(cpu, 100.0 * 64),
         peers=tuple(peers),
+        messaging=parse_messaging(data.get("messaging")),
     )
 
 

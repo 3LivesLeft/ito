@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -437,7 +438,10 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
         assert wait_for(lambda: snapshot().get("node", {}).get("running") is True, timeout=60), get(token)
         snap = snapshot()
         assert snap["app"]["state"] == "running" and snap["app"]["problem"] == "isolated"
-        assert snap["app"]["version"] == "0.2.0"
+        version = re.search(r'^version: "([^"]+)"', (repo / "meshbeacon" / "config.yaml").read_text(), re.M)
+        assert version and snap["app"]["version"] == version.group(1)
+        # D-M4-8: the status API reports messaging, off by default, with nothing else about it.
+        assert snap["messaging"] == {"enabled": False, "state": "disabled", "message": None}
         # Listeners: health (8099) and the API (8100); nothing published, nothing outbound to peers.
         listening = {
             line.split()[1].split(":")[1]

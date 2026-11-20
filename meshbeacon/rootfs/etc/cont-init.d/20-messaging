@@ -1,0 +1,36 @@
+#!/bin/sh
+# The optional LXMF messaging engine's folders (M4, D-M4-8; ADR 0018). Runs as root after
+# 10-meshbeacon at every start. When messaging is off (the default) it does nothing at all: no
+# messaging folder or data is created, and the engine's s6 service stays down. The core reads and
+# validates the same option; this only decides whether the folders are needed.
+set -u
+enabled="$(/usr/local/bin/python3 -I -c '
+import json
+try:
+    print("yes" if json.load(open("/data/options.json")).get("messaging_enabled") is True else "no")
+except Exception:
+    print("no")
+' 2>/dev/null)"
+[ "$enabled" = "yes" ] || exit 0
+
+# The engine's data (identity, queue): its user only. Kept when messaging is switched off again.
+mkdir -p /data/messaging
+chown -R mb-lxmf:mb-lxmf /data/messaging
+chmod 0700 /data/messaging
+# The engine's socket: only the engine's user can create it; only the group mb-msg (the core and the
+# engine, nobody else) can reach it. No setgid bit: the AppArmor profile denies CAP_FSETID, so root
+# could not set one here; the engine gives its socket the folder's group itself.
+mkdir -p /run/meshbeacon-messaging
+chown mb-lxmf:mb-msg /run/meshbeacon-messaging
+chmod 0750 /run/meshbeacon-messaging
+# Its settings, written by the core from the options and readable by the engine: the core's folder,
+# group mb-msg, so the engine can read but never change them (and never sees options.json).
+mkdir -p /run/meshbeacon-messaging/config
+chown meshbeacon:mb-msg /run/meshbeacon-messaging/config
+chmod 0750 /run/meshbeacon-messaging/config
+# Its output FIFO, beside Reticulum's (root:meshbeacon, 0660; opened by root in the run script).
+mkdir -p /run/meshbeacon-io/messaging
+[ -p /run/meshbeacon-io/messaging/out ] || mkfifo /run/meshbeacon-io/messaging/out
+chown -R root:meshbeacon /run/meshbeacon-io/messaging
+chmod 0750 /run/meshbeacon-io/messaging
+chmod 0660 /run/meshbeacon-io/messaging/out

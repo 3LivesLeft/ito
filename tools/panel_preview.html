@@ -82,6 +82,24 @@
         st(B("emerald_connected"), "on"), st(E("emerald_connected_since"), iso(7 * 60e3)), st(E("emerald_reconnections"), 0),
         st(B("quartz_connected"), scenario === "problem" ? "off" : "on"), st(E("quartz_connected_since"), scenario === "problem" ? "unknown" : iso(3 * 3600e3)), st(E("quartz_reconnections"), 3),
       ].map((s) => [s.entity_id, s]));
+      // &messaging=running|off|error: the optional LXMF messaging card (M4).
+      const messaging = q.get("messaging");
+      const ADDRESS = "3f9c2a71d04e8b65c1a09e7f25b3d8c4"; // a made-up example, not anyone's address
+      if (messaging) {
+        Object.assign(node.entities, {
+          messaging: E("messaging"), messages_received: E("messages_received"), messaging_contacts_reachable: E("messaging_contacts_reachable"),
+          messaging_last_received: E("messaging_last_received"), messaging_replies_sent: E("messaging_replies_sent"), messaging_last_reply: E("messaging_last_reply"),
+        });
+        const on = messaging === "running";
+        Object.assign(states, Object.fromEntries([
+          { entity_id: E("messaging"), state: { running: "running", off: "disabled", error: "error" }[messaging],
+            attributes: { address: on ? ADDRESS : null, contacts: 2, auto_reply: true, last_received_from: on ? "My phone" : null,
+                          message: messaging === "error" ? "Messaging could not start: Reticulum was not reachable, or the messaging identity is damaged (MeshBeacon never replaces it: restore the app from a backup). The app log says which. MeshBeacon will try again shortly." : null } },
+          st(E("messages_received"), on ? 4 : "unknown"), st(E("messaging_contacts_reachable"), on ? 1 : "unknown"),
+          st(E("messaging_last_received"), on ? iso(3 * 60e3) : "unknown"), st(E("messaging_replies_sent"), on ? 4 : "unknown"),
+          st(E("messaging_last_reply"), on ? "delivered" : "unknown"),
+        ].map((s) => [s.entity_id, s])));
+      }
       if (scenario === "unavailable") for (const s of Object.values(states)) s.state = "unavailable";
       const labels = {
         running: "Running", needs_attention: "Needs attention", online: "Online", partial: "Partly connected",
@@ -140,6 +158,14 @@
           ],
           resources: { memory_bytes: 78 * 2 ** 20, core_memory_bytes: 21 * 2 ** 20, reticulum_memory_bytes: 57 * 2 ** 20, cpu_percent: 1.8 },
         };
+        if (messaging) {
+          snapshot.messaging = messaging === "off" ? { enabled: false, state: "disabled", message: null } : {
+            enabled: true, state: messaging === "running" ? "running" : "error", address: messaging === "running" ? ADDRESS : null,
+            contacts_configured: 2, contacts_reachable: 1, received: 4, replies_sent: 4, last_reply_state: "delivered",
+            last_received_at: sec(3 * 60e3), last_received_from: "My phone", auto_reply: true,
+            message: messaging === "error" ? "Messaging could not start: Reticulum was not reachable. MeshBeacon will try again shortly." : null,
+          };
+        }
         const series = (base, wobble) => {
           const out = [];
           for (let t = now - 7 * 24 * 3600e3; t <= now; t += 5 * 60e3) out.push({ t, v: Math.max(0, base + wobble * Math.sin(t / 7e6)) });

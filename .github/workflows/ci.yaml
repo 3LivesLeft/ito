@@ -6,7 +6,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "feature/**"]
+    branches: [main, develop, "feature/**"]
   pull_request:
 
 permissions:
@@ -40,8 +40,7 @@ jobs:
         run: >-
           shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/*/run
           meshbeacon/rootfs/etc/services.d/*/finish tests/container/build_localbase.sh
-          meshbeacon/rootfs-messaging/etc/cont-init.d/20-messaging meshbeacon/rootfs-messaging/etc/services.d/*/run
-          meshbeacon/rootfs-messaging/etc/services.d/*/finish
+          meshbeacon/rootfs/etc/cont-init.d/20-messaging
       - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           dockerfile: meshbeacon/Dockerfile
@@ -124,50 +123,28 @@ jobs:
           docker buildx build --load --platform "${{ matrix.platform }}" \
             --build-arg BUILD_ARCH=${{ matrix.arch }} \
             -t "meshbeacon:ci-${{ matrix.arch }}" meshbeacon
+      - name: The v0.2.0 app, for the upgrade test (pinned to the v0.2.0 merge, never main's head)
+        if: matrix.arch == 'amd64'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 80e9f59f5a42cf24fef49f5c49e134c39d13a6eb
+          path: previous
+          persist-credentials: false
+      - name: Build the v0.2.0 image (upgrade test only; never released)
+        if: matrix.arch == 'amd64'
+        run: |
+          grep -q '^version: "0.2.0"' previous/meshbeacon/config.yaml
+          docker buildx build --load --platform "${{ matrix.platform }}" \
+            --build-arg BUILD_ARCH=${{ matrix.arch }} -t "meshbeacon:previous" previous/meshbeacon
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
       - run: pip install --require-hashes -r requirements-test.txt
-      - name: Container security and behaviour tests
+      - name: Container security and behaviour tests, messaging off and on (one standard image)
         env:
           MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
+          MESHBEACON_PREVIOUS_IMAGE: ${{ matrix.arch == 'amd64' && 'meshbeacon:previous' || '' }}
           MESHBEACON_EMULATED: ${{ matrix.emulated }}
-        run: python -m pytest -m container tests/container -s -p no:cacheprovider
-      - name: Build the messaging development image (M4; target messaging-dev, never released)
-        if: matrix.arch == 'amd64'
-        run: |
-          docker buildx build --load --platform "${{ matrix.platform }}" \
-            --build-arg BUILD_ARCH=${{ matrix.arch }} --target messaging-dev \
-            -t "meshbeacon:ci-messaging-dev" meshbeacon
-      - name: Messaging engine lifecycle, isolation and production exclusion (M4)
-        if: matrix.arch == 'amd64'
-        env:
-          MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
-          MESHBEACON_MESSAGING_IMAGE: meshbeacon:ci-messaging-dev
-        run: python -m pytest -m container tests/container/test_messaging_container.py -s -p no:cacheprovider -rA
-      - name: Messaging engine confined by AppArmor (development profile; production profile unchanged)
-        # The development image's profile is the production profile plus the engine's socket folder,
-        # derived here and never shipped. Denials other than none are reported and fail the job.
-        if: (success() || failure()) && matrix.arch == 'amd64'
-        env:
-          MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
-          MESHBEACON_MESSAGING_IMAGE: meshbeacon:ci-messaging-dev
-          MESHBEACON_APPARMOR: meshbeacon-dev-ci
-        run: |
-          sudo aa-status --enabled
-          sed -e 's/^profile meshbeacon /profile meshbeacon-dev-ci /' \
-              -e 's|^\(\s*\)/run/meshbeacon-io/{,\*\*} rw,|&\n\1/run/meshbeacon-messaging/{,**} rw,|' \
-              meshbeacon/apparmor.txt > "$RUNNER_TEMP/meshbeacon-dev-ci"
-          grep -q "/run/meshbeacon-messaging/" "$RUNNER_TEMP/meshbeacon-dev-ci"
-          sudo apparmor_parser --replace --write-cache "$RUNNER_TEMP/meshbeacon-dev-ci"
-          python -m pytest -m container tests/container/test_messaging_container.py -s -p no:cacheprovider -rA \
-            -k "not production and not options"
-          sleep 2
-          sudo journalctl -k --no-pager | grep -E 'apparmor="(DENIED|ALLOWED)".*meshbeacon-dev-ci' > "$RUNNER_TEMP/dev-denials" || true
-          if [ -s "$RUNNER_TEMP/dev-denials" ]; then
-            tail -50 "$RUNNER_TEMP/dev-denials"
-            echo "::error::AppArmor denials for the messaging development image (above)"
-            exit 1
-          fi
+        run: python -m pytest -m container tests/container -s -p no:cacheprovider -rA
       - name: Load the AppArmor profile into the runner's kernel (enforce mode)
         if: (success() || failure()) && matrix.arch == 'amd64'
         run: |

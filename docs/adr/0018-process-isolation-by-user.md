@@ -68,15 +68,18 @@ least-privilege credentials, storage and IPC, proven by adversarial tests.
     environment, the Supervisor token included, in `/run/s6/container_environment`, readable by every
     user. The root init step makes it root's alone (0700, files 0600). The isolation and credential
     probes check it.
-11. **The messaging engine (as implemented, M4).** Only in the `messaging-dev` image target; the
-    production target has no `messaging` service, no `mb-lxmf` user and no engine (WP5).
+11. **The messaging engine (as implemented, M4).** Since D-M4-8 ([ADR 0022](0022-standard-image-optional-messaging.md))
+    in every image, run only when the user switches messaging on (before, in the `messaging-dev`
+    target only). Its settings come from the core, in `/run/meshbeacon-messaging/config/`
+    (the core's, group `mb-msg`, 0750; file 0640): the engine reads them and nothing of
+    `options.json`. Health checks are every 10 s since D-M4-8.
     - The core starts the `messaging` service once Reticulum has reported its first status, checks
       its health every 30 s over the contract socket (three missed answers count as a hang), and
       restarts it with back-off (10 s to 5 min). After five failures in 30 minutes messaging pauses
       until the app restarts. Reticulum and the status API are never touched (MS-15).
     - **Socket path and group, changed from point 6:** `/run/meshbeacon-messaging/engine.sock`,
       socket 0660, in a folder `mb-lxmf:mb-msg` 0750. `mb-msg` (9111) is a group of exactly the
-      core and the engine, in the development image only; the engine gives its socket the folder's
+      core and the engine; the engine gives its socket the folder's
       group after binding (it is a member, so no privilege is needed). Point 6's folder inside
       `/run/meshbeacon-io/` would have needed `mb-lxmf` in the core's own group (that folder is
       root:meshbeacon 0750). A setgid folder was tried first and **failed under AppArmor

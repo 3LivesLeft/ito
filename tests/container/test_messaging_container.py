@@ -1,16 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
-"""M4 messaging in real images (WP4, WP5; MS-1, MS-2, MS-15, IS-3a).
+"""M4 messaging in the standard image (WP4, D-M4-8; MS-1, MS-2, MS-15, IS-3, IS-3a).
 
-    MESHBEACON_IMAGE=<production image> MESHBEACON_MESSAGING_IMAGE=<messaging-dev image> \\
+    MESHBEACON_IMAGE=<the image> [MESHBEACON_PREVIOUS_IMAGE=<v0.2 image>] \\
         pytest -m container tests/container/test_messaging_container.py
 
-Production (``MESHBEACON_IMAGE``, the Dockerfile's default target): nothing of the messaging engine
-is present, not in the final file system and not in any layer, and nothing of it runs. This does
-not rely on a switch: the files are absent and the tests look for them.
-
-Development (``MESHBEACON_MESSAGING_IMAGE``, target ``messaging-dev``): the engine's s6 lifecycle,
-start order, clean stop, restarts, socket permissions and user isolation, and that its failures
-never touch Reticulum or the core. Only local containers on no network; nothing connects outside.
+One image for everyone: it carries the messaging engine, which runs only when the option
+``messaging_enabled`` is on (off by default). Off: nothing of messaging runs and no messaging
+data is created. On: the engine's s6 lifecycle, start order, clean stop, restarts, socket and
+settings permissions and user isolation, and that its failures never touch Reticulum or the core.
+``MESHBEACON_PREVIOUS_IMAGE`` (v0.2, built from ``main``) enables the upgrade test. Only local
+containers on no network; nothing connects outside.
 """
 
 from __future__ import annotations
@@ -20,7 +19,6 @@ import os
 import re
 import shutil
 import subprocess
-import tarfile
 import tempfile
 import time
 import uuid
@@ -31,23 +29,18 @@ import pytest
 
 from .test_container import DEFAULTS, SCALE, app_memory_kib, processes, sh
 
-PRODUCTION = os.environ.get("MESHBEACON_IMAGE", "")
-DEV = os.environ.get("MESHBEACON_MESSAGING_IMAGE", "")
-# An AppArmor profile loaded on the host (CI: the production profile plus the engine's socket
-# folder, for the development image only). Empty: unconfined.
+IMAGE = os.environ.get("MESHBEACON_IMAGE", "")
+PREVIOUS = os.environ.get("MESHBEACON_PREVIOUS_IMAGE", "")
+# An AppArmor profile loaded on the host (CI: the app's own profile). Empty: unconfined.
 APPARMOR = os.environ.get("MESHBEACON_APPARMOR", "")
 REPO = Path(__file__).resolve().parents[2]
-pytestmark = [pytest.mark.container, pytest.mark.skipif(shutil.which("docker") is None, reason="needs Docker")]
-needs_production = pytest.mark.skipif(not PRODUCTION, reason="needs MESHBEACON_IMAGE")
-needs_dev = pytest.mark.skipif(not DEV, reason="needs MESHBEACON_MESSAGING_IMAGE")
-
-# Anything of the engine, its dependency or its service, by path inside an image or a layer.
-FORBIDDEN_PATHS = re.compile(
-    r"(^|/)(site-packages/meshbeacon/messaging(/|$)|site-packages/LXMF(/|$)|site-packages/lxmf-[^/]*\.dist-info"
-    r"|bin/lxmd$|etc/services\.d/messaging(/|$)|etc/cont-init\.d/20-messaging$|etc/meshbeacon/messaging$"
-    r"|run/meshbeacon-messaging)",
-    re.IGNORECASE,
-)
+pytestmark = [
+    pytest.mark.container,
+    pytest.mark.skipif(not IMAGE or shutil.which("docker") is None, reason="needs Docker and MESHBEACON_IMAGE"),
+]
+needs_previous = pytest.mark.skipif(not PREVIOUS, reason="needs MESHBEACON_PREVIOUS_IMAGE (v0.2)")
+ADDRESS = "a1" * 16  # a made-up contact address (no such node exists)
+ON = {**DEFAULTS, "messaging_enabled": True, "messaging_contacts": [{"name": "Phone", "address": ADDRESS}]}
 
 
 def wait_for(pred: Callable[[], object], timeout: float = 60.0) -> bool:
@@ -109,88 +102,168 @@ def apps() -> Iterator[Callable[..., App]]:
         app.remove()
 
 
-# -- WP5: the production image ------------------------------------------------------------------
+# -- The standard image: messaging included, off by default (D-M4-8) -----------------------------
 
 
-@needs_production
-def test_the_production_image_has_no_messaging_files_users_or_packages():
+def test_the_standard_image_carries_the_messaging_engine():
     script = (
-        "import importlib.metadata as m, importlib.util as u, os, pwd, grp, json\n"
-        "found = []\n"
-        "for root in ('/usr', '/etc', '/opt', '/run', '/package', '/command'):\n"
-        "    for d, dirs, files in os.walk(root):\n"
-        "        found += [os.path.join(d, n) for n in dirs + files]\n"
+        "import importlib.util as u, os, pwd, grp, json\n"
         "print(json.dumps({\n"
-        "  'paths': found,\n"
-        "  'dists': sorted(d.metadata['Name'].lower() for d in m.distributions()),\n"
-        "  'engine_importable': u.find_spec('meshbeacon.messaging') is not None,\n"
-        "  'lxmf_importable': u.find_spec('LXMF') is not None,\n"
-        "  'users': [p.pw_name for p in pwd.getpwall()], 'groups': [g.gr_name for g in grp.getgrall()]}))\n"
+        "  'engine': u.find_spec('meshbeacon.messaging') is not None,\n"
+        "  'lxmf': u.find_spec('LXMF') is not None,\n"
+        "  'service': os.path.isfile('/etc/services.d/messaging/run'),\n"
+        "  'starts_down': os.path.isfile('/etc/services.d/messaging/down'),\n"
+        "  'init': os.path.isfile('/etc/cont-init.d/20-messaging'),\n"
+        "  'marker': os.path.exists('/etc/meshbeacon/messaging'),\n"
+        "  'engine_uid': pwd.getpwnam('mb-lxmf').pw_uid,\n"
+        "  'msg_group': sorted(grp.getgrnam('mb-msg').gr_mem)}))\n"
     )
     seen = json.loads(
-        sh("docker", "run", "--rm", "--network", "none", "--entrypoint", "python3", PRODUCTION, "-I", "-c", script)
+        sh("docker", "run", "--rm", "--network", "none", "--entrypoint", "python3", IMAGE, "-I", "-c", script)
     )
-    assert [p for p in seen["paths"] if FORBIDDEN_PATHS.search(p)] == []
-    assert "lxmf" not in seen["dists"] and not seen["engine_importable"] and not seen["lxmf_importable"]
-    assert "mb-lxmf" not in seen["users"] and not {"mb-lxmf", "mb-msg"} & set(seen["groups"])
-    assert [p for p in seen["paths"] if "lxmf" in p.lower() or "/messaging" in p.lower()] == []
+    assert seen == {
+        "engine": True, "lxmf": True, "service": True, "starts_down": True, "init": True, "marker": False,
+        "engine_uid": 9102, "msg_group": ["mb-lxmf", "meshbeacon"],
+    }  # fmt: skip
 
 
-@needs_production
-def test_no_layer_of_the_production_image_ever_contained_messaging(tmp_path):
-    """Not merely deleted in a later layer: no layer of the image (its history) holds any of it."""
-    archive = tmp_path / "image.tar"
-    sh("docker", "save", "-o", str(archive), PRODUCTION, timeout=300)
-    hits: list[str] = []
-    layers = 0
-    with tarfile.open(archive) as outer:
-        for member in outer.getmembers():
-            if not member.isfile():
-                continue
-            blob = outer.extractfile(member)
-            if blob is None:
-                continue
-            try:
-                with tarfile.open(fileobj=blob) as layer:
-                    names = layer.getnames()
-            except tarfile.ReadError:
-                continue  # a config or manifest, not a layer
-            layers += 1
-            hits += [f"{member.name}: {n}" for n in names if FORBIDDEN_PATHS.search(n) or "lxmf" in n.lower()]
-    assert layers >= 3 and hits == []
-
-
-@needs_production
-def test_the_app_options_have_no_messaging_option():
-    import yaml
-
-    config = yaml.safe_load((REPO / "meshbeacon" / "config.yaml").read_text())
-    keys = json.dumps({"options": config.get("options"), "schema": config.get("schema")}).lower()
-    assert "messag" not in keys and "lxmf" not in keys
-
-
-@needs_production
-def test_production_runs_no_messaging_and_never_shares_its_instance(apps):
-    """MS-1: no engine process, no /data/messaging, no shared instance (IS-3a applies only to the
-    development image), and memory as before."""
-    app = apps(PRODUCTION)
+def test_messaging_is_off_by_default(apps):
+    """MS-1 in the standard image: no engine process, no messaging data or folders, no shared
+    instance, and the gateway works as before."""
+    app = apps(IMAGE)
     assert wait_for(lambda: "not connected to anyone" in app.logs()), app.logs()
     time.sleep(15)
     owners = processes(app)  # type: ignore[arg-type]
     assert "meshbeacon.messaging" not in owners and set(owners.get("meshbeacon.node", ())) == {"mb-rns"}, owners
     assert not (app.data / "messaging").exists()
+    assert not app.ok("test", "-e", "/run/meshbeacon-messaging")
     assert "share_instance = No" in app.exec("cat", "/data/reticulum/config")
     unix = app.exec("cat", "/proc/net/unix")
     assert "@rns" not in unix and "meshbeacon-messaging" not in unix
-    assert "messaging" not in app.logs().lower()
-    print(f"MS-1 production idle RSS+swap: {app_memory_kib(app) / 1024:.1f} MiB")  # type: ignore[arg-type]
+    assert "LXMF messaging: off" in app.logs() and "meshbeacon-messaging" not in app.logs()
+    assert app.health()
+    print(f"MS-1 messaging off, idle RSS+swap: {app_memory_kib(app) / 1024:.1f} MiB")  # type: ignore[arg-type]
 
 
-# -- WP4: the messaging development image -------------------------------------------------------
+def test_switching_messaging_on_off_and_on_again_keeps_both_identities(apps):
+    """The checkbox: on starts exactly one engine; off stops only messaging and keeps its data;
+    on again uses the same messaging identity. The node's identity never changes."""
+    app = apps(IMAGE, ON)
+    assert wait_for(lambda: engine_up(app), 90), app.logs()
+    time.sleep(5)
+    assert processes(app).get("meshbeacon.messaging") == {"mb-lxmf"}  # type: ignore[arg-type]
+    assert count_engines(app) == 1
+    node_id = app.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0]
+    messaging_id = app.exec("sha256sum", "/data/messaging/identity").split()[0]
+    app.remove()
+
+    off = apps(IMAGE, DEFAULTS, data=app.data)
+    assert wait_for(lambda: "not connected to anyone" in off.logs()), off.logs()
+    time.sleep(10)
+    assert count_engines(off) == 0 and "LXMF messaging: off" in off.logs()
+    assert off.exec("sha256sum", "/data/messaging/identity").split()[0] == messaging_id  # kept
+    assert "share_instance = No" in off.exec("cat", "/data/reticulum/config")
+    off.remove()
+
+    again = apps(IMAGE, ON, data=app.data)
+    assert wait_for(lambda: engine_up(again), 90), again.logs()
+    assert "meshbeacon-messaging: started (identity unchanged)" in again.logs()
+    assert again.exec("sha256sum", "/data/messaging/identity").split()[0] == messaging_id
+    assert again.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0] == node_id
+    assert count_engines(again) == 1
+
+
+def test_the_engine_gets_its_settings_from_the_options_and_can_change_nothing(apps):
+    """The core writes the engine's settings from the validated options into a folder the engine
+    can read but not write; Reticulum's user cannot even reach it. The engine never sees the
+    options file itself (IS-2: it holds peer passphrases)."""
+    app = apps(IMAGE, ON)
+    assert wait_for(lambda: engine_up(app), 90), app.logs()
+    folder = app.exec("stat", "-c", "%U:%G %a", "/run/meshbeacon-messaging/config").split()
+    assert folder == ["meshbeacon:mb-msg", "750"]
+    assert app.exec("stat", "-c", "%U:%G %a", "/run/meshbeacon-messaging/config/settings.json").split() == [
+        "meshbeacon:mb-msg",
+        "640",
+    ]
+    settings = json.loads(app.exec("cat", "/run/meshbeacon-messaging/config/settings.json", user="mb-lxmf"))
+    assert settings["contacts"] == [{"id": "phone", "name": "Phone", "destination": ADDRESS}]
+    assert settings["inbound"] == "contacts" and settings["display_name"] == ""
+    assert not app.ok("sh", "-c", "echo x >> /run/meshbeacon-messaging/config/settings.json", user="mb-lxmf")
+    assert not app.ok("touch", "/run/meshbeacon-messaging/config/other", user="mb-lxmf")
+    assert not app.ok("cat", "/run/meshbeacon-messaging/config/settings.json", user="mb-rns")
+    assert not app.ok("cat", "/data/options.json", user="mb-lxmf")
+    contacts = request(app, {"op": "contacts"})
+    assert contacts == {"ok": True, "contacts": [{"id": "phone", "name": "Phone", "heard": False}]}, contacts
+    answer = request(app, {"op": "status"})
+    assert answer is not None and re.fullmatch(r"[0-9a-f]{32}", answer["address"]) and answer["address"] != ADDRESS
+
+
+def test_invalid_messaging_options_need_attention_and_keep_reticulum_safe(apps):
+    """A bad contact address: the core explains it in plain language and starts nothing."""
+    bad = {**ON, "messaging_contacts": [{"name": "Phone", "address": "not-an-address"}]}
+    app = apps(IMAGE, bad)
+    assert wait_for(lambda: "32 hexadecimal" in app.logs(), 60), app.logs()
+    assert "Traceback" not in app.logs()
+    time.sleep(5)
+    assert count_engines(app) == 0 and app.health()  # needs_attention is healthy (ADR 0005)
+
+
+@needs_previous
+def test_upgrade_from_v02_keeps_the_identity_and_leaves_messaging_off(apps):
+    """Upgrade: v0.2 creates the node; the standard image takes its data and options as they are
+    (no messaging keys: the Supervisor adds the defaults), keeps the identity, and starts no
+    messaging until the user switches it on."""
+    v02 = apps(PREVIOUS)
+    assert wait_for(lambda: "not connected to anyone" in v02.logs()), v02.logs()
+    node_id = v02.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0]
+    v02.remove()
+    assert "messaging_enabled" not in (v02.data / "options.json").read_text()
+
+    app = apps(IMAGE, json.loads((v02.data / "options.json").read_text()), data=v02.data)
+    assert wait_for(lambda: "not connected to anyone" in app.logs()), app.logs()
+    assert "unchanged since last start" in app.logs() and "LXMF messaging: off" in app.logs()
+    assert app.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0] == node_id
+    time.sleep(5)
+    assert count_engines(app) == 0 and not (app.data / "messaging").exists()
+    app.remove()
+
+    on = apps(IMAGE, ON, data=v02.data)
+    assert wait_for(lambda: engine_up(on), 90), on.logs()
+    assert "meshbeacon-messaging: started (identity created)" in on.logs()
+    assert on.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0] == node_id
+
+
+# -- WP4: the engine, switched on -------------------------------------------------------
 
 
 def engine_up(app: App) -> bool:
     return "meshbeacon-messaging: started" in app.logs()
+
+
+def count_engines(app: App) -> int:
+    script = (
+        "import os\n"
+        "n = 0\n"
+        "for p in filter(str.isdigit, os.listdir('/proc')):\n"
+        "    try: a = open(f'/proc/{p}/cmdline','rb').read().split(b'\\0')\n"
+        "    except OSError: continue\n"
+        "    n += b'-m' in a and a[a.index(b'-m')+1] == b'meshbeacon.messaging'\n"
+        "print(n)\n"
+    )
+    return int(app.exec("python3", "-I", "-c", script).strip())
+
+
+def request(app: App, payload: dict) -> dict | None:
+    """One contract request as the core's user (the only peer the engine serves)."""
+    script = (
+        "import json, socket, sys\n"
+        "s = socket.socket(socket.AF_UNIX); s.settimeout(10)\n"
+        "s.connect('/run/meshbeacon-messaging/engine.sock')\n"
+        "s.sendall(sys.argv[1].encode() + b'\\n')\n"
+        "print(s.makefile('rb').readline().decode())\n"
+    )
+    out = app.exec("python3", "-I", "-c", script, json.dumps(payload), user="meshbeacon", check=False).strip()
+    return json.loads(out) if out else None
 
 
 def status(app: App, user: str = "meshbeacon") -> dict | None:
@@ -214,9 +287,8 @@ def status(app: App, user: str = "meshbeacon") -> dict | None:
     return json.loads(out) if out else None
 
 
-@needs_dev
 def test_the_engine_starts_after_reticulum_as_its_own_user(apps):
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     logs = app.logs()
     # Reticulum's first status (the "not connected" report) comes before the engine starts.
@@ -247,10 +319,9 @@ def test_the_engine_starts_after_reticulum_as_its_own_user(apps):
     assert not re.search(r"(?<![0-9a-f])[0-9a-f]{32,}(?![0-9a-f])", app.logs(), re.I), app.logs()
 
 
-@needs_dev
 def test_only_the_core_can_use_the_engine_socket(apps):
     """Peer checks both ways: the core reaches the engine's user only; nobody else is served."""
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     core = status(app, "meshbeacon")
     assert core is not None and core["server_uid"] == 9102 and core["answer"]["ok"] is True, core
@@ -260,9 +331,8 @@ def test_only_the_core_can_use_the_engine_socket(apps):
     assert refused is not None and refused.get("answer") is None, refused
 
 
-@needs_dev
 def test_users_cannot_read_each_others_data(apps):
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     # The socket's group holds exactly the core and the engine.
     members = app.exec("python3", "-I", "-c", "import grp; print(' '.join(sorted(grp.getgrnam('mb-msg').gr_mem)))")
@@ -292,10 +362,9 @@ def test_users_cannot_read_each_others_data(apps):
     assert weakened is not None and "error" not in weakened and weakened.get("answer") is None, weakened
 
 
-@needs_dev
 def test_killing_the_engine_restarts_only_the_engine(apps):
     """MS-15: Reticulum keeps running (same process) and the health endpoint never fails."""
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     node, core = app.pid("meshbeacon.node"), app.pid("meshbeacon.supervisor")
     engine = app.pid("meshbeacon.messaging")
@@ -309,10 +378,9 @@ def test_killing_the_engine_restarts_only_the_engine(apps):
     assert wait_for(lambda: (s := status(app)) and s.get("answer", {}).get("ok"), 60)
 
 
-@needs_dev
 def test_a_hung_engine_is_detected_and_restarted(apps):
     """MS-15: a stopped (hung) engine misses three health checks, is killed and started again."""
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     node, engine = app.pid("meshbeacon.node"), app.pid("meshbeacon.messaging")
     app.exec("kill", "-STOP", str(engine))
@@ -321,7 +389,6 @@ def test_a_hung_engine_is_detected_and_restarted(apps):
     assert app.pid("meshbeacon.node") == node and app.health()
 
 
-@needs_dev
 def test_an_engine_that_cannot_start_never_affects_the_node(apps):
     """Both copies of the messaging identity damaged: the engine refuses to start (rule 13) and
     replaces nothing; the core backs off; Reticulum and the health endpoint carry on."""
@@ -329,8 +396,10 @@ def test_an_engine_that_cannot_start_never_affects_the_node(apps):
     (data / "messaging").mkdir()
     (data / "messaging" / "identity").write_bytes(b"damaged")
     (data / "messaging" / "identity.backup").write_bytes(b"damaged too")
-    app = apps(DEV, data=data)
-    assert wait_for(lambda: app.logs().count("Messaging stopped unexpectedly (exit code 3)") >= 2, 120), app.logs()
+    app = apps(IMAGE, ON, data=data)
+    reason = "Messaging could not start: Reticulum was not reachable"  # the dashboard's plain words
+    assert wait_for(lambda: app.logs().count(reason) >= 2, 120), app.logs()
+    assert "Traceback" not in app.logs()
     assert "identity is damaged" in app.logs()
     node = app.pid("meshbeacon.node")
     time.sleep(5)
@@ -338,9 +407,8 @@ def test_an_engine_that_cannot_start_never_affects_the_node(apps):
     assert app.exec("cat", "/data/messaging/identity") == "damaged"  # kept for manual recovery
 
 
-@needs_dev
 def test_the_engine_survives_a_reticulum_restart(apps):
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     engine = app.pid("meshbeacon.messaging")
     app.exec("kill", "-9", str(app.pid("meshbeacon.node")))
@@ -349,45 +417,42 @@ def test_the_engine_survives_a_reticulum_restart(apps):
     assert app.pid("meshbeacon.messaging") == engine  # the engine reconnected by itself
 
 
-@needs_dev
 def test_stopping_the_app_leaves_messaging_data_intact(apps):
     """A container stop (s6 stops every service at once) exits cleanly, and the engine's data
     comes back as it was: the queue is not quarantined and the identity is unchanged."""
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     identity = app.exec("sha256sum", "/data/messaging/identity").split()[0]
     assert app.exec("ls", "/data/messaging").split().count("queue.db") == 1
     sh("docker", "stop", "-t", "30", app.name, timeout=60)
     assert sh("docker", "inspect", "-f", "{{.State.ExitCode}}", app.name).strip() == "0"
-    again = apps(DEV, data=app.data)
+    again = apps(IMAGE, ON, data=app.data)
     assert wait_for(lambda: engine_up(again), 90), again.logs()
     assert "meshbeacon-messaging: started (identity unchanged)" in again.logs()
     assert again.exec("sha256sum", "/data/messaging/identity").split()[0] == identity
     assert not [n for n in again.exec("ls", "/data/messaging").split() if ".corrupt-" in n]
 
 
-@needs_dev
 def test_the_messaging_identity_is_independent_of_the_transport_identity(apps):
     """MS-2: replacing the transport identity leaves the messaging identity as it was."""
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     transport = app.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0]
     messaging = app.exec("sha256sum", "/data/messaging/identity").split()[0]
     app.remove()
-    again = apps(DEV, {**DEFAULTS, "replace_identity": True}, data=app.data)
+    again = apps(IMAGE, {**ON, "replace_identity": True}, data=app.data)
     assert wait_for(lambda: engine_up(again), 90), again.logs()
     assert again.exec("sha256sum", "/data/reticulum/storage/transport_identity").split()[0] != transport
     assert again.exec("sha256sum", "/data/messaging/identity").split()[0] == messaging
     assert "meshbeacon-messaging: started (identity unchanged)" in again.logs()
 
 
-@needs_dev
-def test_development_image_idle_memory(apps):
-    """Q-40 / MS-18 (indicative only: MS-18 is decided on the spare Pi, D-M4-7)."""
-    app = apps(DEV)
+def test_idle_memory_with_messaging_on(apps):
+    """Q-40 / MS-18 (indicative only: MS-18 is decided on the Pi, D-M4-7)."""
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     time.sleep(20)
-    print(f"messaging-dev idle RSS+swap (core + Reticulum + engine): {app_memory_kib(app) / 1024:.1f} MiB")  # type: ignore[arg-type]
+    print(f"messaging on, idle RSS+swap (core + Reticulum + engine): {app_memory_kib(app) / 1024:.1f} MiB")  # type: ignore[arg-type]
 
 
 ABSTRACT = (
@@ -409,29 +474,27 @@ RPC = (
 )
 
 
-@needs_dev
 def test_the_shared_instance_is_reachable_only_inside_the_app_container(apps):
     """IS-3a: the RNS 1.6.0 shared instance is an abstract Unix socket (``\\0rns/meshbeacon``,
     RNS/Reticulum.py lines 369 and 825-826), which lives in the container's own network namespace
     (the app has no host network). Another container cannot reach it; inside, it is there."""
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     assert "@rns/meshbeacon" in app.exec("cat", "/proc/net/unix")
     inside = json.loads(app.exec("python3", "-I", "-c", ABSTRACT, "rns/meshbeacon", user="mb-lxmf"))
     assert inside == "connected"
     for network in ("none", "bridge"):
         outside = sh(
-            "docker", "run", "--rm", "--network", network, "--entrypoint", "python3", DEV,
+            "docker", "run", "--rm", "--network", network, "--entrypoint", "python3", IMAGE,
             "-I", "-c", ABSTRACT, "rns/meshbeacon",
         )  # fmt: skip
         assert json.loads(outside) in ("ConnectionRefusedError", "FileNotFoundError"), (network, outside)
 
 
-@needs_dev
 def test_the_node_rpc_refuses_anyone_without_its_key(apps):
     """IS-3a: the RPC listener is reachable inside the container, but only Reticulum's user holds
     its key (in /data/reticulum/config, 0600). The engine has no key; a wrong key is refused."""
-    app = apps(DEV)
+    app = apps(IMAGE, ON)
     assert wait_for(lambda: engine_up(app), 90), app.logs()
     assert "@rns/meshbeacon/rpc" in app.exec("cat", "/proc/net/unix")
     for user in ("mb-lxmf", "meshbeacon"):

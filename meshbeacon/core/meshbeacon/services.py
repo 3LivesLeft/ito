@@ -114,7 +114,7 @@ class Services:
         self.node_status = open_fifo(io_root / "reticulum" / "status")
         self.prepare_out = open_fifo(io_root / "prepare" / "out")
         self.prepare_result = open_fifo(io_root / "prepare" / "result")
-        # The messaging engine's output, only in a development image that carries it (M4).
+        # The messaging engine's output: the FIFO exists only when messaging is switched on (D-M4-8).
         engine_out = io_root / "messaging" / "out"
         self.engine_out = open_fifo(engine_out) if engine_out.exists() else None
 

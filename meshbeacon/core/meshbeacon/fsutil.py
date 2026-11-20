@@ -24,11 +24,12 @@ def fsync_dir(directory: Path) -> None:
         os.close(fd)
 
 
-def atomic_write(path: Path, data: bytes, mode: int = FILE_MODE) -> None:
+def atomic_write(path: Path, data: bytes, mode: int = FILE_MODE, group: int | None = None) -> None:
     """Write ``data`` to ``path`` so that a crash leaves either the old file or the new one.
 
     The data goes to a uniquely named temporary file in the same directory, which is fsynced,
-    renamed over the target and followed by an fsync of the directory.
+    renamed over the target and followed by an fsync of the directory. ``group``: the file's group,
+    set before the rename (the owner may give its file to a group it belongs to; no capability).
     """
     directory = path.parent
     tmp = directory / f"{TMP_PREFIX}{path.name}-{os.getpid()}-{secrets.token_hex(4)}"
@@ -38,6 +39,8 @@ def atomic_write(path: Path, data: bytes, mode: int = FILE_MODE) -> None:
         while view:
             written = os.write(fd, view)
             view = view[written:]
+        if group is not None:
+            os.fchown(fd, -1, group)
         os.fchmod(fd, mode)
         os.fsync(fd)
     except BaseException:

@@ -20,8 +20,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .client import Peer, Status
-from .const import CONNECTIVITY, PROBLEMS, STATES
+from .client import Messaging, Peer, Status
+from .const import CONNECTIVITY, DELIVERY_STATES, MESSAGING_STATES, PROBLEMS, STATES
 from .coordinator import MeshBeaconConfigEntry, MeshBeaconCoordinator
 from .entity import MeshBeaconEntity, MeshBeaconPeerEntity
 
@@ -42,6 +42,11 @@ class NodeSensor(SensorEntityDescription):
 @dataclass(frozen=True, kw_only=True)
 class PeerSensor(SensorEntityDescription):
     value_fn: Callable[[Peer], Value]
+
+
+@dataclass(frozen=True, kw_only=True)
+class MessagingSensor(SensorEntityDescription):
+    value_fn: Callable[[Messaging], Value]
 
 
 class Options(TypedDict, total=False):
@@ -199,6 +204,35 @@ PEER_SENSORS: tuple[PeerSensor, ...] = (
 )
 
 
+# The optional LXMF messaging engine (M4). Created only when the app reports messaging at all.
+MESSAGING_SENSORS: tuple[MessagingSensor, ...] = (
+    MessagingSensor(
+        key="messaging",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(MESSAGING_STATES),
+        value_fn=lambda m: m.state,
+    ),
+    MessagingSensor(key="messages_received", value_fn=lambda m: m.received, **COUNT),
+    MessagingSensor(key="messaging_contacts_reachable", value_fn=lambda m: m.contacts_reachable, **GAUGE),
+    MessagingSensor(key="messaging_last_received", value_fn=lambda m: _ts(m.last_received_at), **TIMESTAMP),
+    MessagingSensor(key="messaging_replies_sent", value_fn=lambda m: m.replies_sent, **merge(COUNT, DIAG)),
+    MessagingSensor(
+        key="messaging_last_reply",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(DELIVERY_STATES),
+        value_fn=lambda m: m.last_reply_state,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MessagingSensor(key="messages_refused", value_fn=lambda m: m.refused, **merge(COUNT, DIAG)),
+    MessagingSensor(
+        key="messaging_memory",
+        value_fn=lambda m: _mib(m.memory_bytes),
+        entity_registry_enabled_default=OFF,
+        **MEMORY,
+    ),
+)
+
+
 class MeshBeaconSensor(MeshBeaconEntity, SensorEntity):
     entity_description: NodeSensor
 
@@ -209,6 +243,43 @@ class MeshBeaconSensor(MeshBeaconEntity, SensorEntity):
     @property
     def native_value(self) -> Value:
         return self.entity_description.value_fn(self.coordinator.data)
+
+
+class MeshBeaconMessagingSensor(MeshBeaconEntity, SensorEntity):
+    entity_description: MessagingSensor
+    # The address is shown and copyable, but never written to Home Assistant's history.
+    _unrecorded_attributes = frozenset({"address", "message", "last_received_from"})
+
+    def __init__(self, coordinator: MeshBeaconCoordinator, description: MessagingSensor) -> None:
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+
+    @property
+    def messaging(self) -> Messaging | None:
+        return self.coordinator.data.messaging if self.coordinator.data else None
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.messaging is not None
+
+    @property
+    def native_value(self) -> Value:
+        messaging = self.messaging
+        return None if messaging is None else self.entity_description.value_fn(messaging)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object] | None:
+        messaging = self.messaging
+        if self.entity_description.key != "messaging" or messaging is None:
+            return None
+        return {
+            "address": messaging.address,
+            "message": messaging.message,
+            "contacts": messaging.contacts_configured,
+            "accept_anyone": messaging.accept_anyone,
+            "auto_reply": messaging.auto_reply,
+            "last_received_from": messaging.last_received_from,
+        }
 
 
 class MeshBeaconPeerSensor(MeshBeaconPeerEntity, SensorEntity):
@@ -239,3 +310,16 @@ async def async_setup_entry(
 
     add_peers()
     entry.async_on_unload(coordinator.async_add_listener(add_peers))
+
+    messaging_added = False
+
+    @callback
+    def add_messaging() -> None:
+        nonlocal messaging_added
+        if messaging_added or not coordinator.data or coordinator.data.messaging is None:
+            return
+        messaging_added = True
+        async_add_entities(MeshBeaconMessagingSensor(coordinator, d) for d in MESSAGING_SENSORS)
+
+    add_messaging()
+    entry.async_on_unload(coordinator.async_add_listener(add_messaging))

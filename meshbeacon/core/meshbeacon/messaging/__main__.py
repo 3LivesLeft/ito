@@ -27,12 +27,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--data", type=Path, default=Path("/data/messaging"))
     parser.add_argument("--socket", type=Path, default=Path("/run/meshbeacon-messaging/engine.sock"))
     parser.add_argument("--allow-uid", type=int, action="append", default=None)
+    # The settings the core wrote from the app's options (D-M4-8); readable, never writable, here.
+    parser.add_argument("--settings", type=Path, default=None, help="default: <data>/messaging.json")
     parser.add_argument("--instance-name", default=rnsconfig.INSTANCE_NAME)  # tests only
     args = parser.parse_args(argv)
     os.umask(0o077)
     fsutil.ensure_dir(args.data)
     try:
-        settings = settings_mod.load(args.data / "messaging.json")
+        settings = settings_mod.load(args.settings or args.data / "messaging.json")
     except settings_mod.SettingsError as exc:
         print(f"meshbeacon-messaging: the settings are invalid: {exc}", file=sys.stderr, flush=True)
         return 2

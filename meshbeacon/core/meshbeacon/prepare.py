@@ -29,10 +29,6 @@ FREE_SPACE_FLOOR = 200 * 1024 * 1024
 FREE_SPACE_WARN = 1024 * 1024 * 1024
 REGENERABLE_CAP = 100 * 1024 * 1024
 
-# Only the M4 messaging development image has this file. Then Reticulum shares its instance so that
-# the engine can use it (IS-3a); production images never have it and never share.
-MESSAGING_MARKER = Path("/etc/meshbeacon/messaging")
-
 
 @dataclass
 class PrepareResult:
@@ -114,7 +110,7 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
     cap_regenerable(paths, result)
 
     try:
-        text = rnsconfig.render(settings, rnsconfig.new_rpc_key(), share_instance=MESSAGING_MARKER.exists())
+        text = rnsconfig.render(settings, rnsconfig.new_rpc_key(), share_instance=settings.messaging.enabled)
     except rnsconfig.RenderError:
         return result.fail(
             "MeshBeacon could not build a safe Reticulum configuration from your options, so it "

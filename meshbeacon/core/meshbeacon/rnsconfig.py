@@ -46,7 +46,7 @@ def new_rpc_key() -> str:
 
 
 def intended_structure(settings: Settings, rpc_key: str, *, share_instance: bool = False) -> dict[str, Any]:
-    """``share_instance`` only for development images with the messaging engine (M4, IS-3a)."""
+    """``share_instance`` only when the user has switched messaging on (M4, D-M4-8, IS-3a)."""
     bytes.fromhex(rpc_key)
     interfaces: dict[str, dict[str, str]] = {}
     for peer in settings.peers:
@@ -65,8 +65,8 @@ def intended_structure(settings: Settings, rpc_key: str, *, share_instance: bool
         "reticulum": {
             "enable_transport": "Yes" if settings.transport else "No",
             # No shared instance: no local sockets and no RPC listener are opened (verified).
-            # With messaging (development images only), the engine connects as a client of the
-            # shared instance; the RPC listener needs this key, which the engine never has (IS-3a).
+            # With messaging switched on, the engine connects as a client of the shared instance;
+            # the RPC listener needs this key, which the engine never has (IS-3a).
             "share_instance": "Yes" if share_instance else "No",
             "instance_name": INSTANCE_NAME,
             "rpc_key": rpc_key,

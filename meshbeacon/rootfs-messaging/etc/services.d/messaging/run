@@ -1,8 +1,0 @@
-#!/bin/sh
-# M4 development image only: the messaging engine as its own user (ADR 0018). It starts down; the
-# core starts it once Reticulum is up, watches it and restarts it with back-off (MS-15). Output goes
-# through a FIFO that root opens here, so the core can redact it before it reaches the log.
-exec >/run/meshbeacon-io/messaging/out 2>&1
-umask 077
-exec nice -n 10 /command/s6-setuidgid mb-lxmf /usr/local/bin/python3 -I -u -m meshbeacon.messaging \
-    --data /data/messaging --socket /run/meshbeacon-messaging/engine.sock

@@ -405,6 +405,9 @@ class Engine:
                 "version": contract.VERSION,
                 "connected": self.connected(),
                 "identity": self.identity_event,
+                # The engine's own LXMF address, for the user to give to contacts (D-M4-8). Never a
+                # contact's address: those stay inside the engine (MS-12).
+                "address": self.delivery.hash.hex() if self.delivery is not None else None,
                 **self.queue.counts(),
                 "counters": self.queue.counters(),
             }
