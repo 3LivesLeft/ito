@@ -1,8 +1,10 @@
 # M4 — Standalone LXMF messaging engine: implementation plan
 
-**Status:** approved (D-M4-1 to D-M4-7); **WP1 to WP6 development-complete (20 Nov 2026)**, not
-yet accepted: see [M4 results](../testing/m4-results.md). **Branch:**
-`feature/m4-lxmf-engine`, from `feature/v0.3.0-install-ready` at `ff050d3`. **Date:** 19 November 2026.
+**Status:** approved (D-M4-1 to D-M4-7). **WP1 to WP6 are development-complete, and every automated
+acceptance criterion passes (20 Nov 2026).** M4 is not yet accepted: four manual, Pi and VM items
+remain. See [M4 results](../testing/m4-results.md#outstanding-before-acceptance). **Branches:**
+`feature/m4-lxmf-engine` (PR #7), from `feature/v0.3.0-install-ready` at `ff050d3`; final acceptance
+evidence on `feature/m4-final-acceptance`, stacked on it. **Date:** 19 November 2026.
 
 ## Goal
 
@@ -123,6 +125,20 @@ limitations: [M4 results](../testing/m4-results.md). In short:
 - **WP6:** MS-9 negative and positive with real LXMF, MS-19 (0.2 writes/s idle, 0.5 with
   traffic), IS-3a container tests, and the meaning of every delivery state.
 
-**Still open, M4 acceptance blockers:** MS-14 (Sideband and Ratspeak on devices, isolated network)
-and MS-18 on the spare Pi. **Memory:** +44.8 MiB in a container, above the +40 MiB criterion;
-D-M4-7 decides it on the Pi.
+## Final acceptance (20 Nov 2026, `feature/m4-final-acceptance`)
+
+Tests and evidence only: no product code, Dockerfile, profile, option or service changed. Local
+runs used the real pinned base image, and CI and the release dry run are green. Details:
+[M4 results, final acceptance run](../testing/m4-results.md#final-acceptance-run-feature-m4-final-acceptance).
+
+| Item | Done |
+|---|---|
+| **MS-9 negative, no stamp** | A real LXMF stranger sends with no stamp at all; the engine does not accept it, and the same stranger's stamped message is accepted. The test fails when enforcement is turned off |
+| **WP5 verification** | Release verification's patterns are tied to the sources by a test. Every layer's passwd and group files are scanned. A positive control on the dev image shows the scans find the engine. An empirical image diff found no uncovered path |
+| **WP6 evidence** | Full local and CI results on the real base. **MS-1 against v0.2** on the same host, with `tools/acceptance/ms1_baseline.py`: no change in memory, CPU or endpoints |
+| **Correction** | MS-1 had been reported as a plain pass. It now records its Pi half as outstanding, as the criterion requires ("Automated + Pi") |
+
+**Still open, M4 acceptance blockers (maintainer):** MS-14 (Sideband and Ratspeak on devices,
+isolated network); MS-18 and MS-1's Pi half on the spare Pi; IS-4's VM run (RG-13). **Memory:**
++44.0 MiB in a container on the real base, above the +40 MiB criterion; D-M4-7 decides it on the
+Pi.
