@@ -64,8 +64,10 @@ def test_nothing_outside_the_engine_imports_it_or_lxmf():
             assert not any(".messaging" in n or n.startswith("meshbeacon.messaging") for n in names), path
 
 
-def test_the_core_side_supervision_is_inert_without_the_marker():
-    """It is in the production image (it is part of the core), but does nothing there: the
-    supervisor creates it only when the image's marker and the messaging service both exist."""
+def test_the_core_side_supervision_runs_only_when_the_option_is_on():
+    """It is part of the core in every image (D-M4-8), but the core builds it only when the
+    validated options switch messaging on and the messaging service exists."""
     text = (CORE / "supervisor.py").read_text()
-    assert "EngineSupervisor.enabled()" in text and 'services.has("messaging")' in text
+    assert 'services.has("messaging")' in text
+    assert "self.settings.messaging.enabled and self.engine is None and self.engine_factory is not None" in text
+    assert "EngineSupervisor.enabled" not in text and "MARKER" not in text

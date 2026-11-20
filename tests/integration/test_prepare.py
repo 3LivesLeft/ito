@@ -140,3 +140,19 @@ def test_interrupted_first_start_never_breaks_identity(tmp_path):
         assert r["ok"], (i, r)
         if before is not None:
             assert ident.read_bytes() == before, "identity replaced after an interrupted start"
+
+
+def test_the_shared_instance_follows_the_messaging_option(data):
+    """D-M4-8, IS-3a: Reticulum shares its instance only while messaging is switched on, and
+    switching messaging on or off never touches the node's identity."""
+    write_options(data, messaging_enabled=False)
+    r1, _ = run_prepare(data)
+    assert r1["ok"] and ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["share_instance"] == "No"
+    write_options(data, messaging_enabled=True)
+    r2, _ = run_prepare(data)
+    assert r2["ok"] and r2["identity"] == "unchanged"
+    assert ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["share_instance"] == "Yes"
+    write_options(data, messaging_enabled=False)
+    r3, _ = run_prepare(data)
+    assert r3["identity"] == "unchanged"
+    assert ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["share_instance"] == "No"

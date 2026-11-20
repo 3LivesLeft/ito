@@ -49,7 +49,15 @@ class Harness:
         self.said: list[str] = []
         self.started: list[FakeProcess] = []
         self.healthy = health
-        self.e = EngineSupervisor(self.start, self.said.append, self.clock, health=lambda: self.healthy)
+        self.written: list[object] = []
+        self.e = EngineSupervisor(
+            self.start,
+            self.said.append,
+            self.clock,
+            health=lambda: self.healthy,
+            link=lambda _req: None,
+            settings_writer=self.written.append,
+        )
 
     def start(self) -> FakeProcess:
         p = FakeProcess()
@@ -154,12 +162,6 @@ def test_a_failed_start_counts_as_a_failure():
     h.e._start = broken  # type: ignore[method-assign]
     h.step()
     assert h.e.state == "backoff" and "could not be started" in h.said[-1]
-
-
-def test_disabled_without_the_marker(tmp_path):
-    assert EngineSupervisor.enabled(tmp_path / "absent") is False
-    (tmp_path / "marker").write_text("")
-    assert EngineSupervisor.enabled(tmp_path / "marker") is True
 
 
 def test_the_probe_talks_only_to_the_expected_user(tmp_path):
