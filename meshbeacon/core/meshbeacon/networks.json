@@ -1,0 +1,50 @@
+{
+  "_comment": "Public Reticulum network presets (ADR 0004). Data, not code: each entry becomes one TCPClientInterface when the user selects it. Sources and the release checks are in docs/research/public-peers.md. Never add an endpoint without a primary source.",
+  "version": 1,
+  "networks": [
+    {
+      "id": "ratspeak_ruby",
+      "name": "Ratspeak Ruby",
+      "operator": "Ratspeak",
+      "host": "1.ratspeak.org",
+      "port": 4141,
+      "rules": "",
+      "source": "https://github.com/ratspeak/ratspeak-docs/blob/91435d956e66607bd40d3f478067d9380c5670ec/docs/networking/ip-internet-and-i2p.md",
+      "documented_on": "2026-11-20",
+      "release_checks_passed_on": null
+    },
+    {
+      "id": "ratspeak_emerald",
+      "name": "Ratspeak Emerald",
+      "operator": "Ratspeak",
+      "host": "2.ratspeak.org",
+      "port": 4242,
+      "rules": "",
+      "source": "https://github.com/ratspeak/ratspeak-docs/blob/91435d956e66607bd40d3f478067d9380c5670ec/docs/networking/ip-internet-and-i2p.md",
+      "documented_on": "2026-11-20",
+      "release_checks_passed_on": null
+    },
+    {
+      "id": "ratspeak_diamond",
+      "name": "Ratspeak Diamond",
+      "operator": "Ratspeak",
+      "host": "3.ratspeak.org",
+      "port": 4343,
+      "rules": "Diamond bans nodes that relay for 50 remote peers or open more than 20 connections from one IP address (24 hours, then 7 days, then 30 days).",
+      "source": "https://github.com/ratspeak/ratspeak-docs/blob/91435d956e66607bd40d3f478067d9380c5670ec/docs/networking/ip-internet-and-i2p.md",
+      "documented_on": "2026-11-20",
+      "release_checks_passed_on": null
+    },
+    {
+      "id": "reticulumnet",
+      "name": "ReticulumNet",
+      "operator": "Reticulum Netherlands (reticulumnet.nl)",
+      "host": "node.reticulumnet.nl",
+      "port": 4242,
+      "rules": "",
+      "source": "https://www.reticulumnet.nl/en/get-started/",
+      "documented_on": "2026-11-20",
+      "release_checks_passed_on": null
+    }
+  ]
+}

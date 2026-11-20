@@ -233,7 +233,7 @@ function peers(ctx) {
     h("div", { class: "section-head", style: "margin-bottom:12px" }, h("h2", { text: "Peers" })),
     list.length
       ? h("div", { class: "peers" }, list.map((p) => peerCard(ctx, p)))
-      : h("div", { class: "card muted small", text: "No peers are configured. Add a peer in the MeshBeacon app's Configuration tab to connect to a wider network." }),
+      : h("div", { class: "card muted small", text: "No peers are configured. In the MeshBeacon app's Configuration tab, choose a public network or add a peer, then restart the app." }),
   );
 }
 

@@ -53,6 +53,26 @@ address" — which applies equally to Ratspeak's own servers.
   not be reached from the research environment;
 - **[Open]** whether Ratspeak is content for a third-party project to list its servers as presets.
 
+**Re-checked 20 November 2026** at `91435d956e66607bd40d3f478067d9380c5670ec` (2026-11-18, "Note
+Diamond's stricter limits"): the endpoints and Diamond's rules are unchanged; the same document
+still gives a `TCPClientInterface` block with only `target_host` and `target_port`, so **no IFAC
+network name or passphrase** is required **[Verified]**.
+
+### 2.1a ReticulumNet (Reticulum Netherlands)
+
+| Name | Endpoint | Interface type | Documented rules |
+|---|---|---|---|
+| **ReticulumNet** | `node.reticulumnet.nl:4242` | `TCPClientInterface` | None stated; "public and open to new people"; transport and propagation node |
+
+- **[Verified, indirectly]** The endpoint, interface type and access statement are from the
+  operator's site, `https://www.reticulumnet.nl/en/get-started/` (with `/community/` and
+  `/on-the-map/`), as indexed by a web search on 20 November 2026. The research environment could
+  not resolve `reticulumnet.nl`, so the page was not read directly. The endpoint also matches the
+  one supplied by the maintainer.
+- **[Verified, indirectly]** No IFAC network name or passphrase appears in the published stanza.
+- **[Open]** Operator identity beyond the site name, logging policy and consent to be listed (V1).
+- **[Open]** V2–V7, as for every preset.
+
 ### 2.2 Other public entry points
 
 **[Verified]** The Reticulum manual mentions `amsterdam.connect.reticulum.network`
@@ -66,6 +86,19 @@ research environment.
 **[Verified]** The manual itself recommends *interface discovery* over hard-coded entry points
 (`gettingstartedfast.rst`: "a better option is to enable interface discovery and either manually
 select relevant, local interfaces, or enable discovered interface auto-connection").
+
+### 2.3 Status of the shipped preset data
+
+| Preset id | Endpoint | Source checked | V1–V7 |
+|---|---|---|---|
+| `ratspeak_ruby` | `1.ratspeak.org:4141` | 20 Nov 2026 | Not yet (maintainer) |
+| `ratspeak_emerald` | `2.ratspeak.org:4242` | 20 Nov 2026 | Not yet (maintainer) |
+| `ratspeak_diamond` | `3.ratspeak.org:4343` | 20 Nov 2026 | Not yet (maintainer) |
+| `reticulumnet` | `node.reticulumnet.nl:4242` | 20 Nov 2026 (indirect) | Not yet (maintainer) |
+
+The maintainer records each V1–V7 result by setting `release_checks_passed_on` in `networks.json`;
+`tools/check_release.py` refuses a release tag until every listed preset has one (remove a preset
+that fails).
 
 ## 3. Interoperability and verification requirements
 

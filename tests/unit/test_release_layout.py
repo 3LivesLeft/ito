@@ -160,3 +160,15 @@ def test_a_git_ref_is_read_like_the_working_tree():
     assert "hacs.json" in tree.files()
     assert tree.read("repository.yaml") is not None
     assert tree.read("does/not/exist") is None
+
+
+def test_a_tag_cannot_ship_an_unverified_network_preset():
+    """ADR 0004: presets ship only after the maintainer's manual checks V1–V7 are recorded."""
+    tree = good_tree()
+    entry = {"id": "example", "release_checks_passed_on": None}
+    tree["meshbeacon/core/meshbeacon/networks.json"] = json.dumps({"version": 1, "networks": [entry]})
+    assert problems(tree) == []  # branches and the working tree are not releases
+    assert any("'example' has no recorded release checks" in p for p in problems(tree, tag="v0.3.0"))
+    entry["release_checks_passed_on"] = "2026-11-20"
+    tree["meshbeacon/core/meshbeacon/networks.json"] = json.dumps({"version": 1, "networks": [entry]})
+    assert problems(tree, tag="v0.3.0") == []

@@ -2,6 +2,11 @@
 
 ## 0.3.0 — unreleased (develop)
 
+- **Choose a public network from a list** (Configuration tab, **Public Reticulum network**):
+  Ratspeak Ruby, Emerald or Diamond, or ReticulumNet — no addresses to type. The default,
+  `custom`, joins no public network, so MeshBeacon still connects to nobody until you choose.
+  Your own peers keep working unchanged and are used alongside the chosen network. The log names
+  the chosen network, and it appears with its connection status in the dashboard.
 - **Optional LXMF messaging** (off by default). Tick **Enable LXMF messaging** in the
   Configuration tab and restart the app: MeshBeacon starts its own messaging service, with its own
   address, which LXMF apps such as Sideband can message. Add the people allowed to message it under
