@@ -13,6 +13,7 @@ from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
 from .client import MeshBeaconClient, MeshBeaconError
 from .const import CONF_APP_SLUG, CONF_CERT, CONF_NODE_KEY, CONF_TOKEN, DOMAIN, ENTRY_VERSION
+from .messaging import remember_key
 
 _TOKEN = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
 _FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
@@ -59,6 +60,8 @@ class MeshBeaconConfigFlow(ConfigFlow, domain=DOMAIN):
         data = validate_discovery(discovery_info.slug, discovery_info.config)
         if data is None:
             return self.async_abort(reason="invalid_discovery")
+        # M5: the messaging key is kept in memory only, never in the entry (ADR 0024).
+        remember_key(self.hass, discovery_info.slug, discovery_info.config)
         await self.async_set_unique_id(discovery_info.slug)
         # Every app start brings a new key: update the existing entry and reload it.
         self._abort_if_unique_id_configured(updates=data)

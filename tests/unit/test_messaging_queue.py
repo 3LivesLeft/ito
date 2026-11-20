@@ -165,7 +165,7 @@ def test_a_corrupt_queue_is_quarantined_and_a_fresh_one_started(tmp_path, clock)
 
 def test_a_valid_send_is_accepted():
     request = {"op": "send", "contact": "alice", "text": "hi", "idempotency_key": "key-00000001"}
-    assert validate(request) == {**request, "title": ""}
+    assert validate(request) == {**request, "title": "", "auto": False}
 
 
 @pytest.mark.parametrize(

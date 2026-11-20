@@ -779,9 +779,11 @@ class Supervisor:
                 threading.Thread(target=discovery.withdraw, name="discovery", daemon=True).start()
             return
         api_token = new_token()
+        # M5 (ADR 0024): a separate key for messaging, made only while messaging is on, per start.
+        messaging_key = new_token() if self.settings.messaging.enabled else ""
         try:
             tls, fingerprint = make_tls(self.python, self.child_env())
-            self.api_store = StatusStore(api_token)
+            self.api_store = StatusStore(api_token, messaging_key or None, self.forward_messaging)
             self.api_server = ApiServer(self.api_store, self.api_host, self.api_port, tls=tls)
             self.api_server.start()
         except (OSError, TlsError):  # never falls back to plain HTTP
@@ -810,12 +812,20 @@ class Supervisor:
                     self.discovery_stop,
                     self.discovery_results.append,
                     cert_sha256=fingerprint,
+                    messaging_key=messaging_key,
                     **self.discovery_timing,
                 )
             except Exception:  # never let monitoring take anything else down
                 self.discovery_results.append(False)
 
         threading.Thread(target=announce, name="discovery", daemon=True).start()
+
+    def forward_messaging(self, request: Any) -> tuple[int, dict[str, Any]]:
+        """The messaging endpoint's requests (API thread). Messaging failures never reach Reticulum."""
+        engine = self.engine
+        if engine is None:
+            return 503, {"ok": False, "error": "unavailable"}
+        return engine.forward(request)
 
     def monitor(self, fn: Callable[..., object], *args: Any, **kwargs: Any) -> None:
         """Run a metrics update. Monitoring is never allowed to interrupt supervision of Reticulum."""

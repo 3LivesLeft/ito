@@ -1,11 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Read-only, token-authenticated local monitoring API and Supervisor discovery (ADR 0006).
+"""Token-authenticated local API and Supervisor discovery (ADR 0006; messaging: ADRs 0010, 0024).
 
 * Started only when the ``home_assistant_integration`` option is on; otherwise no listener exists.
 * Listens on a separate internal port from the watchdog's health endpoint, so that a flood of API
   requests can never starve ``/health``. No port is published.
-* One endpoint, ``GET /api/v1/status``, which serves a snapshot that the core has already built.
-  There are no write or control endpoints.
+* ``GET /api/v1/status`` serves a snapshot that the core has already built (the status key).
+* ``POST /api/v1/messaging`` (M5) exists only while LXMF messaging is on. It takes a **separate
+  messaging key** (the status key is refused there, and the messaging key is refused for status),
+  a JSON body of at most 16 KiB, and passes the request to the core's messaging binding, which
+  allows only the conversation view's operations. At most ``MESSAGING_CONCURRENT`` messaging
+  requests at a time, so that a held long poll never blocks status.
 * Bounded: at most ``MAX_CONCURRENT`` requests at a time (others are closed at once), a socket
   inactivity timeout, an absolute per-connection deadline, GET only, no request bodies.
 * HTTPS with a throwaway certificate made at every start; Home Assistant pins its fingerprint,
@@ -42,7 +46,10 @@ from .httpserver import BoundedHTTPServer
 API_PATH = "/api/v1/status"
 DISCOVERY_SERVICE = "meshbeacon"
 SUPERVISOR_URL = "http://supervisor"
-MAX_CONCURRENT = 4
+MAX_CONCURRENT = 6  # 4 → 6 for M5: messaging takes at most 4, so status always has a slot
+MESSAGING_PATH = "/api/v1/messaging"
+MESSAGING_CONCURRENT = 4
+MAX_BODY = 16 * 1024
 SOCKET_TIMEOUT = 5.0  # longest silence from a client
 REQUEST_DEADLINE = 10.0  # longest a connection may last, however it trickles
 REANNOUNCE_INTERVAL = 6 * 3600.0  # re-send the (unchanged) discovery message; the Supervisor ignores duplicates
@@ -54,11 +61,20 @@ def new_token() -> str:
     return secrets.token_urlsafe(32)
 
 
-class StatusStore:
-    """Thread-safe holder of the latest serialised snapshot and the request counters."""
+Messaging = Callable[[Any], tuple[int, dict[str, Any]]]
 
-    def __init__(self, token: str) -> None:
+
+class StatusStore:
+    """Thread-safe holder of the latest serialised snapshot and the request counters.
+
+    ``messaging_key`` and ``messaging`` (the core's binding) are set only while LXMF messaging is
+    on; without them the messaging endpoint does not exist (404)."""
+
+    def __init__(self, token: str, messaging_key: str | None = None, messaging: Messaging | None = None) -> None:
         self._token = token.encode()
+        self._messaging_key = messaging_key.encode() if messaging_key else None
+        self.messaging = messaging if messaging_key else None
+        self.messaging_slots = threading.BoundedSemaphore(MESSAGING_CONCURRENT)
         self._lock = threading.Lock()
         self._body: bytes | None = None
         self.refused = 0
@@ -73,9 +89,15 @@ class StatusStore:
         with self._lock:
             return self._body
 
-    def authorised(self, header: str | None) -> bool:
+    def authorised(self, header: str | None, *, messaging: bool = False) -> bool:
+        """The bearer key for status, or (``messaging``) the messaging key. Never the other one."""
+        expected = self._messaging_key if messaging else self._token
         scheme, _, presented = (header or "").partition(" ")
-        ok = scheme.lower() == "bearer" and hmac.compare_digest(presented.strip().encode(), self._token)
+        ok = (
+            expected is not None
+            and scheme.lower() == "bearer"
+            and hmac.compare_digest(presented.strip().encode(), expected)
+        )
         with self._lock:
             if ok:
                 self.served += 1
@@ -104,6 +126,34 @@ def make_handler(store: StatusStore) -> type[BaseHTTPRequestHandler]:
                 self._send(503, b'{"error":"starting"}')
             else:
                 self._send(200, body)
+
+        def do_POST(self) -> None:
+            if self.path != MESSAGING_PATH or store.messaging is None:
+                self._send(404, b'{"error":"not_found"}')
+                return
+            if not store.authorised(self.headers.get("Authorization"), messaging=True):
+                self._send(401, b'{"error":"unauthorised"}', {"WWW-Authenticate": "Bearer"})
+                return
+            length = self.headers.get("Content-Length", "")
+            if not length.isdecimal() or int(length) > MAX_BODY:
+                self._send(413, b'{"error":"too_large"}')
+                return
+            raw = self.rfile.read(int(length))
+            if not store.messaging_slots.acquire(blocking=False):
+                self._send(503, b'{"error":"busy"}')
+                return
+            try:
+                try:
+                    request = json.loads(raw)
+                except ValueError:
+                    code, answer = 400, {"error": "invalid"}
+                else:
+                    code, answer = store.messaging(request)
+            except Exception:  # never a traceback, never content
+                code, answer = 500, {"error": "internal"}
+            finally:
+                store.messaging_slots.release()
+            self._send(code, json.dumps(answer, separators=(",", ":"), allow_nan=False).encode())
 
         def _send(self, code: int, body: bytes, extra: dict[str, str] | None = None) -> None:
             self.send_response(code)
@@ -332,11 +382,16 @@ class Discovery:
             return {}
         raise ValueError("unsupported discovery request")
 
-    def announce(self, host: str, port: int, api_token: str, cert_sha256: str = "") -> bool:
-        """One attempt to send (or refresh) the discovery message."""
+    def announce(self, host: str, port: int, api_token: str, cert_sha256: str = "", messaging_key: str = "") -> bool:
+        """One attempt to send (or refresh) the discovery message.
+
+        ``messaging_key`` (M5) only while LXMF messaging is on. On the compatibility path it crosses
+        the internal network like the status key: an accepted risk (ADR 0024, RR-9b)."""
         config: dict[str, Any] = {"host": host, "port": port, "token": api_token}
         if cert_sha256:
             config["cert_sha256"] = cert_sha256
+        if messaging_key and cert_sha256:  # never without TLS
+            config["messaging_key"] = messaging_key
         payload = {"service": DISCOVERY_SERVICE, "config": config}
         try:
             reply = self._request("POST", "/discovery", payload)
@@ -357,6 +412,7 @@ class Discovery:
         on_result: Callable[[bool], None],
         *,
         cert_sha256: str = "",
+        messaging_key: str = "",
         retry_initial: float = RETRY_INITIAL,
         retry_max: float = RETRY_MAX,
         reannounce: float = REANNOUNCE_INTERVAL,
@@ -369,7 +425,7 @@ class Discovery:
         """
         delay = retry_initial
         while not stop.is_set():
-            ok = self.announce(host, port, api_token, cert_sha256)
+            ok = self.announce(host, port, api_token, cert_sha256, messaging_key)
             on_result(ok)
             if self.relay is not None and self.relay.broken:
                 return  # a lost relay link cannot come back until the app restarts (MSG_RELAY_LOST)

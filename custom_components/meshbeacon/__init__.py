@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
-"""MeshBeacon: monitoring for the MeshBeacon Reticulum app (read-only; ADR 0006).
+"""MeshBeacon: monitoring and LXMF messaging for the MeshBeacon Reticulum app (ADRs 0006, 0024).
 
 The integration polls the app's token-authenticated status interface on Home Assistant's internal
 network. It is set up only through Supervisor discovery, never imports Reticulum, and offers no
-way to control the node.
+way to control the node. With LXMF messaging on, administrators can read and send messages in the
+panel's Messages view (messaging.py); that is the only write path, and it reaches contacts only.
 """
 
 from __future__ import annotations
@@ -64,6 +65,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MeshBeaconConfigEntry) -
 async def async_unload_entry(hass: HomeAssistant, entry: MeshBeaconConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
+        entry.runtime_data.messaging.close()
         entry.runtime_data.clear_issues()
         async_hide_panel_if_unused(hass, entry)
     return unloaded

@@ -28,6 +28,7 @@ from .const import (
     SCAN_INTERVAL,
     UNREACHABLE_GRACE,
 )
+from .messaging import MessagingHub, remember_key
 from .nodes import app_slug
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,6 +60,8 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
         self._unreachable_since: datetime | None = None
         self._last_refresh: datetime | None = None
         self.integration_version = integration_version
+        self.messaging = MessagingHub(hass, entry)
+        self._messaging_state: str | None = None
 
     async def _async_update_data(self) -> Status:
         try:
@@ -73,12 +76,21 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
                 except MeshBeaconError as retry_exc:
                     raise UpdateFailed(f"MeshBeacon is not reachable ({type(retry_exc).__name__})") from retry_exc
                 self._update_issues(status)
+                self._messaging_changed(status)
                 return status
             raise UpdateFailed("MeshBeacon has a new key; waiting for Home Assistant to receive it") from exc
         except MeshBeaconError as exc:
             raise UpdateFailed(f"MeshBeacon is not reachable ({type(exc).__name__}: {exc})") from exc
         self._update_issues(status)
+        self._messaging_changed(status)
         return status
+
+    def _messaging_changed(self, status: Status) -> None:
+        """Tell an open Messages view when messaging stops, starts or recovers."""
+        state = status.messaging.state if status.messaging is not None else None
+        if state != self._messaging_state:
+            self._messaging_state = state
+            self.messaging.notify({"type": "changed"})
 
     async def _async_refresh_token(self) -> bool:
         """Fetch this app's discovery message from the Supervisor; True if it held a new key.
@@ -102,6 +114,8 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
             if message.addon != slug or message.service != DOMAIN:
                 continue
             data = validate_discovery(slug, message.config)
+            if data is not None:
+                remember_key(self.hass, slug, message.config)  # memory only (ADR 0024)
             if data is None or (
                 data[CONF_TOKEN] == self.config_entry.data.get(CONF_TOKEN)
                 and data[CONF_CERT] == self.config_entry.data.get(CONF_CERT)

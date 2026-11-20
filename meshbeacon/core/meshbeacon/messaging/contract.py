@@ -2,8 +2,14 @@
 """Messaging Service contract v1 (ADR 0014): operations, states, limits and validation.
 
 Transport-neutral and free of Home Assistant and presentation concepts. A binding parses a request
-into a dict, ``validate`` checks it, and the engine answers with plain dicts. Contacts are referred
-to by their contact ID only; no LXMF address ever crosses the contract (MS-12).
+into a dict, ``validate`` checks it, and the engine answers with plain dicts. Messages are sent to
+contact IDs only: a raw LXMF address is never a recipient (MS-12). Since M5 (ADR 0024) a contact's
+address crosses the contract in two places only: ``contact_add`` (the user typed it) and
+``conversations`` (shown to the user so that it can be checked and copied).
+
+M5 operations, for the conversation view: ``conversations``, ``history``, ``read``, ``clear``,
+``retry``, ``contact_add``, ``contact_rename``, ``contact_remove`` and ``wait`` (a long poll that
+returns as soon as anything the view shows has changed).
 """
 
 from __future__ import annotations
@@ -13,7 +19,23 @@ from typing import Any, Final
 
 VERSION: Final = 1
 
-OPERATIONS: Final = ("send", "message", "inbound", "ack", "contacts", "status")
+OPERATIONS: Final = (
+    "send",
+    "message",
+    "inbound",
+    "ack",
+    "contacts",
+    "status",
+    "conversations",
+    "history",
+    "read",
+    "clear",
+    "retry",
+    "contact_add",
+    "contact_rename",
+    "contact_remove",
+    "wait",
+)
 
 # Outbound states (ADR 0011). Final states end the message's life in the queue.
 STATES: Final = (
@@ -45,7 +67,7 @@ STATE_MEANINGS: Final = {
     "sent_unconfirmed": "LXMF reported the message sent, without a delivery proof.",
     "failed": "Not sent and not retried (the contact was removed).",
     "rejected": "Refused before delivery: by the propagation node (stamp) or by the recipient's transfer.",
-    "expired": "Not delivered within seven days; its content has been deleted.",
+    "expired": "Not delivered within seven days. The text stays in the conversation, so it can be retried.",
 }
 
 # What an inbound message (``inbound``) has passed. Its ``contact`` is the contact whose key signed
@@ -64,6 +86,9 @@ MAX_WAIT: Final = 25.0  # long poll (ADR 0014)
 CONTACT_ID: Final = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
 IDEMPOTENCY_KEY: Final = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 MESSAGE_ID: Final = re.compile(r"^[0-9a-f]{32}$")
+ADDRESS: Final = re.compile(r"^[0-9a-f]{32}$")  # an LXMF delivery destination hash
+NAME: Final = re.compile(r"^[^\x00-\x1f\x7f\u0080-\u009f\u2028\u2029\u202e\ufeff]{1,32}$")
+HISTORY_LIMIT: Final = 100
 
 
 class ContractError(ValueError):
@@ -90,18 +115,50 @@ def _text(value: Any, limit: int, *, required: bool) -> str:
     return value
 
 
+def _contact_id(value: Any) -> str:
+    if not isinstance(value, str) or not CONTACT_ID.match(value):
+        raise ContractError("unknown_contact")
+    return value
+
+
+def name(value: Any) -> str:
+    """A contact's display name: 1 to 32 printable characters, trimmed."""
+    if not isinstance(value, str) or not NAME.match(value.strip()):
+        raise ContractError("invalid_name")
+    return value.strip()
+
+
+def address(value: Any) -> str:
+    """An LXMF address as people copy it: 32 hex characters, any case, optionally in <angle brackets>."""
+    if not isinstance(value, str):
+        raise ContractError("invalid_address")
+    cleaned = value.strip().removeprefix("<").removesuffix(">").strip().lower()
+    if not ADDRESS.match(cleaned):
+        raise ContractError("invalid_address")
+    return cleaned
+
+
 def validate(request: Any) -> dict[str, Any]:
     """The request as the engine may act on it, or ContractError. Unknown fields are refused."""
     if not isinstance(request, dict) or request.get("op") not in OPERATIONS:
         raise ContractError("invalid")
     op = request["op"]
     allowed: dict[str, set[str]] = {
-        "send": {"op", "contact", "text", "title", "idempotency_key"},
+        "send": {"op", "contact", "text", "title", "idempotency_key", "auto"},
         "message": {"op", "message_id"},
         "inbound": {"op", "cursor", "wait"},
         "ack": {"op", "cursor"},
         "contacts": {"op"},
         "status": {"op"},
+        "conversations": {"op"},
+        "history": {"op", "contact", "before", "limit"},
+        "read": {"op", "contact"},
+        "clear": {"op", "contact"},
+        "retry": {"op", "message_id"},
+        "contact_add": {"op", "name", "address"},
+        "contact_rename": {"op", "contact", "name"},
+        "contact_remove": {"op", "contact"},
+        "wait": {"op", "revision", "wait"},
     }
     if not set(request) <= allowed[op]:
         raise ContractError("invalid")
@@ -118,12 +175,40 @@ def validate(request: Any) -> dict[str, Any]:
             "text": _text(request.get("text"), MAX_TEXT_BYTES, required=True),
             "title": _text(request.get("title"), MAX_TITLE_BYTES, required=False),
             "idempotency_key": key,
+            "auto": request.get("auto") is True,  # an automatic reply (the core's only)
         }
     if op == "message":
         message_id = request.get("message_id")
         if not isinstance(message_id, str) or not MESSAGE_ID.match(message_id):
             raise ContractError("invalid")
         return {"op": op, "message_id": message_id}
+    if op in ("history", "read", "clear", "contact_rename", "contact_remove"):
+        _contact_id(request.get("contact"))
+    if op == "history":
+        before, limit = request.get("before"), request.get("limit", 50)
+        if before is not None and (isinstance(before, bool) or not isinstance(before, int) or before < 1):
+            raise ContractError("invalid")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= HISTORY_LIMIT:
+            raise ContractError("invalid")
+        return {"op": op, "contact": request["contact"], "before": before, "limit": limit}
+    if op in ("read", "clear", "contact_remove"):
+        return {"op": op, "contact": request["contact"]}
+    if op == "contact_rename":
+        return {"op": op, "contact": request["contact"], "name": name(request.get("name"))}
+    if op == "contact_add":
+        return {"op": op, "name": name(request.get("name")), "address": address(request.get("address"))}
+    if op == "retry":
+        message_id = request.get("message_id")
+        if not isinstance(message_id, str) or not MESSAGE_ID.match(message_id):
+            raise ContractError("invalid")
+        return {"op": op, "message_id": message_id}
+    if op == "wait":
+        revision, wait = request.get("revision", -1), request.get("wait", 0)
+        if isinstance(revision, bool) or not isinstance(revision, int) or revision < -1:
+            raise ContractError("invalid")
+        if isinstance(wait, bool) or not isinstance(wait, (int, float)) or not 0 <= wait <= MAX_WAIT:
+            raise ContractError("invalid")
+        return {"op": op, "revision": revision, "wait": float(wait)}
     if op in ("inbound", "ack"):
         cursor = request.get("cursor", 0)
         if isinstance(cursor, bool) or not isinstance(cursor, int) or cursor < 0:
