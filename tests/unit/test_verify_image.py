@@ -262,3 +262,32 @@ def test_a_layer_with_the_messaging_engine_is_refused():
     ):
         assert verify_image.messaging_paths(layer(bad)) == [bad], bad
     assert verify_image.messaging_paths(b"not a tar") == []
+
+
+def test_the_release_gate_covers_every_messaging_input():
+    """WP5: the patterns release verification refuses are tied to the sources, not only to a list.
+
+    Every file the messaging-dev target adds (the engine's source, its s6 service, init script and
+    marker in ``rootfs-messaging/``) and every program LXMF installs is matched, at the path it has
+    in an image layer. A new messaging file that the patterns miss fails here, before a release.
+    """
+    import importlib.metadata
+
+    site = "usr/local/lib/python3.13/site-packages"
+    app = ROOT / "meshbeacon"
+    engine = app / "core" / "meshbeacon" / "messaging"
+    inputs = [
+        f"{site}/meshbeacon/messaging/{p.relative_to(engine).as_posix()}"
+        for p in engine.rglob("*")
+        if p.is_file() and "__pycache__" not in p.parts
+    ]
+    rootfs = app / "rootfs-messaging"
+    inputs += [p.relative_to(rootfs).as_posix() for p in rootfs.rglob("*") if p.is_file()]
+    assert len(inputs) >= 10 and any(i.startswith("etc/services.d/messaging/") for i in inputs)
+    lxmf = importlib.metadata.distribution("lxmf")
+    scripts = [e.name for e in lxmf.entry_points if e.group == "console_scripts"]
+    assert scripts, "LXMF installs no program: the check below would prove nothing"
+    inputs += [f"usr/local/bin/{name}" for name in scripts]
+    inputs += [f"{site}/LXMF/__init__.py", f"{site}/lxmf-{lxmf.version}.dist-info/RECORD"]
+    missed = [i for i in inputs if not verify_image.MESSAGING_PATHS.search(i)]
+    assert missed == [], f"release verification would not refuse: {missed}"

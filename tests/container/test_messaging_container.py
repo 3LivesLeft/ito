@@ -15,6 +15,7 @@ never touch Reticulum or the core. Only local containers on no network; nothing 
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
@@ -136,28 +137,81 @@ def test_the_production_image_has_no_messaging_files_users_or_packages():
     assert [p for p in seen["paths"] if "lxmf" in p.lower() or "/messaging" in p.lower()] == []
 
 
-@needs_production
-def test_no_layer_of_the_production_image_ever_contained_messaging(tmp_path):
-    """Not merely deleted in a later layer: no layer of the image (its history) holds any of it."""
-    archive = tmp_path / "image.tar"
-    sh("docker", "save", "-o", str(archive), PRODUCTION, timeout=300)
-    hits: list[str] = []
-    layers = 0
+# The engine's user and group, in any passwd or group file a layer writes.
+MESSAGING_ACCOUNTS = re.compile(r"(^|[:,])mb-(lxmf|msg)(:|,|$)", re.MULTILINE)
+
+
+class Layer:
+    def __init__(self, name: str, raw: bytes, names: list[str], accounts: str) -> None:
+        self.name, self.raw, self.names, self.accounts = name, raw, names, accounts
+
+
+def image_layers(image: str, folder: Path) -> list[Layer]:
+    """Every layer of ``image`` (its history, not only the final file system), from ``docker save``."""
+    archive = folder / "image.tar"
+    sh("docker", "save", "-o", str(archive), image, timeout=300)
+    found: list[Layer] = []
     with tarfile.open(archive) as outer:
         for member in outer.getmembers():
-            if not member.isfile():
-                continue
-            blob = outer.extractfile(member)
+            blob = outer.extractfile(member) if member.isfile() else None
             if blob is None:
                 continue
+            raw = blob.read()
             try:
-                with tarfile.open(fileobj=blob) as layer:
+                with tarfile.open(fileobj=io.BytesIO(raw)) as layer:
                     names = layer.getnames()
+                    accounts = ""
+                    for entry in ("etc/passwd", "etc/group"):
+                        if entry in names:
+                            data = layer.extractfile(entry)
+                            accounts += data.read().decode(errors="replace") if data else ""
             except tarfile.ReadError:
                 continue  # a config or manifest, not a layer
-            layers += 1
-            hits += [f"{member.name}: {n}" for n in names if FORBIDDEN_PATHS.search(n) or "lxmf" in n.lower()]
-    assert layers >= 3 and hits == []
+            found.append(Layer(member.name, raw, names, accounts))
+    return found
+
+
+def messaging_in(layer: Layer) -> list[str]:
+    hits = [n for n in layer.names if FORBIDDEN_PATHS.search(n) or "lxmf" in n.lower()]
+    return hits + [f"account {m.group(2)}" for m in MESSAGING_ACCOUNTS.finditer(layer.accounts)]
+
+
+@needs_production
+def test_no_layer_of_the_production_image_ever_contained_messaging(tmp_path):
+    """Not merely deleted in a later layer: no layer of the image (its history) holds any of it,
+    neither a file nor the engine's user or group in a passwd or group file."""
+    layers = image_layers(PRODUCTION, tmp_path)
+    hits = [f"{layer.name}: {hit}" for layer in layers for hit in messaging_in(layer)]
+    assert len(layers) >= 3 and hits == []
+    assert any("meshbeacon" in layer.accounts for layer in layers)  # the scan does read accounts
+
+
+@needs_dev
+def test_the_exclusion_checks_find_the_engine_where_it_is(tmp_path):
+    """WP5 control: the same scans, and release verification's own detector, on the development
+    image, which does hold the engine. They find each part of it, so their silence on the
+    production image means absence, not a scan that sees nothing."""
+    import sys
+
+    sys.path.insert(0, str(REPO / "tools"))
+    import verify_image
+
+    layers = image_layers(DEV, tmp_path)
+    hits = [hit for layer in layers for hit in messaging_in(layer)]
+    release = [hit for layer in layers for hit in verify_image.messaging_paths(layer.raw)]
+    site = "site-packages/"
+    expected = [
+        f"{site}meshbeacon/messaging/engine.py",
+        f"{site}LXMF/LXMRouter.py",
+        "bin/lxmd",
+        "etc/services.d/messaging/run",
+        "etc/cont-init.d/20-messaging",
+        "etc/meshbeacon/messaging",
+    ]
+    for part in expected:
+        assert any(h.endswith(part) for h in hits), f"the scan missed {part}"
+        assert any(h.endswith(part) for h in release), f"release verification missed {part}"
+    assert "account lxmf" in hits and "account msg" in hits
 
 
 @needs_production
