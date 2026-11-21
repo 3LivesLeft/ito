@@ -106,10 +106,12 @@ test("a double click on Send is one request, and the key is passed on", async ()
 
 test("live updates refresh on change, report unavailability and stop cleanly", async () => {
   const hass = fakeHass();
-  const m = new HassMessaging();
+  let now = 0;
+  const m = new HassMessaging({ now: () => now });
   m.bind(hass, "entry1");
   m.start();
   await new Promise((r) => setTimeout(r, 0));
+  now += 2_000; // reads after a change are at most one every 2 s (no request storm)
   assert.equal(hass.subscriptions.length, 1);
   assert.deepEqual(hass.subscriptions[0].msg, { type: "meshbeacon/messaging/subscribe", entry_id: "entry1" });
   hass.subscriptions[0].cb({ type: "unavailable", error: "unreachable" });

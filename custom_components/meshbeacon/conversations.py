@@ -17,7 +17,9 @@ Nothing here creates an entity or fires a bus event, so no message text or addre
 recorder, the logbook or the event history (MS-7). Message text is never logged.
 
 Live updates: while a panel is subscribed, one long poll per app (``wait``, 8 s) tells the panel
-when anything changed; it then reads what it shows. Nobody subscribed: no requests at all.
+when anything changed; it then reads what it shows. Nobody subscribed: no requests at all. Only a
+command that changes something is announced to the panels: a read never is, because the panel
+answers every announcement with reads (announcing reads made an endless request loop).
 """
 
 from __future__ import annotations
@@ -63,6 +65,10 @@ CONTACT = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
 MESSAGE_ID = re.compile(r"^[0-9a-f]{32}$")
 IDEMPOTENCY = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 WS_PREFIX = f"{DOMAIN}/messaging"
+# Commands that change what the conversation view shows: announced to every subscribed panel.
+# Never "conversations" or "history": the panel reads on every announcement (no feedback loop).
+CHANGES = frozenset({"send", "retry", "read", "clear", "contact_add", "contact_rename", "contact_remove"})
+LOG_EVERY = 60.0  # at most one log line a minute for repeated refusals of the same kind
 
 
 class MessagingError(Exception):
@@ -113,6 +119,7 @@ class MessagingHub:
         self._task: asyncio.Task[None] | None = None
         self._key_checked: float | None = None
         self.available: bool | None = None
+        self._logged: dict[str, float] = {}  # refusal kind -> when it was last logged
 
     # -- the key ------------------------------------------------------------------------------
     @property
@@ -133,6 +140,30 @@ class MessagingHub:
             return False
         remember_key(self.hass, self.slug, config)
         return self.key is not None and self.key != before
+
+    # -- diagnostics (codes and counts only: never content, addresses, contacts or keys) ----------
+    def _log_refusal(self, kind: str, code: str) -> None:
+        now = dt_util.utcnow().timestamp()
+        key = f"{kind}:{code}"
+        last = self._logged.get(key)
+        if last is not None and now - last < LOG_EVERY:
+            return
+        self._logged[key] = now
+        _LOGGER.warning(
+            "Messaging: the app refused %s requests (%s); %d dashboard(s) subscribed. Logged at most once a minute",
+            "send" if kind == "send" else "read and other",
+            code,
+            len(self._listeners),
+        )
+
+    def _set_available(self, available: bool, code: str | None = None) -> None:
+        if available == self.available:
+            return
+        if not available:
+            _LOGGER.warning("Messaging: live updates from the app stopped (%s); retrying with back-off", code)
+        elif self.available is False:
+            _LOGGER.info("Messaging: live updates from the app are back")
+        self.available = available
 
     # -- requests -----------------------------------------------------------------------------
     async def request(self, payload: dict[str, Any], *, timeout: float = TIMEOUT) -> dict[str, Any]:
@@ -213,7 +244,7 @@ class MessagingHub:
                 answer = await self.request({"op": "wait", "revision": revision, "wait": WAIT}, timeout=WAIT + 7)
             except MessagingError as exc:
                 if self.available is not False:
-                    self.available = False
+                    self._set_available(False, exc.code)
                     self.notify({"type": "unavailable", "error": exc.code})
                 await asyncio.sleep(BACKOFF[min(failures, len(BACKOFF) - 1)])
                 failures += 1
@@ -221,7 +252,7 @@ class MessagingHub:
             failures = 0
             new = answer.get("revision")
             if self.available is not True or (isinstance(new, int) and new != revision):
-                self.available = True
+                self._set_available(True)
                 self.notify({"type": "changed"})
             revision = new if isinstance(new, int) else -1
             # Never faster than once a second, whatever the app answers (no busy loop).
@@ -322,14 +353,21 @@ def _make_command(kind: str, extra: dict[Any, Any]) -> Any:
     @websocket_command(schema)
     @async_response
     async def handler(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> None:
+        hub: MessagingHub | None = None
         try:
             hub = _hub(hass, msg["entry_id"])
             answer = await hub.request(build_request(kind, msg))
         except MessagingError as exc:
-            connection.send_error(msg["id"], exc.code, exc.code)
+            code = exc.code
+            if code == "rate_limited" and hub is not None:
+                hub._log_refusal(kind, code)
+                # The app uses one code for both allowances; only a send is "too many messages".
+                if kind != "send":
+                    code = "busy"
+            connection.send_error(msg["id"], code, code)
             return
         answer.pop("ok", None)
-        if kind != "conversations":  # anything that changed what the view shows
+        if kind in CHANGES:  # never a read: the panel reads on every announcement
             hub.notify({"type": "changed"})
         connection.send_result(msg["id"], answer)
 

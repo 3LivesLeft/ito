@@ -90,6 +90,35 @@ def test_sends_are_rate_limited_per_minute_and_per_day():
     assert len(engine.sent) == 200
 
 
+def test_reads_have_their_own_allowance_and_never_use_up_sending():
+    """Regression (reconnection storm): a dashboard that reads too often is refused reads only."""
+    clock = Clock()
+    sup, engine = make(clock)
+    engine.extra["conversations"] = {"ok": True, "conversations": []}
+    assert all(sup.forward({"op": "conversations"})[0] == 200 for _ in range(es.REQUEST_LIMIT[0]))
+    assert sup.forward({"op": "conversations"}) == (429, {"ok": False, "error": "rate_limited"})
+    assert sup.forward(send(1))[0] == 200  # sending is unaffected
+    clock.now = 61.0
+    assert sup.forward({"op": "conversations"})[0] == 200  # and reading recovers
+
+
+def test_refusals_are_logged_at_most_once_a_minute_without_content():
+    clock = Clock()
+    sup, _engine = make(clock)
+    said: list[str] = []
+    sup.say = said.append
+    for n in range(40):
+        sup.forward(send(n))
+    for _ in range(es.REQUEST_LIMIT[0] + 50):
+        sup.forward({"op": "history", "contact": "phone"})
+    assert said == [es.MSG_REFUSED["send"], es.MSG_REFUSED["request"]]
+    clock.now = 61.0
+    for _ in range(es.REQUEST_LIMIT[0] + 1):
+        sup.forward({"op": "history", "contact": "phone"})
+    assert said[-1] == es.MSG_REFUSED["request"] and len(said) == 3
+    assert not any("phone" in line or "hi" in line.split() for line in said)
+
+
 def test_automatic_replies_are_marked_and_limited_to_one_per_contact_every_six_hours():
     clock = Clock()
     sup, engine = make(clock)

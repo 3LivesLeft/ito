@@ -87,6 +87,19 @@ poll per app (8 s, at most one a second) and pushes `{"type": "changed"}` or
 `{"type": "unavailable"}`, never content; the panel then reads what it shows. Nobody watching: no
 requests.
 
+Amended (21 Nov 2026, reconnection-storm fix): only a command that **changes** something (send,
+retry, read, clear, contact add, rename, remove) is announced as `changed`; a read
+(`conversations`, `history`) never is, because the panel answers every announcement with reads.
+Announcing reads made an endless conversations/history loop as soon as a conversation was open,
+which used up the 240 reads a minute in about a second and left the view on "Reconnecting". As
+defence in depth the panel reads after announcements at most once every 2 s, and after a failed
+read waits with a bounded, jittered back-off (2 s up to 60 s; from 15 s when refused for asking
+too often) with one retry timer at most, cancelled when the view is hidden. The app's single
+`rate_limited` code is passed to the panel as `busy` for reads (sending has its own allowance and
+stays possible), and only outages (`unavailable`, `unreachable`, `not_enabled`, `unauthorised`)
+show as "Reconnecting". Refusals are logged by the app and by the integration at most once a
+minute per kind, with counts only (never content, contacts or keys).
+
 ### Automatic replies
 
 Kept and configurable. At most one per contact every six hours (no loops between two automatic
