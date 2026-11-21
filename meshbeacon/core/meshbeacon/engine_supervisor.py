@@ -84,6 +84,13 @@ HA_OPERATIONS = frozenset(
 HA_MAX_WAIT = 8.0  # under the listener's 10 s connection deadline
 SEND_LIMITS = ((10, 60.0), (200, 86400.0))
 REQUEST_LIMIT = (240, 60.0)  # every other request, per minute
+REFUSAL_LOG_EVERY = 60.0  # one log line a minute at most while requests are refused
+MSG_REFUSED = {
+    "send": (
+        "⚠ Messaging: Home Assistant sent more messages than allowed (10 a minute, 200 a day); refusing them for now."
+    ),
+    "request": "⚠ Messaging: Home Assistant asked for more than 240 reads a minute; refusing them for now.",
+}
 MSG_MESSAGING_UNAVAILABLE = "unavailable"
 MSG_PAUSED = (
     "⚠ Messaging stopped after repeated failures and is paused until the app is restarted. Reticulum is not affected."
@@ -236,6 +243,7 @@ class EngineSupervisor:
         self.last_auto_reply: dict[str, float] = {}
         self.send_windows = [Window(n, w, clock) for n, w in SEND_LIMITS]
         self.request_window = Window(*REQUEST_LIMIT, clock)
+        self.refusals_logged: dict[str, float] = {}
 
     # -- the core calls step() on every loop ---------------------------------------------------
     def step(self, node_ready: bool) -> None:
@@ -392,13 +400,22 @@ class EngineSupervisor:
             timeout = HA_MAX_WAIT + HEALTH_TIMEOUT
         elif op == "send":
             if not all(w.allow() for w in self.send_windows):
-                return 429, {"ok": False, "error": "rate_limited"}
+                return self._refused("send")
         elif not self.request_window.allow():
-            return 429, {"ok": False, "error": "rate_limited"}
+            return self._refused("request")
         answer = self.link(request, timeout=timeout)
         if answer is None:
             return 503, {"ok": False, "error": MSG_MESSAGING_UNAVAILABLE}
         return (200 if answer.get("ok") is True else 400), answer
+
+    def _refused(self, kind: str) -> tuple[int, dict[str, Any]]:
+        """A request over its allowance: 429, and a log line at most once a minute (no content)."""
+        now = self.clock()
+        last = self.refusals_logged.get(kind)
+        if last is None or now - last >= REFUSAL_LOG_EVERY:
+            self.refusals_logged[kind] = now
+            self.say(MSG_REFUSED[kind])
+        return 429, {"ok": False, "error": "rate_limited"}
 
     def _failed(self, reason: str, now: float) -> None:
         self.failures.append(now)
