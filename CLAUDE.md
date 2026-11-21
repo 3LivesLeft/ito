@@ -5,7 +5,7 @@ see [CONTRIBUTING.md](CONTRIBUTING.md), which takes precedence over this file.
 
 ## Project in one paragraph
 
-MeshBeacon is a free, privacy-first Home Assistant app (formerly "add-on") that runs the
+ito is a free, privacy-first Home Assistant app (formerly "add-on") that runs the
 **unmodified** Reticulum reference implementation (RNS, and later LXMF) and surfaces it in Home
 Assistant. Phase 0 (research and design) is complete. **Phase 1 (v0.1.0 foundation) is authorised** on
 branch `feature/v0.1.0-foundation` (PR #2). **v0.2.0 (monitoring and observability) is authorised**
@@ -65,7 +65,7 @@ infrastructure or deploy to the maintainer's Home Assistant without explicit app
   - No terminal, no file copying, no third-party installer, no manual dashboard configuration.
     Amended (D1, 19 Nov 2026): the dedicated interface arrives through Home Assistant's own app
     store and Marketplace in at most two guided steps (ADR 0015).
-  - A first-time user can install, configure and start MeshBeacon within five minutes, with no
+  - A first-time user can install, configure and start ito within five minutes, with no
     terminal and no YAML.
   - The Home Assistant integration is an optional enhancement (entities, custom dashboards,
     statistics, automations); nothing essential may depend on it.

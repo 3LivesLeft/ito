@@ -21,7 +21,7 @@ Assistant cannot control the node through it.
 ## Set-up
 
 1. **Install the integration once**, from Home Assistant's Marketplace (Home Assistant 2026.11 or
-   newer): see [getting started](getting-started.md#2-add-the-meshbeacon-dashboard). Until the
+   newer): see [getting started](getting-started.md#2-add-the-ito-dashboard). Until the
    first release, testers may still copy `custom_components/meshbeacon` into
    `/config/custom_components/` by hand; a later Marketplace install takes over that folder
    ([Marketplace](marketplace.md#moving-a-hand-copied-integration-to-the-marketplace)).

@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
-  <img src="../branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+  <img src="../branding/png/logo-horizontal-light.png" alt="ito" height="48">
 </picture>
 
 # Vision
@@ -23,9 +23,9 @@ central authority. It already powers messaging apps such as Sideband and a growi
 community nodes. But running it today requires comfort with configuration files, command lines
 and networking concepts that most Home Assistant users do not have.
 
-## What MeshBeacon is
+## What ito is
 
-MeshBeacon is a **free, open-source, privacy-first Home Assistant app** that runs the Reticulum
+ito is a **free, open-source, privacy-first Home Assistant app** that runs the Reticulum
 reference implementation for you and connects it to Home Assistant — safely, with sensible
 defaults, and without extra hardware to begin with.
 
@@ -39,7 +39,7 @@ Over time it aims to let a household:
 
 ## Long-term direction
 
-Beyond the household, MeshBeacon is evolving into a free, open-source, privacy-first,
+Beyond the household, ito is evolving into a free, open-source, privacy-first,
 decentralised **community network that can continue operating without internet connectivity**.
 The goal is to let communities host and discover information, communicate and share resources
 over Reticulum, including compatible LoRa radio links: private messaging, Nomad Network-compatible
@@ -68,32 +68,32 @@ These add to the principles below; where they overlap, the stricter reading appl
 v0.3 decisions that could constrain these are reviewed in the
 [forward-compatibility review](research/long-term-direction.md).
 
-## What MeshBeacon is not
+## What ito is not
 
-- **Not a Reticulum implementation.** MeshBeacon uses the reference implementation unchanged. It
+- **Not a Reticulum implementation.** ito uses the reference implementation unchanged. It
   does not reimplement, fork or "improve" the protocol.
 - **Not a product.** No commercialisation, no paid tier, no telemetry, no analytics, no adverts.
   Its own code is open source under Apache-2.0.
-- **Not a cloud service.** Nothing depends on servers run by the MeshBeacon project, and nothing
+- **Not a cloud service.** Nothing depends on servers run by the ito project, and nothing
   depends on any one public peer operator.
 - **Not affiliated** with the unrelated MeshBeacon disaster-response project (meshbeacon.org).
-- **Not finished.** MeshBeacon is experimental until v1.0 and should be treated that way.
+- **Not finished.** ito is experimental until v1.0 and should be treated that way.
 
 ## Principles
 
-1. **Easy to use.** A non-technical Home Assistant user can install MeshBeacon and be connected to
+1. **Easy to use.** A non-technical Home Assistant user can install ito and be connected to
    Reticulum within five minutes, without editing a file or understanding networking. Safe
    defaults and a few plainly explained choices beat many options. See
    [first-run UX](ux/first-run.md).
 2. **Works out of the box (permanent; maintainer, 18 Nov 2026).** Everything a first-time user
    needs comes with the standard app installation:
    - No terminal, no file copying, no third-party installer and no manual dashboard
-     configuration. **Amended (maintainer, 19 Nov 2026, decision D1):** MeshBeacon's interface,
+     configuration. **Amended (maintainer, 19 Nov 2026, decision D1):** ito's interface,
      with its sidebar entry, arrives through Home Assistant's own app store and Marketplace in at
      most two guided steps ([ADR 0015](adr/0015-distribution-and-updates.md)). A one-step install
      remains the goal (Ingress after upstream hardening, or an integration shipped with Home
      Assistant), but never at the cost of security.
-   - A first-time user can install, configure and start MeshBeacon within **five minutes**,
+   - A first-time user can install, configure and start ito within **five minutes**,
      without touching a terminal or editing YAML.
    - The Home Assistant integration remains an **optional enhancement**, for entities, custom
      dashboards, long-term statistics and automations. Nothing essential depends on it.
@@ -101,7 +101,7 @@ v0.3 decisions that could constrain these are reviewed in the
      conflict, the safe design wins and the usability gap is recorded as a defect to solve.
    - It never justifies duplicating monitoring logic or adding avoidable resource use
      (principle 10).
-3. **Consistent branding (permanent; maintainer, 18 Nov 2026).** MeshBeacon looks and reads the
+3. **Consistent branding (permanent; maintainer, 18 Nov 2026).** ito looks and reads the
    same everywhere: app store, sidebar, interface, integration, README and documentation. It uses
    one name, one mark, one palette and one type system, defined in [branding](branding.md). The
    brand complements Home Assistant and follows the user's theme. It never adds external fonts,
@@ -117,7 +117,7 @@ v0.3 decisions that could constrain these are reviewed in the
    MeshChat) because it is the same protocol — not through bridges or translations.
 9. **Good network citizenship.** Be a considerate neighbour on shared networks and shared radio
    spectrum.
-10. **Light on resources.** The Home Assistant host comes first. MeshBeacon must run comfortably on
+10. **Light on resources.** The Home Assistant host comes first. ito must run comfortably on
    lower-memory devices, not just on well-equipped ones: the idle target is 128 MB or less.
 11. **Maintainable, testable and portable.** A small core that runs with or without Home
    Assistant, tested against real, isolated Reticulum networks.
@@ -135,8 +135,8 @@ v0.3 decisions that could constrain these are reviewed in the
 
 ## Measures of success
 
-- An ordinary Home Assistant user can install MeshBeacon and have a connected, private node in
+- An ordinary Home Assistant user can install ito and have a connected, private node in
   **five minutes or less**, without editing a configuration file or opening a terminal, and can
-  see it working in MeshBeacon's own interface, measured with real users.
-- MeshBeacon never degrades the stability of the Home Assistant instance it runs on.
-- Reticulum community members regard MeshBeacon as a good citizen of the network.
+  see it working in ito's own interface, measured with real users.
+- ito never degrades the stability of the Home Assistant instance it runs on.
+- Reticulum community members regard ito as a good citizen of the network.

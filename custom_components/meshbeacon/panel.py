@@ -62,7 +62,13 @@ async def async_setup_panel_support(hass: HomeAssistant) -> None:
     if hass.data.get(_STATIC_DONE):
         return
     hass.data[_STATIC_DONE] = await hass.async_add_executor_job(_fingerprint)
-    await hass.http.async_register_static_paths([StaticPathConfig(STATIC_URL, str(FRONTEND), True)])
+    versioned_url = f"{STATIC_URL}/{hass.data[_STATIC_DONE]}"
+    await hass.http.async_register_static_paths(
+        [
+            StaticPathConfig(versioned_url, str(FRONTEND), True),
+            StaticPathConfig(STATIC_URL, str(FRONTEND), False),
+        ]
+    )
     websocket_api.async_register_command(hass, ws_panel)
     conversations.async_register(hass)
 
@@ -77,7 +83,7 @@ async def async_show_panel(hass: HomeAssistant) -> None:
         webcomponent_name=ELEMENT,
         sidebar_title=TITLE,
         sidebar_icon=ICON,
-        module_url=f"{STATIC_URL}/{MODULE}?v={hass.data[_STATIC_DONE]}",
+        module_url=f"{STATIC_URL}/{hass.data[_STATIC_DONE]}/{MODULE}",
         require_admin=REQUIRE_ADMIN,
         config={"domain": DOMAIN},
     )

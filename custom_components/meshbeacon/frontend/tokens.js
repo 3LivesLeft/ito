@@ -4,16 +4,18 @@
 // tests/frontend/tokens.test.mjs checks that text and status colours meet WCAG 2.2 AA.
 
 export const BRAND = Object.freeze({
-  deep: "#284C40", // primary brand (ito deep green), accent on light surfaces
+  forest: "#0B1A14", // dark background and brand ink
+  deep: "#1F4D3A", // deep moss: accessible brand accent on light surfaces
+  leaf: "#3E8F6E", // secondary brand accent
   sage: "#A6C9B2", // accent on dark surfaces; the thread in the mark
   mist: "#E8F3ED", // pale brand background
   sky: "#0EA5E9", // information and charts
   emerald: "#10B981", // success / online
   amber: "#F59E0B", // warning
   red: "#EF4444", // error / offline
-  navy: "#0B1220", // dark background
-  offWhite: "#F8FAFC", // light background, light text
-  slate: "#0F172A", // dark text
+  navy: "#0B1A14", // forest background from the approved creative direction
+  offWhite: "#E8F3ED", // mist background, light text
+  slate: "#0B1A14", // forest ink
 });
 
 // Per theme. "*Text" variants are for text and small marks on the surface (contrast >= 4.5:1);
@@ -22,28 +24,30 @@ export const THEMES = Object.freeze({
   light: Object.freeze({
     bg: BRAND.offWhite,
     surface: "#FFFFFF",
+    brandLand: BRAND.sage,
     text: BRAND.slate,
     muted: "#475569",
     line: "#E2E8F0",
     accent: BRAND.deep,
     accentText: BRAND.deep,
-    good: "#059669",
+    good: "#047857",
     goodText: "#047857",
-    warn: "#D97706",
-    warnText: "#B45309",
+    warn: "#B45309",
+    warnText: "#A54B08",
     bad: "#DC2626",
     badText: "#B91C1C",
-    info: "#0284C7",
+    info: "#0369A1",
     infoText: "#0369A1",
     neutral: "#64748B",
     neutralText: "#475569",
-    series1: "#0284C7",
+    series1: "#0369A1",
     series2: "#7C3AED",
     onAccent: "#FFFFFF",
   }),
   dark: Object.freeze({
     bg: BRAND.navy,
-    surface: "#111A2E",
+    surface: BRAND.forest,
+    brandLand: BRAND.leaf,
     text: BRAND.offWhite,
     muted: "#94A3B8",
     line: "#1E293B",
@@ -57,7 +61,7 @@ export const THEMES = Object.freeze({
     badText: "#F87171",
     info: BRAND.sky,
     infoText: "#38BDF8",
-    neutral: "#64748B",
+    neutral: "#94A3B8",
     neutralText: "#94A3B8",
     series1: BRAND.sky,
     series2: "#A78BFA",

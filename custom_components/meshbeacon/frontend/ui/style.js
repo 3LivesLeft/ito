@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// The MeshBeacon interface stylesheet: design tokens (../tokens.js) and component styles. Shared
+// The ito interface stylesheet: design tokens (../tokens.js) and component styles. Shared
 // by every delivery (integration panel today; the built-in interface later). docs/branding.md §6.
 
 import { baseCss, themeCss } from "../tokens.js";
@@ -31,7 +31,7 @@ header {
 }
 .brand { display: flex; align-items: center; gap: var(--mb-space-sm); flex: 1; min-width: 0; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .brand svg { width: 32px; height: 32px; flex: none; }
-.brand .word { color: var(--mb-accent-text); font-weight: 700; letter-spacing: -0.02em; }
+.brand .brand-wordmark { width: 46px; height: 25px; }
 header select { font: inherit; font-size: 14px; color: inherit; background: var(--mb-surface); border: 1px solid var(--mb-line); border-radius: var(--mb-radius-sm); padding: 6px 8px; min-height: 32px; }
 nav[role="tablist"] {
   display: flex; gap: var(--mb-space-xs); padding: 0 var(--mb-space-lg); overflow-x: auto;
@@ -129,13 +129,15 @@ dl { margin: 0; }
 .center .art { width: 96px; height: 96px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* Brand mark, coloured by tokens so it follows the theme. */
-.mk-globe, .mk-grid { fill: none; stroke: var(--mb-accent-text); stroke-linecap: round; }
-.mk-thread { fill: none; stroke: #A6C9B2; stroke-linecap: round; } /* sage in both themes, as in the logo */
-.mk-node { fill: var(--mb-accent-text); }
+.mk-globe, .mk-thread, .mk-glyph { fill: none; stroke: var(--mb-accent-text); }
+.mk-letter { fill: none; stroke: var(--mb-accent-text); }
+.mk-word, .mk-dot, .mk-node { fill: var(--mb-accent-text); }
+.mk-land { fill: var(--mb-brand-land); }
 /* Messages (M5): two columns on wide screens; on narrow ones the list, or one conversation. */
 .messages-main { max-width: 1280px; }
 .msg { display: grid; gap: var(--mb-space-md); }
 .msg-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mb-space-sm); }
+.msg-status .chip { background: color-mix(in srgb, var(--tone, var(--mb-neutral)) 6%, transparent); }
 .msg-status > span { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--mb-space-sm); }
 .msg-panes { display: grid; gap: var(--mb-space-lg); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 870px) { .msg-panes { grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); align-items: start; } }
@@ -160,6 +162,7 @@ dl { margin: 0; }
 .conversations { list-style: none; margin: 0 calc(-1 * var(--mb-space-sm)); padding: 0; display: grid; gap: 2px; }
 .conversation { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; border-radius: var(--mb-radius-sm); padding: 10px var(--mb-space-sm); cursor: pointer; min-height: 56px; }
 .conversation:hover { background: color-mix(in srgb, var(--mb-accent) 6%, transparent); }
+.conversation:is(:hover, [aria-current="true"]) .muted { color: var(--mb-text); }
 .conversation[aria-current="true"] { background: color-mix(in srgb, var(--mb-accent) 12%, transparent); }
 .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; font-weight: 600; font-size: 15px; color: var(--mb-accent-text); background: color-mix(in srgb, var(--mb-accent) 14%, var(--mb-surface)); }
 .who { display: grid; min-width: 0; }
@@ -185,12 +188,12 @@ dl { margin: 0; }
 .day { align-self: center; padding: 8px 0 2px; font-weight: 500; }
 .bubble { max-width: min(78%, 560px); padding: 8px 12px; border-radius: 16px; display: grid; gap: 2px; }
 .bubble.in { align-self: flex-start; background: color-mix(in srgb, var(--mb-neutral) 12%, var(--mb-surface)); border: 1px solid var(--mb-line); border-bottom-left-radius: 4px; }
-.bubble.out { align-self: flex-end; background: color-mix(in srgb, var(--mb-accent) 16%, var(--mb-surface)); border: 1px solid color-mix(in srgb, var(--mb-accent) 30%, transparent); border-bottom-right-radius: 4px; }
-.bubble.auto { opacity: 0.8; font-style: italic; }
-.bubble.local { opacity: 0.7; }
+.bubble.out { align-self: flex-end; background: color-mix(in srgb, var(--mb-accent) 10%, var(--mb-surface)); border: 1px solid color-mix(in srgb, var(--mb-accent) 30%, transparent); border-bottom-right-radius: 4px; }
+.bubble.auto { font-style: italic; }
+.bubble.local { border-style: dashed; }
 .bubble .text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; }
-.auto-label { color: var(--mb-muted); font-style: normal; font-weight: 500; }
-.bubble-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 10px; color: var(--mb-muted); font-style: normal; }
+.auto-label { color: var(--mb-text); font-style: normal; font-weight: 500; }
+.bubble-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 10px; color: var(--mb-text); font-style: normal; }
 .bubble.in .bubble-meta { justify-content: flex-start; }
 .bubble-meta .state { display: inline-flex; align-items: center; gap: 3px; color: var(--tone-text); font-weight: 500; }
 .bubble-meta .state ha-icon { --mdc-icon-size: 15px; }

@@ -58,16 +58,18 @@ test("brand colours are exactly those in docs/branding.md", () => {
   const doc = readFileSync(new URL("../../docs/branding.md", import.meta.url), "utf8");
   for (const hex of Object.values(BRAND)) assert.ok(doc.includes(hex), `${hex} missing from docs/branding.md`);
   assert.deepEqual(BRAND, {
-    deep: "#284C40",
+    forest: "#0B1A14",
+    deep: "#1F4D3A",
+    leaf: "#3E8F6E",
     sage: "#A6C9B2",
     mist: "#E8F3ED",
     sky: "#0EA5E9",
     emerald: "#10B981",
     amber: "#F59E0B",
     red: "#EF4444",
-    navy: "#0B1220",
-    offWhite: "#F8FAFC",
-    slate: "#0F172A",
+    navy: "#0B1A14",
+    offWhite: "#E8F3ED",
+    slate: "#0B1A14",
   });
 });
 

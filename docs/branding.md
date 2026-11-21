@@ -4,10 +4,10 @@
 principle** ([vision](vision.md), principle 3; [CLAUDE.md](../CLAUDE.md)). Changes to anything
 here need the maintainer's approval and must keep the accessibility and resource rules below.
 
-> **Provisional artwork (21 Nov 2026).** The name **ito** is decided ([ADR 0025](adr/0025-rename-to-ito.md)).
-> The mark is a vector interpretation of the "thread around the earth" idea, carried over from the
-> first proposal (PR #12), and is **pending visual review**. Until it is approved, treat the
-> shapes as replaceable: the masters below can be redrawn and every asset regenerated in one step.
+The original ito brand kit sets the direction. The production masters follow
+`references/03-flat-emblem.png`, with palette and typography guidance from
+`references/02-preferred-brand.png`. The earlier exploration records the project's origins.
+The reconstructed artwork is pending maintainer visual approval.
 
 <p>
   <picture>
@@ -31,20 +31,21 @@ here need the maintainer's approval and must keep the accessibility and resource
 
 ## 2. Logo
 
-The mark is a thread encircling the earth: a globe with a meridian pair and three parallels, and
-a sage thread across it that ends in a node.
+The emblem depicts an Atlantic-facing globe with curved threads, six junction dots and the
+Japanese character 糸 (thread). Small-format and monochrome artwork simplify the geography.
 
 | Asset | Use | Files |
 |---|---|---|
 | Full logo (mark, wordmark, tagline) | README, documentation headers, release notes | `branding/svg/logo-full-{light,dark}.svg`, `branding/png/logo-full-*.png` |
 | Horizontal logo (mark + wordmark) | Page headers, the integration's brand logo | `branding/svg/logo-horizontal-{light,dark,mono-light,mono-dark}.svg` |
 | Logo badge | Home Assistant app `logo.png`: legible on light and dark app pages | `branding/svg/logo-badge-dark.svg` → `meshbeacon/logo.png` (250 × 100) |
+| Stacked logo and wordmark | Square layouts and wordmark-only placements | `branding/{svg,png}/logo-stacked-*`, `branding/{svg,png}/wordmark-*` |
 | Mark | Inside the interface; the integration's brand icon | `branding/svg/mark-{light,dark,mono-light,mono-dark}.svg` |
 | App icon (mark on a rounded tile) | App store, launchers, social previews | `branding/svg/icon-{dark,light,mono-dark,mono-light}.svg`, PNG at 128/256/512 |
 | Small-format mark and icon (16–48 px) | Favicons, the interface header | `branding/svg/mark-small-*.svg`, `icon-small-*.svg`, `favicon.svg`, `favicon-{16,32,64}.png` |
 
 **Variants:** *dark* for dark backgrounds, *light* for light backgrounds, *mono-dark* (mist) and
-*mono-light* (deep green) for single-colour use such as print or embossing.
+*mono-light* (forest) for single-colour use such as print or embossing.
 
 **Rules**
 - Use the supplied files. Do not redraw, recolour outside the palette, stretch, rotate, add
@@ -57,16 +58,17 @@ a sage thread across it that ends in a node.
 
 **Source of truth:** the master SVGs in `branding/src/`:
 - `mark.svg`, `mark-small.svg`: geometry only, coloured through classes;
-- `wordmark.svg`, `tagline.svg`: Inter outlined to paths by `tools/brand/outline_wordmark.py`.
+- `wordmark.svg`: custom rounded vector lettering.
+- `tagline.svg`: bundled Inter outlined by `tools/brand/outline_wordmark.py` (tagline only).
 
 `tools/brand/build.py` recolours and composes the variants, writes the interface's mark data
 (`frontend/brand-mark.js`) and renders every PNG. `tools/brand/build.py --check` (run by
-`tests/unit/test_branding.py`) fails if anything generated is out of date. PNGs are quantised and
-optimised (all 34 together are under 400 KB).
+`tests/unit/test_branding.py`) checks the generated SVGs and dashboard geometry. PNGs are quantised and optimised with Pillow.
 
 ```sh
 python3 tools/brand/build.py          # needs Node + Playwright's Chromium to render PNGs
 python3 tools/brand/build.py --check  # standard library only
+python3 tools/brand/build.py --inkscape  # alternative PNG renderer
 ```
 
 ## 3. Colour
@@ -75,22 +77,18 @@ python3 tools/brand/build.py --check  # standard library only
 
 | Purpose | Name | Hex |
 |---|---|---|
-| Primary brand; accent on light surfaces; text on mist | Deep green | `#284C40` |
+| Dark background and brand ink | Forest | `#0B1A14` |
+| Secondary surfaces and accessible accent on light surfaces | Deep Moss | `#1F4D3A` |
+| Secondary accent | Leaf | `#3E8F6E` |
 | Accent on dark surfaces; the thread in the mark | Sage | `#A6C9B2` |
 | Pale brand background (logo tile, theme background) | Mist | `#E8F3ED` |
 | Information and charts | Sky blue | `#0EA5E9` |
 | Success / online | Emerald green | `#10B981` |
 | Warning | Amber | `#F59E0B` |
 | Error / offline | Red | `#EF4444` |
-| Dark background | Deep navy | `#0B1220` |
-| Light background | Off-white | `#F8FAFC` |
-| Dark text | Slate | `#0F172A` |
-| Light text | Off-white | `#F8FAFC` |
 
-Artwork only: forest `#17302A` (dark tiles) and leaf `#496A5D` (the tagline on light
-backgrounds). Data-only colours for charts (never for status): violet `#7C3AED` (light) and
-`#A78BFA` (dark) as the second series. Sage is too pale for text or indicators on light surfaces
-(about 1.7:1 on white), so it is used there only as the decorative thread.
+Data-only colours for charts (never for status): violet `#7C3AED` (light) and
+`#A78BFA` (dark) as the second series. Sage is reserved for decorative artwork on light surfaces.
 
 ### 3.2 Accessible variants
 
@@ -99,14 +97,14 @@ indicators). These are design tokens, not extra brand colours.
 
 | Token | Light theme | Dark theme | Use |
 |---|---|---|---|
-| `accent` | `#284C40` | `#A6C9B2` | Focus rings, active tab bar, buttons, message tints |
-| `accent-text` | `#284C40` | `#A6C9B2` | Links, active tab label, the header wordmark, the mark's globe |
-| `good` / `good-text` | `#059669` / `#047857` | `#10B981` / `#34D399` | Online, connected, no problems |
-| `warn` / `warn-text` | `#D97706` / `#B45309` | `#F59E0B` / `#FBBF24` | Partly connected, attention |
+| `accent` | `#1F4D3A` | `#A6C9B2` | Focus rings, active tab bar, buttons, message tints |
+| `accent-text` | `#1F4D3A` | `#A6C9B2` | Links, active tab label, the header wordmark, the mark's globe |
+| `good` / `good-text` | `#047857` / `#047857` | `#10B981` / `#34D399` | Online, connected, no problems |
+| `warn` / `warn-text` | `#B45309` / `#A54B08` | `#F59E0B` / `#FBBF24` | Partly connected, attention |
 | `bad` / `bad-text` | `#DC2626` / `#B91C1C` | `#EF4444` / `#F87171` | Offline, problem, not connected |
-| `info` / `info-text` | `#0284C7` / `#0369A1` | `#0EA5E9` / `#38BDF8` | Neutral information (transport enabled) |
-| `neutral` / `neutral-text` | `#64748B` / `#475569` | `#64748B` / `#94A3B8` | Isolated, unknown, unavailable |
-| `series-1` / `series-2` | `#0284C7` / `#7C3AED` | `#0EA5E9` / `#A78BFA` | Chart series (receive / send) |
+| `info` / `info-text` | `#0369A1` / `#0369A1` | `#0EA5E9` / `#38BDF8` | Neutral information (transport enabled) |
+| `neutral` / `neutral-text` | `#64748B` / `#475569` | `#94A3B8` / `#94A3B8` | Isolated, unknown, unavailable |
+| `series-1` / `series-2` | `#0369A1` / `#7C3AED` | `#0EA5E9` / `#A78BFA` | Chart series (receive / send) |
 
 `tests/frontend/tokens.test.mjs` checks every pair on the brand surfaces **and** on Home
 Assistant's default light and dark surfaces.
@@ -168,7 +166,7 @@ without it (preview, a future built-in interface), the device's `prefers-color-s
 
 | Component | Pattern | Accessibility |
 |---|---|---|
-| App header | Mark (32 px) + "ito" wordmark in Bold, accent text; the Home Assistant menu button on narrow screens; an app picker only if there are several | `h1`; mark hidden from screen readers |
+| App header | Mark (32 px) + outlined "ito" wordmark, accent text; the Home Assistant menu button on narrow screens; an app picker only if there are several | `h1`; mark hidden from screen readers |
 | Navigation | Text tabs, accent underline for the current tab; route `/meshbeacon/<tab>` | `role="tablist"`, `aria-selected`, 44 px targets |
 | Status hero | Card with a coloured left edge, a status mark (shape + colour), the state in words, an explanation and chips | Status text plus shape; `role="img"` with a label |
 | Chip | Tinted pill with a dot and words | Text always present |
@@ -213,9 +211,9 @@ pattern is added here first, in the same change.
   (no hot-linked images in the app's own `DOCS.md`, which Home Assistant renders locally).
 - No frontend dependencies. The build tools (Node, Playwright, fontTools for re-outlining) are
   developer tools only.
-- Assets are optimised: 34 PNGs under 400 KB in total; four font files about 97 KB, loaded only
+- Assets are optimised: PNG assets within the tested 400 KB budget; four font files about 97 KB, loaded only
   when the panel opens.
-- No new permissions or endpoints. The integration's brand images are served by Home Assistant's
+- No new permissions. The integration's brand images are served by Home Assistant's
   own brands API.
 
 ## 9. Where the brand appears
@@ -223,9 +221,9 @@ pattern is added here first, in the same change.
 | Surface | Status |
 |---|---|
 | Home Assistant app store and app page | `meshbeacon/icon.png`, `logo.png`; description = the tagline |
-| Sidebar entry | `mdi:lighthouse-on`, title "MeshBeacon" |
+| Sidebar entry | `mdi:earth`, title "ito" |
 | Integration panel (current) and built-in Ingress interface (ADR 0013, proposed) | Same tokens, components and assets. The panel code moves into the app if ADR 0013 is approved |
 | Optional integration | Brand images; status icon |
 | README, installation docs, user guides | Logo header (light/dark `<picture>`), tagline |
-| Example dashboard | Title "MeshBeacon", icon `mdi:lighthouse-on` |
+| Example dashboard | Title "ito", icon `mdi:earth` |
 | Release notes | [Release notes template](releasing.md) |

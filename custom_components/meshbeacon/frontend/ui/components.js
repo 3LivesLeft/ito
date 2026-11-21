@@ -9,7 +9,7 @@ import { h, icon, s } from "./dom.js";
 const CHART_W = 600;
 const CHART_H = 150;
 
-/** The MeshBeacon mark, built element by element from generated geometry (no markup parsed). */
+/** The ito mark, built element by element from generated geometry (no markup parsed). */
 export function brandMark(size = "small", label = null) {
   const svg = s("svg", { viewBox: "0 0 256 256", focusable: "false" });
   if (label) {
@@ -22,7 +22,11 @@ export function brandMark(size = "small", label = null) {
 
 /** Header wordmark: mark + "ito" (always lower case). */
 export function brandTitle() {
-  return h("h1", { class: "brand" }, brandMark("small"), h("span", { class: "word", text: "ito" }));
+  const wordmark = s("svg", { viewBox: "0 15 160 85", class: "brand-wordmark", "aria-hidden": "true", focusable: "false" });
+  for (const [tag, cls, attrs] of MARKS.wordmark) {
+    wordmark.append(s(tag, { ...attrs, class: `mk-${cls}` }));
+  }
+  return h("h1", { class: "brand" }, brandMark("small"), wordmark, h("span", { class: "sr", text: "ito" }));
 }
 
 // A distinct shape per state, so status never depends on colour alone (WCAG 1.4.1).
