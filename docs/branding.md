@@ -120,7 +120,7 @@ Assistant's default light and dark surfaces.
 ## 4. Typography
 
 **Inter**, with the system sans-serif stack as fallback:
-`"ito Inter", Inter, var(--ha-font-family-body), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
+`"MeshBeacon Inter", Inter, var(--ha-font-family-body), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
 
 | Weight | Use |
 |---|---|
@@ -132,7 +132,7 @@ Assistant's default light and dark surfaces.
 - **Bundled, never fetched.** Inter 5.3.0 (Latin subset, WOFF2, about 97 KB for four weights) ships
   in `custom_components/meshbeacon/frontend/fonts/inter-5.3.0/` with its **SIL Open Font
   License 1.1** (`OFL.txt`; also `branding/fonts/OFL.txt` and `THIRD_PARTY_NOTICES`).
-- It is registered under the private family name "ito Inter", so Home Assistant's own
+- It is registered under the private family name "MeshBeacon Inter", so Home Assistant's own
   typography is untouched. It is loaded only when the panel opens.
 - Figures use tabular numerals. Sentence case for headings and labels.
 
