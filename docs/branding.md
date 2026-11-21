@@ -4,6 +4,10 @@
 principle** ([vision](vision.md), principle 3; [CLAUDE.md](../CLAUDE.md)). Changes to anything
 here need the maintainer's approval and must keep the accessibility and resource rules below.
 
+> **Brand kit reference (19 Nov 2026).** The original `ito-brand-kit/BRAND.md` and its
+> `references/03-flat-emblem.png` and `references/02-preferred-brand.png` take precedence over
+> the current generated logo. The generated globe-with-thread artwork is **not approved**.
+>
 > **Provisional artwork (21 Nov 2026).** The name **ito** is decided ([ADR 0025](adr/0025-rename-to-ito.md)).
 > The mark is a vector interpretation of the "thread around the earth" idea, carried over from the
 > first proposal (PR #12), and is **pending visual review**. Until it is approved, treat the
@@ -75,16 +79,18 @@ python3 tools/brand/build.py --check  # standard library only
 
 | Purpose | Name | Hex |
 |---|---|---|
-| Primary brand; accent on light surfaces; text on mist | Deep green | `#284C40` |
+| Dark background and brand ink | Forest | `#0B1A14` |
+| Secondary surfaces and accessible accent on light surfaces | Deep Moss | `#1F4D3A` |
+| Secondary accent | Leaf | `#3E8F6E` |
 | Accent on dark surfaces; the thread in the mark | Sage | `#A6C9B2` |
 | Pale brand background (logo tile, theme background) | Mist | `#E8F3ED` |
 | Information and charts | Sky blue | `#0EA5E9` |
 | Success / online | Emerald green | `#10B981` |
 | Warning | Amber | `#F59E0B` |
 | Error / offline | Red | `#EF4444` |
-| Dark background | Deep navy | `#0B1220` |
-| Light background | Off-white | `#F8FAFC` |
-| Dark text | Slate | `#0F172A` |
+| Dark background | Forest | `#0B1A14` |
+| Light background | Mist | `#E8F3ED` |
+| Dark text | Forest | `#0B1A14` |
 | Light text | Off-white | `#F8FAFC` |
 
 Artwork only: forest `#17302A` (dark tiles) and leaf `#496A5D` (the tagline on light
@@ -114,7 +120,7 @@ Assistant's default light and dark surfaces.
 ## 4. Typography
 
 **Inter**, with the system sans-serif stack as fallback:
-`"MeshBeacon Inter", Inter, var(--ha-font-family-body), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
+`"ito Inter", Inter, var(--ha-font-family-body), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
 
 | Weight | Use |
 |---|---|
@@ -126,7 +132,7 @@ Assistant's default light and dark surfaces.
 - **Bundled, never fetched.** Inter 5.3.0 (Latin subset, WOFF2, about 97 KB for four weights) ships
   in `custom_components/meshbeacon/frontend/fonts/inter-5.3.0/` with its **SIL Open Font
   License 1.1** (`OFL.txt`; also `branding/fonts/OFL.txt` and `THIRD_PARTY_NOTICES`).
-- It is registered under the private family name "MeshBeacon Inter", so Home Assistant's own
+- It is registered under the private family name "ito Inter", so Home Assistant's own
   typography is untouched. It is loaded only when the panel opens.
 - Figures use tabular numerals. Sentence case for headings and labels.
 
