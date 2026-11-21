@@ -1,5 +1,7 @@
 # ito
 
+![ito thread-and-earth emblem](brand/logo.svg)
+
 **The internet, reimagined.** · [ito.earth](https://ito.earth)
 
 *Formerly MeshBeacon. The existing installation identifiers remain unchanged for compatibility.*
@@ -11,10 +13,10 @@ ito is a free, open-source, privacy-first, decentralised communications gateway 
 [Reticulum](https://github.com/markqvist/Reticulum) reference implementation.
 
 > [!WARNING]
-> **Experimental — do not depend on this yet.** MeshBeacon is in **Phase 1**: a v0.1.0 local
-> prototype that you can build and install as a local Home Assistant app
-> ([`meshbeacon/DOCS.md`](meshbeacon/DOCS.md)). No images or releases are published. Physical
-> Raspberry Pi validation is still pending ([results so far](docs/testing/phase1-results.md)).
+> **Experimental — do not depend on this yet.** ito is an experimental local
+> prototype that you can build and install as a Home Assistant app
+> ([`meshbeacon/DOCS.md`](meshbeacon/DOCS.md)). Check the repository's releases and current installation guide before deployment. Physical
+> Raspberry Pi validation and end-to-end messaging behaviour must be verified on your installation ([results so far](docs/testing/phase1-results.md)).
 
 ## What it will do
 
@@ -37,6 +39,10 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
   Assistant permissions.
 - Uses the unmodified Reticulum reference implementation; implements no protocol or cryptography
   of its own.
+
+## Brand
+
+The [ito brand guide](brand/README.md) includes the sage palette and provisional thread-and-earth assets. Home Assistant's own UI controls its theme and app icon; these assets do not automatically restyle Home Assistant. Internal `meshbeacon` identifiers remain unchanged to preserve upgrades, entities and messaging identity.
 
 ## Documentation
 
