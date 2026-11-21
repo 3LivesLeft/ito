@@ -1,0 +1,13 @@
+#!/bin/sh
+# The prepare step (options, storage, identity validation, Reticulum configuration) as Reticulum's
+# user, mb-rns (ADR 0018), run once when the core asks. The core writes the mode ("start" or
+# "restart"); anything else is treated as "restart", which never replaces the identity.
+exec >/run/meshbeacon-io/prepare/out 2>&1 3>/run/meshbeacon-io/prepare/result
+mode="$(head -c 16 /run/meshbeacon-io/prepare/mode 2>/dev/null)"
+case "$mode" in
+    start | restart) ;;
+    *) mode=restart ;;
+esac
+umask 077
+exec nice -n 10 /command/s6-setuidgid mb-rns /usr/local/bin/python3 -I -u -m meshbeacon.prepare \
+    --mode "$mode" --result-fd 3

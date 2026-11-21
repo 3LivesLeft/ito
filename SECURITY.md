@@ -1,8 +1,13 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="branding/png/logo-horizontal-dark.png">
+  <img src="branding/png/logo-horizontal-light.png" alt="ito" height="48">
+</picture>
+
 # Security policy
 
 ## Status
 
-MeshBeacon is in **Phase 0 (research and design)**. There is no released software yet, so there
+ito is in **Phase 0 (research and design)**. There is no released software yet, so there
 are no supported versions. This policy applies from the first release onwards, and to the
 documentation and design in the meantime.
 
@@ -36,9 +41,9 @@ a volunteer project with no commercial backing, so timelines are best-effort.
 
 ### Vulnerabilities in upstream projects
 
-If the problem is in Reticulum (RNS) or LXMF rather than in MeshBeacon, please note that the
+If the problem is in Reticulum (RNS) or LXMF rather than in ito, please note that the
 upstream GitHub repositories are public mirrors that do not accept issues. We will still
-coordinate where we can, and will protect MeshBeacon users (for example by pinning or advising on
+coordinate where we can, and will protect ito users (for example by pinning or advising on
 configuration) while an upstream fix is pending.
 
 ## Our security commitments
@@ -71,7 +76,7 @@ permissions, but it is **not proof of security**.
 ## Other apps on the same Home Assistant
 
 Apps with elevated privileges — for example an SSH or terminal app with its *protection mode*
-disabled — can access other apps' data, including MeshBeacon's identity. Keep protection mode
+disabled — can access other apps' data, including ito's identity. Keep protection mode
 enabled unless you need it off.
 
 ## Handling your Reticulum identity

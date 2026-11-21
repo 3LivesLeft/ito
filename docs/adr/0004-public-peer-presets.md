@@ -33,3 +33,19 @@ operators, and the project must not depend on any provider.
   more step (typing a peer address from the documentation). The UX document plans for both.
 - Shipping a preset is a release-time responsibility for the maintainer, which takes ongoing
   effort; presets that fail re-verification are removed.
+
+## Amendment (20 November 2026): the network selector
+
+**Status: proposed in the network-onboarding pull request; awaiting maintainer review.**
+
+- The presets are offered as a **single-choice dropdown**, *Public Reticulum network*, rather than a
+  multi-select: Home Assistant's app options have no multi-select, and one public network plus any
+  number of own peers covers the use cases. The default, `custom`, selects none (decision 1 holds).
+- Selecting a preset adds exactly one `TCPClientInterface` peer through the same validation and
+  ConfigObj rendering as own peers; own peers are kept and added after it. A preset whose host and
+  port an own peer already has is not added twice, so existing installations are unchanged.
+- The data file is `meshbeacon/core/meshbeacon/networks.json`. Candidates: Ratspeak Ruby, Emerald and
+  Diamond, and ReticulumNet (Reticulum Netherlands), so two independent operators (decision 5).
+- Decision 4 is enforced by `tools/check_release.py`: a release tag is refused while any preset has
+  no `release_checks_passed_on` date. V1–V7 touch live infrastructure and are performed only by the
+  maintainer; development and CI never connect to the presets.

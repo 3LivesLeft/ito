@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """A small, deliberately conservative reader for MeshBeacon's AppArmor file rules.
 
-It understands only what apparmor.txt uses: path rules (`/path/glob perms,`), `deny` path rules,
+It understands only what apparmor.txt uses: path rules (`/path/glob perms,`, optionally quoted),
+`deny` path rules, the `owner` qualifier (the rule applies only to files the process owns),
 `@{PROC}`, `*`, `**` and `{a,b}` globs. It ignores includes, capability, network, signal and
 other non-file rules. It is used to check, without an AppArmor-enabled kernel, that every program
 the container runs may be executed and that every script may also be read by its interpreter —
@@ -17,7 +18,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 VARIABLES = {"@{PROC}": "/proc", "@{pid}": "{[1-9]*,[1-9][0-9]*}"}
-RULE = re.compile(r"^(?P<deny>deny\s+)?(?P<path>/\S*)\s+(?P<perms>[rwaxlkmiuUpPcC]+)\s*(->\s*\S+)?\s*,\s*$")
+RULE = re.compile(
+    r"^(?P<deny>deny\s+)?(?P<owner>owner\s+)?(?:\"(?P<quoted>/[^\"]*)\"|(?P<path>/\S*))"
+    r"\s+(?P<perms>[rwaxlkmiuUpPcC]+)\s*(->\s*\S+)?\s*,\s*$"
+)
 
 
 def glob_to_regex(glob: str) -> re.Pattern[str]:
@@ -50,8 +54,8 @@ def glob_to_regex(glob: str) -> re.Pattern[str]:
 
 @dataclass
 class Profile:
-    allow: list[tuple[re.Pattern[str], str]]
-    deny: list[tuple[re.Pattern[str], str]]
+    allow: list[tuple[re.Pattern[str], str, bool]]  # (path, perms, owner only)
+    deny: list[tuple[re.Pattern[str], str, bool]]
     name: str
 
     @classmethod
@@ -64,16 +68,19 @@ class Profile:
                 continue
             m = RULE.match(line)
             if m:
-                (deny if m.group("deny") else allow).append((glob_to_regex(m.group("path")), m.group("perms")))
+                path = m.group("quoted") or m.group("path")
+                rule = (glob_to_regex(path), m.group("perms"), bool(m.group("owner")))
+                (deny if m.group("deny") else allow).append(rule)
         return cls(allow, deny, name)
 
-    def perms(self, path: str) -> set[str]:
+    def perms(self, path: str, *, owner: bool = True) -> set[str]:
+        """What a process may do to ``path``; ``owner=False`` for a file it does not own."""
         granted: set[str] = set()
-        for regex, perms in self.allow:
-            if regex.match(path):
+        for regex, perms, owner_only in self.allow:
+            if regex.match(path) and (owner or not owner_only):
                 granted |= set(perms)
-        for regex, perms in self.deny:
-            if regex.match(path):
+        for regex, perms, owner_only in self.deny:
+            if regex.match(path) and (owner or not owner_only):
                 granted -= set(perms)
         return granted
 

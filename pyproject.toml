@@ -13,6 +13,7 @@ markers = [
   "integration: runs real, isolated Reticulum processes (loopback only)",
   "slow: long-running test",
   "container: needs Docker and a built image",
+  "shard_per_test: wide-scoped fixtures in this module hold no state between tests (see tests/conftest.py)",
 ]
 addopts = "-ra --strict-markers"
 filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
@@ -33,8 +34,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "S108", "S311", "S607", "PLC0415", "PLW1510"]
+"tests/**" = ["S101", "S105", "S106", "S108", "S311", "S314", "S607", "PLC0415", "PLW1510"]
 "meshbeacon/core/meshbeacon/**" = ["PLC0415"]  # RNS is imported lazily on purpose
+# Brand build tools parse the repository's own SVGs, call node, and import optional tools lazily.
+"tools/brand/**" = ["S314", "S607", "PLC0415"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -43,5 +46,5 @@ files = ["meshbeacon/core/meshbeacon"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["RNS", "RNS.*"]
+module = ["RNS", "RNS.*", "LXMF", "LXMF.*"]
 ignore_missing_imports = true

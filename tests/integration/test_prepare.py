@@ -11,9 +11,11 @@ from RNS.vendor.configobj import ConfigObj
 from .conftest import write_options
 
 
-def run_prepare(data, mode="start"):
+def run_prepare(data, mode="start", rpc_key_file=None):
     env = dict(os.environ, MESHBEACON_DATA=str(data))
-    result = data / "meshbeacon" / "r.json"
+    # Never the container's real path: a key file of the test's own, or one that does not exist.
+    env["MESHBEACON_RPC_KEY_FILE"] = str(rpc_key_file or data.parent / "no-rpc-key")
+    result = data.parent / "prepare-result.json"  # the core's channel, outside Reticulum's folders
     proc = subprocess.run(
         [sys.executable, "-m", "meshbeacon.prepare", "--mode", mode, "--result", str(result)],
         env=env,
@@ -44,9 +46,9 @@ def test_first_and_second_start(data):
     assert list(cfg["interfaces"]) == ["Home"]
     for path, mode in modes(data / "reticulum"):
         assert mode == (0o700 if os.path.isdir(path) else 0o600), path
-    for path, mode in modes(data / "meshbeacon"):
-        assert mode == (0o700 if os.path.isdir(path) else 0o600), path
-    fp = json.loads((data / "meshbeacon" / "identity.json").read_text())["fingerprint"]
+    # ADR 0018: the prepare step (Reticulum's user) never touches the core's folder.
+    assert not (data / "meshbeacon").exists()
+    fp = json.loads((data / "reticulum" / "meshbeacon-identity" / "identity.json").read_text())["fingerprint"]
     assert fp not in json.dumps(r1) + out1
 
 
@@ -140,3 +142,66 @@ def test_interrupted_first_start_never_breaks_identity(tmp_path):
         assert r["ok"], (i, r)
         if before is not None:
             assert ident.read_bytes() == before, "identity replaced after an interrupted start"
+
+
+def test_the_shared_instance_follows_the_messaging_option(data):
+    """D-M4-8, IS-3a: Reticulum shares its instance only while messaging is switched on, and
+    switching messaging on or off never touches the node's identity."""
+    write_options(data, messaging_enabled=False)
+    r1, _ = run_prepare(data)
+    assert r1["ok"] and ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["share_instance"] == "No"
+    write_options(data, messaging_enabled=True)
+    r2, _ = run_prepare(data)
+    assert r2["ok"] and r2["identity"] == "unchanged"
+    assert ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["share_instance"] == "Yes"
+    write_options(data, messaging_enabled=False)
+    r3, _ = run_prepare(data)
+    assert r3["identity"] == "unchanged"
+    assert ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["share_instance"] == "No"
+
+
+def test_with_messaging_on_the_node_uses_the_shared_rpc_key(data):
+    """ADR 0023: the key the engine is given too, the same across restarts of Reticulum (so that a
+    running engine is never locked out); with messaging off, a fresh key nobody else holds."""
+    key_file = data.parent / "rpc_key"
+    key = "5a" * 32
+    key_file.write_text(key + "\n")
+    write_options(data, messaging_enabled=True)
+    for mode in ("start", "restart"):
+        r, out = run_prepare(data, mode, rpc_key_file=key_file)
+        assert r["ok"], r
+        cfg = ConfigObj(str(data / "reticulum" / "config"))["reticulum"]
+        assert cfg["rpc_key"] == key and cfg["enable_interface_management"] == "No"
+        assert key not in out and key not in json.dumps(r)  # rule 5
+    write_options(data, messaging_enabled=False)
+    run_prepare(data, rpc_key_file=key_file)
+    assert ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["rpc_key"] != key
+
+
+def test_a_missing_shared_rpc_key_never_stops_reticulum(data):
+    """The gateway works on: a random key, and a plain warning that messaging cannot work."""
+    write_options(data, messaging_enabled=True)
+    r, _ = run_prepare(data)
+    assert r["ok"] and any("access key" in m for m in r["info"]), r
+    assert len(bytes.fromhex(ConfigObj(str(data / "reticulum" / "config"))["reticulum"]["rpc_key"])) == 32
+
+
+def test_a_selected_public_network_reaches_the_reticulum_configuration(data):
+    """The network selector configures the real interface RNS reads; it is not just a label.
+    (Only the configuration is written here: prepare never starts Reticulum or connects.)"""
+    write_options(data, network="ratspeak_emerald", peers=[{"name": "Home", "host": "127.0.0.1", "port": 4242}])
+    r, _ = run_prepare(data)
+    assert r["ok"], r
+    cfg = ConfigObj(str(data / "reticulum" / "config"))
+    assert list(cfg["interfaces"]) == ["Ratspeak Emerald", "Home"]
+    emerald = cfg["interfaces"]["Ratspeak Emerald"]
+    endpoint = (emerald["type"], emerald["target_host"], emerald["target_port"])
+    assert endpoint == ("TCPClientInterface", "2.ratspeak.org", "4242")
+
+
+def test_an_unknown_network_needs_attention(data):
+    write_options(data, network="not-a-network")
+    r, _ = run_prepare(data)
+    assert not r["ok"] and r["problem"] == "options"
+    assert any("'network' must be one of" in m for m in r["attention"])
+    assert not (data / "reticulum" / "config").exists()

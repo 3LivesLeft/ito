@@ -12,7 +12,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
 from .client import MeshBeaconClient, MeshBeaconError
-from .const import CONF_CERT, CONF_TOKEN, DOMAIN
+from .const import CONF_APP_SLUG, CONF_CERT, CONF_NODE_KEY, CONF_TOKEN, DOMAIN, ENTRY_VERSION
+from .conversations import remember_key
 
 _TOKEN = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
 _FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
@@ -49,7 +50,7 @@ def validate_discovery(slug: Any, config: Any) -> dict[str, Any] | None:
 
 
 class MeshBeaconConfigFlow(ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+    VERSION = ENTRY_VERSION
 
     def __init__(self) -> None:
         self._discovered: dict[str, Any] = {}
@@ -59,6 +60,8 @@ class MeshBeaconConfigFlow(ConfigFlow, domain=DOMAIN):
         data = validate_discovery(discovery_info.slug, discovery_info.config)
         if data is None:
             return self.async_abort(reason="invalid_discovery")
+        # M5: the messaging key is kept in memory only, never in the entry (ADR 0024).
+        remember_key(self.hass, discovery_info.slug, discovery_info.config)
         await self.async_set_unique_id(discovery_info.slug)
         # Every app start brings a new key: update the existing entry and reload it.
         self._abort_if_unique_id_configured(updates=data)
@@ -82,7 +85,10 @@ class MeshBeaconConfigFlow(ConfigFlow, domain=DOMAIN):
             except MeshBeaconError:
                 errors["base"] = "cannot_connect"
             else:
-                return self.async_create_entry(title="MeshBeacon", data=self._discovered)
+                slug = self._app[1]
+                # node_key is set once, here, and never changed (nodes.py).
+                data = {**self._discovered, CONF_NODE_KEY: slug, CONF_APP_SLUG: slug}
+                return self.async_create_entry(title="ito", data=data)
         return self.async_show_form(
             step_id="hassio_confirm",
             errors=errors,

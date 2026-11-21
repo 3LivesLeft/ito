@@ -2,7 +2,7 @@
   "entity": {
     "sensor": {
       "status": {
-        "default": "mdi:access-point-network"
+        "default": "mdi:earth"
       },
       "connectivity": {
         "default": "mdi:lan-connect"

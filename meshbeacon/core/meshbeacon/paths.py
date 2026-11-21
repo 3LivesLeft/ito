@@ -41,16 +41,26 @@ class Paths:
         return self.storage / "transport_identity"
 
     @property
+    def identity_dir(self) -> Path:
+        """The transport identity's backup, staged replacement, state and archives (ADR 0018).
+
+        Under ``/data/reticulum``, owned by Reticulum's user with the identity itself, so that the
+        management core never holds key material. Before ADR 0018 these files were in
+        ``/data/meshbeacon``; the root init step moves them here (``LEGACY_IDENTITY_FILES``).
+        """
+        return self.reticulum / "meshbeacon-identity"
+
+    @property
     def identity_backup(self) -> Path:
-        return self.meshbeacon / "identity.backup"
+        return self.identity_dir / "identity.backup"
 
     @property
     def identity_pending(self) -> Path:
-        return self.meshbeacon / "identity.pending"
+        return self.identity_dir / "identity.pending"
 
     @property
     def identity_state(self) -> Path:
-        return self.meshbeacon / "identity.json"
+        return self.identity_dir / "identity.json"
 
     @property
     def start_history(self) -> Path:

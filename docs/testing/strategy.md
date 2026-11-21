@@ -21,6 +21,7 @@ Status: **Proposed (Phase 0)**. Nothing here is implemented yet.
 | Integration — isolated RNS | Real `rnsd` processes in temp config dirs, loopback/bridge TCP | pytest + subprocess fixtures | Every push |
 | Container | Build image for amd64 and aarch64 (QEMU); start it with a fake `/data/options.json`; assert health, permissions, no listening host ports | Docker Buildx, pytest | Every PR |
 | HA integration (v0.2+) | Custom component against HA's test harness | `pytest-homeassistant-custom-component` | Every PR |
+| HA release check (v0.3+) | The integration in a real Home Assistant of the supported series (2026.11.2): migration, entities, panel, no stray stored fields | `tools/ha_smoke_test.py`, strict mypy against that release | Every PR |
 | Supervisor end-to-end | App installed in HA devcontainer (Supervisor + Core) | `home-assistant/devcontainer` | Before release |
 | Reference environment | Raspberry Pi 4B, HA OS 18.5, co-installed apps, real network: compatibility, soak, outage, power and backup tests (§6) | Manual, maintainer-run | Before release |
 | Interop | Against Sideband, NomadNet, MeshChat, Ratspeak (v0.3+) | Manual checklist, scripted where possible | Before release |
@@ -260,7 +261,40 @@ results are recorded in the repository with date, RNS version and tester.
 - SBOM generation and licence allow-list check.
 - Image signature verification after publish.
 
+### 7.1 CI layout and sharding (21 Nov 2026)
+
+The long suites are split into shards that run in parallel on separate runners:
+`pytest --shard K/N` (`tests/conftest.py`). Together, a suite's shards run exactly the tests that
+one unsharded run would, and `tests/unit/test_sharding.py` checks this.
+
+| Suite | Shards | About per shard (one run before sharding) |
+|---|---|---|
+| Unit and isolated-network integration | 3 | 3.5 min (10 min) |
+| Container, amd64 unconfined (with the upgrade tests) | 3 | 3 min (10 min) |
+| Container, amd64 under the AppArmor profile | 2 | 4.5 min (9 min, after the unconfined run) |
+| Container, aarch64 under QEMU | 3 | 4.5 min (13 min) |
+
+The image SBOM, licence check and Grype scans run in their own job. Branch protection should
+require only the **CI result** job, which passes only when every other job has passed.
+
+- **Shared state.** Tests that use a module-, class- or package-scoped fixture always stay together,
+  in order, in one shard (for example, the LXMF story in `test_messaging_lxmf.py`). A module whose
+  wide fixtures hold no state can opt out with `pytest.mark.shard_per_test`, as `test_container.py`
+  does for its empty internal network.
+- **Balance.** Shards are balanced from `tests/durations.json`. A stale table only makes shards less
+  even; it never skips a test. After adding or slowing down a long test, refresh the table with
+  `pytest -m "not container" --store-durations` (and the container suite with
+  `-m container tests/container --store-durations`), then commit it.
+
 ## 8. Coverage targets
 
 - Core: ≥ 90 % line coverage, 100 % of validation, config rendering, identity and permission code paths.
 - Every bug fix lands with a regression test.
+
+## Home Assistant harness lag (19 Nov 2026)
+
+The minimum supported Home Assistant is 2026.11.0 (the Marketplace release), but no
+`pytest-homeassistant-custom-component` release exists for 2026.11 yet, and the 2026.10 one
+(0.13.375) cannot load Home Assistant 2026.11.2. The pytest harness therefore stays on 2026.10.4,
+and 2026.11 is covered by strict type checking and the real-Home Assistant smoke test. Move the
+harness to the first 2026.11 release of the plugin when it appears.

@@ -124,7 +124,7 @@ def test_replace_keeps_old_and_requires_switch_off(paths):
     r = m.ensure(replace_requested=True)
     assert r.outcome is Outcome.REPLACED
     assert paths.identity.read_bytes() != old
-    kept = list(paths.meshbeacon.glob("identity.replaced-*"))
+    kept = list(paths.identity_dir.glob("identity.replaced-*"))
     assert len(kept) == 1 and kept[0].read_bytes() == old
     assert stat.S_IMODE(kept[0].stat().st_mode) == 0o600
     # Option still on at next app start: refused, nothing replaced again.

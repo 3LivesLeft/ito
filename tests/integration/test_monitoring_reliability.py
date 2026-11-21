@@ -36,7 +36,7 @@ def test_discovery_recovers_by_itself_when_the_supervisor_fails_at_first(data, p
     assert supervisor.attempts >= 4
     text = r.out.text()
     assert text.count("could not reach the Home Assistant Supervisor") == 1  # once per outage, not per retry
-    assert wait_for(lambda: r.out.has("can now see MeshBeacon's status again"), timeout=10)
+    assert wait_for(lambda: r.out.has("can now see ito's status again"), timeout=10)
     assert wait_for(lambda: r.out.has("Connected to Home."), timeout=60)  # Reticulum never waited for it
 
 

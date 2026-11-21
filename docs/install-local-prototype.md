@@ -1,4 +1,9 @@
-# Installing the MeshBeacon local prototype on Home Assistant OS
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
+  <img src="../branding/png/logo-horizontal-light.png" alt="ito" height="48">
+</picture>
+
+# Installing the ito local prototype on Home Assistant OS
 
 Status: v0.1.0 **local prototype** — experimental. No container image is published: Home Assistant
 builds the app on your own device from this repository's `meshbeacon/` folder.
@@ -10,7 +15,7 @@ These instructions are written for the reference device (Raspberry Pi 4B, Home A
 > - Take a **full Home Assistant backup** (*Settings → System → Backups → Backup now*).
 > - The build needs an internet connection: Home Assistant downloads the digest-pinned base image
 >   from `ghcr.io`, Alpine security updates, and the hash-pinned Python packages from PyPI.
-> - MeshBeacon makes **no Reticulum connections** until you add a peer.
+> - ito makes **no Reticulum connections** until you add a peer.
 > - Never post logs, backups or screenshots that show IP addresses, hostnames or your
 >   configuration's passphrases.
 
@@ -49,20 +54,20 @@ Use **one** of the following (both are official Home Assistant apps).
 3. Check: `ls <local apps folder>/meshbeacon/config.yaml` shows the file.
 
 > Keep the SSH app's **protection mode enabled**. With it disabled, the SSH app can read other
-> apps' data, including MeshBeacon's private key.
+> apps' data, including ito's private key.
 
-## 3. Install MeshBeacon
+## 3. Install ito
 
 1. *Settings → Apps → App store*, open the **⋮** menu (top right) and choose **Check for updates**.
-2. Scroll to **Local apps** and open **MeshBeacon**. If it does not appear, reload the page; check
+2. Scroll to **Local apps** and open **ito**. If it does not appear, reload the page; check
    that the path is `<local apps folder>/meshbeacon/config.yaml` and look at *Settings → System → Logs*
    (Supervisor) for a configuration error.
 3. Select **Install**. Home Assistant builds the image on the device. On a Raspberry Pi 4 this
    takes several minutes. If the build fails, the Supervisor log shows the failing step.
-4. On the **Info** tab, leave **Start on boot** on. Leave **Watchdog** **off** until MeshBeacon has
+4. On the **Info** tab, leave **Start on boot** on. Leave **Watchdog** **off** until ito has
    started successfully once (section 4): if the app cannot start at all, the watchdog restarts it
    in quick succession (up to 10 times in 30 minutes) without helping. Afterwards, switch it on —
-   it only restarts MeshBeacon if MeshBeacon itself stops responding, never because the internet
+   it only restarts ito if ito itself stops responding, never because the internet
    is down.
 
 ## 4. First start (no peers)
@@ -73,10 +78,10 @@ Use **one** of the following (both are official Home Assistant apps).
    [meshbeacon] MeshBeacon 0.1.2 starting (Reticulum 1.6.0, aarch64).
    [meshbeacon] Transport mode: off.
    [meshbeacon] Node identity: created a new identity for this node.
-   [meshbeacon] ⚠ MeshBeacon is running, but it is not connected to anyone. ...
+   [meshbeacon] ⚠ ito is running, but it is not connected to anyone. ...
    ```
 
-2. That warning is expected: with no peers, MeshBeacon makes no connections.
+2. That warning is expected: with no peers, ito makes no connections.
 3. On the **Info** tab, the security rating should be shown; record it (target: 8).
 
 ## 5. Connect to a peer you choose
@@ -130,7 +135,7 @@ Without any household identifiers (no IP addresses, hostnames, SSIDs or identity
 0.1.2 only stops three harmless AppArmor messages (`capname="fsetid"`, `comm="chmod"`) from being
 logged on every start. Update the normal way (section 8): replace the folder, **Check for
 updates**, then **Update** — not Rebuild, because the change is in the AppArmor profile. Your
-identity is kept. Afterwards the AppArmor commands in section 7 should show no MeshBeacon denials
+identity is kept. Afterwards the AppArmor commands in section 7 should show no ito denials
 from a fresh start.
 
 ## 8a. Updating from 0.1.0 (fixes the start-up failure)
@@ -139,7 +144,7 @@ Version 0.1.0 failed to start on Home Assistant OS with `/bin/sh: can't open '/i
 denied`. Version 0.1.1 fixes the AppArmor profile. Because the profile is loaded only on install
 or update, follow these steps exactly:
 
-1. On the MeshBeacon **Info** tab, make sure **Watchdog** is **off**, and **Stop** the app if it is
+1. On the ito **Info** tab, make sure **Watchdog** is **off**, and **Stop** the app if it is
    running.
 2. If you edited `apparmor.txt` on the device while diagnosing, discard that edit: the new folder
    replaces it.
@@ -147,7 +152,7 @@ or update, follow these steps exactly:
    commit `5f2a3bc` or later (`config.yaml` must say `version: "0.1.1"` or higher). With the SSH
    terminal you can check with `grep '^version' <local apps folder>/meshbeacon/config.yaml`.
 4. *Settings → Apps → App store → ⋮ → Check for updates*.
-5. Open MeshBeacon. It now shows an update to **0.1.1** or later. Select **Update** (not Rebuild). This
+5. Open ito. It now shows an update to **0.1.1** or later. Select **Update** (not Rebuild). This
    rebuilds the image *and* loads the new AppArmor profile.
 6. **Start** the app and open the **Log** tab. Expected within about a minute:
    `[meshbeacon] MeshBeacon 0.1.x starting (Reticulum 1.6.0, aarch64).` (0.1.1 or later)
@@ -165,7 +170,7 @@ that never started holds no identity.
 
 | What you see | What to do |
 |---|---|
-| ⚠ cannot reach any of your peers | Check the host and port, and that the peer is running. MeshBeacon keeps retrying. |
+| ⚠ cannot reach any of your peers | Check the host and port, and that the peer is running. ito keeps retrying. |
 | ✖ some options need correcting | Fix the listed fields in the Configuration tab. |
 | ✖ has paused to avoid a restart loop | Wait until the time shown, then restart, or change any option. |
 | ✖ … identity … has NOT created a new one | Restore the app from a backup (section 8). |

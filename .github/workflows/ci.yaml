@@ -2,11 +2,14 @@
 # Reticulum peers: Python tests run inside a container with no network at all, and container
 # tests use an internal Docker network with no route to the outside world (roadmap LP-19).
 # Nothing is published from CI (no registry login, no push): release gates RG-1 to RG-12 apply.
+# Long suites are split into shards that run in parallel (`--shard K/N`, tests/conftest.py); the
+# shards of a suite together run exactly the tests that one unsharded run would. Branch protection
+# should require only the final "CI result" job, which fails unless every job above it passed.
 name: CI
 
 on:
   push:
-    branches: [main, "feature/**"]
+    branches: [main, develop, "feature/**"]
   pull_request:
 
 permissions:
@@ -23,50 +26,64 @@ jobs:
   lint:
     name: Lint and type check
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
-      - run: pip install -r requirements-dev.txt
+      - run: pip install --require-hashes -r requirements-dev.txt
       - run: ruff check meshbeacon/core custom_components tests tools
       - run: ruff format --check meshbeacon/core custom_components tests tools
       - run: mypy
+      - name: Release layout (app store, Marketplace, one version everywhere)
+        run: python tools/check_release.py
+      - name: Panel and design-token tests, including WCAG contrast (Node's built-in runner; no packages)
+        run: node --test tests/frontend/*.test.mjs
       - name: Shell scripts
-        run: shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/meshbeacon/run meshbeacon/rootfs/etc/services.d/meshbeacon/finish tests/container/build_localbase.sh
+        run: >-
+          shellcheck meshbeacon/rootfs/etc/cont-init.d/10-meshbeacon meshbeacon/rootfs/etc/services.d/*/run
+          meshbeacon/rootfs/etc/services.d/*/finish tests/container/build_localbase.sh
+          meshbeacon/rootfs/etc/cont-init.d/20-messaging
       - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           dockerfile: meshbeacon/Dockerfile
           ignore: DL3018 # apk pins come from the digest-pinned base image
 
   test:
-    name: Unit and isolated-network integration tests
+    name: Unit and isolated-network integration tests (${{ matrix.shard }}/3)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       - name: Download test dependencies (network allowed only for this step)
         run: |
-          docker run --rm -v "$PWD:/src" -w /src python:3.13-slim \
+          docker run --rm -v "$PWD:/src" -w /src python:3.13.18-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90 \
             pip download -q -d /src/.wheelhouse -r requirements-test.txt
       - name: Run tests with no network access
         run: |
-          docker run --rm --network none -v "$PWD:/src" -w /src python:3.13-slim sh -c '
-            pip install -q --no-index --find-links /src/.wheelhouse -r requirements-test.txt &&
-            python -m pytest -m "not container" -p no:cacheprovider'
+          docker run --rm --network none -v "$PWD:/src" -w /src python:3.13.18-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90 sh -c '
+            pip install -q --require-hashes --no-index --find-links /src/.wheelhouse -r requirements-test.txt &&
+            python -m pytest -m "not container" -p no:cacheprovider --shard ${{ matrix.shard }}/3 --durations=15'
 
   home-assistant:
     name: Home Assistant integration tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.14" }
-      - run: pip install -r requirements-ha-test.txt
+      - run: pip install --require-hashes -r requirements-ha-test.txt
       - name: Type check (strict, against Home Assistant's own types)
         run: mypy --strict --python-version 3.14 custom_components/meshbeacon
-      - name: Integration tests (HTTP is mocked; no network)
+      - name: Integration tests (HTTP mocked or on 127.0.0.1 only; no network)
         run: >-
           python -m pytest tests/ha -p no:cacheprovider
           -o "pythonpath=meshbeacon/core ." -o asyncio_mode=auto
@@ -74,68 +91,116 @@ jobs:
   home-assistant-release:
     name: Home Assistant 2026.11.2 (reference release) smoke test
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.14" }
       - name: Install Home Assistant in a virtual environment (it refuses to run outside one)
-        run: python -m venv "$RUNNER_TEMP/ha" && "$RUNNER_TEMP/ha/bin/pip" install -r requirements-ha-smoke.txt
+        run: python -m venv "$RUNNER_TEMP/ha" && "$RUNNER_TEMP/ha/bin/pip" install --require-hashes -r requirements-ha-smoke.txt
       - name: Type check against this release
         run: '"$RUNNER_TEMP/ha/bin/mypy" --strict --python-version 3.14 custom_components/meshbeacon'
       - name: Real Home Assistant with the integration and a fake status API (127.0.0.1 only)
         run: '"$RUNNER_TEMP/ha/bin/python" tools/ha_smoke_test.py --hass-python "$RUNNER_TEMP/ha/bin/python" --seconds 200'
 
   container:
-    name: Container tests (${{ matrix.arch }})
+    # One job per shard of the container suites. The unconfined and the AppArmor-confined runs
+    # are separate jobs, so they run side by side rather than one after the other.
+    name: >-
+      Container tests (${{ matrix.arch }}${{ matrix.apparmor && ', AppArmor' || '' }},
+      ${{ matrix.shard }}/${{ matrix.shards }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          - arch: amd64
-            platform: linux/amd64
-            emulated: "0"
-          - arch: aarch64
-            platform: linux/arm64
-            emulated: "1"  # QEMU emulation — NOT physical Raspberry Pi validation
+          - { arch: amd64, apparmor: "", shard: 1, shards: 3, platform: linux/amd64, emulated: "0" }
+          - { arch: amd64, apparmor: "", shard: 2, shards: 3, platform: linux/amd64, emulated: "0" }
+          - { arch: amd64, apparmor: "", shard: 3, shards: 3, platform: linux/amd64, emulated: "0" }
+          - { arch: amd64, apparmor: meshbeacon-ci, shard: 1, shards: 2, platform: linux/amd64, emulated: "0" }
+          - { arch: amd64, apparmor: meshbeacon-ci, shard: 2, shards: 2, platform: linux/amd64, emulated: "0" }
+          # QEMU emulation — NOT physical Raspberry Pi validation.
+          - { arch: aarch64, apparmor: "", shard: 1, shards: 3, platform: linux/arm64, emulated: "1" }
+          - { arch: aarch64, apparmor: "", shard: 2, shards: 3, platform: linux/arm64, emulated: "1" }
+          - { arch: aarch64, apparmor: "", shard: 3, shards: 3, platform: linux/arm64, emulated: "1" }
+    env:
+      # The upgrade tests need the earlier images; they run in the unconfined amd64 shards only.
+      UPGRADES: ${{ matrix.arch == 'amd64' && matrix.apparmor == '' && '1' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         if: matrix.emulated == '1'
+        with:
+          image: tonistiigi/binfmt:qemu-v10.2.3@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+          cache-image: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=moby/buildkit:v0.34.2@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe
+          cache-binary: false
       - name: Build image (pinned HA base image)
         run: |
           docker buildx build --load --platform "${{ matrix.platform }}" \
             --build-arg BUILD_ARCH=${{ matrix.arch }} \
             -t "meshbeacon:ci-${{ matrix.arch }}" meshbeacon
+      - name: The v0.2.0 app, for the upgrade test (pinned to the v0.2.0 merge, never main's head)
+        if: env.UPGRADES
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 80e9f59f5a42cf24fef49f5c49e134c39d13a6eb
+          path: previous
+          persist-credentials: false
+      - name: Build the v0.2.0 image (upgrade test only; never released)
+        if: env.UPGRADES
+        run: |
+          grep -q '^version: "0.2.0"' previous/meshbeacon/config.yaml
+          docker buildx build --load --platform "${{ matrix.platform }}" \
+            --build-arg BUILD_ARCH=${{ matrix.arch }} -t "meshbeacon:previous" previous/meshbeacon
+      - name: The 0.3.0 app with messaging, before the shared RPC key (upgrade test of 0.3.1)
+        if: env.UPGRADES
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 74a5ad62ff93591c1ea9c88d6b650ca4ec11908f
+          path: previous-messaging
+          persist-credentials: false
+      - name: Build the 0.3.0 messaging image (upgrade test only; never released)
+        if: env.UPGRADES
+        run: |
+          grep -q '^version: "0.3.0"' previous-messaging/meshbeacon/config.yaml
+          docker buildx build --load --platform "${{ matrix.platform }}" \
+            --build-arg BUILD_ARCH=${{ matrix.arch }} -t "meshbeacon:previous-messaging" previous-messaging/meshbeacon
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
-      - run: pip install -r requirements-test.txt
-      - name: Container security and behaviour tests
+      - run: pip install --require-hashes -r requirements-test.txt
+      - name: Container security and behaviour tests, messaging off and on (one standard image)
+        if: matrix.apparmor == ''
         env:
           MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
+          MESHBEACON_PREVIOUS_IMAGE: ${{ env.UPGRADES && 'meshbeacon:previous' || '' }}
+          MESHBEACON_PREVIOUS_MESSAGING_IMAGE: ${{ env.UPGRADES && 'meshbeacon:previous-messaging' || '' }}
           MESHBEACON_EMULATED: ${{ matrix.emulated }}
-        run: python -m pytest -m container tests/container -s -p no:cacheprovider
+        run: >-
+          python -m pytest -m container tests/container -s -p no:cacheprovider -rA --durations=0
+          --shard ${{ matrix.shard }}/${{ matrix.shards }}
       - name: Load the AppArmor profile into the runner's kernel (enforce mode)
-        if: (success() || failure()) && matrix.arch == 'amd64'
+        if: matrix.apparmor != ''
         run: |
           sudo aa-status --enabled
           # The Supervisor renames the profile to the app slug; here it is renamed for CI.
-          sed 's/^profile meshbeacon /profile meshbeacon-ci /' meshbeacon/apparmor.txt > "$RUNNER_TEMP/meshbeacon-ci"
-          sudo apparmor_parser --replace --write-cache "$RUNNER_TEMP/meshbeacon-ci"
-          sudo aa-status | grep -q meshbeacon-ci
+          sed 's/^profile meshbeacon /profile ${{ matrix.apparmor }} /' meshbeacon/apparmor.txt > "$RUNNER_TEMP/${{ matrix.apparmor }}"
+          sudo apparmor_parser --replace --write-cache "$RUNNER_TEMP/${{ matrix.apparmor }}"
+          sudo aa-status | grep -q '${{ matrix.apparmor }}'
       - name: Container tests confined by the MeshBeacon AppArmor profile
-        # Run even if the unconfined tests failed, so profile problems are always reported.
-        if: (success() || failure()) && matrix.arch == 'amd64'
+        if: matrix.apparmor != ''
         env:
           MESHBEACON_IMAGE: meshbeacon:ci-${{ matrix.arch }}
           MESHBEACON_EMULATED: ${{ matrix.emulated }}
-          MESHBEACON_APPARMOR: meshbeacon-ci
+          MESHBEACON_APPARMOR: ${{ matrix.apparmor }}
         run: |
-          python -m pytest -m container tests/container -s -p no:cacheprovider -x \
-            -k "not covers_every_program" || {
+          python -m pytest -m container tests/container -s -p no:cacheprovider -x --durations=0 \
+            -k "not covers_every_program" --shard ${{ matrix.shard }}/${{ matrix.shards }} || {
             echo "--- logs of the last MeshBeacon container ---"
             docker ps -a --format '{{.Names}}' | grep '^mb-' | tail -1 | xargs -r docker logs | tail -40
             exit 1
@@ -143,24 +208,42 @@ jobs:
       - name: No unexpected AppArmor denials
         # Every denial is printed for diagnosis. The job fails on any denial other than the two the
         # confinement test provokes on purpose (a write to /usr/local/lib, an exec from /data).
-        if: (success() || failure()) && matrix.arch == 'amd64'
+        # Runs even if the tests failed, so profile problems are always reported.
+        if: (success() || failure()) && matrix.apparmor != ''
         run: |
           sleep 2
-          sudo journalctl -k --no-pager | grep -E 'apparmor="(DENIED|ALLOWED)".*meshbeacon-ci' > "$RUNNER_TEMP/denials" || true
+          sudo journalctl -k --no-pager | grep -E 'apparmor="(DENIED|ALLOWED)".*${{ matrix.apparmor }}' > "$RUNNER_TEMP/denials" || true
           tail -100 "$RUNNER_TEMP/denials"
           if grep -vE 'name="/(usr/local/lib/mb-test|data/mb-busybox)"' "$RUNNER_TEMP/denials"; then
             echo "::error::Unexpected AppArmor denials (above)"
             exit 1
           fi
       - name: Python dependency licences inside the image
+        if: matrix.shard == 1 && matrix.apparmor == ''
         run: |
           docker run --rm --entrypoint python3 "meshbeacon:ci-${{ matrix.arch }}" -I -c '
           import importlib.metadata as m
           for d in sorted(m.distributions(), key=lambda d: d.metadata["Name"].lower()):
               md = d.metadata
               print(md["Name"], d.version, "|", md.get("License-Expression") or md.get("License") or "")'
+
+  image:
+    # Independent of the behaviour tests, so it runs beside them rather than after them.
+    name: Image SBOM, licences and vulnerability scan (amd64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=moby/buildkit:v0.34.2@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe
+          cache-binary: false
+      - name: Build image (pinned HA base image)
+        run: docker buildx build --load --platform linux/amd64 --build-arg BUILD_ARCH=amd64 -t meshbeacon:ci-amd64 meshbeacon
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.13" }
       - name: SBOM (SPDX)
-        if: matrix.arch == 'amd64'
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           image: meshbeacon:ci-amd64
@@ -168,30 +251,61 @@ jobs:
           output-file: sbom-amd64.spdx.json
           upload-artifact: true
       - name: Licence allow-list check
-        if: matrix.arch == 'amd64'
         run: python tools/check_licences.py sbom-amd64.spdx.json
-      - name: Image vulnerability scan
-        if: matrix.arch == 'amd64'
+      - name: Image vulnerability scan (any critical finding fails)
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with:
           image: meshbeacon:ci-amd64
           fail-build: true
           severity-cutoff: critical
           output-format: table
+      - name: Image vulnerability scan (a high finding with a fix available fails)
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: meshbeacon:ci-amd64
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true
+          output-format: table
 
   security:
     name: Dependency and secret scanning
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false, fetch-depth: 0 }
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
-      - run: pip install pip-audit==2.10.0
+      - run: pip install --require-hashes -r requirements-dev.txt
       - name: Vulnerability scan of pinned runtime dependencies
-        run: pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements.txt
+        run: |
+          pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements.txt
+          # M4: the messaging development image's only extra dependency (never in production images)
+          pip-audit --require-hashes --disable-pip --no-deps -r meshbeacon/requirements-messaging.txt
+      - name: Vulnerability scan of the hash-locked CI and release tooling
+        run: |
+          for lock in requirements-dev.txt requirements-test.txt requirements-release.txt; do
+            pip-audit --require-hashes --disable-pip --no-deps -r "$lock"
+          done
       - name: Secret scan (full history)
         run: |
           docker run --rm -v "$PWD:/repo" \
             ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
             git /repo --redact --verbose
+
+  result:
+    # The one check for branch protection to require: it passes only if every job above passed
+    # (a skipped or cancelled job counts as a failure), so new jobs and shards need no settings change.
+    name: CI result
+    if: always()
+    needs: [lint, test, home-assistant, home-assistant-release, container, image, security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do [ "$r" = success ] || { echo "::error::A CI job did not pass ($r)"; exit 1; }; done

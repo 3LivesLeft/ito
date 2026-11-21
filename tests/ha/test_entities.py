@@ -50,9 +50,9 @@ async def test_node_and_peer_entities(hass, mock_entry, aioclient_mock):
     assert hass.states.get(eid(hass, "sensor", "peer_emerald_connected_since")).state == "2025-11-18T13:53:40+00:00"
 
     devices = dr.async_entries_for_config_entry(dr.async_get(hass), mock_entry.entry_id)
-    assert [(d.name, d.sw_version) for d in devices] == [("MeshBeacon", "0.2.0")]  # peers are not devices
+    assert [(d.name, d.sw_version) for d in devices] == [("ito", "0.2.0")]  # peers are not devices
     peer_state = hass.states.get(eid(hass, "binary_sensor", "peer_emerald_connected"))
-    assert peer_state.name == "MeshBeacon Emerald connected"
+    assert peer_state.name == "ito Emerald connected"
 
     # Disabled by default: detailed memory figures.
     assert er.async_get(hass).async_get(eid(hass, "sensor", "core_memory")).disabled
@@ -153,6 +153,36 @@ async def test_unsupported_schema_fails_setup_cleanly(hass, mock_entry, aioclien
     assert mock_entry.state is ConfigEntryState.SETUP_RETRY
 
 
+async def test_an_installation_from_before_the_rename_keeps_its_entity_ids(hass, mock_entry, aioclient_mock):
+    """ADR 0025: the device is now called ito, so new installations get ito_* entity IDs. Entities
+    registered under the old name keep their meshbeacon_* IDs, so automations, dashboards and
+    history carry on; only the device's display name changes."""
+    registry = er.async_get(hass)
+    old = {
+        ("sensor", "status"): "sensor.meshbeacon_status",
+        ("binary_sensor", "peer_emerald_connected"): "binary_sensor.meshbeacon_emerald_connected",
+    }
+    for (platform, unique), entity_id in old.items():
+        registry.async_get_or_create(
+            platform,
+            DOMAIN,
+            f"local_meshbeacon_{unique}",
+            suggested_object_id=entity_id.split(".", 1)[1],
+            config_entry=mock_entry,
+        )
+    aioclient_mock.get(URL, json=snapshot())
+    await setup(hass, mock_entry)
+
+    for (platform, unique), entity_id in old.items():
+        assert eid(hass, platform, unique) == entity_id
+        assert hass.states.get(entity_id) is not None
+    assert hass.states.get("sensor.meshbeacon_status").state == "running"
+    assert hass.states.get("sensor.ito_status") is None  # not duplicated under the new name
+    assert eid(hass, "sensor", "connectivity") == "sensor.ito_connectivity"  # a new entity: new name
+    [device] = dr.async_entries_for_config_entry(dr.async_get(hass), mock_entry.entry_id)
+    assert device.name == "ito"
+
+
 async def test_example_dashboard_uses_only_real_entities(hass, mock_entry, aioclient_mock):
     import yaml
 
@@ -162,7 +192,67 @@ async def test_example_dashboard_uses_only_real_entities(hass, mock_entry, aiocl
     await setup(hass, mock_entry)
     text = (ROOT / "docs/home-assistant/dashboard.yaml").read_text()
     yaml.safe_load(text)
-    referenced = set(re.findall(r"(?:sensor|binary_sensor)\.meshbeacon_[a-z_]+", text))
+    referenced = set(re.findall(r"(?:sensor|binary_sensor)\.ito_[a-z_]+", text))
     assert referenced
     missing = {e for e in referenced if hass.states.get(e) is None}
     assert not missing, missing
+
+
+ADDRESS = "a1" * 16
+MESSAGING = {
+    "enabled": True,
+    "state": "running",
+    "message": None,
+    "address": ADDRESS,
+    "contacts_configured": 1,
+    "contacts_reachable": 1,
+    "accept_anyone": False,
+    "auto_reply": True,
+    "received": 3,
+    "refused": 1,
+    "replies_sent": 3,
+    "last_reply_state": "delivered",
+    "last_received_at": 1763474600.0,
+    "last_received_from": "Phone",
+    "memory_bytes": 44 * 2**20,
+    "restarts": 0,
+}
+
+
+async def test_no_messaging_entities_for_an_app_without_messaging(hass, mock_entry, aioclient_mock):
+    """A v0.2 app reports no messaging section: no empty messaging entities appear."""
+    aioclient_mock.get(URL, json=snapshot())
+    await setup(hass, mock_entry)
+    assert eid(hass, "sensor", "messaging") is None
+
+
+async def test_messaging_entities_show_state_and_address_but_never_record_it(hass, mock_entry, aioclient_mock):
+    aioclient_mock.get(URL, json={**snapshot(), "messaging": MESSAGING})
+    await setup(hass, mock_entry)
+    state = hass.states.get(eid(hass, "sensor", "messaging"))
+    assert state.state == "running"
+    assert state.attributes["address"] == ADDRESS and state.attributes["last_received_from"] == "Phone"
+    assert hass.states.get(eid(hass, "sensor", "messages_received")).state == "3"
+    assert hass.states.get(eid(hass, "sensor", "messaging_contacts_reachable")).state == "1"
+    assert hass.states.get(eid(hass, "sensor", "messaging_last_reply")).state == "delivered"
+    assert er.async_get(hass).async_get(eid(hass, "sensor", "messaging_memory")).disabled
+    # The address is shown and copyable but is never written to Home Assistant's history.
+    from custom_components.meshbeacon.sensor import MeshBeaconMessagingSensor
+
+    assert {"address", "message", "last_received_from"} <= MeshBeaconMessagingSensor._unrecorded_attributes
+
+
+async def test_messaging_off_and_problem_states(hass, mock_entry, aioclient_mock):
+    aioclient_mock.get(URL, json={**snapshot(), "messaging": {"enabled": False, "state": "disabled", "message": None}})
+    await setup(hass, mock_entry)
+    assert hass.states.get(eid(hass, "sensor", "messaging")).state == "disabled"
+    assert hass.states.get(eid(hass, "sensor", "messaging")).attributes["address"] is None
+    assert hass.states.get(eid(hass, "sensor", "messages_received")).state == STATE_UNKNOWN
+
+
+async def test_diagnostics_redact_the_messaging_address_and_contacts(hass, mock_entry, aioclient_mock):
+    aioclient_mock.get(URL, json={**snapshot(), "messaging": {**MESSAGING, "message": "x"}})
+    await setup(hass, mock_entry)
+    text = repr(await async_get_config_entry_diagnostics(hass, mock_entry))
+    assert ADDRESS not in text and "Phone" not in text
+    assert "'received': 3" in text

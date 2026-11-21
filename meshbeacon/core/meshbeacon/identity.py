@@ -43,26 +43,26 @@ class Result:
 
 MSG_DAMAGED_NO_BACKUP = (
     "Your node's identity file is damaged or missing, and no valid backup copy was found. "
-    "MeshBeacon has NOT created a new one, because that would change your node's address. "
+    "ito has NOT created a new one, because that would change your node's address. "
     "Restore the app from a Home Assistant backup, or, to start with a new identity, turn on "
     "'Replace identity' and restart the app."
 )
 MSG_MISMATCH = (
-    "Your node's identity is not the one MeshBeacon used last time, so MeshBeacon has stopped to "
+    "Your node's identity is not the one ito used last time, so ito has stopped to "
     "protect it. If you restored only some files, restore the whole app from a Home Assistant "
     "backup. To start with a new identity, turn on 'Replace identity' and restart the app."
 )
 MSG_RESTORED = (
     "Node identity: the identity file was damaged or missing and has been restored from "
-    "MeshBeacon's verified backup copy. Your node's address is unchanged."
+    "ito's verified backup copy. Your node's address is unchanged."
 )
 MSG_RESTORED_CHANGED = (
     "Node identity: the identity file had changed unexpectedly (it may have been damaged) and has "
-    "been restored from MeshBeacon's verified backup copy. Your node's address is unchanged."
+    "been restored from ito's verified backup copy. Your node's address is unchanged."
 )
 MSG_SWITCH_OFF = (
     "Your node's identity has already been replaced. Switch off 'Replace identity' in the "
-    "Configuration tab and restart the app. MeshBeacon will not replace it again automatically."
+    "Configuration tab and restart the app. ito will not replace it again automatically."
 )
 
 
@@ -130,15 +130,15 @@ class IdentityManager:
 
     def _keep_replaced(self, data: bytes) -> None:
         """Keep a copy of an identity being replaced (once: identical copies are not duplicated)."""
-        for existing in self.paths.meshbeacon.glob("identity.replaced-*"):
+        for existing in self.paths.identity_dir.glob("identity.replaced-*"):
             if _read(existing) == data:
                 return
         stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(self.clock()))
-        target = self.paths.meshbeacon / f"identity.replaced-{stamp}"
+        target = self.paths.identity_dir / f"identity.replaced-{stamp}"
         suffix = 0
         while target.exists():
             suffix += 1
-            target = self.paths.meshbeacon / f"identity.replaced-{stamp}-{suffix}"
+            target = self.paths.identity_dir / f"identity.replaced-{stamp}-{suffix}"
         fsutil.atomic_write(target, data)
 
     def ensure(self, *, replace_requested: bool = False, allow_replace: bool = True) -> Result:
@@ -147,7 +147,7 @@ class IdentityManager:
         ``allow_replace`` is False for the validation that runs before an RNS *restart* within the
         same app run, so that the replace option is acted on only once per app start.
         """
-        for directory in (self.paths.storage, self.paths.meshbeacon):
+        for directory in (self.paths.storage, self.paths.identity_dir):
             fsutil.ensure_dir(directory)
             fsutil.remove_stale_temp_files(directory)
 

@@ -1,0 +1,6 @@
+# M4 messaging development image only (Dockerfile target `messaging-dev`); never installed in
+# production images. Pinned by version AND hash; installed with --require-hashes --no-deps.
+# lxmf is the unmodified LXMF reference implementation (Reticulum License); its only dependency,
+# rns, is already pinned in requirements.txt. LXMF 1.3.1 needs RNS 1.6.1: a separate change (D-M4-2).
+lxmf==1.3.0 \
+    --hash=sha256:bd26a8f7218519365b1a1940dd0fd1d3a4785aa4970d2de85807c3f846acd382

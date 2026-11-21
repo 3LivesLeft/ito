@@ -1,0 +1,4 @@
+# False positives in published history (never rewrite pushed history; CLAUDE.md rule 9).
+# Each entry: why it is not a secret, then the gitleaks fingerprint.
+# M5 HA test: "click-0001" is a test idempotency key (one press of Send), not a credential.
+7c815a23e6071660d7c285010fcb323c694614e2:tests/ha/test_messaging.py:generic-api-key:99

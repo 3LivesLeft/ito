@@ -1,0 +1,3 @@
+#!/bin/sh
+# One run ends; the core notices and decides what happens next (MS-15). Nothing to do here.
+exit 0

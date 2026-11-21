@@ -1,0 +1,123 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
+  <img src="../branding/png/logo-horizontal-light.png" alt="ito" height="48">
+</picture>
+
+# Getting started with ito
+
+**The internet, reimagined.**
+
+> **Status: prepared for the first release (v0.3.0), not yet available.** The buttons below work
+> once ito's first release is published, with pre-built images: that is the recommended way
+> to install it. Until then, see [early testers](#early-testers-before-the-first-release).
+
+You need **Home Assistant OS 2026.11 or newer** (or a supervised installation), and an
+administrator account. No terminal, no YAML and no copying of files.
+
+## What you get
+
+- **The ito app:** a private Reticulum node on your Home Assistant device.
+- **The ito dashboard (optional, recommended):** its own page in the sidebar with
+  connectivity, figures, history and peers, plus entities for your own dashboards and
+  automations. It comes as a separate part, the ito integration, from Home Assistant's
+  Marketplace.
+
+## 1. Install the app (about 3 minutes)
+
+1. Select this button, or open the link on a device signed in to your Home Assistant:
+
+   [Open ito in your Home Assistant](https://my.home-assistant.io/redirect/supervisor_app/?app=d6f2aa84_meshbeacon&repository_url=https://github.com/3LivesLeft/ito)
+
+   Home Assistant asks whether to add the ito app repository. Choose **Add**.
+2. On the ito page, select **Install**. Home Assistant downloads the app (about a minute
+   on a Raspberry Pi 4).
+3. Open **Configuration**: add a peer you trust (optional; without one ito makes no
+   connections), and switch on **Show ito's status in Home Assistant** if you want the
+   dashboard. Select **Save**.
+4. Open **Info** and select **Start**. The **Log** tab explains what ito is doing in plain
+   words.
+
+## 2. Add the ito dashboard
+
+1. Select this button (it is also in the app's **Documentation** tab):
+
+   [Open ito in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=3LivesLeft&repository=ito&category=integration)
+
+2. Until ito is listed in the Marketplace's catalog, Home Assistant first asks you to
+   **connect GitHub**: it shows a code, you enter it at github.com and approve. The connection
+   only reads public information. Then confirm adding the repository.
+3. The first time you use the Marketplace, read and accept its warning.
+4. Select **Install**. If Home Assistant asks for a restart, use the repair it shows.
+5. A notification says **New device discovered: ito**. Select it, then **Add**.
+
+**ito** now appears in the sidebar, with a globe icon, for administrators. It follows
+your light or dark theme and works on phones, tablets and computers.
+
+## Messages (0.4.0 and later)
+
+With **Enable LXMF messaging** on, the dashboard's **Messages** tab lets you read and answer LXMF
+messages, for example from Ratspeak or Sideband: copy ito's address into your app, add your
+app's address with **Add contact**, and message each other. Details:
+[Messages](home-assistant-integration.md#messages).
+
+## Updating
+
+The app and the dashboard update separately, both under **Settings → Updates**:
+
+- **ito app**: select it and **Update** (not Rebuild). Your node's identity, messaging
+  identity, contacts, conversations, peers and settings are kept. Always update the installed app
+  in place: adding the repository again with a different branch (`…#branch`) installs a
+  **separate** app with a new identity.
+- **ito** (from the Marketplace): select it and **Update**, then restart Home Assistant
+  when the repair asks.
+
+If one is much newer than the other, a repair under **Settings → System → Repairs** says which one
+to update. Take a backup before updating if you want to be able to go back: restoring that backup
+is the way to return to an earlier version.
+
+### The repository has moved (installed before 21 Nov 2026?)
+
+The project's repository is now `https://github.com/3LivesLeft/ito` (it was
+`https://github.com/3LivesLeft/meshbeacon`). **If you already have the app, change nothing**: keep the
+repository you added. GitHub forwards the old address to the new one, so updates keep arriving, and
+the app keeps its identity, contacts, conversations and settings. Its name in Home Assistant changes
+to ito with the update that renames it.
+
+Do **not** remove the old repository and add the new address to "switch over". Home Assistant
+identifies an app by the exact address it was installed from, so the new address installs a
+**second, separate app** with a new, empty identity, and uninstalling the old one deletes its data.
+Home Assistant will not let you remove a repository while an app from it is installed. If you
+already uninstalled the old app, its identity survives only in a Home Assistant backup taken
+before that; a backup restores into the old app, never into the new one.
+
+## Removing
+
+- **The dashboard:** Settings → Devices & services → ito → **Delete**. Home Assistant then
+  offers to uninstall it from the Marketplace.
+- **The app:** Settings → Apps → ito → **Uninstall**. This deletes the node's identity
+  unless you keep a backup.
+
+## Early testers (before the first release)
+
+**For development and early testing only** (maintainer decision A-4, 19 Nov 2026). Until images are
+published, the app store can still install ito from this repository by **building it on your
+device**: the same steps as above, but step 2 takes several minutes on a Raspberry Pi 4, needs
+internet access for the build, and is more likely to fail. Use a test installation, not one you
+depend on. To try an unreleased branch, add the repository as
+`https://github.com/3LivesLeft/ito#<branch>`: the app store treats it as a **different app,
+with its own data and identity**, so it never touches an installation from the main repository. The
+older [local prototype guide](install-local-prototype.md) (copying the folder) still works.
+
+## Privacy
+
+Everything stays on your Home Assistant device. ito connects only to the peers you choose,
+and the dashboard reads only your own Home Assistant. See the
+[integration guide](home-assistant-integration.md#privacy-and-security).
+
+## Help
+
+- The app log explains each state in plain words. In the dashboard, **Diagnostics** shows
+  versions, start times and restarts.
+- [Troubleshooting in the app's documentation](../meshbeacon/DOCS.md).
+- Already running the local prototype? Keep it for now: moving its identity to the published app
+  is planned separately (it must not lose your node's identity), and you will be told how.

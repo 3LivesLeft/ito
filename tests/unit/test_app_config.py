@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from meshbeacon.settings import ALLOWED_PEER_KEYS, ALLOWED_TOP_LEVEL
+from meshbeacon.settings import ALLOWED_CONTACT_KEYS, ALLOWED_PEER_KEYS, ALLOWED_TOP_LEVEL, parse_options
 
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "meshbeacon"
@@ -66,6 +66,9 @@ def test_defaults_make_no_external_connections():
     assert CONFIG["options"]["transport"] is False
     assert CONFIG["options"]["replace_identity"] is False
     assert CONFIG["options"]["home_assistant_integration"] is False  # opt-in until ADR 0006 is approved
+    assert CONFIG["options"]["messaging_enabled"] is False  # D-M4-8: messaging is opt-in
+    assert CONFIG["options"]["messaging_contacts"] == []
+    assert CONFIG["options"]["messaging_accept_anyone"] is False
 
 
 def test_discovery_is_the_only_new_supervisor_feature():
@@ -74,11 +77,28 @@ def test_discovery_is_the_only_new_supervisor_feature():
     assert "ports" not in CONFIG and "ingress" not in CONFIG
 
 
+OPTIONAL = {"messaging_display_name", "messaging_propagation_node"}  # hidden until "show optional"
+
+
 def test_schema_matches_core_validation():
-    assert set(CONFIG["schema"]) == ALLOWED_TOP_LEVEL == set(CONFIG["options"])
+    assert set(CONFIG["schema"]) == ALLOWED_TOP_LEVEL
+    assert set(CONFIG["options"]) == ALLOWED_TOP_LEVEL - OPTIONAL
+    assert all(str(CONFIG["schema"][k]).endswith("?") for k in OPTIONAL)
     assert set(CONFIG["schema"]["peers"][0]) == ALLOWED_PEER_KEYS
+    assert set(CONFIG["schema"]["messaging_contacts"][0]) == ALLOWED_CONTACT_KEYS
     translations = yaml.safe_load((APP / "translations" / "en.yaml").read_text())["configuration"]
     assert set(translations) == ALLOWED_TOP_LEVEL
+    assert translations["messaging_enabled"]["name"] == "Enable LXMF messaging"
+
+
+def test_the_supervisor_schema_accepts_what_core_validation_accepts():
+    """The contact address pattern in config.yaml and the core's agree on pasted addresses."""
+    pattern = re.match(r"match\((.*)\)\??$", CONFIG["schema"]["messaging_contacts"][0]["address"]).group(1)
+    for good in ("ab" * 16, " <" + "AB" * 16 + "> "):
+        assert re.match(pattern, good)
+        parse_options({"messaging_contacts": [{"name": "Phone", "address": good}]})
+    for bad in ("ab" * 15, "zz" * 16, "ab" * 17):
+        assert not re.match(pattern, bad)
 
 
 def test_apparmor_profile_name_matches_slug():
@@ -86,8 +106,9 @@ def test_apparmor_profile_name_matches_slug():
 
 
 def test_dockerfile_base_pinned_by_digest():
-    first_from = next(line for line in (APP / "Dockerfile").read_text().splitlines() if line.startswith("FROM"))
-    assert re.search(r"@sha256:[0-9a-f]{64}$", first_from)
+    lines = [line for line in (APP / "Dockerfile").read_text().splitlines() if line.startswith("FROM")]
+    # One stage (D-M4-8): the standard image is the only image; its base is pinned by digest.
+    assert len(lines) == 1 and re.search(r"@sha256:[0-9a-f]{64}$", lines[0])
 
 
 def test_requirements_hash_pinned_and_rns_unmodified():

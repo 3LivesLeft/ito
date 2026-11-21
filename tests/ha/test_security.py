@@ -106,7 +106,7 @@ async def test_repeated_rotation(hass, mock_entry, aioclient_mock):
         assert mock_entry.data["token"] == token
         assert mock_entry.state is ConfigEntryState.LOADED
     assert len(hass.config_entries.async_entries(DOMAIN)) == 1
-    assert hass.states.get("sensor.meshbeacon_status").state == "running"
+    assert hass.states.get("sensor.ito_status").state == "running"
 
 
 def fake_supervisor(messages, on_list=None):
@@ -143,7 +143,7 @@ async def test_missed_push_heals_itself_from_the_supervisor(
         async_fire_time_changed(hass)
         await hass.async_block_till_done()
     assert mock_entry.data["token"] == new
-    assert hass.states.get("sensor.meshbeacon_status").state == "running"
+    assert hass.states.get("sensor.ito_status").state == "running"
     assert aioclient_mock.mock_calls[-1][3]["Authorization"] == f"Bearer {new}"
 
 
@@ -175,6 +175,6 @@ async def test_self_healing_rejects_spoofed_messages(
             async_fire_time_changed(hass)
             await hass.async_block_till_done()
     assert mock_entry.data["token"] == TOKEN
-    assert hass.states.get("sensor.meshbeacon_status").state == "unavailable"
+    assert hass.states.get("sensor.ito_status").state == "unavailable"
     assert len(calls) == 1
     assert not hass.config_entries.flow.async_progress()  # never a reauthentication prompt
