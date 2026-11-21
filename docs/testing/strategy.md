@@ -261,6 +261,31 @@ results are recorded in the repository with date, RNS version and tester.
 - SBOM generation and licence allow-list check.
 - Image signature verification after publish.
 
+### 7.1 CI layout and sharding (21 Nov 2026)
+
+The long suites are split into shards that run in parallel on separate runners:
+`pytest --shard K/N` (`tests/conftest.py`). Together, a suite's shards run exactly the tests that
+one unsharded run would, and `tests/unit/test_sharding.py` checks this.
+
+| Suite | Shards | About per shard (one run before sharding) |
+|---|---|---|
+| Unit and isolated-network integration | 3 | 3.5 min (10 min) |
+| Container, amd64 unconfined (with the upgrade tests) | 3 | 3 min (10 min) |
+| Container, amd64 under the AppArmor profile | 2 | 4.5 min (9 min, after the unconfined run) |
+| Container, aarch64 under QEMU | 3 | 4.5 min (13 min) |
+
+The image SBOM, licence check and Grype scans run in their own job. Branch protection should
+require only the **CI result** job, which passes only when every other job has passed.
+
+- **Shared state.** Tests that use a module-, class- or package-scoped fixture always stay together,
+  in order, in one shard (for example, the LXMF story in `test_messaging_lxmf.py`). A module whose
+  wide fixtures hold no state can opt out with `pytest.mark.shard_per_test`, as `test_container.py`
+  does for its empty internal network.
+- **Balance.** Shards are balanced from `tests/durations.json`. A stale table only makes shards less
+  even; it never skips a test. After adding or slowing down a long test, refresh the table with
+  `pytest -m "not container" --store-durations` (and the container suite with
+  `-m container tests/container --store-durations`), then commit it.
+
 ## 8. Coverage targets
 
 - Core: ≥ 90 % line coverage, 100 % of validation, config rendering, identity and permission code paths.

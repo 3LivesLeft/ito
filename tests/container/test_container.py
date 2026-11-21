@@ -30,6 +30,9 @@ SCALE = 4 if EMULATED else 1
 pytestmark = [
     pytest.mark.container,
     pytest.mark.skipif(not IMAGE or shutil.which("docker") is None, reason="needs Docker and MESHBEACON_IMAGE"),
+    # The module-scoped network is an empty internal network that keeps no state between tests,
+    # so CI may run these tests in different shards (tests/conftest.py).
+    pytest.mark.shard_per_test,
 ]
 
 
