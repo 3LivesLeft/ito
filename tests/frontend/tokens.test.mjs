@@ -44,7 +44,7 @@ for (const [name, t] of Object.entries(THEMES)) {
     }
   });
   test(`${name}: text on the accent button reaches 4.5:1`, () => {
-    const button = name === "light" ? "#0369A1" : t.accent; // light buttons use the darker accent
+    const button = name === "light" ? t.accentText : t.accent; // as .btn in ui/style.js
     assert.ok(contrast(t.onAccent, button) >= 4.5, `${t.onAccent} on ${button}`);
   });
   test(`${name}: CSS falls back to Home Assistant's variables for surfaces only`, () => {
@@ -58,6 +58,9 @@ test("brand colours are exactly those in docs/branding.md", () => {
   const doc = readFileSync(new URL("../../docs/branding.md", import.meta.url), "utf8");
   for (const hex of Object.values(BRAND)) assert.ok(doc.includes(hex), `${hex} missing from docs/branding.md`);
   assert.deepEqual(BRAND, {
+    deep: "#284C40",
+    sage: "#A6C9B2",
+    mist: "#E8F3ED",
     sky: "#0EA5E9",
     emerald: "#10B981",
     amber: "#F59E0B",
@@ -68,9 +71,11 @@ test("brand colours are exactly those in docs/branding.md", () => {
   });
 });
 
-test("brand text pairs: slate on off-white and off-white on navy reach 4.5:1", () => {
+test("brand text pairs: slate on off-white, off-white on navy and deep green on mist reach 4.5:1", () => {
   assert.ok(contrast(BRAND.slate, BRAND.offWhite) >= 4.5);
   assert.ok(contrast(BRAND.offWhite, BRAND.navy) >= 4.5);
+  assert.ok(contrast(BRAND.deep, BRAND.mist) >= 4.5);
+  assert.ok(contrast(BRAND.sage, BRAND.navy) >= 4.5);
 });
 
 test("every --mb-* variable the interface uses is defined by the tokens", () => {

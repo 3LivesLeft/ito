@@ -31,7 +31,7 @@ header {
 }
 .brand { display: flex; align-items: center; gap: var(--mb-space-sm); flex: 1; min-width: 0; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .brand svg { width: 32px; height: 32px; flex: none; }
-.brand .beacon { color: var(--mb-accent-text); }
+.brand .word { color: var(--mb-accent-text); font-weight: 700; letter-spacing: -0.02em; }
 header select { font: inherit; font-size: 14px; color: inherit; background: var(--mb-surface); border: 1px solid var(--mb-line); border-radius: var(--mb-radius-sm); padding: 6px 8px; min-height: 32px; }
 nav[role="tablist"] {
   display: flex; gap: var(--mb-space-xs); padding: 0 var(--mb-space-lg); overflow-x: auto;
@@ -129,13 +129,9 @@ dl { margin: 0; }
 .center .art { width: 96px; height: 96px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* Brand mark, coloured by tokens so it follows the theme. */
-.mk-ring, .mk-wave { fill: none; stroke: var(--mb-accent); stroke-linecap: round; }
-.mk-tower { fill: var(--mb-text); }
-.mk-lamp { fill: #F59E0B; }
-.mk-hillback { fill: color-mix(in srgb, var(--mb-accent) 8%, var(--mb-surface)); stroke: var(--mb-accent); stroke-linejoin: round; }
-.mk-hill { fill: color-mix(in srgb, var(--mb-accent) 16%, var(--mb-surface)); stroke: var(--mb-accent); stroke-linejoin: round; }
-.mk-link { fill: none; stroke: var(--mb-accent); stroke-linecap: round; stroke-linejoin: round; }
-.mk-node { fill: var(--mb-text); stroke: var(--mb-accent); }
+.mk-globe, .mk-grid { fill: none; stroke: var(--mb-accent-text); stroke-linecap: round; }
+.mk-thread { fill: none; stroke: #A6C9B2; stroke-linecap: round; } /* sage in both themes, as in the logo */
+.mk-node { fill: var(--mb-accent-text); }
 /* Messages (M5): two columns on wide screens; on narrow ones the list, or one conversation. */
 .messages-main { max-width: 1280px; }
 .msg { display: grid; gap: var(--mb-space-md); }

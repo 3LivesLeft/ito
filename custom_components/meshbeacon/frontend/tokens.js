@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-// MeshBeacon design tokens (docs/branding.md). The single source for the interface's colours,
+// ito design tokens (docs/branding.md). The single source for the interface's colours,
 // type, spacing and shape; future views (messaging, I2P, LoRa) use these, never raw values.
 // tests/frontend/tokens.test.mjs checks that text and status colours meet WCAG 2.2 AA.
 
 export const BRAND = Object.freeze({
-  sky: "#0EA5E9", // primary brand
+  deep: "#284C40", // primary brand (ito deep green), accent on light surfaces
+  sage: "#A6C9B2", // accent on dark surfaces; the thread in the mark
+  mist: "#E8F3ED", // pale brand background
+  sky: "#0EA5E9", // information and charts
   emerald: "#10B981", // success / online
   amber: "#F59E0B", // warning
   red: "#EF4444", // error / offline
@@ -22,8 +25,8 @@ export const THEMES = Object.freeze({
     text: BRAND.slate,
     muted: "#475569",
     line: "#E2E8F0",
-    accent: BRAND.sky,
-    accentText: "#0369A1",
+    accent: BRAND.deep,
+    accentText: BRAND.deep,
     good: "#059669",
     goodText: "#047857",
     warn: "#D97706",
@@ -44,8 +47,8 @@ export const THEMES = Object.freeze({
     text: BRAND.offWhite,
     muted: "#94A3B8",
     line: "#1E293B",
-    accent: BRAND.sky,
-    accentText: "#38BDF8",
+    accent: BRAND.sage,
+    accentText: BRAND.sage,
     good: BRAND.emerald,
     goodText: "#34D399",
     warn: BRAND.amber,

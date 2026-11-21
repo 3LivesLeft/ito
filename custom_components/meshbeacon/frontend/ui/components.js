@@ -20,9 +20,9 @@ export function brandMark(size = "small", label = null) {
   return svg;
 }
 
-/** Header wordmark: mark + "Mesh" + accented "Beacon". */
+/** Header wordmark: mark + "ito" (always lower case). */
 export function brandTitle() {
-  return h("h1", { class: "brand" }, brandMark("small"), h("span", {}, "Mesh", h("span", { class: "beacon", text: "Beacon" })));
+  return h("h1", { class: "brand" }, brandMark("small"), h("span", { class: "word", text: "ito" }));
 }
 
 // A distinct shape per state, so status never depends on colour alone (WCAG 1.4.1).

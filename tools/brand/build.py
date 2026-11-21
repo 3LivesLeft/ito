@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Build MeshBeacon's brand assets from the master SVGs in branding/src (docs/branding.md).
+"""Build ito's brand assets from the master SVGs in branding/src (docs/branding.md).
 
 The master SVGs are the source of truth. This script only recolours and composes them into
 variants (branding/svg), then asks tools/brand/render.mjs to rasterise PNGs (branding/png and the
@@ -29,70 +29,50 @@ APP = ROOT / "meshbeacon"
 BRAND = ROOT / "custom_components" / "meshbeacon" / "brand"
 FRONTEND = ROOT / "custom_components" / "meshbeacon" / "frontend"
 
-# Brand colours (docs/branding.md). Keep in step with custom_components/meshbeacon/frontend/tokens.js.
-SKY, SKY_LIGHT, EMERALD, AMBER, RED = "#0EA5E9", "#38BDF8", "#10B981", "#F59E0B", "#EF4444"
-NAVY, OFF_WHITE, SLATE = "#0B1220", "#F8FAFC", "#0F172A"
+# Brand colours (docs/branding.md). PROVISIONAL with the ito artwork, pending visual review.
+MIST, SAGE, DEEP = "#E8F3ED", "#A6C9B2", "#284C40"
+FOREST, LEAF, WHITE = "#17302A", "#496A5D", "#FFFFFF"  # dark tile, secondary text, light tile
 
 PALETTES: dict[str, dict[str, str]] = {
     # For dark backgrounds.
     "dark": {
-        "ring": f"fill:none;stroke:{SKY}",
-        "wave": f"fill:none;stroke:{SKY}",
-        "tower": f"fill:{OFF_WHITE}",
-        "lamp": f"fill:{AMBER}",
-        "hillback": f"fill:#0C1F3A;stroke:{SKY}",
-        "hill": f"fill:#123056;stroke:{SKY}",
-        "link": "fill:none;stroke:#7DD3FC",
-        "node": f"fill:{OFF_WHITE};stroke:{SKY}",
-        "mesh": f"fill:{OFF_WHITE}",
-        "beacon": f"fill:{SKY}",
-        "tagline": "fill:#CBD5E1",
-        "tile": f"fill:{NAVY};stroke:#1E293B",
+        "globe": f"fill:none;stroke:{MIST}",
+        "grid": f"fill:none;stroke:{MIST}",
+        "thread": f"fill:none;stroke:{SAGE}",
+        "node": f"fill:{MIST}",
+        "word": f"fill:{MIST}",
+        "tagline": f"fill:{SAGE}",
+        "tile": f"fill:{FOREST};stroke:{DEEP}",
     },
     # For light backgrounds.
     "light": {
-        "ring": f"fill:none;stroke:{SKY}",
-        "wave": f"fill:none;stroke:{SKY}",
-        "tower": f"fill:{SLATE}",
-        "lamp": f"fill:{AMBER}",
-        "hillback": f"fill:#F0F9FF;stroke:{SKY}",
-        "hill": f"fill:#E0F2FE;stroke:{SKY}",
-        "link": "fill:none;stroke:#0284C7",
-        "node": f"fill:{SLATE};stroke:{SLATE}",
-        "mesh": f"fill:{SLATE}",
-        "beacon": f"fill:{SKY}",
-        "tagline": "fill:#475569",
-        "tile": f"fill:{OFF_WHITE};stroke:#E2E8F0",
+        "globe": f"fill:none;stroke:{DEEP}",
+        "grid": f"fill:none;stroke:{DEEP}",
+        "thread": f"fill:none;stroke:{SAGE}",
+        "node": f"fill:{DEEP}",
+        "word": f"fill:{DEEP}",
+        "tagline": f"fill:{LEAF}",
+        "tile": f"fill:{MIST};stroke:{SAGE}",
     },
-    # Single colour: off-white on dark; the lamp and nodes are outlines, so they work transparently.
+    # Single colour: mist on dark.
     "mono-dark": {
-        "ring": f"fill:none;stroke:{OFF_WHITE}",
-        "wave": f"fill:none;stroke:{OFF_WHITE}",
-        "tower": f"fill:{OFF_WHITE}",
-        "lamp": f"fill:none;stroke:{OFF_WHITE};stroke-width:5",
-        "hillback": f"fill:none;stroke:{OFF_WHITE}",
-        "hill": f"fill:{NAVY};stroke:{OFF_WHITE}",
-        "link": f"fill:none;stroke:{OFF_WHITE}",
-        "node": f"fill:{NAVY};stroke:{OFF_WHITE}",
-        "mesh": f"fill:{OFF_WHITE}",
-        "beacon": f"fill:{OFF_WHITE}",
-        "tagline": f"fill:{OFF_WHITE}",
-        "tile": f"fill:{NAVY};stroke:#1E293B",
+        "globe": f"fill:none;stroke:{MIST}",
+        "grid": f"fill:none;stroke:{MIST}",
+        "thread": f"fill:none;stroke:{MIST}",
+        "node": f"fill:{MIST}",
+        "word": f"fill:{MIST}",
+        "tagline": f"fill:{MIST}",
+        "tile": f"fill:{FOREST};stroke:{DEEP}",
     },
-    # Single colour: slate on light.
+    # Single colour: deep green on light.
     "mono-light": {
-        "ring": f"fill:none;stroke:{SLATE}",
-        "wave": f"fill:none;stroke:{SLATE}",
-        "tower": f"fill:{SLATE}",
-        "lamp": f"fill:none;stroke:{SLATE};stroke-width:5",
-        "hillback": f"fill:none;stroke:{SLATE}",
-        "hill": f"fill:#FFFFFF;stroke:{SLATE}",
-        "link": f"fill:none;stroke:{SLATE}",
-        "node": f"fill:#FFFFFF;stroke:{SLATE}",
-        "mesh": f"fill:{SLATE}",
-        "beacon": f"fill:{SLATE}",
-        "tagline": f"fill:{SLATE}",
-        "tile": "fill:#FFFFFF;stroke:#E2E8F0",
+        "globe": f"fill:none;stroke:{DEEP}",
+        "grid": f"fill:none;stroke:{DEEP}",
+        "thread": f"fill:none;stroke:{DEEP}",
+        "node": f"fill:{DEEP}",
+        "word": f"fill:{DEEP}",
+        "tagline": f"fill:{DEEP}",
+        "tile": f"fill:{WHITE};stroke:{SAGE}",
     },
 }
 
@@ -148,8 +128,8 @@ def build_svgs(out_dir: Path = SVG_OUT) -> dict[str, Path]:
     for variant, palette in PALETTES.items():
         tile_rule = {"tile": "stroke-width:2"}
         # Marks on a transparent background.
-        write(f"mark-{variant}", svg(256, 256, "MeshBeacon", _style(mark_rules, palette), mark))
-        write(f"mark-small-{variant}", svg(256, 256, "MeshBeacon", _style(small_rules, palette), small))
+        write(f"mark-{variant}", svg(256, 256, "ito", _style(mark_rules, palette), mark))
+        write(f"mark-small-{variant}", svg(256, 256, "ito", _style(small_rules, palette), small))
         # App icon: the mark on a rounded tile (works on light and dark surfaces alike).
         tile = '<rect class="tile" x="1" y="1" width="254" height="254" rx="56"/>'
         for name, body, rules, fit in (
@@ -157,14 +137,14 @@ def build_svgs(out_dir: Path = SVG_OUT) -> dict[str, Path]:
             ("icon-small", small, small_rules, "translate(10 12) scale(0.92)"),  # fills more of a tiny tile
         ):
             inner = f'{tile}\n<g transform="{fit}">{body}</g>'
-            write(f"{name}-{variant}", svg(256, 256, "MeshBeacon", _style({**rules, **tile_rule}, palette), inner))
+            write(f"{name}-{variant}", svg(256, 256, "ito", _style({**rules, **tile_rule}, palette), inner))
         # Horizontal logo: mark + wordmark, cap height 92 on a 256 mark, vertically centred.
         scale = 92 / 72.75
         word_x, word_y = 296, (256 - 92) / 2 - (96.88 - 72.75) * scale
         width = word_x + word_w * scale
         horizontal = f'<g>{mark}</g>\n<g transform="translate({word_x:g} {word_y:.2f}) scale({scale:.4f})">{word}</g>'
         rules = {**mark_rules, **word_rules}
-        write(f"logo-horizontal-{variant}", svg(width, 256, "MeshBeacon", _style(rules, palette), horizontal))
+        write(f"logo-horizontal-{variant}", svg(width, 256, "ito", _style(rules, palette), horizontal))
         # Badge: the horizontal logo on its own tile, 2.5 : 1 (Home Assistant's app logo.png), so it
         # stays legible on light and dark app pages alike.
         badge_w = width + 120
@@ -175,10 +155,12 @@ def build_svgs(out_dir: Path = SVG_OUT) -> dict[str, Path]:
         )
         write(
             f"logo-badge-{variant}",
-            svg(badge_w, badge_h, "MeshBeacon", _style({**rules, **tile_rule}, palette), badge),
+            svg(badge_w, badge_h, "ito", _style({**rules, **tile_rule}, palette), badge),
         )
-        # Full logo: the horizontal logo plus the tagline under the wordmark, same width.
-        tag_scale = word_w * scale / tag_w
+        # Full logo: the horizontal logo plus the tagline under the wordmark. The wordmark is short,
+        # so the tagline has a fixed cap height (26 on a 256 mark) and sets the lockup's width.
+        tag_scale = 26 / 72.75
+        full_w = max(width, word_x + tag_w * tag_scale)
         top = (256 - (92 + 34 + 72.75 * tag_scale)) / 2
         word_y2 = top - (96.88 - 72.75) * scale
         tag_y = top + 92 + 34 - (96.88 - 72.75) * tag_scale
@@ -190,7 +172,7 @@ def build_svgs(out_dir: Path = SVG_OUT) -> dict[str, Path]:
         rules = {**mark_rules, **word_rules, **tag_rules}
         write(
             f"logo-full-{variant}",
-            svg(width, 256, "MeshBeacon: Decentralised connectivity for your home", _style(rules, palette), full),
+            svg(full_w, 256, "ito: The internet, reimagined", _style(rules, palette), full),
         )
     # Favicon source: the small icon on the dark tile (legible on any browser tab).
     shutil.copyfile(made["icon-small-dark"], out_dir / "favicon.svg")
