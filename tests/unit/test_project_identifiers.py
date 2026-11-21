@@ -64,7 +64,7 @@ def test_release_tooling_reads_the_same_values():
 def test_published_slug_follows_the_repository_url():
     """The app store's slug for this repository, used in the one-click links in the documentation."""
     slug = check_release.store_slug()
-    assert slug == "ce27fbb5_meshbeacon" if REPOSITORY == "https://github.com/3LivesLeft/meshbeacon" else slug
+    assert re.fullmatch(rf"[0-9a-f]{{8}}_{SLUG}", slug)  # both addresses' slugs: test_rename_compatibility.py
     for doc in ("README.md", "docs/getting-started.md", f"{SLUG}/DOCS.md"):
         content = text(doc)
         for found in re.findall(r"supervisor_app/\?app=([0-9a-f]{8}_[a-z0-9_]+)", content):

@@ -33,7 +33,7 @@ MARKETPLACE_KEYS = {
 
 
 def test_hacs_json_uses_only_keys_the_marketplace_reads():
-    assert HACS["name"] == "MeshBeacon"
+    assert HACS["name"] == "ito"
     assert set(HACS) <= MARKETPLACE_KEYS  # others are skipped silently, so they would be mistakes
     assert re.fullmatch(r"\d{4}\.\d{1,2}\.\d+", HACS["homeassistant"])
 
@@ -56,7 +56,7 @@ def test_manifest_has_what_hacs_and_home_assistant_need():
     assert MANIFEST["domain"] == INTEGRATION.name
     assert re.fullmatch(r"\d+\.\d+\.\d+", MANIFEST["version"])
     assert MANIFEST["requirements"] == []  # nothing for HACS or Home Assistant to install
-    assert MANIFEST["documentation"].startswith("https://github.com/3LivesLeft/meshbeacon/")
+    assert MANIFEST["documentation"].startswith("https://github.com/3LivesLeft/ito/")
 
 
 def test_integration_and_app_versions_match():

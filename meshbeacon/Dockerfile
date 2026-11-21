@@ -89,7 +89,7 @@ LABEL \
     io.hass.version="${BUILD_VERSION}" \
     io.hass.type="app" \
     io.hass.arch="aarch64|amd64" \
-    org.opencontainers.image.title="MeshBeacon" \
+    org.opencontainers.image.title="ito" \
     org.opencontainers.image.description="Decentralised connectivity for your home" \
-    org.opencontainers.image.source="https://github.com/3LivesLeft/meshbeacon" \
+    org.opencontainers.image.source="https://github.com/3LivesLeft/ito" \
     org.opencontainers.image.licenses="Apache-2.0 AND LicenseRef-Reticulum"
