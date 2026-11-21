@@ -2,17 +2,17 @@
   "config": {
     "step": {
       "hassio_confirm": {
-        "title": "MeshBeacon",
-        "description": "Add MeshBeacon to show your Reticulum node's status, peers, traffic and resource use in Home Assistant. This is read-only: Home Assistant cannot control the node through it.\n\nDiscovered from the app **{app}** (`{slug}`). Only add it if you installed that app."
+        "title": "ito",
+        "description": "Add ito to show your Reticulum node's status, peers, traffic and resource use in Home Assistant. This is read-only: Home Assistant cannot control the node through it.\n\nDiscovered from the app **{app}** (`{slug}`). Only add it if you installed that app."
       }
     },
     "error": {
-      "cannot_connect": "Could not reach the MeshBeacon app. Check that it is running, then try again."
+      "cannot_connect": "Could not reach the ito app. Check that it is running, then try again."
     },
     "abort": {
-      "already_configured": "MeshBeacon is already set up.",
-      "discovery_only": "MeshBeacon is added automatically. In the MeshBeacon app's Configuration tab, switch on \"Show MeshBeacon's status in Home Assistant\" and restart the app.",
-      "invalid_discovery": "The details sent by the app could not be used, so nothing was set up. If this was the MeshBeacon app, restart it; if this repeats, please report it."
+      "already_configured": "ito is already set up.",
+      "discovery_only": "ito is added automatically. In the ito app's Configuration tab, switch on \"Show ito's status in Home Assistant\" and restart the app.",
+      "invalid_discovery": "The details sent by the app could not be used, so nothing was set up. If this was the ito app, restart it; if this repeats, please report it."
     }
   },
   "entity": {
@@ -115,7 +115,7 @@
         "name": "Memory use"
       },
       "core_memory": {
-        "name": "Memory use (MeshBeacon core)"
+        "name": "Memory use (ito core)"
       },
       "reticulum_memory": {
         "name": "Memory use (Reticulum)"
@@ -198,24 +198,24 @@
   },
   "issues": {
     "isolated": {
-      "title": "MeshBeacon is not connected to anyone",
-      "description": "Your MeshBeacon node is running, but no peers are configured, so it is not part of any Reticulum network. In the MeshBeacon app's Configuration tab, choose a public network or add a peer, then restart the app."
+      "title": "ito is not connected to anyone",
+      "description": "Your ito node is running, but no peers are configured, so it is not part of any Reticulum network. In the ito app's Configuration tab, choose a public network or add a peer, then restart the app."
     },
     "peers_unreachable": {
-      "title": "MeshBeacon cannot reach its peers",
-      "description": "For at least 10 minutes, MeshBeacon has not been able to reach any of its configured peers. Check your internet connection and the peer details in the app's Configuration tab. MeshBeacon keeps trying automatically."
+      "title": "ito cannot reach its peers",
+      "description": "For at least 10 minutes, ito has not been able to reach any of its configured peers. Check your internet connection and the peer details in the app's Configuration tab. ito keeps trying automatically."
     },
     "needs_attention": {
-      "title": "MeshBeacon needs your attention",
-      "description": "MeshBeacon has stopped the Reticulum service until the cause is fixed:\n\n{message}\n\nSee the MeshBeacon app's Log tab for details."
+      "title": "ito needs your attention",
+      "description": "ito has stopped the Reticulum service until the cause is fixed:\n\n{message}\n\nSee the ito app's Log tab for details."
     },
     "app_outdated": {
-      "title": "Update the MeshBeacon app",
-      "description": "The MeshBeacon integration ({integration_version}) is newer than the MeshBeacon app ({app_version}) and may not work fully with it. Update the app: Settings → Apps → MeshBeacon → Update. Your node's identity and settings are kept."
+      "title": "Update the ito app",
+      "description": "The ito integration ({integration_version}) is newer than the ito app ({app_version}) and may not work fully with it. Update the app: Settings → Apps → ito → Update. Your node's identity and settings are kept."
     },
     "integration_outdated": {
-      "title": "Update the MeshBeacon integration",
-      "description": "The MeshBeacon app ({app_version}) is newer than the MeshBeacon integration ({integration_version}), so some of its information may not be shown. Update the integration under Settings → Updates (it comes from the Marketplace), then restart Home Assistant when asked."
+      "title": "Update the ito integration",
+      "description": "The ito app ({app_version}) is newer than the ito integration ({integration_version}), so some of its information may not be shown. Update the integration under Settings → Updates (it comes from the Marketplace), then restart Home Assistant when asked."
     }
   }
 }

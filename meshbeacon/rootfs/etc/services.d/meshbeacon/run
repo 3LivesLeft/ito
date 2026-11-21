@@ -1,5 +1,5 @@
 #!/bin/sh
-# Start the MeshBeacon core as the unprivileged service user (architecture §4.7).
+# Start the ito core as the unprivileged service user (architecture §4.7).
 #
 # A root start step (core/meshbeacon/relay_link.py) runs first and hands the core its discovery
 # credential without putting any secret in a process environment (M1.2, threat T72):

@@ -83,7 +83,12 @@ infrastructure or deploy to the maintainer's Home Assistant without explicit app
   - Interface views use only the design tokens in `custom_components/meshbeacon/frontend/tokens.js`
     and the documented components.
   - In Home Assistant's sidebar and entity icons, use Material Design Icons only
-    (`mdi:lighthouse-on` for MeshBeacon).
+    (`mdi:earth` for ito).
+  - The product is called **ito** (always lower case) in everything a user reads: app, integration,
+    panel, messages, logs and user docs. Identifiers stay `meshbeacon` (app slug, integration domain,
+    discovery service, Python package, data paths, entity unique IDs), so upgrades keep their data
+    ([ADR 0025](docs/adr/0025-rename-to-ito.md)). Historical records (ADRs, research, test results)
+    keep the name they were written under.
   - Keep WCAG 2.2 AA (the contrast test, never colour alone, reduced motion).
   - Never load fonts or anything else from external services.
   - Update docs/branding.md in the same change as any new pattern.
@@ -127,6 +132,7 @@ docs/research/v0.3-install.md      verified Marketplace / app store / Supervisor
 docs/adr/0024-messaging-in-home-assistant.md  M5: Messages tab, messaging key (memory-only in HA),
                                    contact store and history in the engine's queue.db
 custom_components/meshbeacon/conversations.py  M5 admin-only websocket commands + live updates
+docs/adr/0025-rename-to-ito.md     user-facing name ito; meshbeacon identifiers kept; provisional art
 project.yaml                       project identifiers (name, slug, repository, image) in one place
 tools/check_release.py             release-layout check (app store, Marketplace, versions)
 tools/verify_image.py              release-candidate image check (platforms, labels, SBOM, reproducible)

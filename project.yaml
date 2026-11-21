@@ -7,7 +7,7 @@
 #
 # Changing `slug` after users have installed the app moves its data folder (the Supervisor keys
 # an app's data by slug) and changes the integration's domain; do it only before the first release.
-name: MeshBeacon
+name: ito
 # App slug, integration domain and Supervisor discovery service.
 slug: meshbeacon
 repository: https://github.com/3LivesLeft/meshbeacon

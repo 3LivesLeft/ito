@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
-  <img src="../branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+  <img src="../branding/png/logo-horizontal-light.png" alt="ito" height="48">
 </picture>
 
 # Releasing
@@ -90,7 +90,7 @@ are the verified bytes. Independent rebuilds remain a useful check for reviewers
 is gone.
 
 The Supervisor does not verify signatures (it has no signing support today). Signatures and SBOMs
-are for users and reviewers, and for MeshBeacon's own verification in step 6.
+are for users and reviewers, and for ito's own verification in step 6.
 
 ## 4. Rollback
 
@@ -105,11 +105,11 @@ are for users and reviewers, and for MeshBeacon's own verification in step 6.
 Use this structure so that every release looks and reads the same ([branding](branding.md)).
 
 ```markdown
-<p align="center"><img src="branding/png/logo-full-light.png" alt="MeshBeacon: Decentralised connectivity for your home" width="480"></p>
+<p align="center"><img src="branding/png/logo-full-light.png" alt="ito: The internet, reimagined" width="480"></p>
 
-# MeshBeacon <version>
+# ito <version>
 
-**Decentralised connectivity for your home.**
+**The internet, reimagined.**
 
 ## Highlights
 - One line per user-visible change, in plain UK English.

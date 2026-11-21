@@ -63,7 +63,7 @@ STOP_GRACE = 10.0
 MAX_LINE = 4 * 1024 * 1024
 ADDRESS = re.compile(r"^[0-9a-f]{32}$")
 
-REPLY_TEXT = "MeshBeacon received your message. (This is an automatic reply.)"
+REPLY_TEXT = "ito received your message. (This is an automatic reply.)"
 AUTO_REPLY_EVERY = 6 * 3600.0  # at most one automatic reply per contact in this time (no loops)
 # The Home Assistant binding (M5): what Home Assistant may ask of the engine, and how much.
 HA_OPERATIONS = frozenset(
@@ -93,7 +93,7 @@ EXIT_REASONS = {
     2: "Messaging could not start: its settings were refused. Check the messaging options.",
     3: (
         "Messaging could not start: Reticulum was not reachable, or the messaging identity is damaged "
-        "(MeshBeacon never replaces it: restore the app from a backup). The app log says which."
+        "(ito never replaces it: restore the app from a backup). The app log says which."
     ),
 }
 MSG_RPC_REFUSED = (
@@ -442,7 +442,7 @@ class EngineSupervisor:
         if self.state == "paused":
             state, message = "paused", MSG_PAUSED.lstrip("⚠ ")
         elif self.state == "backoff":
-            state, message = "error", f"{self.reason} MeshBeacon will try again shortly."
+            state, message = "error", f"{self.reason} ito will try again shortly."
         elif self.state == "running" and self.healthy and view.get("connected") and view.get("rpc") is False:
             # Connected, but the node refuses its RPC requests (ADR 0023): never "Running".
             state, message = "error", MSG_RPC_KEY_MISSING if view.get("rpc_key") is False else MSG_RPC_REFUSED

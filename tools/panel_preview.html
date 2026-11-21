@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!--
-  Preview of the MeshBeacon panel with sample data, outside Home Assistant (no network, no data).
+  Preview of the ito panel with sample data, outside Home Assistant (no network, no data).
   Serve the repository root on loopback and open, for example:
     python3 -m http.server --bind 127.0.0.1 8765
     http://127.0.0.1:8765/tools/panel_preview.html?scenario=ok&theme=dark
@@ -15,7 +15,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MeshBeacon panel preview</title>
+    <title>ito panel preview</title>
     <link rel="icon" type="image/svg+xml" href="../branding/svg/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="../branding/png/favicon-32.png" />
     <style>
@@ -46,10 +46,10 @@
       if (q.get("theme") === "dark") document.documentElement.dataset.theme = "dark";
       const now = Date.now();
       const iso = (msAgo) => new Date(now - msAgo).toISOString();
-      const E = (k) => `sensor.meshbeacon_${k}`;
-      const B = (k) => `binary_sensor.meshbeacon_${k}`;
+      const E = (k) => `sensor.ito_${k}`;
+      const B = (k) => `binary_sensor.ito_${k}`;
       const node = {
-        entry_id: "preview", title: "MeshBeacon", app: "local_meshbeacon",
+        entry_id: "preview", title: "ito", app: "local_meshbeacon",
         entities: {
           status: E("status"), connectivity: E("connectivity"), problem: E("problem"), problem_detected: B("problem"),
           reticulum_running: B("reticulum_running"), transport_mode: B("transport_mode"),
@@ -94,7 +94,7 @@
         Object.assign(states, Object.fromEntries([
           { entity_id: E("messaging"), state: { running: "running", off: "disabled", error: "error" }[messaging],
             attributes: { address: on ? ADDRESS : null, contacts: 2, auto_reply: true, last_received_from: on ? "My phone" : null,
-                          message: messaging === "error" ? "Messaging could not start: Reticulum was not reachable, or the messaging identity is damaged (MeshBeacon never replaces it: restore the app from a backup). The app log says which. MeshBeacon will try again shortly." : null } },
+                          message: messaging === "error" ? "Messaging could not start: Reticulum was not reachable, or the messaging identity is damaged (ito never replaces it: restore the app from a backup). The app log says which. ito will try again shortly." : null } },
           st(E("messages_received"), on ? 4 : "unknown"), st(E("messaging_contacts_reachable"), on ? 1 : "unknown"),
           st(E("messaging_last_received"), on ? iso(3 * 60e3) : "unknown"), st(E("messaging_replies_sent"), on ? 4 : "unknown"),
           st(E("messaging_last_reply"), on ? "delivered" : "unknown"),
@@ -125,7 +125,7 @@
         "my-phone": [
           { seq: 1, message_id: "1".repeat(32), direction: "in", text: "Is the heating on at home?", at: t0 - 26 * 3600, unread: false },
           { seq: 2, message_id: "2".repeat(32), direction: "out", text: "Yes, since 6 pm. 21 °C in the living room.", at: t0 - 25.9 * 3600, state: "delivered" },
-          { seq: 3, message_id: "3".repeat(32), direction: "out", text: "MeshBeacon received your message. (This is an automatic reply.)", at: t0 - 3600, state: "delivered", auto: true },
+          { seq: 3, message_id: "3".repeat(32), direction: "out", text: "ito received your message. (This is an automatic reply.)", at: t0 - 3600, state: "delivered", auto: true },
           { seq: 4, message_id: "4".repeat(32), direction: "out", text: "Back by 8?", at: t0 - 3000, state: "stored_on_node" },
           { seq: 5, message_id: "5".repeat(32), direction: "out", text: "Did the parcel arrive?", at: t0 - 1800, state: "expired", reason: "expired" },
           { seq: 6, message_id: "6".repeat(32), direction: "in", text: q.get("hostile") ? "<img src=x onerror=alert(1)> plain text only" : "Testing from Ratspeak 👋\nSecond line.", at: t0 - 120, unread: true },
@@ -201,7 +201,7 @@
             enabled: true, state: messaging === "running" ? "running" : "error", address: messaging === "running" ? ADDRESS : null,
             contacts_configured: 2, contacts_reachable: 1, received: 4, replies_sent: 4, last_reply_state: "delivered",
             last_received_at: sec(3 * 60e3), last_received_from: "My phone", auto_reply: true,
-            message: messaging === "error" ? "Messaging could not start: Reticulum was not reachable. MeshBeacon will try again shortly." : null,
+            message: messaging === "error" ? "Messaging could not start: Reticulum was not reachable. ito will try again shortly." : null,
           };
         }
         const series = (base, wobble) => {
@@ -224,14 +224,14 @@
           root: host.attachShadow({ mode: "open" }),
           source,
           copy: {
-            unavailable: "MeshBeacon's core is not answering. Values reappear automatically.",
-            problemHint: "Details and suggested steps are in the MeshBeacon app's log.",
+            unavailable: "ito's core is not answering. Values reappear automatically.",
+            problemHint: "Details and suggested steps are in the ito app's log.",
             historyUnavailable: "History is not available.",
             historyEmpty: "No history yet. It builds up while the app runs (kept in memory for 7 days).",
             diagnosticsNote: null,
             ranges: ["6h", "24h", "7d"],
-            notSetUp: { title: "MeshBeacon is starting", lines: ["Waiting for the first report."] },
-            loadError: (reason) => ({ title: "MeshBeacon could not be loaded", lines: [`Reason: ${reason}`] }),
+            notSetUp: { title: "ito is starting", lines: ["Waiting for the first report."] },
+            loadError: (reason) => ({ title: "ito could not be loaded", lines: [`Reason: ${reason}`] }),
           },
         });
         ui.tab = q.get("tab") || "overview";

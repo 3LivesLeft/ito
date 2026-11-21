@@ -118,7 +118,7 @@ def test_identity_corrupted_while_running_is_restored_before_rns_restart(data, r
     original = ident.read_bytes()
     ident.write_bytes(b"\xff" * 64)  # valid-looking but different key
     os.kill(r.sup.child.proc.pid, signal.SIGKILL)
-    assert wait_for(lambda: r.out.has("restored from MeshBeacon's verified backup copy"), timeout=60), r.out.text()
+    assert wait_for(lambda: r.out.has("restored from ito's verified backup copy"), timeout=60), r.out.text()
     assert wait_for(lambda: r.sup.child is not None and r.sup.child.proc.poll() is None)
     assert ident.read_bytes() == original
 
@@ -188,7 +188,7 @@ def test_real_process_sigterm_and_health(data, tmp_path):
     proc.send_signal(signal.SIGTERM)
     assert proc.wait(timeout=20) == 0
     out = proc.stdout.read()
-    assert "Stopping MeshBeacon." in out
+    assert "Stopping ito." in out
 
 
 def test_rns_child_dies_with_supervisor(data, tmp_path):

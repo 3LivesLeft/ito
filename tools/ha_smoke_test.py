@@ -178,11 +178,11 @@ def main() -> int:
     if len(states) != EXPECTED_ENABLED:
         problems.append(f"{len(states)} entities recorded, expected {EXPECTED_ENABLED}")
     expected = {
-        "sensor.meshbeacon_status": "running",
-        "sensor.meshbeacon_connectivity": "online",
-        "sensor.meshbeacon_known_paths": "42",
-        "sensor.meshbeacon_links_relayed_for_others": "2",
-        "binary_sensor.meshbeacon_emerald_connected": "on",
+        "sensor.ito_status": "running",
+        "sensor.ito_connectivity": "online",
+        "sensor.ito_known_paths": "42",
+        "sensor.ito_links_relayed_for_others": "2",
+        "binary_sensor.ito_emerald_connected": "on",
     }
     for entity_id, value in expected.items():
         if states.get(entity_id) != value:

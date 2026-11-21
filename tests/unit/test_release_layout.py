@@ -35,6 +35,7 @@ def good_tree(version: str = "0.3.0") -> dict[str, str]:
     app["version"] = version
     manifest = json.loads((ROOT / "custom_components" / "meshbeacon" / "manifest.json").read_text())
     manifest["version"] = version
+    name = json.loads((ROOT / "hacs.json").read_text())["name"]
     return {
         "repository.yaml": (ROOT / "repository.yaml").read_text(),
         "meshbeacon/config.yaml": yaml.safe_dump(app),
@@ -42,7 +43,7 @@ def good_tree(version: str = "0.3.0") -> dict[str, str]:
         "meshbeacon/Dockerfile": f"FROM x\nARG BUILD_VERSION={version}\n",
         "meshbeacon/CHANGELOG.md": f"# Changelog\n\n## {version}\n",
         "meshbeacon/core/meshbeacon/__init__.py": f'__version__ = "{version}"\n',
-        "hacs.json": json.dumps({"name": "MeshBeacon", "homeassistant": "2026.11.0"}),
+        "hacs.json": json.dumps({"name": name, "homeassistant": "2026.11.0"}),
         "custom_components/meshbeacon/manifest.json": json.dumps(manifest),
         "custom_components/meshbeacon/brand/icon.png": "png",
         "custom_components/__init__.py": "",

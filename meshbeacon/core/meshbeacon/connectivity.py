@@ -53,12 +53,12 @@ def human_bytes(n: int) -> str:
 def describe(s: Snapshot) -> str:
     if s.state is Connectivity.ISOLATED:
         return (
-            "⚠ MeshBeacon is running, but it is not connected to anyone. "
+            "⚠ ito is running, but it is not connected to anyone. "
             "Choose a public network, or add a peer, in the Configuration tab to join a Reticulum network."
         )
     if s.state is Connectivity.OFFLINE:
         return (
-            "⚠ MeshBeacon is running, but cannot reach any of your peers. Check your internet "
+            "⚠ ito is running, but cannot reach any of your peers. Check your internet "
             "connection and the peer details. It will keep trying automatically."
         )
     if s.state is Connectivity.UNKNOWN:

@@ -1,42 +1,61 @@
-# MeshBeacon overview: an example dashboard built only from Home Assistant's own cards.
-# Optional: MeshBeacon's own panel (sidebar) needs no dashboard. Branding: docs/branding.md (the
-# icon is mdi:lighthouse-on; native cards take their colours from your Home Assistant theme).
+# ito overview: an example dashboard built only from Home Assistant's own cards.
+# Optional: ito's own panel (sidebar) needs no dashboard. Branding: docs/branding.md (the
+# icon is mdi:earth; native cards take their colours from your Home Assistant theme). For an ito
+# look, select the optional "ito sage" theme (ito-theme.yaml; see ito-brand-setup.md).
 # It is a view of the integration's entities, not a second monitoring implementation: history and
 # statistics come from Home Assistant's recorder.
 #
 # Use: Settings → Dashboards → Add dashboard → "New dashboard from scratch" → open it → ⋮ → Edit
 # dashboard → ⋮ → Raw configuration editor, and paste this file. Entity IDs assume the default names.
+# Set up the integration before it was renamed to ito? Then your entity IDs start with
+# "meshbeacon_" instead of "ito_" (Home Assistant never renames existing entities): replace
+# ".ito_" with ".meshbeacon_" throughout before pasting.
 # For each peer, copy the "Peer" card and replace "emerald" with the peer's name in lower case
 # (spaces become underscores). Only entities that are enabled by default are used here.
-title: MeshBeacon
+title: ito
 views:
   - title: Overview
     path: meshbeacon
-    icon: mdi:lighthouse-on
+    icon: mdi:earth
     cards:
+      - type: markdown
+        content: >-
+          # ito
+
+          **The internet, reimagined.**
+
+          Private connectivity, powered by Reticulum. Your node. Your network.
+
+          [ito.earth](https://ito.earth)
+      - type: heading
+        heading: Node health
+        icon: mdi:heart-pulse
       - type: tile
-        entity: sensor.meshbeacon_status
+        entity: sensor.ito_status
       - type: tile
-        entity: sensor.meshbeacon_connectivity
+        entity: sensor.ito_connectivity
       - type: tile
-        entity: binary_sensor.meshbeacon_problem
+        entity: binary_sensor.ito_problem
       - type: conditional
         conditions:
           - condition: state
-            entity: binary_sensor.meshbeacon_problem
+            entity: binary_sensor.ito_problem
             state: "on"
         card:
           type: entities
           title: What needs attention
           entities:
-            - sensor.meshbeacon_problem_details
+            - sensor.ito_problem_details
+      - type: heading
+        heading: Network activity
+        icon: mdi:access-point-network
       - type: glance
         title: Network
         entities:
-          - entity: sensor.meshbeacon_peers_connected
-          - entity: sensor.meshbeacon_known_paths
-          - entity: sensor.meshbeacon_links_relayed_for_others
-          - entity: binary_sensor.meshbeacon_transport_mode
+          - entity: sensor.ito_peers_connected
+          - entity: sensor.ito_known_paths
+          - entity: sensor.ito_links_relayed_for_others
+          - entity: binary_sensor.ito_transport_mode
       - type: markdown
         content: >-
           **Links relayed for others** counts connections that other Reticulum users are making
@@ -46,8 +65,8 @@ views:
         title: Traffic (last 24 hours)
         hours_to_show: 24
         entities:
-          - entity: sensor.meshbeacon_receive_rate
-          - entity: sensor.meshbeacon_send_rate
+          - entity: sensor.ito_receive_rate
+          - entity: sensor.ito_send_rate
       - type: statistics-graph
         title: Data per day
         period: day
@@ -56,30 +75,33 @@ views:
         stat_types:
           - change
         entities:
-          - entity: sensor.meshbeacon_data_received
-          - entity: sensor.meshbeacon_data_sent
+          - entity: sensor.ito_data_received
+          - entity: sensor.ito_data_sent
       - type: history-graph
         title: Peers connected
         hours_to_show: 72
         entities:
-          - entity: sensor.meshbeacon_peers_connected
+          - entity: sensor.ito_peers_connected
+      - type: heading
+        heading: System
+        icon: mdi:server-network
       - type: entities
         title: Node
         entities:
-          - entity: binary_sensor.meshbeacon_reticulum_running
-          - entity: sensor.meshbeacon_reticulum_started
-          - entity: sensor.meshbeacon_app_started
-          - entity: sensor.meshbeacon_reticulum_restarts
+          - entity: binary_sensor.ito_reticulum_running
+          - entity: sensor.ito_reticulum_started
+          - entity: sensor.ito_app_started
+          - entity: sensor.ito_reticulum_restarts
       - type: history-graph
         title: Resources (last 24 hours)
         hours_to_show: 24
         entities:
-          - entity: sensor.meshbeacon_memory_use
-          - entity: sensor.meshbeacon_processor_use
+          - entity: sensor.ito_memory_use
+          - entity: sensor.ito_processor_use
       # Peer card (one per peer):
       - type: entities
         title: Peer Emerald
         entities:
-          - entity: binary_sensor.meshbeacon_emerald_connected
-          - entity: sensor.meshbeacon_emerald_connected_since
-          - entity: sensor.meshbeacon_emerald_reconnections
+          - entity: binary_sensor.ito_emerald_connected
+          - entity: sensor.ito_emerald_connected_since
+          - entity: sensor.ito_emerald_reconnections

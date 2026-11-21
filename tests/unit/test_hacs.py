@@ -33,7 +33,7 @@ MARKETPLACE_KEYS = {
 
 
 def test_hacs_json_uses_only_keys_the_marketplace_reads():
-    assert HACS["name"] == "MeshBeacon"
+    assert HACS["name"] == "ito"
     assert set(HACS) <= MARKETPLACE_KEYS  # others are skipped silently, so they would be mistakes
     assert re.fullmatch(r"\d{4}\.\d{1,2}\.\d+", HACS["homeassistant"])
 

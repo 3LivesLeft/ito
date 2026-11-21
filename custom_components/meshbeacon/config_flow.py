@@ -88,7 +88,7 @@ class MeshBeaconConfigFlow(ConfigFlow, domain=DOMAIN):
                 slug = self._app[1]
                 # node_key is set once, here, and never changed (nodes.py).
                 data = {**self._discovered, CONF_NODE_KEY: slug, CONF_APP_SLUG: slug}
-                return self.async_create_entry(title="MeshBeacon", data=data)
+                return self.async_create_entry(title="ito", data=data)
         return self.async_show_form(
             step_id="hassio_confirm",
             errors=errors,

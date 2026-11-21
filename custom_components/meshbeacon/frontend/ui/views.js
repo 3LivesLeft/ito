@@ -40,7 +40,7 @@ function problemBanner(ctx) {
 }
 
 function unavailableBanner(ctx) {
-  return banner("neutral", "MeshBeacon is not responding", ctx.copy.unavailable);
+  return banner("neutral", "ito is not responding", ctx.copy.unavailable);
 }
 
 function hero(ctx) {
@@ -199,7 +199,7 @@ function messagingCard(ctx) {
     { class: "card messaging", "data-tone": m.tone, "aria-label": "Messaging" },
     head,
     m.message ? h("p", { class: "small", role: m.state === "error" || m.state === "paused" ? "alert" : null, text: m.message }) : null,
-    h("div", { class: "label small", text: "MeshBeacon's messaging address" }),
+    h("div", { class: "label small", text: "ito's messaging address" }),
     address,
     rows.length ? h("dl", { class: "rows" }, rows) : null,
     h(
@@ -220,7 +220,7 @@ function peers(ctx) {
     h("div", { class: "section-head", style: "margin-bottom:12px" }, h("h2", { text: "Peers" })),
     list.length
       ? h("div", { class: "peers" }, list.map((p) => peerCard(ctx, p)))
-      : h("div", { class: "card muted small", text: "No peers are configured. In the MeshBeacon app's Configuration tab, choose a public network or add a peer, then restart the app." }),
+      : h("div", { class: "card muted small", text: "No peers are configured. In the ito app's Configuration tab, choose a public network or add a peer, then restart the app." }),
   );
 }
 
@@ -240,7 +240,7 @@ export function diagnostics(ctx) {
   };
   const since = (r) => (r.time === null ? words(r, lang) : `${duration(ago(r, ctx.now))} ago`);
   const version = source.version();
-  if (version) rows.push(h("dt", { text: "MeshBeacon version" }), h("dd", { text: version }));
+  if (version) rows.push(h("dt", { text: "ito version" }), h("dd", { text: version }));
   add("Status", "status");
   add("Problem", "problem");
   add("Reticulum running", "reticulum_running", (r) => words(r, lang, ["Yes", "No"]));
@@ -251,7 +251,7 @@ export function diagnostics(ctx) {
   add("Restarts to free memory", "memory_restarts");
   add("Peers configured", "peers_configured");
   add("Memory use (total)", "memory");
-  add("Memory use (MeshBeacon core)", "core_memory");
+  add("Memory use (ito core)", "core_memory");
   add("Memory use (Reticulum)", "reticulum_memory");
   add("Memory use (messaging)", "messaging_memory");
   add("Processor use", "cpu");

@@ -45,10 +45,10 @@ MAX_TOKEN = 4096
 TOKEN = re.compile(r"^[!-~]{16,4096}$")  # printable, no whitespace
 MSG_NO_RELAY = (
     "[meshbeacon] The discovery relay did not answer, so Home Assistant cannot be told about "
-    "MeshBeacon until the app restarts. The node works normally."
+    "ito until the app restarts. The node works normally."
 )
 MSG_SLOW_RELAY = "[meshbeacon] Waiting for the discovery relay to start…"
-MSG_NO_KEY = "[meshbeacon] The Supervisor's key could not be read, so Home Assistant cannot be told about MeshBeacon."
+MSG_NO_KEY = "[meshbeacon] The Supervisor's key could not be read, so Home Assistant cannot be told about ito."
 
 
 def connect(path: str, wait: float | None = None) -> socket.socket | None:

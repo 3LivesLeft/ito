@@ -40,8 +40,8 @@ STATIC_URL = f"/{DOMAIN}_panel"
 FRONTEND = Path(__file__).parent / "frontend"
 MODULE = "meshbeacon-panel.js"
 ELEMENT = "meshbeacon-panel"
-TITLE = "MeshBeacon"
-ICON = "mdi:lighthouse-on"  # closest Material Design Icon to the MeshBeacon mark (docs/branding.md)
+TITLE = "ito"
+ICON = "mdi:earth"  # closest Material Design Icon to the ito mark (docs/branding.md)
 REQUIRE_ADMIN = True
 WS_TYPE = f"{DOMAIN}/panel"
 

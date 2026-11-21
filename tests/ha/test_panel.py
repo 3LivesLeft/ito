@@ -28,8 +28,8 @@ async def _set_up(hass: HomeAssistant, mock_entry, aioclient_mock, **changes):
 async def test_sidebar_entry_is_registered_for_admins_only(hass, mock_entry, aioclient_mock):
     await _set_up(hass, mock_entry, aioclient_mock)
     registered = hass.data[frontend.DATA_PANELS][panel.PANEL_URL]
-    assert registered.sidebar_title == "MeshBeacon"
-    assert registered.sidebar_icon == "mdi:lighthouse-on"
+    assert registered.sidebar_title == "ito"
+    assert registered.sidebar_icon == "mdi:earth"
     assert registered.require_admin is True
     custom = registered.config["_panel_custom"]
     assert custom["name"] == "meshbeacon-panel"
@@ -106,14 +106,14 @@ async def test_websocket_maps_entities_and_peers(hass, hass_ws_client, mock_entr
     (node,) = result["result"]["nodes"]
     assert node["app"] == "local_meshbeacon"
     e = node["entities"]
-    assert e["known_paths"] == "sensor.meshbeacon_known_paths"
-    assert e["relayed_links"] == "sensor.meshbeacon_links_relayed_for_others"
+    assert e["known_paths"] == "sensor.ito_known_paths"
+    assert e["relayed_links"] == "sensor.ito_links_relayed_for_others"
     assert e["transport_mode"].startswith("binary_sensor.")
     assert "packets_received" not in e  # disabled by default: no state, so not offered
     (peer,) = node["peers"]
     assert peer["name"] == "Emerald"
     assert peer["reported"] is True
-    assert peer["entities"]["connected"] == "binary_sensor.meshbeacon_emerald_connected"
+    assert peer["entities"]["connected"] == "binary_sensor.ito_emerald_connected"
     assert "receive_rate" not in peer["entities"]
     assert TOKEN not in str(result)
     for entity_id in [*e.values(), *peer["entities"].values()]:
@@ -123,7 +123,7 @@ async def test_websocket_maps_entities_and_peers(hass, hass_ws_client, mock_entr
 async def test_websocket_follows_enabled_entities_and_removed_peers(hass, hass_ws_client, mock_entry, aioclient_mock):
     await _set_up(hass, mock_entry, aioclient_mock)
     registry = er.async_get(hass)
-    rate = registry.async_get("sensor.meshbeacon_emerald_receive_rate")
+    rate = registry.async_get("sensor.ito_emerald_receive_rate")
     assert rate is not None and rate.disabled_by is not None
     registry.async_update_entity(rate.entity_id, disabled_by=None)
     await hass.async_block_till_done()
@@ -138,7 +138,7 @@ async def test_websocket_follows_enabled_entities_and_removed_peers(hass, hass_w
     (peer,) = node["peers"]
     assert peer["reported"] is False  # still has entities, no longer reported by the app
     assert peer["name"] == "emerald"  # the original spelling is no longer known
-    assert peer["entities"]["receive_rate"] == "sensor.meshbeacon_emerald_receive_rate"
+    assert peer["entities"]["receive_rate"] == "sensor.ito_emerald_receive_rate"
 
 
 async def test_websocket_refuses_non_admins(
