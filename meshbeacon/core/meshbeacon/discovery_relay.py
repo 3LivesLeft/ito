@@ -7,11 +7,13 @@ is owned by root with mode 0600 (Supervisor ``api/sockets.py``), and ito's core 
 unprivileged ``meshbeacon`` user, so it cannot open it.
 
 This relay is the smallest privileged piece that bridges the two. It runs as root in its own s6
-service and does exactly two things:
+service and admits these fixed operations:
 
 - ``announce``: POST ito's discovery message, built here from strictly validated fields
   (host, port, token, fingerprint). Nothing else can be sent, and the service is fixed.
 - ``withdraw``: DELETE one earlier message by its UUID.
+- Dashboard self-management: read/validate/save this app's options, enable its sidebar entry and
+  restart this app (ADR 0026). No caller-selected path or arbitrary Supervisor request.
 
 **Who can reach it (M1.2, threat T72).** The relay's socket is root's alone: mode 0600 in a 0700
 folder, and the relay also drops any peer that is not root. The core does not connect to it
@@ -20,7 +22,7 @@ the core before it drops to the ``meshbeacon`` user. The Reticulum child runs as
 the core but never receives that connection (it is not inheritable, and children are started with
 ``close_fds``), and it cannot open the socket, so it can neither announce nor withdraw.
 
-It holds no state, logs no request content, reads at most 8 KiB per request, drops a request that
+It holds no state, logs no request content, reads at most 32 KiB per request, drops a request that
 is not finished within a few seconds, and serves at most a few connections at once, so one stalled
 connection never blocks another. Where there is no Supervisor socket, the relay does not run.
 """
@@ -47,7 +49,7 @@ RELAY_DIR = Path("/run/meshbeacon")
 RELAY_SOCKET = RELAY_DIR / "discovery.sock"
 SUPERVISOR_SOCKET_ENV = "SUPERVISOR_SOCKET"
 SERVICE = "meshbeacon"
-MAX_REQUEST = 8192
+MAX_REQUEST = 32768
 MAX_CLIENTS = 4
 DEADLINE = 5.0  # for a request that has started to arrive; an idle, authorised link may wait
 SUPERVISOR_TIMEOUT = 10.0
@@ -124,6 +126,12 @@ def handle(request: Any, supervisor_socket: str) -> dict[str, Any]:
         return {"ok": False, "error": "invalid"}
     op = request.get("op")
     try:
+        if op in {"config_read", "config_save", "app_restart", "sidebar_enable"}:
+            from .app_control import perform  # local import: the API also uses this relay
+
+            return perform(
+                request, lambda method, path, payload: supervisor_request(supervisor_socket, method, path, payload)
+            )
         if op == "announce":
             config = announce_config(request.get("config"))
             if config is None:

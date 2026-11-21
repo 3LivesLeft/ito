@@ -83,7 +83,9 @@ def test_marketplace_mistakes_are_refused(path, change, expected):
     [
         ("hassio_api", True, "hassio_api"),
         ("homeassistant_api", True, "homeassistant_api"),
-        ("ingress", True, "ingress"),
+        ("ingress", False, "ingress"),
+        ("panel_admin", False, "panel_admin"),
+        ("ingress_port", 8099, "ingress_port"),
         ("map", ["share:rw"], "map"),
         ("ports", {"8100/tcp": 8100}, "ports"),
         ("hassio_role", "manager", "hassio_role"),

@@ -198,3 +198,14 @@ feasibility Q-27.
 
 Revisit this model at every minor version, whenever a permission or default changes, and before
 the v1.0 external security audit.
+
+## App dashboard amendment (21 Nov 2026, ADR 0026)
+
+Ingress is now accepted by the maintainer. The internal Supervisor-to-app hop is plain HTTP;
+network interception remains an accepted limitation. The app trusts only the actual Supervisor
+peer, uses no forwarded IP for authentication, and relies on Supervisor's admin-only Ingress
+access. POST requires JSON plus a non-simple request header; no CORS permission is emitted.
+Static paths are allow-listed and content-versioned. Requests, concurrency and time are bounded.
+Management admits only validated self-options, self-restart and first-run sidebar enablement.
+No arbitrary proxy, identity replacement, broader Supervisor role, external port or host mount is
+introduced. Optional integration TLS and existing process/user separation remain in place.

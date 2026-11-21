@@ -34,7 +34,6 @@ FORBIDDEN_TRUE = [
     "stdin",
     "realtime",
     "journald",
-    "ingress",
 ]
 
 
@@ -74,7 +73,10 @@ def test_defaults_make_no_external_connections():
 def test_discovery_is_the_only_new_supervisor_feature():
     # ADR 0006: discovery needs no hassio_api permission and does not change the security rating.
     assert CONFIG["discovery"] == ["meshbeacon"]
-    assert "ports" not in CONFIG and "ingress" not in CONFIG
+    assert "ports" not in CONFIG
+    assert CONFIG["ingress"] is True
+    assert CONFIG["ingress_port"] == 8097
+    assert CONFIG["panel_admin"] is True
 
 
 OPTIONAL = {"messaging_display_name", "messaging_propagation_node"}  # hidden until "show optional"

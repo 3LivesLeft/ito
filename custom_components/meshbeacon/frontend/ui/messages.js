@@ -30,8 +30,9 @@ function sameDay(a, b) {
 
 export class MessagesView {
   /** @param {{messaging: object}} o the messaging source (sources/messaging.js shape) */
-  constructor({ messaging }) {
+  constructor({ messaging, offText = MESSAGING_OFF_TEXT }) {
     this.messaging = messaging;
+    this.offText = offText;
     this.selected = null;
     this.adding = false;
     this.renaming = false;
@@ -196,7 +197,7 @@ export class MessagesView {
     const off = !summary || summary.state === "disabled";
     if (off) {
       this.element.dataset.open = "";
-      this.listPane.replaceChildren(h("h2", { text: "Messaging is off" }), h("p", { class: "small", text: MESSAGING_OFF_TEXT }), h("p", { class: "muted small", text: KEPT_WHILE_OFF }));
+      this.listPane.replaceChildren(h("h2", { text: "Messaging is off" }), h("p", { class: "small", text: this.offText }), h("p", { class: "muted small", text: KEPT_WHILE_OFF }));
       this.chatPane.hidden = true;
       return;
     }

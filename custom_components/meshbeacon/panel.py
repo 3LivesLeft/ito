@@ -73,7 +73,7 @@ async def async_setup_panel_support(hass: HomeAssistant) -> None:
     conversations.async_register(hass)
 
 
-async def async_show_panel(hass: HomeAssistant) -> None:
+async def async_show_panel(hass: HomeAssistant, *, app_dashboard: bool = False) -> None:
     """Add the sidebar entry (idempotent: a second MeshBeacon entry shares the same panel)."""
     if PANEL_URL in hass.data.get(frontend.DATA_PANELS, {}):
         return
@@ -81,7 +81,7 @@ async def async_show_panel(hass: HomeAssistant) -> None:
         hass,
         frontend_url_path=PANEL_URL,
         webcomponent_name=ELEMENT,
-        sidebar_title=TITLE,
+        sidebar_title="ito history" if app_dashboard else TITLE,
         sidebar_icon=ICON,
         module_url=f"{STATIC_URL}/{hass.data[_STATIC_DONE]}/{MODULE}",
         require_admin=REQUIRE_ADMIN,

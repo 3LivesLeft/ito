@@ -174,16 +174,16 @@ test("frontend files make no external requests and never use innerHTML", () => {
     const urls = (source.match(/https?:\/\/[^\s"'`)]+/g) || []).filter((u) => u !== "http://www.w3.org/2000/svg");
     assert.deepEqual(urls, [], `${name} refers to ${urls}`);
     assert.doesNotMatch(source, /\binnerHTML\b|\bouterHTML\b|insertAdjacentHTML|document\.write|\beval\(|new Function/, name);
-    assert.doesNotMatch(source, /\bfetch\(|XMLHttpRequest|WebSocket\(|import\(\s*["'`]https?:/, name);
+    if (name !== "sources/ingress.js") assert.doesNotMatch(source, /\bfetch\(|XMLHttpRequest|WebSocket\(|import\(\s*["'`]https?:/, name);
     assert.doesNotMatch(source, /localStorage|sessionStorage|indexedDB/, name); // no second history store
   }
 });
 
 test("the frontend folder holds only code and the bundled Inter font with its licence", () => {
   const top = readdirSync(FRONTEND).sort();
-  assert.deepEqual(top, ["brand-mark.js", "fonts", "fonts.js", "meshbeacon-panel.js", "model.js", "sources", "tokens.js", "ui"]);
-  assert.deepEqual(readdirSync(new URL("sources/", FRONTEND)).sort(), ["hass.js", "messaging.js", "snapshot.js"]);
-  assert.deepEqual(readdirSync(new URL("ui/", FRONTEND)).sort(), ["components.js", "controller.js", "dom.js", "messages.js", "style.js", "views.js"]);
+  assert.deepEqual(top, ["brand-mark.js", "fonts", "fonts.js", "ingress.js", "meshbeacon-panel.js", "model.js", "page.css", "sources", "tokens.js", "ui"]);
+  assert.deepEqual(readdirSync(new URL("sources/", FRONTEND)).sort(), ["hass.js", "ingress.js", "messaging.js", "snapshot.js"]);
+  assert.deepEqual(readdirSync(new URL("ui/", FRONTEND)).sort(), ["components.js", "controller.js", "dom.js", "messages.js", "settings.js", "style.js", "views.js"]);
   const fonts = readdirSync(new URL("fonts/inter-5.3.0/", FRONTEND)).sort();
   assert.deepEqual(fonts, [
     "OFL.txt",

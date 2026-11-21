@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 — unreleased (develop)
+
+- The dashboard is bundled in the app and opens through Home Assistant Ingress. App updates now update the dashboard, logo and fonts together.
+- Adds the ito sidebar entry on first start. Choose connections and manage settings in the dashboard; Save and apply restarts ito and reconnects automatically.
+- Messaging uses the existing engine and persistent store. Identities, contacts, messages, integration domain and app slug are unchanged.
+- The Marketplace integration is optional, for entities and automations. Existing installations can keep it.
+- Recent dashboard charts are held in memory (24 hours and 7 days); Home Assistant recorder history is untouched.
+
+
 ## 0.4.1 — unreleased (develop)
 
 - **MeshBeacon is now called ito.** The app, the integration, the sidebar panel and its messages,

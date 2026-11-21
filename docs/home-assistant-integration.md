@@ -3,12 +3,12 @@
   <img src="../branding/png/logo-horizontal-light.png" alt="ito" height="48">
 </picture>
 
-# Home Assistant integration (v0.2)
+# Optional Home Assistant integration
 
-Status: **in development** on `feature/v0.2.0-observability` (draft PR #3). Not published. From v0.3 the
-integration installs from Home Assistant's built-in Marketplace ([Marketplace](marketplace.md),
-[getting started](getting-started.md)); nothing is published until the first release. Design and security review: [v0.2 feasibility, architecture and security](research/v0.2-observability.md),
-[ADR 0006](adr/0006-local-metrics-api.md). Hardware test: [v0.2 hardware acceptance](testing/v0.2-hardware-acceptance.md).
+From app 0.5.0, the dashboard, configuration and messaging are bundled with the app through
+Ingress. Install this separate integration only for entities, automations and recorder history.
+Existing entries and entities stay compatible. The retained integration panel is labelled
+**ito history** when loaded with the new app. [Installation guide](getting-started.md).
 
 ## What it is
 
@@ -21,12 +21,11 @@ Assistant cannot control the node through it.
 ## Set-up
 
 1. **Install the integration once**, from Home Assistant's Marketplace (Home Assistant 2026.11 or
-   newer): see [getting started](getting-started.md#2-add-the-ito-dashboard). Until the
+   newer): see [getting started](getting-started.md#optional-home-assistant-entities-and-automations). Until the
    first release, testers may still copy `custom_components/meshbeacon` into
    `/config/custom_components/` by hand; a later Marketplace install takes over that folder
    ([Marketplace](marketplace.md#moving-a-hand-copied-integration-to-the-marketplace)).
-2. **Switch it on in the app.** In the ito app's Configuration tab, switch on **Show
-   ito's status in Home Assistant** (off by default), save, and restart the app.
+2. **Switch it on in the app.** In **ito → Settings**, enable **Share status with the optional Home Assistant integration** (off by default), then **Save and apply**.
 3. **Add it.** Settings → Devices & services shows **ito discovered**. The dialog names the
    app it came from (`local_meshbeacon` for a local install, `ce27fbb5_meshbeacon` for the app
    from this repository's app store entry). Choose **Add**.

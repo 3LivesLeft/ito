@@ -5,7 +5,7 @@ FROM ghcr.io/home-assistant/base-python:3.13-alpine3.24@sha256:c7d34ae22a87275d4
 # which runs, as its own user and s6 service, only when the user switches messaging on (off by
 # default). Nothing of it runs, and no messaging data is created, while it is off.
 
-ARG BUILD_VERSION=0.4.1
+ARG BUILD_VERSION=0.5.0
 ARG BUILD_ARCH
 
 ENV \
@@ -77,6 +77,7 @@ RUN set -eu; \
     addgroup mb-rns mb-rpc; \
     addgroup mb-lxmf mb-rpc
 
+COPY frontend /usr/share/meshbeacon/frontend
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES /usr/share/doc/meshbeacon/
 COPY rootfs /
 RUN chmod 0755 /etc/cont-init.d/10-meshbeacon /etc/services.d/meshbeacon/run /etc/services.d/meshbeacon/finish \
