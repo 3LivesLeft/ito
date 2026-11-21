@@ -6,9 +6,9 @@ ito runs a [Reticulum](https://github.com/markqvist/Reticulum) node on your Home
 device. Reticulum is an encrypted, decentralised network that works over the internet today and,
 in later versions of ito, over radio as well.
 
-> ⚠ **Experimental.** This is the v0.1.0 local prototype. Do not depend on it yet.
+> ⚠ **Experimental.** This project is under active development. Do not rely on it for critical communications. Feature availability depends on the installed build.
 
-## What it does (v0.1.0)
+## Core capabilities
 
 - Runs the **unmodified Reticulum reference implementation** (RNS 1.6.0) for you.
 - Connects to **peers you choose** — nothing else. With the default settings ito makes
@@ -17,8 +17,7 @@ in later versions of ito, over radio as well.
   backups.
 - Optionally **shares your connection** with others (transport mode, off by default).
 
-From v0.2 it can also **show its status in Home Assistant** (optional, off by default; see
-below). It does not yet send messages or use radio.
+The optional Home Assistant integration exposes read-only status entities (see below). Messaging support is being developed separately; check the current release notes and dashboard before relying on two-way LXMF messaging. LoRa radio support requires compatible hardware and is not part of the basic local installation.
 
 ## Install as a local app (prototype)
 
@@ -63,7 +62,7 @@ ito keeps reconnecting automatically if the peer or your internet connection dro
 - **They cannot read** your end-to-end-encrypted Reticulum traffic.
 - They may keep logs; ito cannot control what an operator records.
 - They may go offline at any time, or ban connections that break their rules.
-- ito v0.1.0 ships **no preset public peers**: you decide whom to connect to.
+- The local prototype ships **no preset public peers**: you decide whom to connect to.
 
 ## Transport mode
 
