@@ -150,24 +150,31 @@ def main() -> int:
             proc.kill()
         server.shutdown()
         log = "\n".join(p.read_text() for p in sorted(config.glob("home-assistant.log*")))
+        registry = config / ".storage" / "core.entity_registry"
+        entities = json.loads(registry.read_text())["data"]["entities"] if registry.exists() else []
+        ours = [e for e in entities if e["platform"] == "meshbeacon"]
+        # The integration's entities are whatever the registry says belongs to its platform, not
+        # entity IDs matching a name: since the rename (ADR 0025) new installations get ito_* IDs.
+        our_ids = {e["entity_id"] for e in ours}
         try:
             db = sqlite3.connect(config / "home-assistant_v2.db")
             rows = db.execute(
                 "select m.entity_id, s.state from states s join states_meta m on s.metadata_id = m.metadata_id "
-                "where m.entity_id like '%meshbeacon%' group by m.entity_id"
+                "group by m.entity_id"
             ).fetchall()
             db.close()
         except sqlite3.Error as exc:
             rows = []
             print(f"recorder database unusable: {exc}")
-        states = dict(rows)
-        registry = config / ".storage" / "core.entity_registry"
-        entities = json.loads(registry.read_text())["data"]["entities"] if registry.exists() else []
-        ours = [e for e in entities if e["platform"] == "meshbeacon"]
+        states = {entity_id: state for entity_id, state in rows if entity_id in our_ids}
         stored = json.loads((config / ".storage" / "core.config_entries").read_text())["data"]["entries"]
         storage_text = "\n".join(p.read_text(errors="replace") for p in (config / ".storage").iterdir() if p.is_file())
         hass_output = output.read_text(errors="replace")
-    problems = ["panel not checked (Home Assistant stopped too early)"] if panel_problems is None else panel_problems
+    # A copy: problems found later must not be counted as the panel's.
+    if panel_problems is None:
+        problems = ["panel not checked (Home Assistant stopped too early)"]
+    else:
+        problems = list(panel_problems)
     if exited_early:
         problems.append(f"Home Assistant exited early (code {proc.returncode})")
     polls = sum(calls)
