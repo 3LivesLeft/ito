@@ -29,6 +29,8 @@ The SVG in [logo.svg](logo.svg) is an initial vector interpretation of the threa
 
 [ito-theme.yaml](../docs/home-assistant/ito-theme.yaml) provides a sage-green theme for Home Assistant's built-in dashboard cards. To use it, add the file under your Home Assistant `themes` directory, ensure `frontend: themes: !include_dir_merge_named themes` is configured in `configuration.yaml`, reload themes (or restart Home Assistant), then select **ito sage** in your user profile's theme settings. Existing theme settings and other dashboards are unaffected until you select the theme. This is optional and does not replace Home Assistant's own logo or app icons.
 
+For a step-by-step upgrade, theme installation and messaging regression checklist, see the [Home Assistant ito setup guide](../docs/home-assistant/ito-brand-setup.md).
+
 ## Compatibility
 
 The Home Assistant app slug, integration domain, discovery service, entity IDs, Python package and data directories deliberately remain `meshbeacon`. This is an outward-facing rename, not a data migration. Do not rename identities or message stores as part of branding.
