@@ -117,3 +117,45 @@ def test_contacts_added_in_the_dashboard_get_names_and_count():
     public = sup.public()
     assert public["contacts_configured"] == 2 and public["contacts_reachable"] == 1
     assert public["last_received_from"] == "Bob" and engine.sent[0]["contact"] == "bob"
+
+
+@pytest.mark.parametrize("text", ["😀" * 2048, "\n" * 8191 + "x", "ж" * 4096], ids=["emoji", "newlines", "cyrillic"])
+def test_a_full_size_message_in_any_script_crosses_every_hop(tmp_path, text):
+    """8 KiB of UTF-8, however JSON escapes it, fits the API body and the engine socket line, and
+    comes back intact in the conversation (review finding: \\u escaping tripled the size)."""
+    import http.client
+    import json as json_mod
+    import os
+    import threading
+
+    from meshbeacon.api import MESSAGING_PATH, ApiServer, StatusStore, new_token
+    from meshbeacon.messaging.engine import Engine
+    from meshbeacon.messaging.server import Server
+    from meshbeacon.messaging.settings import parse
+
+    assert len(text.encode()) <= 8192
+    engine = Engine(tmp_path, parse({"contacts": [{"id": "phone", "name": "Phone", "destination": "a1" * 16}]}))
+    sock = tmp_path / "engine.sock"
+    server = Server(sock, engine.handle, {os.getuid()})
+    server.bind()
+    threading.Thread(target=server.serve, daemon=True).start()
+    sup, _ = make()
+    sup.link = lambda req, timeout=5.0: es.request(req, sock, os.getuid(), timeout)
+    key = new_token()
+    api = ApiServer(StatusStore(new_token(), key, sup.forward), "127.0.0.1", 0)
+    api.start()
+    try:
+        send = {"op": "send", "contact": "phone", "text": text, "idempotency_key": "full-size-01"}
+        body = json_mod.dumps(send).encode()
+        assert len(body) > 16 * 1024  # what Home Assistant's default encoding would send
+        conn = http.client.HTTPConnection("127.0.0.1", api.port, timeout=10)
+        conn.request("POST", MESSAGING_PATH, body=body, headers={"Authorization": f"Bearer {key}"})
+        response = conn.getresponse()
+        assert response.status == 200, response.read()
+        conn.close()
+        status, answer = sup.forward({"op": "history", "contact": "phone"})
+        assert status == 200 and answer["messages"][-1]["text"] == text
+    finally:
+        api.stop()
+        server.stop()
+        engine.stop()

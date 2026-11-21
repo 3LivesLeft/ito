@@ -3,10 +3,10 @@
 
 ``/run/meshbeacon-messaging/engine.sock`` (0660, group ``mb-msg``, in a 0750 folder
 ``mb-lxmf:mb-msg``; ``mb-msg`` holds only the core and the engine). Every connection's peer is
-checked with ``SO_PEERCRED``: only the allowed user (the core, ``meshbeacon``) is served; anyone
-else is disconnected without an answer. At most four connections at once; a request line is at
-most 16 KiB; each answer is one line. Nothing here is reachable from the network or from Home
-Assistant.
+checked with ``SO_PEERCRED``: only the allowed user (the core, ``meshbeacon``) is served; anyone else is
+disconnected without an answer. At most four connections at once; a request line is at most 64 KiB
+(room for 8 KiB of text however JSON escapes it); each answer is one UTF-8 line. Nothing here is
+reachable from the network or from Home Assistant.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 MAX_CONNECTIONS = 4
-MAX_LINE = 16 * 1024
+MAX_LINE = 64 * 1024
 IDLE_TIMEOUT = 120.0
 SOCKET_MODE = 0o660
 
@@ -100,7 +100,7 @@ class Server:
                     answer: dict[str, Any] = {"ok": False, "error": "invalid"}
                 else:
                     answer = self.handle(request)
-                conn.sendall(json.dumps(answer, separators=(",", ":")).encode() + b"\n")
+                conn.sendall(json.dumps(answer, separators=(",", ":"), ensure_ascii=False).encode() + b"\n")
         except OSError:
             return
         finally:
@@ -130,7 +130,7 @@ class Client:
             sock.connect(str(self.path))
             if self.expected_uid is not None and peer_uid(sock) != self.expected_uid:
                 raise PermissionError("the messaging socket is not served by the engine's user")
-            sock.sendall(json.dumps(request).encode() + b"\n")
+            sock.sendall(json.dumps(request, ensure_ascii=False).encode() + b"\n")
             reader = sock.makefile("rb")
             line = reader.readline(4 * 1024 * 1024)
         answer = json.loads(line)

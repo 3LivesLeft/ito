@@ -7,9 +7,9 @@
 * ``GET /api/v1/status`` serves a snapshot that the core has already built (the status key).
 * ``POST /api/v1/messaging`` (M5) exists only while LXMF messaging is on. It takes a **separate
   messaging key** (the status key is refused there, and the messaging key is refused for status),
-  a JSON body of at most 16 KiB, and passes the request to the core's messaging binding, which
-  allows only the conversation view's operations. At most ``MESSAGING_CONCURRENT`` messaging
-  requests at a time, so that a held long poll never blocks status.
+  a JSON body of at most 64 KiB (8 KiB of text, however JSON escapes it), and passes the request
+  to the core's messaging binding, which allows only the conversation view's operations. At most
+  ``MESSAGING_CONCURRENT`` messaging requests at a time, so a held long poll never blocks status.
 * Bounded: at most ``MAX_CONCURRENT`` requests at a time (others are closed at once), a socket
   inactivity timeout, an absolute per-connection deadline, GET only, no request bodies.
 * HTTPS with a throwaway certificate made at every start; Home Assistant pins its fingerprint,
@@ -49,7 +49,7 @@ SUPERVISOR_URL = "http://supervisor"
 MAX_CONCURRENT = 6  # 4 → 6 for M5: messaging takes at most 4, so status always has a slot
 MESSAGING_PATH = "/api/v1/messaging"
 MESSAGING_CONCURRENT = 4
-MAX_BODY = 16 * 1024
+MAX_BODY = 64 * 1024
 SOCKET_TIMEOUT = 5.0  # longest silence from a client
 REQUEST_DEADLINE = 10.0  # longest a connection may last, however it trickles
 REANNOUNCE_INTERVAL = 6 * 3600.0  # re-send the (unchanged) discovery message; the Supervisor ignores duplicates
@@ -153,7 +153,7 @@ def make_handler(store: StatusStore) -> type[BaseHTTPRequestHandler]:
                 code, answer = 500, {"error": "internal"}
             finally:
                 store.messaging_slots.release()
-            self._send(code, json.dumps(answer, separators=(",", ":"), allow_nan=False).encode())
+            self._send(code, json.dumps(answer, separators=(",", ":"), allow_nan=False, ensure_ascii=False).encode())
 
         def _send(self, code: int, body: bytes, extra: dict[str, str] | None = None) -> None:
             self.send_response(code)

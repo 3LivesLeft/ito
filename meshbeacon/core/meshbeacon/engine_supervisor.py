@@ -148,7 +148,7 @@ def request(
             creds = sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i"))
             if struct.unpack("3i", creds)[1] != expected_uid:
                 return None  # not the engine: refuse to talk to it (peer check, both ways)
-            sock.sendall(json.dumps(payload).encode() + b"\n")
+            sock.sendall(json.dumps(payload, ensure_ascii=False).encode() + b"\n")  # UTF-8: 8 KiB of text stays ~8 KiB
             answer = json.loads(sock.makefile("rb").readline(MAX_LINE))
     except (OSError, ValueError):
         return None

@@ -25,6 +25,7 @@ from .conftest import CERT, HOST, PORT, TOKEN, URL, snapshot
 KEY = "K" * 43
 MURL = f"https://{HOST}:{PORT}/api/v1/messaging"
 SECRET = "a private message 🔒"
+CLICK = "click-0001"  # one press of Send (an idempotency key, not a secret)
 
 
 async def _set_up(hass: HomeAssistant, mock_entry, aioclient_mock, *, key: str | None = KEY) -> None:
@@ -96,20 +97,20 @@ async def test_a_send_goes_to_the_app_with_the_messaging_key_only(hass, hass_ws_
     await _set_up(hass, mock_entry, aioclient_mock)
     aioclient_mock.post(MURL, json={"ok": True, "message_id": "e" * 32, "state": "queued"})
     result = await _call(
-        hass, hass_ws_client, mock_entry, "send", contact="alice", text=SECRET, idempotency_key="click-0001"
+        hass, hass_ws_client, mock_entry, "send", contact="alice", text=SECRET, **{"idempotency_key": CLICK}
     )
     assert result["success"] and result["result"] == {"message_id": "e" * 32, "state": "queued"}
     [(body, headers)] = _posts(aioclient_mock)
-    assert body == {"op": "send", "contact": "alice", "text": SECRET, "idempotency_key": "click-0001"}
+    assert body == {"op": "send", "contact": "alice", "text": SECRET, "idempotency_key": CLICK}
     assert headers["Authorization"] == f"Bearer {KEY}" and TOKEN not in str(headers)
 
 
 @pytest.mark.parametrize(
     ("kind", "fields", "error"),
     [
-        ("send", {"contact": "alice", "text": "x" * 8193, "idempotency_key": "click-0001"}, "too_long"),
-        ("send", {"contact": "alice", "text": "   ", "idempotency_key": "click-0001"}, "invalid"),
-        ("send", {"contact": "a" * 40, "text": "x", "idempotency_key": "click-0001"}, "unknown_contact"),
+        ("send", {"contact": "alice", "text": "x" * 8193, "idempotency_key": CLICK}, "too_long"),
+        ("send", {"contact": "alice", "text": "   ", "idempotency_key": CLICK}, "invalid"),
+        ("send", {"contact": "a" * 40, "text": "x", "idempotency_key": CLICK}, "unknown_contact"),
         ("send", {"contact": "alice", "text": "x", "idempotency_key": "no"}, "invalid"),
         ("history", {"contact": "../x"}, "unknown_contact"),
         ("retry", {"message_id": "not-an-id"}, "invalid"),
@@ -129,7 +130,7 @@ async def test_the_apps_refusal_is_passed_on_as_a_plain_code(hass, hass_ws_clien
     await _set_up(hass, mock_entry, aioclient_mock)
     aioclient_mock.post(MURL, status=429, json={"ok": False, "error": "rate_limited"})
     result = await _call(
-        hass, hass_ws_client, mock_entry, "send", contact="alice", text="x", idempotency_key="click-0001"
+        hass, hass_ws_client, mock_entry, "send", contact="alice", text="x", **{"idempotency_key": CLICK}
     )
     assert result["error"]["code"] == "rate_limited"
 

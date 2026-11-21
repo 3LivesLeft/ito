@@ -52,7 +52,7 @@ PATH = "/api/v1/messaging"
 KEYS = f"{DOMAIN}_messaging_keys"  # hass.data: app slug -> messaging key (memory only)
 KEY = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
 CONF_MESSAGING_KEY = "messaging_key"
-MAX_RESPONSE = 1024 * 1024
+MAX_RESPONSE = 4 * 1024 * 1024  # a page of 50 messages of 8 KiB, however JSON escapes them
 TIMEOUT = 15.0
 WAIT = 8.0  # the app allows at most 8 s
 MIN_INTERVAL = 1.0
@@ -153,7 +153,7 @@ class MessagingHub:
         try:
             async with async_get_clientsession(self.hass).post(
                 url,
-                data=json.dumps(payload).encode(),
+                data=json.dumps(payload, ensure_ascii=False).encode(),  # UTF-8, not \u escapes
                 headers={
                     "Authorization": f"Bearer {self.key}",
                     "Content-Type": "application/json",

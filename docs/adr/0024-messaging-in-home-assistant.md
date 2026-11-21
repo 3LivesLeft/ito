@@ -22,7 +22,7 @@ updates and history that survives restarts.
 | Hop | Transport | Authentication and authorisation | Limits |
 |---|---|---|---|
 | Browser → HA | HA websocket, `meshbeacon/messaging/*` | HA login; **administrators only** (`require_admin`), like the panel | Inputs validated (contact IDs, 8 KiB text, idempotency key) before anything leaves HA |
-| HA → app core | `POST /api/v1/messaging` on the existing pinned-TLS listener | A **separate messaging key** (256-bit, per app start). The status key is refused there and the messaging key is refused for status | 16 KiB bodies; at most 4 messaging requests at once (listener 4 → 6, so status always has a slot); sends 10/min and 200/day; other requests 240/min; long poll ≤ 8 s |
+| HA → app core | `POST /api/v1/messaging` on the existing pinned-TLS listener | A **separate messaging key** (256-bit, per app start). The status key is refused there and the messaging key is refused for status | 64 KiB bodies (8 KiB of text however JSON escapes it); at most 4 messaging requests at once (listener 4 → 6, so status always has a slot); sends 10/min and 200/day; other requests 240/min; long poll ≤ 8 s |
 | Core → engine | Unix socket (`SO_PEERCRED` both ways, ADR 0014) | Only the core's user; the core forwards an **allow-list** of the view's operations and never `auto` | The engine validates everything again |
 
 The browser never holds a key. The messaging key exists only while **Enable LXMF messaging** and
