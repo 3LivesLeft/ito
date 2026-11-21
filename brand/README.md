@@ -25,6 +25,10 @@ The SVG in [logo.svg](logo.svg) is an initial vector interpretation of the threa
 - These files are source artwork, not proof that the Home Assistant app or dashboard loads a favicon automatically. Home Assistant's UI controls its own branding; do not claim that placing these files here changes the app icon.
 - Do not embed custom JavaScript, external stylesheets or unsupported cards into the example Lovelace dashboard solely to force branding.
 
+## Optional Home Assistant theme
+
+[ito-theme.yaml](../docs/home-assistant/ito-theme.yaml) provides a sage-green theme for Home Assistant's built-in dashboard cards. To use it, add the file under your Home Assistant `themes` directory, ensure `frontend: themes: !include_dir_merge_named themes` is configured in `configuration.yaml`, reload themes (or restart Home Assistant), then select **ito sage** in your user profile's theme settings. Existing theme settings and other dashboards are unaffected until you select the theme. This is optional and does not replace Home Assistant's own logo or app icons.
+
 ## Compatibility
 
 The Home Assistant app slug, integration domain, discovery service, entity IDs, Python package and data directories deliberately remain `meshbeacon`. This is an outward-facing rename, not a data migration. Do not rename identities or message stores as part of branding.
