@@ -29,15 +29,18 @@ APP = ROOT / "meshbeacon"
 BRAND = ROOT / "custom_components" / "meshbeacon" / "brand"
 FRONTEND = ROOT / "custom_components" / "meshbeacon" / "frontend"
 
-# Brand colours (docs/branding.md). PROVISIONAL with the ito artwork, pending visual review.
-MIST, SAGE, DEEP = "#E8F3ED", "#A6C9B2", "#284C40"
-FOREST, LEAF, WHITE = "#17302A", "#496A5D", "#FFFFFF"  # dark tile, secondary text, light tile
+# Brand colours from the original kit (docs/branding.md).
+MIST, SAGE, DEEP = "#E8F3ED", "#A6C9B2", "#1F4D3A"
+FOREST, LEAF, WHITE = "#0B1A14", "#3E8F6E", "#FFFFFF"  # brand ink, leaf accent, monochrome tile
 
 PALETTES: dict[str, dict[str, str]] = {
     # For dark backgrounds.
     "dark": {
-        "globe": f"fill:none;stroke:{MIST}",
-        "grid": f"fill:none;stroke:{MIST}",
+        "land": f"fill:{LEAF}",
+        "letter": f"fill:none;stroke:{MIST}",
+        "dot": f"fill:{SAGE}",
+        "globe": f"fill:none;stroke:{SAGE}",
+        "glyph": f"fill:none;stroke:{MIST}",
         "thread": f"fill:none;stroke:{SAGE}",
         "node": f"fill:{MIST}",
         "word": f"fill:{MIST}",
@@ -46,18 +49,24 @@ PALETTES: dict[str, dict[str, str]] = {
     },
     # For light backgrounds.
     "light": {
+        "land": f"fill:{SAGE}",
+        "letter": f"fill:none;stroke:{FOREST}",
+        "dot": f"fill:{LEAF}",
         "globe": f"fill:none;stroke:{DEEP}",
-        "grid": f"fill:none;stroke:{DEEP}",
-        "thread": f"fill:none;stroke:{SAGE}",
-        "node": f"fill:{DEEP}",
-        "word": f"fill:{DEEP}",
-        "tagline": f"fill:{LEAF}",
+        "glyph": f"fill:none;stroke:{FOREST}",
+        "thread": f"fill:none;stroke:{DEEP}",
+        "node": f"fill:{FOREST}",
+        "word": f"fill:{FOREST}",
+        "tagline": f"fill:{DEEP}",
         "tile": f"fill:{MIST};stroke:{SAGE}",
     },
     # Single colour: mist on dark.
     "mono-dark": {
+        "land": "fill:none",
+        "letter": f"fill:none;stroke:{MIST}",
+        "dot": f"fill:{MIST}",
         "globe": f"fill:none;stroke:{MIST}",
-        "grid": f"fill:none;stroke:{MIST}",
+        "glyph": f"fill:none;stroke:{MIST}",
         "thread": f"fill:none;stroke:{MIST}",
         "node": f"fill:{MIST}",
         "word": f"fill:{MIST}",
@@ -66,12 +75,15 @@ PALETTES: dict[str, dict[str, str]] = {
     },
     # Single colour: deep green on light.
     "mono-light": {
-        "globe": f"fill:none;stroke:{DEEP}",
-        "grid": f"fill:none;stroke:{DEEP}",
-        "thread": f"fill:none;stroke:{DEEP}",
-        "node": f"fill:{DEEP}",
-        "word": f"fill:{DEEP}",
-        "tagline": f"fill:{DEEP}",
+        "land": "fill:none",
+        "letter": f"fill:none;stroke:{FOREST}",
+        "dot": f"fill:{FOREST}",
+        "globe": f"fill:none;stroke:{FOREST}",
+        "glyph": f"fill:none;stroke:{FOREST}",
+        "thread": f"fill:none;stroke:{FOREST}",
+        "node": f"fill:{FOREST}",
+        "word": f"fill:{FOREST}",
+        "tagline": f"fill:{FOREST}",
         "tile": f"fill:{WHITE};stroke:{SAGE}",
     },
 }
@@ -133,18 +145,24 @@ def build_svgs(out_dir: Path = SVG_OUT) -> dict[str, Path]:
         # App icon: the mark on a rounded tile (works on light and dark surfaces alike).
         tile = '<rect class="tile" x="1" y="1" width="254" height="254" rx="56"/>'
         for name, body, rules, fit in (
-            ("icon", mark, mark_rules, "translate(20.5 26) scale(0.84)"),
-            ("icon-small", small, small_rules, "translate(10 12) scale(0.92)"),  # fills more of a tiny tile
+            ("icon", mark, mark_rules, "translate(20.48 20.48) scale(0.84)"),
+            ("icon-small", small, small_rules, "translate(10.24 10.24) scale(0.92)"),  # fills more of a tiny tile
         ):
             inner = f'{tile}\n<g transform="{fit}">{body}</g>'
             write(f"{name}-{variant}", svg(256, 256, "ito", _style({**rules, **tile_rule}, palette), inner))
-        # Horizontal logo: mark + wordmark, cap height 92 on a 256 mark, vertically centred.
-        scale = 92 / 72.75
-        word_x, word_y = 296, (256 - 92) / 2 - (96.88 - 72.75) * scale
+        # Horizontal logo: align the optical centre of the lettering with the emblem.
+        scale = 1.65
+        word_height = 77 * scale
+        word_x, word_y = 272, (256 - word_height) / 2 - 19 * scale
         width = word_x + word_w * scale
         horizontal = f'<g>{mark}</g>\n<g transform="translate({word_x:g} {word_y:.2f}) scale({scale:.4f})">{word}</g>'
         rules = {**mark_rules, **word_rules}
         write(f"logo-horizontal-{variant}", svg(width, 256, "ito", _style(rules, palette), horizontal))
+        write(f"wordmark-{variant}", svg(word_w, 100, "ito", _style(word_rules, palette), word))
+        stacked_scale = 1.35
+        stacked_x = (256 - word_w * stacked_scale) / 2
+        stacked = f'{mark}\n<g transform="translate({stacked_x:g} 257) scale({stacked_scale:g})">{word}</g>'
+        write(f"logo-stacked-{variant}", svg(256, 392, "ito", _style(rules, palette), stacked))
         # Badge: the horizontal logo on its own tile, 2.5 : 1 (Home Assistant's app logo.png), so it
         # stays legible on light and dark app pages alike.
         badge_w = width + 120
@@ -161,9 +179,9 @@ def build_svgs(out_dir: Path = SVG_OUT) -> dict[str, Path]:
         # so the tagline has a fixed cap height (26 on a 256 mark) and sets the lockup's width.
         tag_scale = 26 / 72.75
         full_w = max(width, word_x + tag_w * tag_scale)
-        top = (256 - (92 + 34 + 72.75 * tag_scale)) / 2
-        word_y2 = top - (96.88 - 72.75) * scale
-        tag_y = top + 92 + 34 - (96.88 - 72.75) * tag_scale
+        top = (256 - (word_height + 30 + 72.75 * tag_scale)) / 2
+        word_y2 = top - 19 * scale
+        tag_y = top + word_height + 30 - (96.88 - 72.75) * tag_scale
         full = (
             f"<g>{mark}</g>\n"
             f'<g transform="translate({word_x:g} {word_y2:.2f}) scale({scale:.4f})">{word}</g>\n'
@@ -184,7 +202,7 @@ def build_mark_module(out: Path | None = None) -> Path:
     """The marks as data for the interface (no markup is parsed in the page): element name,
     class and geometry. Colours come from the page's design tokens, so the mark follows the theme."""
     marks = {}
-    for key, name in (("full", "mark.svg"), ("small", "mark-small.svg")):
+    for key, name in (("full", "mark.svg"), ("small", "mark-small.svg"), ("wordmark", "wordmark.svg")):
         root = ET.parse(SRC / name).getroot()
         strokes = dict(re.findall(r"\.([a-z]+)\{[^}]*?stroke-width:([\d.]+)", root.findtext("{*}style") or ""))
         shapes = []
@@ -195,12 +213,13 @@ def build_mark_module(out: Path | None = None) -> Path:
                 cls = el.get("class", "")
                 if cls in strokes:
                     attrs["stroke-width"] = strokes[cls]
+                    attrs.update({"stroke-linecap": "round", "stroke-linejoin": "round"})
                 shapes.append([tag, cls, attrs])
         marks[key] = shapes
     out = out or FRONTEND / "brand-mark.js"
     out.write_text(
         "// SPDX-License-Identifier: Apache-2.0\n"
-        "// Generated by tools/brand/build.py from branding/src/mark*.svg. Do not edit by hand.\n"
+        "// Generated by tools/brand/build.py from branding/src SVG masters. Do not edit by hand.\n"
         "// [element, class, attributes]; classes are coloured by the page's design tokens.\n"
         f"export const MARKS = Object.freeze({json.dumps(marks, separators=(',', ':'))});\n"
     )
@@ -217,6 +236,8 @@ def png_jobs(svgs: dict[str, Path]) -> list[dict[str, object]]:
         for size in (512, 256, 128):
             job(f"icon-{variant}", PNG_OUT / f"icon-{variant}-{size}.png", size)
         job(f"logo-horizontal-{variant}", PNG_OUT / f"logo-horizontal-{variant}.png", 0, 128, trim=True)
+        job(f"wordmark-{variant}", PNG_OUT / f"wordmark-{variant}.png", 0, 100)
+        job(f"logo-stacked-{variant}", PNG_OUT / f"logo-stacked-{variant}.png", 0, 256)
         job(f"logo-full-{variant}", PNG_OUT / f"logo-full-{variant}.png", 0, 256, trim=True)
     job("icon-small-dark", PNG_OUT / "favicon-16.png", 16)
     job("icon-small-dark", PNG_OUT / "favicon-32.png", 32)
@@ -236,9 +257,40 @@ def png_jobs(svgs: dict[str, Path]) -> list[dict[str, object]]:
     return j
 
 
+def render_inkscape(jobs: list[dict[str, object]]) -> None:
+    """Render the same manifest on systems without a Chromium runtime."""
+    from tempfile import TemporaryDirectory
+
+    with TemporaryDirectory() as tmp:
+        prepared = Path(tmp) / "render.svg"
+        for job in jobs:
+            source = Path(str(job["svg"]))
+            root = ET.fromstring(source.read_text())
+            height = int(job["height"])
+            width = int(job["width"])
+            _, _, w, h = map(float, root.attrib["viewBox"].split())
+            if job["trim"]:
+                bounds = subprocess.check_output(
+                    ["inkscape", "--query-all", str(source)], text=True
+                ).splitlines()[0]
+                x, y, w, h = map(float, bounds.split(",")[1:])
+                x, y, w, h = x - 2, y - 2, w + 4, h + 4
+                root.set("viewBox", f"{x} {y} {w} {h}")
+            width = width or round(w / h * height)
+            root.set("width", str(width))
+            root.set("height", str(height))
+            ET.register_namespace("", "http://www.w3.org/2000/svg")
+            ET.ElementTree(root).write(prepared, encoding="utf-8")
+            subprocess.run(
+                ["inkscape", str(prepared), "--export-area-page", f"--export-filename={job['png']}"],
+                check=True,
+            )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--svg-only", action="store_true")
+    parser.add_argument("--inkscape", action="store_true", help="render PNGs with Inkscape instead of Chromium")
     parser.add_argument("--check", action="store_true", help="fail if generated SVGs or mark data are stale")
     args = parser.parse_args(argv)
     if args.check:
@@ -263,19 +315,22 @@ def main(argv: list[str] | None = None) -> int:
     jobs = png_jobs(svgs)
     for item in jobs:
         Path(str(item["png"])).parent.mkdir(parents=True, exist_ok=True)
-    manifest = PNG_OUT / ".render.json"
-    manifest.write_text(json.dumps(jobs))
-    try:
-        subprocess.run(["node", str(Path(__file__).with_name("render.mjs")), str(manifest)], check=True)
-    finally:
-        manifest.unlink(missing_ok=True)
-    try:  # optional optimisation: flat artwork quantises to a 256-colour palette without visible loss
+    if args.inkscape:
+        render_inkscape(jobs)
+    else:
+        manifest = PNG_OUT / ".render.json"
+        manifest.write_text(json.dumps(jobs))
+        try:
+            subprocess.run(["node", str(Path(__file__).with_name("render.mjs")), str(manifest)], check=True)
+        finally:
+            manifest.unlink(missing_ok=True)
+    try:  # optional optimisation: flat artwork quantises to an indexed palette without visible loss
         from PIL import Image
 
         for item in jobs:
             path = Path(str(item["png"]))
             image = Image.open(path).convert("RGBA")
-            image.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(
+            image.quantize(colors=64, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(
                 path, optimize=True
             )
     except ImportError:

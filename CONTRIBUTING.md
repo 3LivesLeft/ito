@@ -1,11 +1,11 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="branding/png/logo-horizontal-dark.png">
-  <img src="branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+  <img src="branding/png/logo-horizontal-light.png" alt="ito" height="48">
 </picture>
 
-# Contributing to MeshBeacon
+# Contributing to ito
 
-Thank you for your interest. MeshBeacon is in **Phase 0 (research and design)**: the most useful
+Thank you for your interest. ito is in **Phase 0 (research and design)**: the most useful
 contributions right now are reviews of, and corrections to, the documents in [`docs/`](docs/).
 
 ## Before you start
@@ -18,7 +18,7 @@ contributions right now are reviews of, and corrections to, the documents in [`d
 ## Ground rules
 
 1. **No upstream code copying.** Do not copy, translate or paraphrase source code from Reticulum,
-   LXMF, Rathole, Sideband, NomadNet, RNode firmware or other projects into MeshBeacon. Use the
+   LXMF, Rathole, Sideband, NomadNet, RNode firmware or other projects into ito. Use the
    upstream packages as dependencies through their public interfaces. See
    [licensing research §4](docs/research/licensing.md#4-copying-versus-depending).
 2. **No protocol or cryptography implementations.** If a change needs one, it belongs upstream.
@@ -86,7 +86,7 @@ committed under the assistant's own Git identity, and are subject to the maintai
 
 ## Licence of contributions
 
-MeshBeacon is licensed under [Apache-2.0](LICENSE) ([ADR 0002](docs/adr/0002-licence.md)).
+ito is licensed under [Apache-2.0](LICENSE) ([ADR 0002](docs/adr/0002-licence.md)).
 Contributions are accepted under the same licence, with a DCO sign-off. Do not contribute
 material you cannot licence under Apache-2.0 — including anything copied from Reticulum-licensed,
 GPL or Creative Commons sources.

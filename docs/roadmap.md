@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-horizontal-dark.png">
-  <img src="../branding/png/logo-horizontal-light.png" alt="MeshBeacon" height="48">
+  <img src="../branding/png/logo-horizontal-light.png" alt="ito" height="48">
 </picture>
 
 # Roadmap
@@ -64,7 +64,7 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 - Repair issues for "isolated node", "no peers reachable" and anything that needs attention
   (identity, options, storage, repeated failures).
 - Redacted diagnostics download; an example dashboard of native HA cards.
-- A **MeshBeacon sidebar panel** served by the integration ([ADR 0007](adr/0007-sidebar-panel.md),
+- An **ito sidebar panel** served by the integration ([ADR 0007](adr/0007-sidebar-panel.md),
   proposed): Overview and Diagnostics tabs, history from HA's recorder, admin-only, no third-party
   code.
 - HACS compatibility **prepared, not published** ([Marketplace](marketplace.md)).
@@ -80,7 +80,7 @@ Lightweight, privacy-first monitoring ([feasibility and architecture](research/v
 | BR-3 | Text tokens ≥ 4.5:1 and indicators ≥ 3:1 in both themes, on brand and HA default surfaces | Automated (`tests/frontend/tokens.test.mjs`) | Met |
 | BR-4 | No WCAG 2.2 AA violations (axe-core) in every interface state, both themes, phone, tablet and desktop | axe-core run on the preview (recorded in docs/branding.md) | Met in sandbox; recheck on the Pi |
 | BR-5 | No external fonts, CDNs or tracking; Inter bundled with its OFL licence; assets optimised (PNG set < 400 KB) | Automated | Met |
-| BR-6 | The sidebar uses `mdi:lighthouse-on`; the panel follows HA's light or dark theme | Automated + real HA 2026.11.2 check | Met in sandbox |
+| BR-6 | The sidebar uses `mdi:earth`; the panel follows HA's light or dark theme | Automated + real HA 2026.11.2 check | Met in sandbox |
 | BR-7 | Independent design review of the screenshots | Reviewer | Pending |
 
 ## Built-in interface (ADR 0013, proposed): acceptance criteria
@@ -93,8 +93,8 @@ limit: sending and receiving LXMF messages from the built-in interface remains t
 
 | ID | Criterion | Evidence |
 |---|---|---|
-| UI-1 | A fresh install shows MeshBeacon's interface from the app page ("Open web UI") and the sidebar, with **no integration, HACS or YAML** | Pi, fresh test instance |
-| UI-2 | **Five-minute path:** a first-time user installs, configures and starts MeshBeacon and sees "Online" in its interface within 5 minutes, without a terminal or YAML; measured with at least 3 people new to MeshBeacon | Recorded sessions |
+| UI-1 | A fresh install shows ito's interface from the app page ("Open web UI") and the sidebar, with **no integration, HACS or YAML** | Pi, fresh test instance |
+| UI-2 | **Five-minute path:** a first-time user installs, configures and starts ito and sees "Online" in its interface within 5 minutes, without a terminal or YAML; measured with at least 3 people new to ito | Recorded sessions |
 | UI-3 | The security rating stays **8**; `config.yaml` adds only `ingress`, `ingress_port`, `panel_icon`, `panel_title` and `panel_admin` | Pi + static test |
 | UI-4 | The listener refuses every source except `172.30.32.2` (403), ignores forwarded and ingress headers for access, and answers only `GET` | Automated |
 | UI-5 | No response contains tokens, certificates, hashes, hosts, ports or discovery data | Automated (snapshot and page scan) |
@@ -179,7 +179,7 @@ refreshing, restart the app and find the conversation).
 
 ## Long-term direction (proposed)
 
-MeshBeacon is to grow into a free, open-source, privacy-first, decentralised **community network**
+ito is to grow into a free, open-source, privacy-first, decentralised **community network**
 that keeps operating without the internet: communities host and discover information,
 communicate and share resources over Reticulum, including compatible LoRa radio links. Home
 Assistant remains a first-class deployment and management interface; the community services must
@@ -225,7 +225,7 @@ is part of Q-42.
 ## v0.1.0 acceptance criteria
 
 There are two tiers. **Local prototype criteria** (tier A, `LP-n`) define the first working milestone: a
-locally built MeshBeacon running on the maintainer's Raspberry Pi and connecting to a manually
+locally built ito running on the maintainer's Raspberry Pi and connecting to a manually
 configured peer. **Public release gates** (tier B, `RG-n`) must *also* be met before any image is
 published or a release is announced. A criterion is marked complete only with evidence (test
 output, log extract with identifiers removed, or a signed-off manual test record). **Emulated
@@ -306,7 +306,7 @@ stated otherwise. **They are not Raspberry Pi validation.** Revised after indepe
 | OB-12 | The integration never imports RNS or the core; its parser accepts the core's real output; enumerations match | Automated | Met |
 | OB-13 | On the reference Pi: discovered, entities populate, history fills, no new AppArmor denials, rating still 8 | Manual, physical — after the v0.1 soak (ended early with maintainer approval) | **In progress**: discovered and entities populate on the Pi ([initial results](testing/v0.2-physical-results.md)); history, AppArmor and rating not yet recorded |
 | OB-14 | CI green, including both Home Assistant jobs, AppArmor-confined container tests, gitleaks and pip-audit | CI run | Met for head `ac2a2cc` (14 checks, independently confirmed); **not yet run** for the later commits ([acceptance review](testing/v0.2-acceptance-review.md) §3) |
-| OB-15 | **Anti-spoofing:** discovery from a non-MeshBeacon slug, pointing anywhere other than the sending app's own hostname, or without a fingerprint, is refused, both in the config flow and in self-healing; a look-alike cannot change the real entry | Automated | Met (`tests/ha/test_security.py`) |
+| OB-15 | **Anti-spoofing:** discovery from a slug other than the supported `meshbeacon` forms, pointing anywhere other than the sending app's own hostname, or without a fingerprint, is refused, both in the config flow and in self-healing; a look-alike cannot change the real entry | Automated | Met (`tests/ha/test_security.py`) |
 | OB-16 | **No key leaks** in app logs, HA logs (debug level), exceptions, flow listings or diagnostics, under every failure mode | Automated | Met |
 | OB-17 | **Recovery without restart:** discovery succeeds after the Supervisor fails at first, is down at start, or restarts later; a missed rotation push heals within 5 minutes; repeated rotation and switching off and on work; stale keys are refused | Automated + Pi | Automated part met (`test_monitoring_reliability.py`, `test_security.py`); Pi pending (D1–D6) |
 | OB-18 | **Isolation:** errors in monitoring never stop the supervision loop or restart Reticulum | Automated | Met (`test_monitoring_errors_never_reach_reticulum`) |
@@ -314,11 +314,11 @@ stated otherwise. **They are not Raspberry Pi validation.** Revised after indepe
 | OB-20 | **Recorder budget:** ≤ 2 MB/day of recorder growth, worst case, with defaults | Automated measurement + Pi | Measured about 1.9 MB/day (HA harness, file-backed SQLite); Pi pending (E3) |
 | OB-21 | **Reference release:** the integration loads and populates entities on **Home Assistant 2026.11.2**, with strict typing against that release | CI (`home-assistant-release` job) | Met locally (`tools/ha_smoke_test.py`); CI see PR #3 |
 | OB-22 | **Complete, bounded reads:** status responses split into any number of TLS records, TCP segments or HTTP chunks are read in full; more than 256 KiB is refused (declared or not) without buffering the excess; a truncated reply is a connection error, never partial data | Automated (real TLS on 127.0.0.1) | Met (`tests/ha/test_client_reading.py`; 9 of its tests fail against the previous single read) |
-| OB-23 | **Sidebar panel:** a "MeshBeacon" sidebar entry with its own icon appears when the integration loads and goes when it unloads, for administrators only, with no configuration; the websocket command refuses non-admins | Automated (HA harness) + HA 2026.11.2 smoke | Met (`tests/ha/test_panel.py`; smoke test checks route and module) |
+| OB-23 | **Sidebar panel:** an "ito" sidebar entry with its own icon appears when the integration loads and goes when it unloads, for administrators only, with no configuration; the websocket command refuses non-admins | Automated (HA harness) + HA 2026.11.2 smoke | Met (`tests/ha/test_panel.py`; smoke test checks route and module) |
 | OB-24 | **No third-party code or duplicate storage:** the panel's files contain no external URLs, `fetch`, `XMLHttpRequest`, `innerHTML`, `eval` or browser storage; history only from HA's recorder; static path serves only the frontend folder and no data | Automated | Met (`tests/frontend/model.test.mjs`, `tests/ha/test_panel.py`) |
 | OB-25 | **States:** loading, not connected, error with retry, app unavailable, history unavailable and no history yet are each shown distinctly; unavailable values show as "—", never zero | Automated (model) + preview screenshots | Met in sandbox (model tests; `tools/panel_preview.html` scenarios) |
 | OB-26 | **Layout and themes:** usable at 390 px (phone), 820 px (tablet) and 1280 px (desktop) widths in light and dark themes, with no horizontal scrolling | Preview screenshots; physical check on a phone | Sandbox met; **physical pending** (open the panel on a phone and a desktop on the Pi installation, after approval) |
-| OB-27 | **Panel cost:** history fetched at most once per chart bucket (≥ 60 s) and only while visible; re-render only when MeshBeacon's own entities change | Code review + model tests | Met (sandbox); browser CPU on a low-end phone pending |
+| OB-27 | **Panel cost:** history fetched at most once per chart bucket (≥ 60 s) and only while visible; re-render only when ito's own entities change | Code review + model tests | Met (sandbox); browser CPU on a low-end phone pending |
 | OB-28 | **HACS-ready, not published:** `hacs.json` with known keys only, no release ZIP or release workflow, one integration, manifest complete, versions aligned | Automated | Met (`tests/unit/test_hacs.py`); HACS's own validation action is a maintainer step ([Marketplace](marketplace.md)) |
 
 ## Process isolation gate (mandatory)
@@ -334,7 +334,7 @@ separation rests on the kernel's dumpable and ptrace rules (threat T72; M1.2).
 | IS-1 | **Separate Unix users** for the management core, Reticulum, LXMF messaging and each future community service; none shares a user with another, none runs as root except the minimal, reviewed root steps (the discovery relay and the start step) | Container test: each process's real UID; no two services share one |
 | IS-2 | **Least-privilege credentials:** each credential (Supervisor token, status token, messaging keys, identities) is readable only by the one process that needs it, never travels in a process environment, and is never inherited by a child | Container test as each other service's user: the credential cannot be read from files, `/proc` or descriptors |
 | IS-3 | **Least-privilege storage and IPC:** each service owns only its own folder under `/data/<service>/` (0700) and its own sockets; IPC endpoints accept only their intended peer (checked by peer credentials), and every service except the core is non-dumpable or isolated by user so that ptrace and `/proc` reads across services fail | Container test: cross-service reads, writes, connects and ptrace attempts all fail |
-| IS-3a | **Exception (maintainer, 19 Nov 2026):** the upstream RNS shared-instance socket (an abstract Unix socket in RNS 1.6.0, with no peer check) is exempt from IS-3's peer-check rule, and only that one socket. It must be reachable only inside MeshBeacon's own container, carry packets but no keys (RNS RPC keeps its key, readable by Reticulum's user only), and be revisited when RNS offers permissioned local sockets. **Amendment proposed (ADR 0023, awaiting approval):** the engine's user may read the key too, because RNS 1.6.0 clients need RPC for ordinary operation (0.3.0 Pi finding) | Container test: not reachable from another container; RPC without the key fails; with ADR 0023, only Reticulum's and the engine's users authenticate |
+| IS-3a | **Exception (maintainer, 19 Nov 2026):** the upstream RNS shared-instance socket (an abstract Unix socket in RNS 1.6.0, with no peer check) is exempt from IS-3's peer-check rule, and only that one socket. It must be reachable only inside ito's own container, carry packets but no keys (RNS RPC keeps its key, readable by Reticulum's user only), and be revisited when RNS offers permissioned local sockets. **Amendment proposed (ADR 0023, awaiting approval):** the engine's user may read the key too, because RNS 1.6.0 clients need RPC for ordinary operation (0.3.0 Pi finding) | Container test: not reachable from another container; RPC without the key fails; with ADR 0023, only Reticulum's and the engine's users authenticate |
 | IS-4 | **Adversarial isolation tests** for every service, in CI under AppArmor enforcement and on a VM with the Supervisor-loaded profile, in the style of `tools/acceptance/relay_probe.py`; each test is shown to fail against a deliberately weakened build | CI + VM results; a recorded run against the weakened build |
 
 ## v0.3.0 acceptance criteria (proposed, for review)

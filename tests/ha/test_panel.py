@@ -35,13 +35,14 @@ async def test_sidebar_entry_is_registered_for_admins_only(hass, mock_entry, aio
     assert custom["name"] == "meshbeacon-panel"
     assert custom["embed_iframe"] is False  # same page, so Home Assistant's theme applies
     assert custom["trust_external"] is False
-    assert custom["module_url"].startswith("/meshbeacon_panel/meshbeacon-panel.js?v=")
+    assert custom["module_url"] == f"/meshbeacon_panel/{panel._fingerprint()}/meshbeacon-panel.js"
     assert TOKEN not in str(registered.config)
 
 
 async def test_module_is_served_and_holds_no_data(hass, hass_client, mock_entry, aioclient_mock):
     await _set_up(hass, mock_entry, aioclient_mock)
     client = await hass_client()
+    versioned_url = f"/meshbeacon_panel/{panel._fingerprint()}"
     for name in (
         "meshbeacon-panel.js",
         "model.js",
@@ -58,7 +59,7 @@ async def test_module_is_served_and_holds_no_data(hass, hass_client, mock_entry,
         "sources/snapshot.js",
         "ui/messages.js",
     ):
-        response = await client.get(f"/meshbeacon_panel/{name}")
+        response = await client.get(f"{versioned_url}/{name}")
         assert response.status == 200
         assert "javascript" in response.headers["Content-Type"]
         body = await response.text()

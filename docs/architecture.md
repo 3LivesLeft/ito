@@ -11,7 +11,7 @@ Evidence and reasoning: [feasibility study](research/feasibility.md),
 
 1. **Easy to use.** Safe defaults; a handful of plainly named options; status messages written for
    people ([first-run UX](ux/first-run.md)).
-2. **Reuse upstream.** RNS (and later LXMF) do all protocol work. MeshBeacon configures,
+2. **Reuse upstream.** RNS (and later LXMF) do all protocol work. ito configures,
    supervises, observes and explains.
 3. **Separate the core from Home Assistant.** The core must run, and be tested, without Home
    Assistant (and in v1.0 as standalone Docker).
@@ -29,7 +29,7 @@ Evidence and reasoning: [feasibility study](research/feasibility.md),
 ┌──────────────────────────── Home Assistant OS host ────────────────────────────┐
 │  Supervisor ── watchdog: HTTP GET → container IP:health port (every 120 s)     │
 │                                                                                │
-│  ┌──────────────── MeshBeacon app container (bridged network) ──────────────┐  │
+│  ┌──────────────── ito app container (bridged network) ──────────────┐  │
 │  │  s6-overlay (PID 1, root)                                                │  │
 │  │   └─ init (root, once): validate options, umask 077, prepare /data,      │  │
 │  │      chown to meshbeacon user, validate identity, render RNS config      │  │
@@ -122,7 +122,7 @@ bounded, and no condition that a restart cannot fix is ever reported as unhealth
    before one more attempt (half-open).
 2. If the breaker opens **3 times without the child staying up for at least 10 minutes in
    between**, the core stops retrying and enters `needs_attention` ("The Reticulum service keeps
-   failing; MeshBeacon has stopped trying. Restart the app after fixing the cause.").
+   failing; ito has stopped trying. Restart the app after fixing the cause.").
 3. A child that stays up for 10 minutes resets all counters.
 
 Worst case before giving up: about an hour, then nothing further until the user acts.
@@ -145,7 +145,7 @@ it.
 
 ### 4.3 Resource protection
 
-The Supervisor imposes no memory or CPU limits on apps (feasibility §5), so MeshBeacon limits
+The Supervisor imposes no memory or CPU limits on apps (feasibility §5), so ito limits
 itself.
 
 | Resource | Control (v0.1) | Notes |
@@ -194,7 +194,7 @@ Two independent dimensions, never conflated:
 **[Verified]** Neither Supervisor watchdog path stops by itself: application-check restarts
 are not throttled, and container-state restarts are rate-limited to 10 per 30 minutes
 (`JobThrottle.GROUP_RATE_LIMIT`), which bounds their *rate*, not their number
-(`_restart_after_problem`, Supervisor 2026.11.0). MeshBeacon must therefore make sure a loop
+(`_restart_after_problem`, Supervisor 2026.11.0). ito must therefore make sure a loop
 cannot arise.
 
 **Design — how the two mechanisms fit together:**
@@ -214,7 +214,7 @@ cannot arise.
 - Declare `watchdog: "http://[HOST]:[PORT:8099]/health"` (port fixed in Phase 1), served on the
   container's internal interface only; the response body is minimal (`ok`) and reveals no
   identities, peers or state details, so no authentication is needed.
-- `DOCS.md` recommends enabling the watchdog; MeshBeacon is safe with it on or off.
+- `DOCS.md` recommends enabling the watchdog; ito is safe with it on or off.
 - No Supervisor API permission is needed for any of this.
 
 ### 4.6 Identity: crash-safe initialisation and restoration
@@ -230,7 +230,7 @@ cannot arise.
 
 Design:
 
-1. **MeshBeacon owns identity creation.** On first start, the init step generates the identity
+1. **ito owns identity creation.** On first start, the init step generates the identity
    *before* RNS starts: generate with RNS's public `RNS.Identity()` API, write to a temporary
    file in the same directory (0600), `fsync` the file, `rename` it into place, `fsync` the
    directory. RNS then only ever *loads* it.
@@ -242,14 +242,14 @@ Design:
    and the backup is valid, restore from the backup automatically and log it. If both are damaged,
    stop with the identity-problem message ([first-run UX §5](ux/first-run.md#5-plain-language-status-messages)).
 4. **Record a fingerprint** of the identity (its public hash, never the key) in
-   `/data/meshbeacon/state.json` (0600) so MeshBeacon can detect any unexpected change between
+   `/data/meshbeacon/state.json` (0600) so ito can detect any unexpected change between
    starts and refuse to continue. The fingerprint is **never written to logs**; the log says only
    "Node identity: unchanged since last start" or explains a change in words.
 5. **Explicit regeneration only** via an advanced option *"Replace identity on next start"*.
    When used, the old identity is kept as `identity.replaced-<UTC timestamp>` (0600) for manual
    recovery, the log says "Node identity replaced as requested; the previous identity has been
    kept in the app's data folder" — **without any hashes** — and the option must be switched off
-   again by the user before the next restart, otherwise MeshBeacon refuses to start and explains
+   again by the user before the next restart, otherwise ito refuses to start and explains
    why (it cannot switch the option off itself without Supervisor API access).
    **Replacement is a journalled transaction** (PR #2 review): (1) the new key is staged as
    `identity.pending`; (2) the state file records the replacement as authorised — the commit
@@ -311,7 +311,7 @@ Design:
   through a one-time pipe instead, so it is in no process environment. The core makes itself
   non-dumpable before it reads either, so Reticulum, though it runs as the same user, cannot reach
   the core's memory, environment or descriptors (threat T72; M1.2). The relay sends only
-  MeshBeacon's validated discovery message and does not run where there is no socket.
+  ito's validated discovery message and does not run where there is no socket.
 - **Process isolation (ADR 0018, M4 WP1):** the core runs as `meshbeacon` (9100); Reticulum and its
   prepare step run as `mb-rns` (9101) as s6 services that start down, which the core controls
   (`s6-svc`, permissions granted by `s6-svperms`) and reads through FIFOs in `/run/meshbeacon-io/`.
@@ -331,7 +331,7 @@ Design:
   reticulum/                0700 meshbeacon   (RNS --config directory)
     config                  0600 rendered on every start (contains rpc_key)
     storage/
-      transport_identity    0600 created atomically by MeshBeacon
+      transport_identity    0600 created atomically by ito
       known_destinations.db (+ -wal, -shm)
       cache/ resources/     regenerable, size-capped, excluded from backups
       blackhole/ identities/
@@ -442,7 +442,7 @@ How the design above was implemented, and decisions taken during implementation.
 | RNS child (Q-12 resolved) | A thin entry point, `meshbeacon.node`, that calls `RNS.Reticulum(configdir=…)` and reports `get_interface_stats()` (names, up/down, byte counters only) as JSON lines over a dedicated pipe every 10 s | `node.py` |
 | RNS import | Only `prepare` and `node` import RNS; the long-running supervisor does not (≈ 25 MB instead of ≈ 45 MB) | |
 | Config parser | Rendering and round-trip verification use the ConfigObj copy that RNS ships (`RNS.vendor.configobj`), so verification uses exactly the parser RNS will use; no private attributes are touched | `rnsconfig.py` |
-| Identity | Created with `RNS.Identity()` / `get_private_key()`, validated with `RNS.Identity.from_bytes()` (public API). **Finding:** any 64 bytes form a valid key pair, so same-length corruption looks like a different identity; MeshBeacon therefore restores from the verified backup whenever the backup matches the recorded fingerprint | `identity.py` |
+| Identity | Created with `RNS.Identity()` / `get_private_key()`, validated with `RNS.Identity.from_bytes()` (public API). **Finding:** any 64 bytes form a valid key pair, so same-length corruption looks like a different identity; ito therefore restores from the verified backup whenever the backup matches the recorded fingerprint | `identity.py` |
 | Orphan prevention | The RNS child asks the kernel for `SIGTERM` when the supervisor dies (`PR_SET_PDEATHSIG`); the s6 `finish` script stops the container on any crash of the core (including `SIGKILL`) instead of restarting it inside the container. Found by container test: without this, a killed core left RNS running and a second RNS started on the same storage | `procinfo.py`, `finish` |
 | Child Python | `python3 -I -u` when installed in site-packages, as in the image. `-u` is required: RNS logs with `print()`, and `-I` ignores `PYTHONUNBUFFERED`, so without it RNS output reached the log late or not at all (found by the network-isolated test run) | `supervisor.py` |
 | Timings | Back-off 1 s → 5 min; breaker 5 failures / 15 min, 15 min cool-down, give up after 3 openings; stable after 10 min; status every 10 s, stall after 120 s; start history 5 starts / 30 min | `policy.py` |

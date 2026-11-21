@@ -1,10 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 121 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100">
   <!-- SPDX-License-Identifier: Apache-2.0 -->
-  <!-- ito wordmark (master): "ito", always lower case, in Inter Bold (700) with -0.02 em
-       tracking, outlined to paths so no font is needed. Regenerate with
-       tools/brand/outline_wordmark.py (Inter 5.3.0, SIL OFL 1.1; see branding/fonts/OFL.txt).
-       Units as Inter at 100: ascent 96.88, cap height 72.75. -->
+  <!-- Custom rounded lettering drawn from the flat-emblem board. -->
   <title>ito</title>
-  <style>.word{fill:#284C40}</style>
-  <path class="word" d="M6.2 96.9V42.3H20.9V96.9ZM13.6 35.2Q10.3 35.2 7.9 33Q5.6 30.8 5.6 27.6Q5.6 24.5 7.9 22.3Q10.3 20.1 13.6 20.1Q16.9 20.1 19.3 22.3Q21.6 24.5 21.6 27.6Q21.6 30.8 19.3 33Q16.9 35.2 13.6 35.2ZM58.4 42.3V53.5H26.1V42.3ZM33.6 29.3H48.2V80.9Q48.2 83.5 49.4 84.7Q50.5 86 53.2 86Q54.1 86 55.6 85.8Q57.1 85.5 57.9 85.4L60 96.3Q57.5 97.1 55.1 97.4Q52.7 97.7 50.5 97.7Q42.3 97.7 37.9 93.7Q33.6 89.6 33.6 82.2ZM90.4 97.9Q82.2 97.9 76.2 94.4Q70.2 90.9 66.9 84.5Q63.7 78.2 63.7 69.8Q63.7 61.3 66.9 55Q70.2 48.7 76.2 45.1Q82.2 41.6 90.4 41.6Q98.6 41.6 104.6 45.1Q110.6 48.7 113.8 55Q117.1 61.3 117.1 69.8Q117.1 78.2 113.8 84.5Q110.6 90.9 104.6 94.4Q98.6 97.9 90.4 97.9ZM90.4 86.4Q94.3 86.4 96.9 84.3Q99.6 82.1 100.9 78.3Q102.2 74.5 102.2 69.8Q102.2 64.9 100.9 61.2Q99.6 57.4 96.9 55.3Q94.3 53.1 90.4 53.1Q86.5 53.1 83.9 55.3Q81.3 57.4 79.9 61.2Q78.6 64.9 78.6 69.8Q78.6 74.5 79.9 78.3Q81.3 82.1 83.9 84.3Q86.5 86.4 90.4 86.4Z"/>
+  <style>
+    .word{fill:#0B1A14}
+    .letter{fill:none;stroke:#0B1A14;stroke-width:11;stroke-linecap:round;stroke-linejoin:round}
+    .dot{fill:#3E8F6E}
+  </style>
+  <circle class="word" cx="12" cy="25" r="6.5"/>
+  <path class="letter" d="M12 44v47M44 29v48q0 20 21 13M33 43h32"/>
+  <circle class="letter" cx="102" cy="68" r="24"/>
+  <circle class="dot" cx="149" cy="89" r="7.5"/>
 </svg>
