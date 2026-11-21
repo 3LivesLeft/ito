@@ -16,6 +16,15 @@ ito is a private, decentralised connectivity project built on Reticulum. Its vis
 
 The SVG in [logo.svg](logo.svg) is an initial vector interpretation of the thread-and-earth idea. It is **provisional** pending visual review, not a verified reproduction of the earlier approved artwork. Do not replace it with raster exports until the design has been checked at small sizes.
 
+## Assets and usage
+
+- [logo.svg](logo.svg) is the provisional full-size emblem.
+- [favicon.svg](favicon.svg) is a simplified 64-unit icon designed to remain legible at small sizes.
+- Both are self-contained SVGs with no external fonts, scripts or network resources.
+- Use the exact colours above. For text on pale backgrounds, prefer deep green rather than the light sage accent.
+- These files are source artwork, not proof that the Home Assistant app or dashboard loads a favicon automatically. Home Assistant's UI controls its own branding; do not claim that placing these files here changes the app icon.
+- Do not embed custom JavaScript, external stylesheets or unsupported cards into the example Lovelace dashboard solely to force branding.
+
 ## Compatibility
 
 The Home Assistant app slug, integration domain, discovery service, entity IDs, Python package and data directories deliberately remain `meshbeacon`. This is an outward-facing rename, not a data migration. Do not rename identities or message stores as part of branding.
