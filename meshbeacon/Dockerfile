@@ -21,7 +21,8 @@ ENV \
 
 # Security updates for base-image packages that the pinned HA base image predates, with explicit
 # minimum versions so the build fails rather than silently shipping a vulnerable version. Found by
-# the CI image scan (18 Nov 2026): zlib CVE-2026-4738 (critical), krb5-libs and libexpat (high).
+# the CI image scan (18 Nov 2026): zlib CVE-2026-4738 (critical), krb5-libs and libexpat (high);
+# 21 Nov 2026: libxml2 CVE-2026-86144 (high, fixed in 2.13.9-r3; part of the base image).
 # Drop these lines once the HA base image includes the fixes; then refresh the base digest.
 # apk's log records install times; nothing reads it, and it would make builds differ, so it goes.
 # The base image's tempio (a Go template tool for app scripts) is removed: MeshBeacon never uses it,
@@ -30,6 +31,7 @@ RUN apk add --no-cache --upgrade \
         "zlib>=1.4-r0" \
         "krb5-libs>=1.22.3-r0" \
         "libexpat>=2.10.0-r0" \
+        "libxml2>=2.13.9-r3" \
     && rm -f /var/log/apk.log /usr/bin/tempio \
     && ! command -v tempio
 
