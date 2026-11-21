@@ -10,7 +10,7 @@ title: ito
 views:
   - title: Overview
     path: meshbeacon
-    icon: mdi:access-point-network
+    icon: mdi:earth
     cards:
       - type: markdown
         content: >-
@@ -20,7 +20,12 @@ views:
 
           Private connectivity, powered by Reticulum.
 
+          Your node. Your network.
+
           [ito.earth](https://ito.earth)
+      - type: heading
+        heading: Node health
+        icon: mdi:heart-pulse
       - type: tile
         entity: sensor.meshbeacon_status
       - type: tile
@@ -37,6 +42,9 @@ views:
           title: What needs attention
           entities:
             - sensor.meshbeacon_problem_details
+      - type: heading
+        heading: Network activity
+        icon: mdi:access-point-network
       - type: glance
         title: Network
         entities:
@@ -70,6 +78,9 @@ views:
         hours_to_show: 72
         entities:
           - entity: sensor.meshbeacon_peers_connected
+      - type: heading
+        heading: System
+        icon: mdi:server-network
       - type: entities
         title: Node
         entities:
