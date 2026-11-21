@@ -12,8 +12,9 @@ integration installs from Home Assistant's built-in Marketplace ([Marketplace](m
 
 ## What it is
 
-A **read-only** custom integration (`custom_components/meshbeacon`) that shows the MeshBeacon app's
-status as Home Assistant entities. History and long-term statistics come from Home Assistant's own
+A custom integration (`custom_components/meshbeacon`) that shows the MeshBeacon app's status as
+Home Assistant entities and, since 0.4.0, lets administrators read and send LXMF messages in the
+panel's **Messages** tab (see below). Status is read-only. History and long-term statistics come from Home Assistant's own
 recorder; MeshBeacon keeps none. Nothing leaves your Home Assistant installation, and Home
 Assistant cannot control the node through it.
 
@@ -122,6 +123,7 @@ panel was also checked inside a real Home Assistant 2026.11.2.*
 | Tab | Shows |
 |---|---|
 | **Overview** | Connectivity (colour-coded: green online, amber partly connected, red offline, grey isolated or unknown), status and transport; large figures for peers connected, known paths, links relayed, data received and sent, processor and memory use, and how long Reticulum has been running; traffic, processor and memory history (6 h, 24 h, 7 days); a card for each peer |
+| **Messages** (apps with messaging) | MeshBeacon's address to copy; your contacts with unread counts; a conversation per contact with delivery states; a box to write and send; add, rename and remove contacts. See [Messages](#messages) |
 | **Diagnostics** | Version, status, problem, Reticulum running, transport mode, start times, restarts, memory, and the detailed sensors you have enabled |
 
 - It works on phones, tablets and desktops and follows your Home Assistant theme, light or dark.
@@ -139,6 +141,40 @@ panel was also checked inside a real Home Assistant 2026.11.2.*
 To preview the panel without Home Assistant (sample data, no network), serve the repository on
 loopback and open `tools/panel_preview.html`. Instructions are at the top of that file.
 
+## Messages
+
+Since 0.4.0 ([ADR 0024](adr/0024-messaging-in-home-assistant.md)). Needs **Enable LXMF messaging**
+and **Show MeshBeacon's status in Home Assistant** on in the app's Configuration tab, and both the
+app and the integration at 0.4.0 or later.
+
+1. **Copy MeshBeacon's address** (top of the Messages tab) and add it as a contact in your LXMF app
+   (Ratspeak, Sideband…), on the same Reticulum network.
+2. **Add contact**: give a name and paste your app's own LXMF address (32 characters; capitals,
+   spaces and `<…>` are fine).
+3. **Send a message** from your app. It appears in the Messages tab without refreshing.
+4. **Reply**: type and press **Send** (Enter sends; Shift+Enter starts a new line).
+
+What each state under a sent message means:
+
+| Shown | Meaning |
+|---|---|
+| Waiting to send | Accepted by MeshBeacon; not attempted yet, or waiting to try again |
+| Sending… | Handed to LXMF; no outcome yet |
+| **Delivered** | The recipient's LXMF returned a delivery proof. Never shown without it |
+| Stored on a propagation node, not yet delivered | A propagation node holds it; the recipient collects it later |
+| Sent, no delivery confirmation | LXMF sent it but no proof came back |
+| Not reached yet, trying again | The contact was not reachable; MeshBeacon keeps trying for 7 days (**Try now** retries at once) |
+| Not sent / Refused / Not delivered within 7 days | It will not be retried by itself: **Send again** |
+
+- Contacts are kept by the app, in one place. Contacts listed in the Configuration tab are added
+  when the app starts; after that, rename or remove them in the Messages tab. Messages from
+  anyone who is not a contact are refused (unless "accept messages from anyone" is on).
+- Conversations are kept by the app across restarts and updates (up to 10,000 messages; the oldest
+  go first). **Delete conversation** and **Remove contact** are in the ⋮ menu.
+- While messaging is off, the tab says so; contacts and conversations are kept and come back
+  when it is switched on.
+- Automatic replies (if on) are sent at most once every six hours per contact and shown as such.
+
 ## Example dashboard (optional)
 
 [`home-assistant/dashboard.yaml`](home-assistant/dashboard.yaml) is an example dashboard built only
@@ -154,7 +190,16 @@ any entity.
 
 ## Privacy and security
 
-- **Read-only.** There is no endpoint that changes anything.
+- **Status is read-only.** The only write path is messaging: administrators can send messages to
+  contacts and edit contacts, nothing else.
+- **Messaging** ([ADR 0024](adr/0024-messaging-in-home-assistant.md)). Administrators only. It uses
+  a separate **messaging key**, made at every app start and sent only while messaging is on. Home
+  Assistant keeps it **in memory only** (not in its configuration, backups or diagnostics) and the
+  browser never sees it. The status key cannot send. Message text and contact addresses never become
+  entities, history, logbook or log entries; conversations are stored only by the app. **Trade-off:**
+  on Supervisors without per-app sockets (all stable releases today) the key reaches Home Assistant
+  in the same plain-HTTP discovery message as the status key, so another app able to spoof on
+  Home Assistant's internal network could capture it until the next app start (RR-9b, accepted).
 - **Panel.** Administrators only. Its files contain no data (values arrive over Home Assistant's
   logged-in connection), and it writes every value as plain text, so a peer name cannot inject
   anything into the page.

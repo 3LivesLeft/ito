@@ -20,11 +20,17 @@ Policy, as decided in the M4 plan:
   duplicate if the engine stopped between sending and the receipt).
 * **Announce.** The delivery destination is announced at start and every six hours so that
   contacts can reach it. The display name is empty unless one is configured (ADR 0009).
+* **Contacts and conversations (M5, ADR 0024).** The contact store in ``queue.db`` is the only
+  authority: contacts from the app's options are imported into it at start, and the dashboard edits
+  it. Inbound policy reads it, so a contact added in the dashboard is admitted at once and a removed
+  one is refused at once; verification and stamps are unchanged. Every change the conversation view
+  shows raises ``revision``, which ends a ``wait`` long poll.
 """
 
 from __future__ import annotations
 
 import contextlib
+import secrets
 import threading
 import time
 from collections import deque
@@ -35,7 +41,7 @@ from typing import Any
 from .. import fsutil
 from . import contract, msgidentity
 from .contract import ContractError
-from .queue import Outbound, Queue, QueueFullError
+from .queue import ContactError, Outbound, Queue, QueueFullError, StoredContact
 from .settings import STRANGER, Settings
 
 APP_NAME = "lxmf"
@@ -107,6 +113,12 @@ class Engine:
         self.lock = threading.RLock()
         self.arrived = threading.Condition(self.lock)
         self.queue = Queue(data / "queue.db", retention_days=settings.retention_days, clock=clock)
+        self.queue.import_contacts([(c.id, c.name, c.destination) for c in settings.contacts])
+        self.configured = frozenset(c.destination for c in settings.contacts)
+        self.contacts: dict[str, StoredContact] = {}
+        self._load_contacts()
+        self.revision = 0  # raised by every change the conversation view shows (``wait``)
+        self.boot = secrets.token_hex(8)
         self.per_sender = RateLimiter(*RATE_PER_SENDER, clock)
         self.total = RateLimiter(*RATE_TOTAL, clock)
         self.due: dict[str, float] = {}  # message ID -> when to try again
@@ -227,21 +239,40 @@ class Engine:
             self.router.announce(self.delivery.hash)
             self.last_announce = self.clock()
 
+    # -- contacts -----------------------------------------------------------------------------
+    def _load_contacts(self) -> None:
+        self.contacts = {c.id: c for c in self.queue.contacts()}
+
+    def contact(self, contact_id: str) -> StoredContact | None:
+        return self.contacts.get(contact_id)
+
+    def contact_for_destination(self, destination: str) -> StoredContact | None:
+        return next((c for c in self.contacts.values() if c.destination == destination), None)
+
+    def changed(self) -> None:
+        """Something the conversation view shows has changed: wake every ``wait``."""
+        with self.lock:  # re-entrant
+            self.revision += 1
+            self.arrived.notify_all()
+
     def request_contact_paths(self) -> None:
         """Learn the contacts' public keys, so that their signatures can be checked (a message from
         a contact the engine has not heard from yet would arrive unverified and be refused)."""
+        self.last_contact_paths = self.clock()
+        for contact in list(self.contacts.values()):
+            self._request_path_if_unknown(contact.destination)
+
+    def _request_path_if_unknown(self, destination: str) -> None:
         import RNS
 
-        self.last_contact_paths = self.clock()
-        for contact in self.settings.contacts:
-            destination_hash = bytes.fromhex(contact.destination)
-            if RNS.Identity.recall(destination_hash) is None:
-                RNS.Transport.request_path(destination_hash)
+        destination_hash = bytes.fromhex(destination)
+        if RNS.Identity.recall(destination_hash) is None:
+            self._request_path(destination_hash)
 
     def knows(self, contact_id: str) -> bool:
         import RNS
 
-        contact = self.settings.contact(contact_id)
+        contact = self.contact(contact_id)
         return contact is not None and RNS.Identity.recall(bytes.fromhex(contact.destination)) is not None
 
     # -- the job loop ------------------------------------------------------------------------
@@ -273,14 +304,14 @@ class Engine:
         import LXMF
         import RNS
 
-        contact = self.settings.contact(message.contact)
+        contact = self.contact(message.contact)
         if contact is None:  # removed from the contacts since it was queued
-            self.queue.set_state(message.message_id, "failed", "unknown_contact")
+            self.set_state(message.message_id, "failed", "unknown_contact")
             return
         destination_hash = bytes.fromhex(contact.destination)
         recipient = RNS.Identity.recall(destination_hash)
         if recipient is None:  # not heard yet: ask the network, then try again (both methods need it)
-            RNS.Transport.request_path(destination_hash)
+            self._request_path(destination_hash)
             self.due[message.message_id] = self.clock() + PATH_WAIT
             return
         destination = RNS.Destination(recipient, RNS.Destination.OUT, RNS.Destination.SINGLE, APP_NAME, "delivery")
@@ -297,7 +328,7 @@ class Engine:
         )
         lxm.register_delivery_callback(lambda m, mid=message.message_id: self._on_outbound_done(mid, m))
         lxm.register_failed_callback(lambda m, mid=message.message_id: self._on_outbound_failed(mid, m))
-        self.queue.set_state(message.message_id, "sending", propagated=propagated)
+        self.set_state(message.message_id, "sending", propagated=propagated)
         self.in_flight[message.message_id] = lxm
         self.router.handle_outbound(lxm)
 
@@ -308,11 +339,11 @@ class Engine:
             self.in_flight.pop(message_id, None)
             self.failures.pop(message_id, None)
             if lxm.state == LXMF.LXMessage.DELIVERED:
-                self.queue.set_state(message_id, "delivered")
+                self.set_state(message_id, "delivered")
             elif lxm.state == LXMF.LXMessage.SENT and lxm.method == LXMF.LXMessage.PROPAGATED:
-                self.queue.set_state(message_id, "stored_on_node", propagated=True)
+                self.set_state(message_id, "stored_on_node", propagated=True)
             else:  # pragma: no cover - LXMF calls this only for the two states above
-                self.queue.set_state(message_id, "sent_unconfirmed")
+                self.set_state(message_id, "sent_unconfirmed")
 
     def _on_outbound_failed(self, message_id: str, lxm: Any) -> None:
         import LXMF
@@ -324,28 +355,112 @@ class Engine:
                 return
             if lxm.state == LXMF.LXMessage.REJECTED:
                 by_node = lxm.method == LXMF.LXMessage.PROPAGATED
-                self.queue.set_state(message_id, "rejected", "refused_by_node" if by_node else "transfer_refused")
+                self.set_state(message_id, "rejected", "refused_by_node" if by_node else "transfer_refused")
                 return
             if lxm.method != LXMF.LXMessage.PROPAGATED and self.settings.propagation_node:
                 self._submit(message, propagated=True)  # direct failed: hand it to the node
                 return
             failures = self.failures.get(message_id, 0)
             self.failures[message_id] = failures + 1
-            self.queue.set_state(message_id, "queued", "retrying")
+            self.set_state(message_id, "queued", "retrying")
             self.due[message_id] = self.clock() + BACKOFF[min(failures, len(BACKOFF) - 1)]
 
-    def send(self, contact_id: str, title: str, text: str, key: str) -> dict[str, Any]:
+    def set_state(self, message_id: str, state: str, reason: str | None = None, **kwargs: Any) -> None:
+        self.queue.set_state(message_id, state, reason, **kwargs)
+        self.changed()
+
+    def send(self, contact_id: str, title: str, text: str, key: str, *, auto: bool = False) -> dict[str, Any]:
         with self.lock:
-            if self.settings.contact(contact_id) is None:
+            if self.contact(contact_id) is None:
                 raise ContractError("unknown_contact")
             try:
-                message_id, created = self.queue.enqueue(contact_id, title, text, key)
+                message_id, created = self.queue.enqueue(contact_id, title, text, key, auto=auto)
             except QueueFullError as exc:
                 raise ContractError("queue_full") from exc
             if created:
                 self.due[message_id] = self.clock()
+                self.changed()
             message = self.queue.get(message_id)
             return {"message_id": message_id, "state": message.state if message else "queued"}
+
+    def retry(self, message_id: str) -> dict[str, Any]:
+        """Try a waiting message now, or send a failed, refused or expired one again."""
+        entry = self.queue.history_entry(message_id)
+        if entry is None or entry["direction"] != "out":
+            raise ContractError("unknown_message")
+        if entry["state"] in ("queued", "sending"):
+            if message_id not in self.in_flight:
+                self.due[message_id] = self.clock()
+            return {"message_id": message_id, "state": entry["state"]}
+        if self.contact(entry["contact"]) is None:
+            raise ContractError("unknown_contact")
+        try:
+            new_id = self.queue.requeue(message_id)
+        except ContactError as exc:
+            raise ContractError(exc.code) from exc
+        except QueueFullError as exc:
+            raise ContractError("queue_full") from exc
+        self.failures.pop(message_id, None)
+        self.due[new_id] = self.clock()
+        self.changed()
+        return {"message_id": new_id, "state": "queued"}
+
+    # -- the conversation view (M5) -----------------------------------------------------------
+    def conversations(self) -> list[dict[str, Any]]:
+        summary = self.queue.conversations()
+        out = [
+            {
+                "id": c.id,
+                "name": c.name,
+                "address": c.destination,  # shown to the user, to check and copy (ADR 0024)
+                "origin": c.origin,
+                "heard": self.knows(c.id),
+                "unread": summary.get(c.id, {}).get("unread", 0),
+                "last": summary.get(c.id, {}).get("last"),
+            }
+            for c in self.contacts.values()
+        ]
+        if STRANGER in summary:  # "anyone" mode: senders who are not contacts, in one list
+            out.append(
+                {"id": STRANGER, "name": "", "address": None, "origin": "unknown", "heard": False, **summary[STRANGER]}
+            )
+        return out
+
+    def contact_add(self, name: str, address: str) -> dict[str, Any]:
+        if self.delivery is not None and address == self.delivery.hash.hex():
+            raise ContractError("own_address")
+        try:
+            contact_id = self.queue.add_contact(name, address)
+        except ContactError as exc:
+            raise ContractError(exc.code) from exc
+        self._load_contacts()
+        self.changed()
+        with contextlib.suppress(Exception):  # learn its key now, so its first message is verified
+            self._request_path_if_unknown(address)
+        return {"contact": contact_id}
+
+    def contact_rename(self, contact_id: str, name: str) -> dict[str, Any]:
+        try:
+            self.queue.rename_contact(contact_id, name)
+        except ContactError as exc:
+            raise ContractError(exc.code) from exc
+        self._load_contacts()
+        self.changed()
+        return {"contact": contact_id}
+
+    def contact_remove(self, contact_id: str) -> dict[str, Any]:
+        contact = self.contact(contact_id)
+        if contact is None:
+            raise ContractError("unknown_contact")
+        self.queue.remove_contact(contact_id, remember=contact.destination in self.configured)
+        for message_id in list(self.due) + list(self.in_flight):  # nothing more is sent to it
+            entry = self.queue.get(message_id)
+            if entry is not None and entry.contact == contact_id:
+                self.in_flight.pop(message_id, None)
+                self.due.pop(message_id, None)
+        self._load_contacts()
+        self.changed()
+        return {"contact": contact_id}
 
     # -- inbound ------------------------------------------------------------------------------
     def _refuse(self, why: str) -> None:
@@ -360,7 +475,7 @@ class Engine:
 
     def _accept(self, lxm: Any, *, recheck: bool = False) -> None:
         source = lxm.source_hash.hex()
-        contact = self.settings.contact_for_destination(source)
+        contact = self.contact_for_destination(source)
         if contact is None and self.settings.inbound != "anyone":
             self._refuse("not_a_contact")  # by the claimed sender alone: no need to verify
             return
@@ -385,7 +500,7 @@ class Engine:
         if lxm.get_fields():
             self.queue.count("inbound_fields_ignored")  # never acted on (ADR 0010)
         if self.queue.receive(lxm.hash.hex(), contact.id if contact else STRANGER, title, content):
-            self.arrived.notify_all()
+            self.changed()
 
     def _request_path(self, destination_hash: bytes) -> None:
         import RNS
@@ -423,8 +538,39 @@ class Engine:
     def _dispatch(self, req: dict[str, Any]) -> dict[str, Any]:
         op = req["op"]
         if op == "send":
-            return self.send(req["contact"], req["title"], req["text"], req["idempotency_key"])
+            return self.send(req["contact"], req["title"], req["text"], req["idempotency_key"], auto=req["auto"])
         with self.lock:
+            if op in ("history", "read", "clear") and req["contact"] != STRANGER and not self.contact(req["contact"]):
+                raise ContractError("unknown_contact")
+            if op == "conversations":
+                return {"conversations": self.conversations(), "revision": self.revision, "boot": self.boot}
+            if op == "history":
+                return {"messages": self.queue.history(req["contact"], req["before"], req["limit"])}
+            if op == "read":
+                done = self.queue.mark_read(req["contact"])
+                if done:
+                    self.changed()
+                return {"read": done}
+            if op == "clear":
+                done = self.queue.clear_history(req["contact"])
+                self.changed()
+                return {"cleared": done}
+            if op == "retry":
+                return self.retry(req["message_id"])
+            if op == "contact_add":
+                return self.contact_add(req["name"], req["address"])
+            if op == "contact_rename":
+                return self.contact_rename(req["contact"], req["name"])
+            if op == "contact_remove":
+                return self.contact_remove(req["contact"])
+            if op == "wait":
+                deadline = time.monotonic() + req["wait"]
+                while self.revision == req["revision"] and not self.stopping.is_set():
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    self.arrived.wait(min(remaining, 1.0))
+                return {"revision": self.revision, "boot": self.boot}
             if op == "message":
                 message = self.queue.get(req["message_id"])
                 if message is None:
@@ -451,7 +597,7 @@ class Engine:
             if op == "contacts":
                 return {
                     "contacts": [
-                        {"id": c.id, "name": c.name, "heard": self.knows(c.id)} for c in self.settings.contacts
+                        {"id": c.id, "name": c.name, "heard": self.knows(c.id)} for c in self.contacts.values()
                     ]
                 }
             return {

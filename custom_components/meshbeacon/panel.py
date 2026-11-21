@@ -30,6 +30,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 
+from . import conversations
 from .const import DOMAIN
 from .coordinator import MeshBeaconConfigEntry
 from .nodes import app_slug, node_key
@@ -63,6 +64,7 @@ async def async_setup_panel_support(hass: HomeAssistant) -> None:
     hass.data[_STATIC_DONE] = await hass.async_add_executor_job(_fingerprint)
     await hass.http.async_register_static_paths([StaticPathConfig(STATIC_URL, str(FRONTEND), True)])
     websocket_api.async_register_command(hass, ws_panel)
+    conversations.async_register(hass)
 
 
 async def async_show_panel(hass: HomeAssistant) -> None:

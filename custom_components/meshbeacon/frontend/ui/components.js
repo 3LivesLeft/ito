@@ -204,3 +204,17 @@ export function chartCard({ title, series, unit = "", digits = 1, floor = 0, wid
   );
   return card;
 }
+
+/** Copy text to the clipboard; the button says whether it worked. */
+export function copyButton(text) {
+  const button = h("button", { type: "button", class: "copy", text: "Copy" });
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      button.textContent = "Copied";
+    } catch (_err) {
+      button.textContent = "Select and copy";
+    }
+  });
+  return button;
+}

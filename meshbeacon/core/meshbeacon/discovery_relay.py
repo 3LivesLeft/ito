@@ -64,7 +64,8 @@ class RelayError(Exception):
 
 def announce_config(config: Any) -> dict[str, Any] | None:
     """The only discovery message the relay will send, or None if anything is off."""
-    if not isinstance(config, dict) or set(config) != {"host", "port", "token", "cert_sha256"}:
+    base = {"host", "port", "token", "cert_sha256"}
+    if not isinstance(config, dict) or set(config) not in (base, base | {"messaging_key"}):
         return None
     host, port, token, cert = config["host"], config["port"], config["token"], config["cert_sha256"]
     if not isinstance(host, str) or not _HOST.match(host):
@@ -75,7 +76,13 @@ def announce_config(config: Any) -> dict[str, Any] | None:
         return None
     if not isinstance(cert, str) or not _FINGERPRINT.match(cert):
         return None  # never plain HTTP
-    return {"host": host, "port": port, "token": token, "cert_sha256": cert}
+    result: dict[str, Any] = {"host": host, "port": port, "token": token, "cert_sha256": cert}
+    if "messaging_key" in config:  # M5 (ADR 0024): only while LXMF messaging is on
+        key = config["messaging_key"]
+        if not isinstance(key, str) or not _TOKEN.match(key) or key == token:
+            return None
+        result["messaging_key"] = key
+    return result
 
 
 class _UnixConnection(http.client.HTTPConnection):

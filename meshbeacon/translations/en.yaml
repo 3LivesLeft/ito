@@ -58,26 +58,29 @@ configuration:
     description: >-
       Off by default. On: after you save and restart the app, MeshBeacon starts its LXMF messaging
       service, which apps such as Sideband can message. It has its own address, separate from your
-      node's, created the first time. The MeshBeacon dashboard in Home Assistant shows whether it
-      is running and its address. Turning it off stops only messaging; Reticulum keeps running and
-      the messaging address is kept for next time.
+      node's, created the first time. Read and send messages in the Messages tab of the MeshBeacon
+      dashboard in Home Assistant (with "Show MeshBeacon's status in Home Assistant" on). Turning it
+      off stops only messaging; Reticulum keeps running, and the messaging address, contacts and
+      conversations are kept for next time.
   messaging_contacts:
     name: "Messaging: contacts"
     description: >-
-      The people or devices allowed to message MeshBeacon. Each needs a name you choose and their
-      LXMF address (32 characters, shown in their app). Messages from anyone else are refused
-      unless "accept messages from anyone" is on.
+      Optional: contacts are easier to add in the dashboard's Messages tab. Contacts listed here are
+      added there when the app starts; after that, the Messages tab is where you rename or remove
+      them. Each needs a name and their LXMF address (32 characters, shown in their app). Messages
+      from anyone who is not a contact are refused unless "accept messages from anyone" is on.
   messaging_accept_anyone:
     name: "Messaging: accept messages from anyone"
     description: >-
       Off (recommended): only your contacts can message MeshBeacon. On: anyone can, but their app
       must do a small proof-of-work calculation ("stamp") for each message, which keeps spam away.
   messaging_auto_reply:
-    name: "Messaging: reply to confirm each message"
+    name: "Messaging: automatic reply"
     description: >-
-      On: MeshBeacon answers each message from a contact with a short automatic confirmation, so you
-      can check that messaging works in both directions. Reading and sending messages from Home
-      Assistant comes in a later version; until then MeshBeacon does not keep or show message text.
+      On: MeshBeacon answers a contact's message with a short automatic confirmation, at most once
+      every six hours per contact, so two automatic responders can never keep answering each
+      other. The reply is marked as automatic in the conversation. Turn it off once you answer
+      messages yourself in the Messages tab.
   messaging_display_name:
     name: "Messaging: display name (optional)"
     description: >-

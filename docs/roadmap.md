@@ -169,6 +169,14 @@ v0.3 decisions that could constrain later milestones are listed in the
 [forward-compatibility review](research/long-term-direction.md) (F-1 to F-11). They are to be
 settled in v0.3's ADRs, not redesigned in advance.
 
+## M5 — Two-way messaging in Home Assistant (0.4.0, implemented on `develop` via PR)
+
+The panel's **Messages** tab: contacts (one authoritative store in the engine), conversation
+history, sending with honest delivery states, live updates, administrators only
+([ADR 0024](adr/0024-messaging-in-home-assistant.md)). Final acceptance: the maintainer's Pi with
+Ratspeak (read a message, reply, see the reply arrive, reply again and see it appear without
+refreshing, restart the app and find the conversation).
+
 ## Long-term direction (proposed)
 
 MeshBeacon is to grow into a free, open-source, privacy-first, decentralised **community network**
@@ -338,7 +346,7 @@ Measured on isolated networks and on the reference Pi. "Pi" figures are release 
 | MS-1 | With messaging off (the default; D-M4-8): no messaging process, no `/data/messaging/` writes, no new endpoints, memory and CPU unchanged from v0.2 (±2 MiB) | Automated + Pi |
 | MS-2 | The messaging identity is 0600, validated before every start, never logged, and independent of the transport identity (replacing either leaves the other unchanged) | Automated |
 | MS-3 | Announces carry no display name by default, and no telemetry, location or icon fields are ever sent | Automated (inspect packed announces and messages) |
-| MS-4 | Acknowledged inbound content is deleted by default; retention ≤ 30 days when chosen; `queue.db` ≤ 16 MiB under a flood | Automated |
+| MS-4 | Acknowledged inbound content is deleted from the delivery queue by default; **M5 (ADR 0024):** the conversation history keeps it until the user deletes it, at most 10,000 messages and 8 MiB of text; `queue.db` ≤ 16 MiB under a flood | Automated |
 | MS-5 | Send → `delivered` within 30 s on a loopback direct path; the same idempotency key twice gives one message | Automated (real LXMF) |
 | MS-6 | Recipient offline: `stored_on_node` via `lxmd`, never reported as `delivered`; recipient later collects it; app restart mid-send resubmits | Automated |
 | MS-7 | Message content and titles appear in no HA database table, log (debug level), diagnostics file or bus event; the blueprint omits content by default | Automated (HA harness + recorder inspection) |
@@ -346,7 +354,7 @@ Measured on isolated networks and on the reference Pi. "Pi" figures are release 
 | MS-9 | "Anyone" mode enforces the stamp cost; contacts with tickets are not charged | Automated |
 | MS-10 | Inbound > 8 KiB, extra fields, invalid UTF-8 and floods above the rate limits are dropped and counted; nothing crashes | Automated (fuzz) |
 | MS-11 | No code path turns message content into an HA action; the blueprint performs only notification and reply | Code review + test |
-| MS-12 | Messaging endpoints refuse the status key, raw LXMF addresses and unknown contact IDs | Automated |
+| MS-12 | Messaging endpoints refuse the status key, raw LXMF addresses as recipients and unknown contact IDs (addresses cross only in `contact_add` and `conversations`, ADR 0024) | Automated |
 | MS-13 | Send rate limits enforced; with a long poll held, the status API still answers within 1 s | Automated |
 | MS-14 | **Interoperability matrix** passes both ways with Sideband 2.3.x and Ratspeak 1.1.x (direct, opportunistic, propagated, stamped, offline cases) on an isolated network | Manual, recorded |
 | MS-15 | Killing or hanging the messaging process never restarts Reticulum or interrupts the status API; it recovers within bounded back-off and pauses after 5 failures in 30 min | Automated |
@@ -354,6 +362,6 @@ Measured on isolated networks and on the reference Pi. "Pi" figures are release 
 | MS-17 | Propagation node off by default; when on: static peers only, quota respected (≤ 64 MiB default, ≤ 25 % free space), stamps enforced | Automated |
 | MS-18 | Pi resources: messaging on, idle ≤ +40 MiB (app ≤ 160 MiB) and ≤ 0.5 % CPU added; stamp at the recipient's cost ≤ 30 s or a clear failure | Pi |
 | MS-19 | SD-card writes ≤ 1 a second sustained under normal traffic | Automated measurement |
-| MS-20 | Panel Messages tab (only when messaging is on) shows conversations and receipts, writes text only, and stores nothing in the browser | Automated + preview |
+| MS-20 | Panel Messages tab (only for an app with messaging) shows conversations and receipts, writes text only, and stores nothing in the browser (M5: implemented) | Automated + preview |
 | MS-21 | **Frontend independence:** the engine imports no Home Assistant, HTTP-server or UI code; bindings import no LXMF; contract tests pass against the real engine behind a fake binding (ADR 0014) | Automated |
 | MS-22 | Every binding that carries content or accepts sends meets S1–S3 (confidentiality, integrity, caller authentication), with its own tests | Automated + review |

@@ -1,6 +1,6 @@
 # ADR 0010: Home Assistant messaging interface (the first write path)
 
-- **Status:** **Proposed — awaiting independent review.** Not to be implemented until reviewed and approved by the maintainer.
+- **Status:** **Implemented by [ADR 0024](0024-messaging-in-home-assistant.md)** (M5, 20 Nov 2026), with changes: one endpoint `POST /api/v1/messaging` instead of four, the panel's Messages view instead of `notify`/`event` entities and a blueprint (not built yet), no separate "allow Home Assistant to send" option, and sends 10/min and 200/day.
 - **Date:** 18 November 2026
 - **Evidence:** [v0.3 feasibility and architecture](../research/v0.3-messaging.md), [threat model T43–T58](../security/threat-model.md)
 - **Note:** this ADR **changes the "read-only" property** of ADR 0006, so it needs explicit approval.

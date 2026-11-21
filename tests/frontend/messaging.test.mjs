@@ -97,6 +97,6 @@ test("hass source builds the same summary from the messaging entities", async ()
 
 test("the connection steps name only things the user can do without a terminal", () => {
   const text = MESSAGING_STEPS.join(" ");
-  assert.match(text, /Configuration tab/);
+  assert.match(text, /Messages tab/);
   assert.doesNotMatch(text, /terminal|ssh|json|docker/i);
 });

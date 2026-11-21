@@ -19,8 +19,12 @@ on.
   dashboard never shows "Running", and while the node refuses them it shows a problem.
 - **Link** (the M4 binding, ADR 0014). With the same answers the core reports the engine's state,
   its own address and its counters; it reads arrivals to count them and to send each contact the
-  optional confirmation reply, then acknowledges them, which deletes them (MS-4). **The core never
-  logs, stores or forwards message content** (reading messages in Home Assistant is M5).
+  optional automatic reply (at most one per contact every six hours, so that two automatic
+  responders cannot loop), then acknowledges them. **The core never logs or stores message
+  content.**
+- **Home Assistant binding** (M5, ADR 0024): ``forward`` passes the conversation view's requests
+  from the messaging endpoint to the engine, and nothing else: an allow-list of operations, sends
+  limited to 10 a minute and 200 a day, never an automatic reply, long polls of at most 8 s.
 - Restarts back off (10 s to 5 min). After five failures in 30 minutes messaging pauses until the
   app is restarted; nothing else is affected.
 - Output reaches the app log through the core's redaction, like Reticulum's.
@@ -59,10 +63,28 @@ STOP_GRACE = 10.0
 MAX_LINE = 4 * 1024 * 1024
 ADDRESS = re.compile(r"^[0-9a-f]{32}$")
 
-REPLY_TEXT = (
-    "MeshBeacon received your message. This is an automatic reply: reading messages in Home "
-    "Assistant comes in a later version."
+REPLY_TEXT = "MeshBeacon received your message. (This is an automatic reply.)"
+AUTO_REPLY_EVERY = 6 * 3600.0  # at most one automatic reply per contact in this time (no loops)
+# The Home Assistant binding (M5): what Home Assistant may ask of the engine, and how much.
+HA_OPERATIONS = frozenset(
+    {
+        "conversations",
+        "history",
+        "read",
+        "clear",
+        "retry",
+        "send",
+        "message",
+        "contact_add",
+        "contact_rename",
+        "contact_remove",
+        "wait",
+    }
 )
+HA_MAX_WAIT = 8.0  # under the listener's 10 s connection deadline
+SEND_LIMITS = ((10, 60.0), (200, 86400.0))
+REQUEST_LIMIT = (240, 60.0)  # every other request, per minute
+MSG_MESSAGING_UNAVAILABLE = "unavailable"
 MSG_PAUSED = (
     "⚠ Messaging stopped after repeated failures and is paused until the app is restarted. Reticulum is not affected."
 )
@@ -88,7 +110,24 @@ MSG_RPC_KEY_MISSING = (
 )
 DISABLED: dict[str, Any] = {"enabled": False, "state": "disabled", "message": None}
 
-Link = Callable[[dict[str, Any]], dict[str, Any] | None]
+Link = Callable[..., dict[str, Any] | None]
+
+
+class Window:
+    """At most ``limit`` events in ``window`` seconds (in memory; reset when the app restarts)."""
+
+    def __init__(self, limit: int, window: float, clock: Callable[[], float]) -> None:
+        self.limit, self.window, self.clock = limit, window, clock
+        self.events: deque[float] = deque()
+
+    def allow(self) -> bool:
+        now = self.clock()
+        while self.events and self.events[0] <= now - self.window:
+            self.events.popleft()
+        if len(self.events) >= self.limit:
+            return False
+        self.events.append(now)
+        return True
 
 
 class Process(Protocol):
@@ -98,16 +137,18 @@ class Process(Protocol):
     def kill(self) -> None: ...
 
 
-def request(payload: dict[str, Any], path: Path = SOCKET, expected_uid: int = ENGINE_UID) -> dict[str, Any] | None:
+def request(
+    payload: dict[str, Any], path: Path = SOCKET, expected_uid: int = ENGINE_UID, timeout: float = HEALTH_TIMEOUT
+) -> dict[str, Any] | None:
     """One contract request; the answer only if the engine's own user served it (peer check)."""
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-            sock.settimeout(HEALTH_TIMEOUT)
+            sock.settimeout(timeout)
             sock.connect(str(path))
             creds = sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i"))
             if struct.unpack("3i", creds)[1] != expected_uid:
                 return None  # not the engine: refuse to talk to it (peer check, both ways)
-            sock.sendall(json.dumps(payload).encode() + b"\n")
+            sock.sendall(json.dumps(payload, ensure_ascii=False).encode() + b"\n")  # UTF-8: 8 KiB of text stays ~8 KiB
             answer = json.loads(sock.makefile("rb").readline(MAX_LINE))
     except (OSError, ValueError):
         return None
@@ -192,6 +233,9 @@ class EngineSupervisor:
         self.view: dict[str, Any] = {}  # what the engine last reported (under the lock)
         self.replies: deque[str] = deque(maxlen=20)
         self.replies_sent = 0
+        self.last_auto_reply: dict[str, float] = {}
+        self.send_windows = [Window(n, w, clock) for n, w in SEND_LIMITS]
+        self.request_window = Window(*REQUEST_LIMIT, clock)
 
     # -- the core calls step() on every loop ---------------------------------------------------
     def step(self, node_ready: bool) -> None:
@@ -274,9 +318,11 @@ class EngineSupervisor:
             view["refused"] = sum(_count(v) for k, v in counters.items() if str(k).startswith("inbound_refused_"))
         contacts = self.link({"op": "contacts"})
         if contacts and contacts.get("ok") and isinstance(contacts.get("contacts"), list):
-            view["contacts_reachable"] = sum(
-                1 for c in contacts["contacts"] if isinstance(c, dict) and c.get("heard") is True
-            )
+            items = [c for c in contacts["contacts"] if isinstance(c, dict) and isinstance(c.get("id"), str)]
+            view["contacts_reachable"] = sum(1 for c in items if c.get("heard") is True)
+            view["contacts_configured"] = len(items)
+            # The engine's contact store is the authority (M5): dashboard contacts count too.
+            self.names = {c["id"]: str(c.get("name") or c["id"])[:32] for c in items}
         arrivals = self.link({"op": "inbound", "cursor": 0, "wait": 0})
         messages = arrivals.get("messages") if arrivals and arrivals.get("ok") else None
         if isinstance(messages, list) and messages:
@@ -298,20 +344,61 @@ class EngineSupervisor:
             view["last_received_at"] = received if isinstance(received, (int, float)) else None
             view["last_received_from"] = self.names[contact] if contact is not None else None
             if self.messaging.auto_reply and contact is not None and isinstance(item.get("message_id"), str):
-                sent = self.link(
-                    {
-                        "op": "send",
-                        "contact": contact,
-                        "title": "",
-                        "text": REPLY_TEXT,
-                        "idempotency_key": f"reply-{item['message_id']}"[:64],
-                    }
-                )
-                if sent and sent.get("ok") and isinstance(sent.get("message_id"), str):
-                    self.replies.append(sent["message_id"])
-                    self.replies_sent += 1
+                self._auto_reply(contact, item["message_id"])
         if last:
             self.link({"op": "ack", "cursor": last})  # deletes the content at once (MS-4)
+
+    def _auto_reply(self, contact: str, message_id: str) -> None:
+        """One automatic reply per contact per AUTO_REPLY_EVERY: a contact that also answers
+        automatically gets one reply, never an endless exchange."""
+        now = self.clock()
+        last = self.last_auto_reply.get(contact)
+        if last is not None and now - last < AUTO_REPLY_EVERY:
+            return
+        sent = self.link(
+            {
+                "op": "send",
+                "contact": contact,
+                "title": "",
+                "text": REPLY_TEXT,
+                "idempotency_key": f"reply-{message_id}"[:64],
+                "auto": True,
+            }
+        )
+        if sent and sent.get("ok") and isinstance(sent.get("message_id"), str):
+            self.last_auto_reply[contact] = now
+            self.replies.append(sent["message_id"])
+            self.replies_sent += 1
+
+    # -- the Home Assistant binding (M5) -------------------------------------------------------
+    def available(self) -> bool:
+        return self.state == "running" and self.healthy
+
+    def forward(self, request: Any) -> tuple[int, dict[str, Any]]:
+        """A request from Home Assistant's messaging endpoint: (HTTP status, answer).
+
+        Only the conversation view's operations; never an automatic reply; sends rate-limited.
+        The engine validates everything again (it is the authority). Content is never logged."""
+        if not isinstance(request, dict) or request.get("op") not in HA_OPERATIONS or "auto" in request:
+            return 400, {"ok": False, "error": "invalid"}
+        if not self.available():
+            return 503, {"ok": False, "error": MSG_MESSAGING_UNAVAILABLE}
+        op = request["op"]
+        timeout = HEALTH_TIMEOUT
+        if op == "wait":
+            wait = request.get("wait", 0)
+            if isinstance(wait, bool) or not isinstance(wait, (int, float)) or not 0 <= wait <= HA_MAX_WAIT:
+                return 400, {"ok": False, "error": "invalid"}
+            timeout = HA_MAX_WAIT + HEALTH_TIMEOUT
+        elif op == "send":
+            if not all(w.allow() for w in self.send_windows):
+                return 429, {"ok": False, "error": "rate_limited"}
+        elif not self.request_window.allow():
+            return 429, {"ok": False, "error": "rate_limited"}
+        answer = self.link(request, timeout=timeout)
+        if answer is None:
+            return 503, {"ok": False, "error": MSG_MESSAGING_UNAVAILABLE}
+        return (200 if answer.get("ok") is True else 400), answer
 
     def _failed(self, reason: str, now: float) -> None:
         self.failures.append(now)
@@ -372,7 +459,7 @@ class EngineSupervisor:
             "state": state,
             "message": message,
             "address": view.get("address"),
-            "contacts_configured": len(self.messaging.contacts),
+            "contacts_configured": view.get("contacts_configured", len(self.messaging.contacts)),
             "contacts_reachable": view.get("contacts_reachable"),
             "accept_anyone": self.messaging.accept_anyone,
             "auto_reply": self.messaging.auto_reply,

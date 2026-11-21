@@ -53,11 +53,21 @@ administrator account. No terminal, no YAML and no copying of files.
 **MeshBeacon** now appears in the sidebar, with a lighthouse icon, for administrators. It follows
 your light or dark theme and works on phones, tablets and computers.
 
+## Messages (0.4.0 and later)
+
+With **Enable LXMF messaging** on, the dashboard's **Messages** tab lets you read and answer LXMF
+messages, for example from Ratspeak or Sideband: copy MeshBeacon's address into your app, add your
+app's address with **Add contact**, and message each other. Details:
+[Messages](home-assistant-integration.md#messages).
+
 ## Updating
 
 The app and the dashboard update separately, both under **Settings → Updates**:
 
-- **MeshBeacon app**: select it and **Update**. Your node's identity, peers and settings are kept.
+- **MeshBeacon app**: select it and **Update** (not Rebuild). Your node's identity, messaging
+  identity, contacts, conversations, peers and settings are kept. Always update the installed app
+  in place: adding the repository again with a different branch (`…#branch`) installs a
+  **separate** app with a new identity.
 - **MeshBeacon** (from the Marketplace): select it and **Update**, then restart Home Assistant
   when the repair asks.
 

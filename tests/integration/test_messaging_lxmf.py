@@ -310,6 +310,30 @@ def test_unknown_contacts_and_raw_addresses_are_refused_over_the_contract(world,
     assert world.call(op="send", contact="bob", text="x", idempotency_key="key-raw-0002")["error"] == "unknown_contact"
 
 
+def test_a_contact_added_in_the_dashboard_can_talk_both_ways(world, peers):
+    """M5 (ADR 0024): the user adds a stranger by address; its next message reaches the
+    conversation, and a reply sent from it arrives, verified, and is reported delivered."""
+    bob, bob_address = peers["bob"]
+    added = world.call(op="contact_add", name="Bob", address=f"<{bob_address.upper()}>")
+    assert added == {"ok": True, "contact": "bob"}
+    revision = world.call(op="conversations")["revision"]
+    bob.send({"cmd": "send", "to": world.address(), "content": "hi from bob ✓", "tag": "b2"})
+    assert world.call(op="wait", revision=revision, wait=25)["revision"] != revision
+    history = wait_for(lambda: world.call(op="history", contact="bob")["messages"])
+    assert [(m["direction"], m["text"], m["unread"]) for m in history] == [("in", "hi from bob ✓", True)]
+    [bob_summary] = [c for c in world.call(op="conversations")["conversations"] if c["id"] == "bob"]
+    assert bob_summary["unread"] == 1 and bob_summary["address"] == bob_address and bob_summary["origin"] == "dashboard"
+    sent = world.call(op="send", contact="bob", text="hello bob", idempotency_key="key-dashboard-1")
+    got = bob.wait_event(lambda e: e.get("event") == "received" and e["content"] == "hello bob")
+    assert got["verified"] is True
+    wait_for(lambda: world.call(op="history", contact="bob")["messages"][-1]["state"] == "delivered", 60)
+    assert world.call(op="message", message_id=sent["message_id"])["state"] == "delivered"
+    world.call(op="read", contact="bob")
+    items = inbound(world)
+    if items:
+        world.call(op="ack", cursor=items[-1]["cursor"])
+
+
 def test_pending_messages_survive_a_restart_and_the_identity_is_kept(world, peers):
     """MS-3/MS-6: a message to an offline contact is resubmitted after the engine restarts."""
     address = world.address()
@@ -322,6 +346,9 @@ def test_pending_messages_survive_a_restart_and_the_identity_is_kept(world, peer
     world.start_engine(json.loads((world.data / "messaging.json").read_text()))
     assert world.address() == address and (world.data / "identity").read_bytes() == identity
     assert world.call(op="status")["identity"] == "unchanged"
+    # M5: conversations, and a contact added in the dashboard, survive the restart.
+    assert "hello alice" in [m["text"] for m in world.call(op="history", contact="alice")["messages"]]
+    assert [m["text"] for m in world.call(op="history", contact="bob")["messages"]] == ["hi from bob ✓", "hello bob"]
     state = world.call(op="message", message_id=sent["message_id"])["state"]
     assert state in ("queued", "sending")
     revived, same = world.peer("alice")  # the same identity, so the same address

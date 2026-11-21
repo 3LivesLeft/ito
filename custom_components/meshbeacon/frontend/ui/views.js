@@ -6,7 +6,7 @@
 // ctx = { source, now, range, history: {state, values}, onRange, copy }
 
 import { CONNECTIVITY_TEXT, MESSAGING_NOTE, MESSAGING_OFF_TEXT, MESSAGING_STEPS, RANGES, TONES, duration, formatNumber, pathsNote, precision } from "../model.js";
-import { banner, chartCard, chip, segmented, statusMark, tile, value } from "./components.js";
+import { banner, chartCard, chip, copyButton, segmented, statusMark, tile, value } from "./components.js";
 import { h } from "./dom.js";
 
 const DASH = "—";
@@ -172,19 +172,6 @@ function peerCard(ctx, peer) {
   );
 }
 
-/** Copy text to the clipboard; the button says whether it worked. */
-function copyButton(text) {
-  const button = h("button", { type: "button", class: "copy", text: "Copy" });
-  button.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      button.textContent = "Copied";
-    } catch (_err) {
-      button.textContent = "Select and copy";
-    }
-  });
-  return button;
-}
 
 /** The optional LXMF messaging engine (M4): its state, address, counts and how to connect. */
 function messagingCard(ctx) {

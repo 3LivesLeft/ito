@@ -11,7 +11,7 @@ import urllib.error
 
 import pytest
 
-from meshbeacon.api import API_PATH, ApiServer, Discovery, StatusStore, new_token
+from meshbeacon.api import API_PATH, MAX_BODY, MESSAGING_PATH, ApiServer, Discovery, StatusStore, new_token
 
 
 @pytest.fixture
@@ -60,8 +60,11 @@ def test_only_one_read_only_endpoint(server):
     assert get(srv.port, "/", auth)[0] == 404
     assert get(srv.port, "/health", auth)[0] == 404
     assert get(srv.port, API_PATH + "/../x", auth)[0] == 404
-    for method in ("POST", "PUT", "DELETE", "PATCH"):
+    for method in ("PUT", "DELETE", "PATCH"):
         assert get(srv.port, API_PATH, auth, method)[0] == 501
+    # POST exists only for messaging (M5), and only while messaging is on.
+    assert get(srv.port, API_PATH, auth, "POST")[0] == 404
+    assert get(srv.port, MESSAGING_PATH, auth, "POST")[0] == 404
 
 
 def test_starting_before_first_snapshot(server):
@@ -313,3 +316,79 @@ def test_tls_certificate_is_fresh_pinned_and_handshake_is_off_the_accept_thread(
         stalled.close()
     finally:
         srv.stop()
+
+
+# -- the messaging endpoint (M5, ADR 0024) ----------------------------------------------------------
+
+
+@pytest.fixture
+def messaging_server():
+    token, key = new_token(), new_token()
+    seen: list = []
+
+    def binding(request):
+        seen.append(request)
+        return 200, {"ok": True, "echo": request.get("op")}
+
+    store = StatusStore(token, key, binding)
+    srv = ApiServer(store, "127.0.0.1", 0)
+    srv.start()
+    yield srv, store, token, key, seen
+    srv.stop()
+
+
+def post(port, body: bytes, headers=None):
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    conn.request("POST", MESSAGING_PATH, body=body, headers={"Content-Type": "application/json", **(headers or {})})
+    resp = conn.getresponse()
+    data = resp.read()
+    conn.close()
+    return resp.status, data
+
+
+def test_messaging_takes_only_the_messaging_key_and_status_only_the_status_key(messaging_server):
+    srv, store, token, key, seen = messaging_server
+    store.publish({"schema": 1})
+    body = json.dumps({"op": "conversations"}).encode()
+    assert post(srv.port, body)[0] == 401
+    assert post(srv.port, body, {"Authorization": f"Bearer {token}"})[0] == 401  # MS-12
+    status, data = post(srv.port, body, {"Authorization": f"Bearer {key}"})
+    assert status == 200 and json.loads(data) == {"ok": True, "echo": "conversations"}
+    assert get(srv.port, headers={"Authorization": f"Bearer {key}"})[0] == 401
+    assert get(srv.port, headers={"Authorization": f"Bearer {token}"})[0] == 200
+    assert seen == [{"op": "conversations"}]
+
+
+def test_messaging_bodies_are_bounded_and_must_be_json(messaging_server):
+    srv, _, _, key, seen = messaging_server
+    auth = {"Authorization": f"Bearer {key}"}
+    assert post(srv.port, b"x" * (MAX_BODY + 1), auth)[0] == 413
+    assert post(srv.port, b"{not json", auth) == (400, b'{"error":"invalid"}')
+    assert seen == []
+
+
+def test_a_failing_binding_returns_no_details(messaging_server):
+    srv, store, _, key, _ = messaging_server
+
+    def broken(_request):
+        raise RuntimeError("secret content")
+
+    store.messaging = broken
+    status, data = post(srv.port, b"{}", {"Authorization": f"Bearer {key}"})
+    assert status == 500 and b"secret" not in data
+
+
+def test_discovery_carries_the_messaging_key_only_with_tls(tmp_path):
+    sent = []
+
+    def opener(request, timeout):
+        sent.append(json.loads(request.data))
+        return io.BytesIO(b'{"data": {"uuid": "abc"}}')
+
+    d = Discovery("sv-token", tmp_path / "d.json", opener=opener)
+    assert d.announce("h", 1, "tok", "", "mkey")
+    assert d.announce("h", 1, "tok", "f" * 64, "mkey")
+    assert d.announce("h", 1, "tok", "f" * 64)
+    assert "messaging_key" not in sent[0]["config"]
+    assert sent[1]["config"]["messaging_key"] == "mkey"
+    assert "messaging_key" not in sent[2]["config"]

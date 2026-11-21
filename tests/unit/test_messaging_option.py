@@ -91,9 +91,14 @@ class FakeEngine:
         self.states: dict[str, str] = {}
         self.rpc: bool | None = True
         self.rpc_key: bool | None = True
+        self.calls: list[dict[str, Any]] = []
+        self.extra: dict[str, dict[str, Any]] = {}
 
-    def __call__(self, req: dict[str, Any]) -> dict[str, Any] | None:
+    def __call__(self, req: dict[str, Any], **_kw: Any) -> dict[str, Any] | None:
         op = req["op"]
+        self.calls.append(req)
+        if op in getattr(self, "extra", {}):
+            return self.extra[op]
         if op == "status":
             return {
                 "ok": True,

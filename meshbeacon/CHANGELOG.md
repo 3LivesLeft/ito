@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.0 — unreleased (develop)
+
+- **Read and answer LXMF messages in Home Assistant.** The MeshBeacon dashboard has a new
+  **Messages** tab: your contacts and conversations, unread counts, MeshBeacon's own address to
+  copy, and a box to write and send replies. New messages and delivery changes appear without
+  refreshing. Each message you send says honestly where it is: *Waiting to send*, *Sending…*,
+  *Delivered* (only when the recipient's app confirmed it), *Stored on a propagation node*, or
+  *Not delivered* with **Send again**.
+- **Add, rename and remove contacts in the dashboard.** Paste a contact's LXMF address and give it
+  a name. Contacts from the Configuration tab are kept and appear in the Messages tab.
+- **Conversations are kept** by the app across restarts and updates (at most 10,000 messages; the
+  oldest go first). They are never stored in Home Assistant's history, logs or diagnostics.
+- **Automatic replies** are sent at most once every six hours per contact, so two automatic
+  responders cannot answer each other for ever, and are marked as automatic in the conversation.
+- Only Home Assistant administrators can read or send messages.
+
+**To update** (your node identity, messaging identity, contacts, conversations-to-be and settings
+are all kept):
+
+1. Settings → Apps → MeshBeacon → **Update** (not Rebuild), then **Start** if it is not running.
+2. Settings → Devices & services: if Home Assistant offers an update for the **MeshBeacon
+   integration** (or shows a repair asking for it), install it and restart Home Assistant when
+   asked. The app and the integration must both be 0.4.0 for the Messages tab.
+3. Open **MeshBeacon** in the sidebar → **Messages**. If you have not yet, check that **Enable LXMF
+   messaging** and **Show MeshBeacon's status in Home Assistant** are both on in the app's
+   Configuration tab.
+
 ## 0.3.1 — unreleased (develop)
 
 - **Fixed: messaging still could not talk to Reticulum after the 0.3.0 messaging fix** on Home

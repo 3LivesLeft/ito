@@ -161,6 +161,9 @@ def test_announce_and_withdraw_go_over_one_link_without_a_token(relay, tmp_path)
         {**VALID, "port": True},
         {**VALID, "token": "short"},
         {**VALID, "cert_sha256": "AB" * 32},
+        {**VALID, "messaging_key": "short"},
+        {**VALID, "messaging_key": TOKEN},  # the messaging key is never the status key
+        {**VALID, "messaging_key": 7},
     ],
 )
 def test_the_relay_sends_nothing_but_a_valid_message(relay, config):
@@ -171,6 +174,13 @@ def test_the_relay_sends_nothing_but_a_valid_message(relay, config):
     assert not link.broken  # a refusal is an answer; the link stays usable
     link.request({"op": "announce", "config": VALID})
     assert len(relay.supervisor.requests) == 1
+
+
+def test_the_relay_carries_a_messaging_key_with_the_status_key(relay):
+    """M5 (ADR 0024): the messaging key travels in the same message, and nothing else does."""
+    link = relay.link()
+    link.request({"op": "announce", "config": {**VALID, "messaging_key": "M" * 43}})
+    assert relay.supervisor.requests[-1]["body"]["config"] == {**VALID, "messaging_key": "M" * 43}
 
 
 @pytest.mark.parametrize(

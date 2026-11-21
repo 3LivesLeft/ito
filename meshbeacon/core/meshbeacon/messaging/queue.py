@@ -11,6 +11,16 @@ kept until acknowledged (at-least-once). Every limit here is a hard limit:
 - the file ≤ 16 MiB; weekly ``VACUUM`` when idle;
 - a corrupt file is quarantined and a fresh queue started; it never blocks transport.
 
+M5 (ADR 0024) adds two tables to the same file, so that one transaction covers a message and its
+place in the conversation:
+
+- ``contacts``: the **single authoritative contact store**. Contacts from the app's Configuration
+  tab are imported at every start (by address; a contact the user removed from the dashboard is
+  not imported again while it stays in the options); the dashboard adds, renames and removes them.
+- ``history``: the conversation history shown in Home Assistant, both directions, in arrival order
+  (``seq``). Inbound messages are de-duplicated by their LXMF hash for as long as they are kept.
+  At most ``HISTORY_MAX`` messages and ``HISTORY_BYTES_MAX`` of text; the oldest go first.
+
 Content is never logged.
 """
 
@@ -36,6 +46,11 @@ FILE_MAX = 16 * 1024 * 1024
 RETENTION_MAX_DAYS = 30
 VACUUM_INTERVAL = 7 * 86400.0
 PENDING_STATES = ("queued", "sending")
+HISTORY_MAX = 10_000
+HISTORY_BYTES_MAX = 8 * 1024 * 1024
+CONTACTS_MAX = 100
+PREVIEW_CHARS = 120
+RETRYABLE = ("failed", "rejected", "expired", "sent_unconfirmed")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS outbound (
@@ -67,12 +82,57 @@ CREATE TABLE IF NOT EXISTS inbound (
     acked REAL
 );
 CREATE TABLE IF NOT EXISTS counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS contacts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    destination TEXT NOT NULL UNIQUE,
+    origin TEXT NOT NULL,
+    created REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS removed_contacts (destination TEXT PRIMARY KEY, removed REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS history (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id TEXT NOT NULL UNIQUE,
+    source_key TEXT UNIQUE,
+    contact TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    at REAL NOT NULL,
+    state TEXT,
+    reason TEXT,
+    auto INTEGER NOT NULL DEFAULT 0,
+    unread INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS history_contact ON history(contact, seq);
 CREATE TABLE IF NOT EXISTS meta (name TEXT PRIMARY KEY, value REAL NOT NULL);
 """
 
 
 class QueueFullError(Exception):
     """Too many messages are waiting to be sent."""
+
+
+class ContactError(ValueError):
+    """A contact change the store refuses. ``code`` is safe to return to the caller."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+@dataclass(frozen=True)
+class StoredContact:
+    id: str
+    name: str
+    destination: str  # hex
+    origin: str  # "configuration" (imported from the app's options) or "dashboard"
+
+
+def _slug(name: str) -> str:
+    out = "".join(ch if ch.isascii() and (ch.isalnum() or ch in "_-") else "-" for ch in name.lower())
+    return "-".join(p for p in out.split("-") if p)[:28].strip("_") or "contact"
 
 
 @dataclass(frozen=True)
@@ -162,6 +222,11 @@ class Queue:
         now = self.clock()
         with self.db:
             self.db.execute("BEGIN IMMEDIATE")
+            self.db.execute(
+                "UPDATE history SET state = 'expired', reason = 'expired' WHERE message_id IN "
+                "(SELECT message_id FROM outbound WHERE state IN ('queued', 'sending') AND created < ?)",
+                (now - EXPIRY,),
+            )
             expired = self.db.execute(
                 "UPDATE outbound SET state = 'expired', reason = 'expired', content = '', title = '', updated = ? "
                 "WHERE state IN ('queued', 'sending') AND created < ?",
@@ -175,16 +240,21 @@ class Queue:
                 (now - EXPIRY,),
             )
             self.db.execute("DELETE FROM inbound WHERE acked IS NOT NULL AND acked < ?", (now - self.retention,))
+            self._prune_history()
             self.db.execute("COMMIT")
         last = self.db.execute("SELECT value FROM meta WHERE name = 'vacuum'").fetchone()
         if self.size() > FILE_MAX or last is None or now - last[0] > VACUUM_INTERVAL:
             self._shrink(now)
 
     def _shrink(self, now: float) -> None:
-        if self.size() > FILE_MAX:  # keep only what matters: undelivered and unacknowledged
+        if self.size() > FILE_MAX:  # keep only what matters: undelivered, unacknowledged, recent history
             with self.db:
                 self.db.execute("DELETE FROM inbound WHERE acked IS NOT NULL")
                 self.db.execute("DELETE FROM outbound WHERE state NOT IN ('queued', 'sending')")
+                self.db.execute(
+                    "DELETE FROM history WHERE seq <= (SELECT seq FROM history ORDER BY seq DESC LIMIT 1 OFFSET ?)",
+                    (HISTORY_MAX // 2,),
+                )
         self.db.execute("VACUUM")
         self.db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
         self.db.execute(
@@ -193,8 +263,13 @@ class Queue:
         )
 
     # -- outbound ---------------------------------------------------------------------------
-    def enqueue(self, contact: str, title: str, content: str, idempotency_key: str) -> tuple[str, bool]:
-        """(message ID, created now). The same idempotency key within 24 h returns the same ID."""
+    def enqueue(
+        self, contact: str, title: str, content: str, idempotency_key: str, *, auto: bool = False
+    ) -> tuple[str, bool]:
+        """(message ID, created now). The same idempotency key within 24 h returns the same ID.
+
+        The message also takes its place in the contact's conversation (``auto``: an automatic
+        reply, shown as such)."""
         now = self.clock()
         with self.db:
             self.db.execute("BEGIN IMMEDIATE")
@@ -220,6 +295,11 @@ class Queue:
             self.db.execute(
                 "INSERT OR REPLACE INTO idempotency(key, message_id, created) VALUES (?, ?, ?)",
                 (idempotency_key, message_id, now),
+            )
+            self.db.execute(
+                "INSERT INTO history(message_id, contact, direction, title, content, size, at, state, auto) "
+                "VALUES (?, ?, 'out', ?, ?, ?, ?, 'queued', ?)",
+                (message_id, contact, title, content, len(title.encode()) + len(content.encode()), now, int(auto)),
             )
             self.db.execute("COMMIT")
         return message_id, True
@@ -278,6 +358,9 @@ class Queue:
                     message_id,
                 ),
             )
+            self.db.execute(
+                "UPDATE history SET state = ?, reason = ? WHERE message_id = ?", (state, reason, message_id)
+            )
             if final:
                 self._count(f"outbound_{state}")
 
@@ -292,7 +375,9 @@ class Queue:
         now = self.clock()
         with self.db:
             self.db.execute("BEGIN IMMEDIATE")
-            if self.db.execute("SELECT 1 FROM inbound WHERE source_key = ?", (source_key,)).fetchone():
+            if self.db.execute("SELECT 1 FROM inbound WHERE source_key = ?", (source_key,)).fetchone() or (
+                self.db.execute("SELECT 1 FROM history WHERE source_key = ?", (source_key,)).fetchone()
+            ):
                 self.db.execute("COMMIT")
                 return None
             while True:
@@ -310,6 +395,11 @@ class Queue:
             self.db.execute(
                 "INSERT INTO inbound(message_id, source_key, contact, title, content, size, received) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (message_id, source_key, contact, title, content, size, now),
+            )
+            self.db.execute(
+                "INSERT INTO history(message_id, source_key, contact, direction, title, content, size, at, unread) "
+                "VALUES (?, ?, ?, 'in', ?, ?, ?, ?, 1)",
                 (message_id, source_key, contact, title, content, size, now),
             )
             self._count("inbound_received")
@@ -343,3 +433,191 @@ class Queue:
         pending = self.db.execute("SELECT COUNT(*) FROM outbound WHERE state IN ('queued', 'sending')").fetchone()[0]
         inbound = self.db.execute("SELECT COUNT(*) FROM inbound WHERE acked IS NULL").fetchone()[0]
         return {"outbound_pending": pending, "inbound_waiting": inbound}
+
+    # -- conversation history (M5, ADR 0024) -------------------------------------------------
+    def _prune_history(self) -> None:
+        """Keep at most HISTORY_MAX messages and HISTORY_BYTES_MAX of text; the oldest go first.
+        Messages still waiting to be sent are never pruned."""
+        count, total = self.db.execute("SELECT COUNT(*), COALESCE(SUM(size), 0) FROM history").fetchone()
+        while count > HISTORY_MAX or total > HISTORY_BYTES_MAX:
+            row = self.db.execute(
+                "SELECT seq, size FROM history WHERE state IS NULL OR state NOT IN ('queued', 'sending') "
+                "ORDER BY seq LIMIT 1"
+            ).fetchone()
+            if row is None:
+                return
+            self.db.execute("DELETE FROM history WHERE seq = ?", (row[0],))
+            self._count("history_pruned")
+            count, total = count - 1, total - row[1]
+
+    @staticmethod
+    def _message(row: Any) -> dict[str, Any]:
+        return {
+            "seq": row[0],
+            "message_id": row[1],
+            "direction": row[2],
+            "title": row[3],
+            "text": row[4],
+            "at": row[5],
+            "state": row[6],
+            "reason": row[7],
+            "auto": bool(row[8]),
+            "unread": bool(row[9]),
+        }
+
+    _HISTORY = "seq, message_id, direction, title, content, at, state, reason, auto, unread"
+
+    def history(self, contact: str, before: int | None = None, limit: int = 50) -> list[dict[str, Any]]:
+        """The newest ``limit`` messages of a conversation (older than ``before``), oldest first."""
+        rows = self.db.execute(
+            f"SELECT {self._HISTORY} FROM history WHERE contact = ? AND seq < ? ORDER BY seq DESC LIMIT ?",  # noqa: S608
+            (contact, before if before is not None else 2**62, limit),
+        ).fetchall()
+        return [self._message(r) for r in reversed(rows)]
+
+    def conversations(self) -> dict[str, dict[str, Any]]:
+        """Per contact ID: the unread count and the newest message (text cut to a preview)."""
+        out: dict[str, dict[str, Any]] = {}
+        for contact, unread in self.db.execute("SELECT contact, SUM(unread) FROM history GROUP BY contact"):
+            row = self.db.execute(
+                f"SELECT {self._HISTORY} FROM history WHERE contact = ? ORDER BY seq DESC LIMIT 1",  # noqa: S608
+                (contact,),
+            ).fetchone()
+            last = self._message(row)
+            last["text"] = last["text"][:PREVIEW_CHARS]
+            out[contact] = {"unread": int(unread or 0), "last": last}
+        return out
+
+    def mark_read(self, contact: str) -> int:
+        with self.db:
+            sql = "UPDATE history SET unread = 0 WHERE contact = ? AND unread = 1"
+            return self.db.execute(sql, (contact,)).rowcount
+
+    def clear_history(self, contact: str) -> int:
+        """Delete a conversation. Messages still waiting to be sent are kept (and still sent)."""
+        with self.db:
+            return self.db.execute(
+                "DELETE FROM history WHERE contact = ? AND (state IS NULL OR state NOT IN ('queued', 'sending'))",
+                (contact,),
+            ).rowcount
+
+    def history_entry(self, message_id: str) -> dict[str, Any] | None:
+        row = self.db.execute(
+            f"SELECT {self._HISTORY}, contact FROM history WHERE message_id = ?",  # noqa: S608
+            (message_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {**self._message(row), "contact": row[10]}
+
+    def requeue(self, message_id: str) -> str:
+        """A new outbound message with the text of a final, undelivered one, in its place in the
+        conversation (its history row takes the new ID). Returns the new ID."""
+        now = self.clock()
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            row = self.db.execute(
+                "SELECT contact, title, content, state FROM history WHERE message_id = ? AND direction = 'out'",
+                (message_id,),
+            ).fetchone()
+            if row is None or row[3] not in RETRYABLE:
+                self.db.execute("ROLLBACK")
+                raise ContactError("not_retryable")
+            pending = self.db.execute("SELECT COUNT(*) FROM outbound WHERE state IN ('queued', 'sending')").fetchone()[
+                0
+            ]
+            if pending >= PENDING_MAX:
+                self.db.execute("ROLLBACK")
+                raise QueueFullError
+            new_id = new_message_id()
+            self.db.execute(
+                "INSERT INTO outbound(message_id, contact, title, content, state, created, updated) "
+                "VALUES (?, ?, ?, ?, 'queued', ?, ?)",
+                (new_id, row[0], row[1], row[2], now, now),
+            )
+            self.db.execute(
+                "UPDATE history SET message_id = ?, state = 'queued', reason = NULL, at = ? WHERE message_id = ?",
+                (new_id, now, message_id),
+            )
+            self.db.execute("COMMIT")
+        return new_id
+
+    # -- contacts (M5: the single authoritative store) ----------------------------------------
+    def contacts(self) -> list[StoredContact]:
+        rows = self.db.execute("SELECT id, name, destination, origin FROM contacts ORDER BY created, id").fetchall()
+        return [StoredContact(*r) for r in rows]
+
+    def _free_id(self, wanted: str) -> str:
+        taken = {r[0] for r in self.db.execute("SELECT id FROM contacts")}
+        # An ID still used by a conversation is never given to someone else.
+        taken |= {r[0] for r in self.db.execute("SELECT DISTINCT contact FROM history")}
+        base = wanted if contract.CONTACT_ID.match(wanted) else "contact"
+        candidate, n = base, 2
+        while candidate in taken or candidate == "unknown":
+            candidate, n = f"{base[:28]}-{n}", n + 1
+        return candidate
+
+    def add_contact(self, name: str, destination: str, *, origin: str = "dashboard", wanted_id: str = "") -> str:
+        now = self.clock()
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            if self.db.execute("SELECT 1 FROM contacts WHERE destination = ?", (destination,)).fetchone():
+                self.db.execute("ROLLBACK")
+                raise ContactError("contact_exists")
+            if self.db.execute("SELECT COUNT(*) FROM contacts").fetchone()[0] >= CONTACTS_MAX:
+                self.db.execute("ROLLBACK")
+                raise ContactError("too_many_contacts")
+            contact_id = self._free_id(wanted_id or _slug(name))
+            self.db.execute(
+                "INSERT INTO contacts(id, name, destination, origin, created) VALUES (?, ?, ?, ?, ?)",
+                (contact_id, name, destination, origin, now),
+            )
+            self.db.execute("DELETE FROM removed_contacts WHERE destination = ?", (destination,))
+            self.db.execute("COMMIT")
+        return contact_id
+
+    def rename_contact(self, contact_id: str, name: str) -> None:
+        with self.db:
+            if not self.db.execute("UPDATE contacts SET name = ? WHERE id = ?", (name, contact_id)).rowcount:
+                raise ContactError("unknown_contact")
+
+    def remove_contact(self, contact_id: str, *, remember: bool) -> None:
+        """Remove a contact, its conversation and anything still waiting to be sent to it.
+        ``remember``: the address is still in the app's options, so do not import it again."""
+        now = self.clock()
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            row = self.db.execute("SELECT destination FROM contacts WHERE id = ?", (contact_id,)).fetchone()
+            if row is None:
+                self.db.execute("ROLLBACK")
+                raise ContactError("unknown_contact")
+            self.db.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+            self.db.execute("DELETE FROM history WHERE contact = ?", (contact_id,))
+            self.db.execute(
+                "UPDATE outbound SET state = 'failed', reason = 'unknown_contact', content = '', title = '', "
+                "updated = ? WHERE contact = ? AND state IN ('queued', 'sending')",
+                (now, contact_id),
+            )
+            if remember:
+                self.db.execute(
+                    "INSERT OR REPLACE INTO removed_contacts(destination, removed) VALUES (?, ?)", (row[0], now)
+                )
+            self.db.execute("COMMIT")
+
+    def import_contacts(self, configured: list[tuple[str, str, str]]) -> None:
+        """Contacts from the app's Configuration tab, as (wanted ID, name, destination).
+
+        Added when their address is new; a contact the user removed from the dashboard stays
+        removed while it is still listed in the options. An existing contact keeps its name (a
+        rename in the dashboard wins). Nothing configured is ever deleted here."""
+        listed = {dest for _, _, dest in configured}
+        with self.db:
+            # A removal is remembered only while the address is still in the options.
+            for (dest,) in self.db.execute("SELECT destination FROM removed_contacts").fetchall():
+                if dest not in listed:
+                    self.db.execute("DELETE FROM removed_contacts WHERE destination = ?", (dest,))
+        for wanted, name, dest in configured:
+            if self.db.execute("SELECT 1 FROM removed_contacts WHERE destination = ?", (dest,)).fetchone():
+                continue
+            with contextlib.suppress(ContactError):
+                self.add_contact(name, dest, origin="configuration", wanted_id=wanted)
