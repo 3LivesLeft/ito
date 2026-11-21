@@ -270,9 +270,7 @@ def render_inkscape(jobs: list[dict[str, object]]) -> None:
             width = int(job["width"])
             _, _, w, h = map(float, root.attrib["viewBox"].split())
             if job["trim"]:
-                bounds = subprocess.check_output(
-                    ["inkscape", "--query-all", str(source)], text=True
-                ).splitlines()[0]
+                bounds = subprocess.check_output(["inkscape", "--query-all", str(source)], text=True).splitlines()[0]
                 x, y, w, h = map(float, bounds.split(",")[1:])
                 x, y, w, h = x - 2, y - 2, w + 4, h + 4
                 root.set("viewBox", f"{x} {y} {w} {h}")

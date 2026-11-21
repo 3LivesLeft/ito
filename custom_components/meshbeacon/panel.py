@@ -63,10 +63,12 @@ async def async_setup_panel_support(hass: HomeAssistant) -> None:
         return
     hass.data[_STATIC_DONE] = await hass.async_add_executor_job(_fingerprint)
     versioned_url = f"{STATIC_URL}/{hass.data[_STATIC_DONE]}"
-    await hass.http.async_register_static_paths([
-        StaticPathConfig(versioned_url, str(FRONTEND), True),
-        StaticPathConfig(STATIC_URL, str(FRONTEND), False),
-    ])
+    await hass.http.async_register_static_paths(
+        [
+            StaticPathConfig(versioned_url, str(FRONTEND), True),
+            StaticPathConfig(STATIC_URL, str(FRONTEND), False),
+        ]
+    )
     websocket_api.async_register_command(hass, ws_panel)
     conversations.async_register(hass)
 
