@@ -1,0 +1,18 @@
+# Optional Home Assistant theme for the ito example dashboard.
+# Install as a named theme using your Home Assistant themes configuration, then select
+# "ito sage" in your user profile. This affects Home Assistant's theme globally for
+# that user's selected theme; it is not automatically applied by the integration.
+# Compatible with the built-in Lovelace cards used by dashboard.yaml.
+ito sage:
+  primary-color: "#284C40"
+  accent-color: "#A6C9B2"
+  primary-background-color: "#E8F3ED"
+  secondary-background-color: "#F5FAF6"
+  card-background-color: "#FFFFFF"
+  primary-text-color: "#284C40"
+  secondary-text-color: "#496A5D"
+  divider-color: "#C8DED0"
+  state-icon-color: "#496A5D"
+  state-icon-active-color: "#284C40"
+  app-header-background-color: "#284C40"
+  app-header-text-color: "#FFFFFF"
