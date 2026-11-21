@@ -1,12 +1,11 @@
-# Gitleaks configuration for the repository's full-history scan.
-# This exact historical finding is a false positive: the fixture passes the
-# literal idempotency key "click-0001" to a mocked messaging API. It is not a
-# credential. Keep all other rules and findings enabled.
+# Gitleaks full-history scan. Preserve all default detection rules.
 [extend]
 useDefault = true
 
-[allowlist]
-description = "Known historical mock messaging idempotency-key false positive"
-fingerprints = [
-  "7c815a23e6071660d7c285010fcb323c694614e2:tests/ha/test_messaging.py:generic-api-key:99",
-]
+# Historical mock idempotency key, not a credential.
+# Restrict the exception to this exact fixture path AND exact literal.
+[[allowlists]]
+description = "Mock messaging idempotency key in HA test fixture"
+condition = "AND"
+paths = ['^tests/ha/test_messaging\.py$']
+regexes = ['click-0001']
