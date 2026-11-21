@@ -21,7 +21,7 @@ created a contact and sent a fixture message through the Ingress messaging route
 transport and persistence are covered by the repository's existing isolated-network tests.
 
 Local validation: 574 Python unit tests passed (45 Unix-socket tests deselected because this
-execution environment forbids Unix sockets); 129 Home Assistant tests passed; 69 frontend tests
+execution environment forbids Unix sockets); 129 Home Assistant tests passed; 70 frontend tests
 passed. Branding generation, frontend bundle consistency, release layout, Ruff and core/HA
 strict type checks passed. Full socket/container, messaging and AppArmor coverage runs in GitHub CI.
 

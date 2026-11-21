@@ -44,3 +44,12 @@ test("live polling stays bounded and stops when hidden", () => {
   messaging.stop();
   assert.equal(pending.size, 0);
 });
+
+
+test("browser timeout errors become reconnectable messaging outages", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => { throw new DOMException("Timed out", "TimeoutError"); });
+  const messaging = new IngressMessaging();
+  await messaging.refresh();
+  assert.equal(messaging.error, "unavailable");
+  assert.equal(messaging.available, false);
+});

@@ -15,7 +15,7 @@ export async function api(path, body) {
     if (!response.ok || answer.ok === false) throw { code: answer.error || "unavailable", problems: answer.problems };
     return answer;
   } catch (error) {
-    throw error && error.code ? error : { code: "unavailable" };
+    throw error && typeof error.code === "string" ? error : { code: "unavailable" };
   }
 }
 
