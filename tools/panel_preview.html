@@ -1,0 +1,250 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!--
+  Preview of the MeshBeacon panel with sample data, outside Home Assistant (no network, no data).
+  Serve the repository root on loopback and open, for example:
+    python3 -m http.server --bind 127.0.0.1 8765
+    http://127.0.0.1:8765/tools/panel_preview.html?scenario=ok&theme=dark
+  Scenarios: ok, busy (2,048 paths), problem, unavailable, loading, error, empty, nohistory.
+  Add &hostile=1 to give a peer a script-like name: it must appear as plain text.
+  Add &source=snapshot to render the same views from a core status snapshot (schema 1) through
+  sources/snapshot.js instead of Home Assistant: the delivery-independence check.
+  The sample values are the initial physical Raspberry Pi readings from v0.2.0 (seven minutes).
+-->
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MeshBeacon panel preview</title>
+    <link rel="icon" type="image/svg+xml" href="../branding/svg/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../branding/png/favicon-32.png" />
+    <style>
+      :root {
+        --primary-background-color: #fafafa; --card-background-color: #fff; --primary-text-color: #212121;
+        --secondary-text-color: #727272; --divider-color: rgba(0, 0, 0, 0.12); --primary-color: #03a9f4;
+        --accent-color: #ff9800; --success-color: #43a047; --warning-color: #ffa600; --error-color: #db4437;
+        --info-color: #039be5; --app-header-background-color: #03a9f4; --app-header-text-color: #fff;
+        --text-primary-color: #fff; --disabled-text-color: #9e9e9e; --state-icon-color: #44739e;
+      }
+      :root[data-theme="dark"] {
+        --primary-background-color: #111111; --card-background-color: #1c1c1c; --primary-text-color: #e1e1e1;
+        --secondary-text-color: #9b9b9b; --divider-color: rgba(225, 225, 225, 0.12);
+        --app-header-background-color: #101e24; --app-header-text-color: #e1e1e1; --state-icon-color: #6ba5d7;
+      }
+      body { margin: 0; background: var(--primary-background-color); }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import "../custom_components/meshbeacon/frontend/meshbeacon-panel.js";
+      import { SnapshotSource } from "../custom_components/meshbeacon/frontend/sources/snapshot.js";
+      import { InterfaceController } from "../custom_components/meshbeacon/frontend/ui/controller.js";
+      import { loadFonts } from "../custom_components/meshbeacon/frontend/fonts.js";
+
+      const q = new URLSearchParams(location.search);
+      const scenario = q.get("scenario") || "ok";
+      if (q.get("theme") === "dark") document.documentElement.dataset.theme = "dark";
+      const now = Date.now();
+      const iso = (msAgo) => new Date(now - msAgo).toISOString();
+      const E = (k) => `sensor.meshbeacon_${k}`;
+      const B = (k) => `binary_sensor.meshbeacon_${k}`;
+      const node = {
+        entry_id: "preview", title: "MeshBeacon", app: "local_meshbeacon",
+        entities: {
+          status: E("status"), connectivity: E("connectivity"), problem: E("problem"), problem_detected: B("problem"),
+          reticulum_running: B("reticulum_running"), transport_mode: B("transport_mode"),
+          app_started: E("app_started"), reticulum_started: E("reticulum_started"),
+          peers_connected: E("peers_connected"), peers_configured: E("peers_configured"),
+          received: E("data_received"), sent: E("data_sent"), receive_rate: E("receive_rate"), send_rate: E("send_rate"),
+          known_paths: E("known_paths"), relayed_links: E("links_relayed_for_others"), memory: E("memory_use"),
+          cpu: E("processor_use"), restarts: E("reticulum_restarts"), memory_restarts: E("memory_restarts"),
+        },
+        peers: [
+          { name: "Emerald", reported: true, entities: { connected: B("emerald_connected"), connected_since: E("emerald_connected_since"), reconnections: E("emerald_reconnections") } },
+          { name: q.get("hostile") ? "Quartz <img src=x onerror=alert(1)>" : "Quartz", reported: true, entities: { connected: B("quartz_connected"), connected_since: E("quartz_connected_since"), reconnections: E("quartz_reconnections") } },
+        ],
+      };
+      const st = (entity_id, state, unit) => ({ entity_id, state: String(state), attributes: unit ? { unit_of_measurement: unit } : {}, last_updated: iso(0) });
+      const busy = scenario === "busy";
+      const states = Object.fromEntries([
+        st(E("status"), scenario === "problem" ? "needs_attention" : "running"),
+        st(E("connectivity"), scenario === "problem" ? "partial" : "online"),
+        st(E("problem"), scenario === "problem" ? "some_peers_unreachable" : "none"),
+        st(B("problem"), scenario === "problem" ? "on" : "off"),
+        st(B("reticulum_running"), "on"), st(B("transport_mode"), "on"),
+        st(E("app_started"), iso(7.5 * 60e3)), st(E("reticulum_started"), iso(7 * 60e3)),
+        st(E("peers_connected"), scenario === "problem" ? 1 : 2), st(E("peers_configured"), 2),
+        st(E("data_received"), 0.28, "MB"), st(E("data_sent"), 0.12, "MB"),
+        st(E("receive_rate"), 0.7, "kB/s"), st(E("send_rate"), 0.3, "kB/s"),
+        st(E("known_paths"), busy ? 2048 : 1312), st(E("links_relayed_for_others"), 0),
+        st(E("memory_use"), 78, "MiB"), st(E("processor_use"), 1.8, "%"),
+        st(E("reticulum_restarts"), 0), st(E("memory_restarts"), 0),
+        st(B("emerald_connected"), "on"), st(E("emerald_connected_since"), iso(7 * 60e3)), st(E("emerald_reconnections"), 0),
+        st(B("quartz_connected"), scenario === "problem" ? "off" : "on"), st(E("quartz_connected_since"), scenario === "problem" ? "unknown" : iso(3 * 3600e3)), st(E("quartz_reconnections"), 3),
+      ].map((s) => [s.entity_id, s]));
+      // &messaging=running|off|error: the optional LXMF messaging card (M4).
+      const messaging = q.get("messaging");
+      const ADDRESS = "3f9c2a71d04e8b65c1a09e7f25b3d8c4"; // a made-up example, not anyone's address
+      if (messaging) {
+        Object.assign(node.entities, {
+          messaging: E("messaging"), messages_received: E("messages_received"), messaging_contacts_reachable: E("messaging_contacts_reachable"),
+          messaging_last_received: E("messaging_last_received"), messaging_replies_sent: E("messaging_replies_sent"), messaging_last_reply: E("messaging_last_reply"),
+        });
+        const on = messaging === "running";
+        Object.assign(states, Object.fromEntries([
+          { entity_id: E("messaging"), state: { running: "running", off: "disabled", error: "error" }[messaging],
+            attributes: { address: on ? ADDRESS : null, contacts: 2, auto_reply: true, last_received_from: on ? "My phone" : null,
+                          message: messaging === "error" ? "Messaging could not start: Reticulum was not reachable, or the messaging identity is damaged (MeshBeacon never replaces it: restore the app from a backup). The app log says which. MeshBeacon will try again shortly." : null } },
+          st(E("messages_received"), on ? 4 : "unknown"), st(E("messaging_contacts_reachable"), on ? 1 : "unknown"),
+          st(E("messaging_last_received"), on ? iso(3 * 60e3) : "unknown"), st(E("messaging_replies_sent"), on ? 4 : "unknown"),
+          st(E("messaging_last_reply"), on ? "delivered" : "unknown"),
+        ].map((s) => [s.entity_id, s])));
+      }
+      if (scenario === "unavailable") for (const s of Object.values(states)) s.state = "unavailable";
+      const labels = {
+        running: "Running", needs_attention: "Needs attention", online: "Online", partial: "Partly connected",
+        none: "None", some_peers_unreachable: "Some peers unreachable",
+      };
+      const history = (id, base, wobble) => {
+        const rows = [];
+        for (let t = now - 24 * 3600e3; t <= now; t += 60e3) {
+          const h = (t / 3600e3) % 24;
+          rows.push({ s: String(Math.max(0, base + wobble * Math.sin(h / 2) + wobble * 0.6 * Math.sin(t / 7e5)).toFixed(2)), lu: t / 1000 });
+        }
+        if (scenario === "ok") rows.splice(600, 40, { s: "unavailable", lu: rows[600].lu });
+        return rows;
+      };
+      // &messaging=running: a made-up conversation for the Messages tab (M5). In memory only.
+      const conv = q.get("conversations") === "none" ? [] : [
+        { id: "my-phone", name: "My phone", address: "7d1e0b9a4c3f28e6a5b0d9c8e7f61a2b", origin: "dashboard", heard: true, unread: 1 },
+        { id: "alex", name: "Alex (Sideband)", address: "c0ffee00c0ffee00c0ffee00c0ffee00", origin: "configuration", heard: false, unread: 0 },
+      ];
+      const t0 = now / 1000;
+      let seq = 10;
+      const histories = {
+        "my-phone": [
+          { seq: 1, message_id: "1".repeat(32), direction: "in", text: "Is the heating on at home?", at: t0 - 26 * 3600, unread: false },
+          { seq: 2, message_id: "2".repeat(32), direction: "out", text: "Yes, since 6 pm. 21 °C in the living room.", at: t0 - 25.9 * 3600, state: "delivered" },
+          { seq: 3, message_id: "3".repeat(32), direction: "out", text: "MeshBeacon received your message. (This is an automatic reply.)", at: t0 - 3600, state: "delivered", auto: true },
+          { seq: 4, message_id: "4".repeat(32), direction: "out", text: "Back by 8?", at: t0 - 3000, state: "stored_on_node" },
+          { seq: 5, message_id: "5".repeat(32), direction: "out", text: "Did the parcel arrive?", at: t0 - 1800, state: "expired", reason: "expired" },
+          { seq: 6, message_id: "6".repeat(32), direction: "in", text: q.get("hostile") ? "<img src=x onerror=alert(1)> plain text only" : "Testing from Ratspeak 👋\nSecond line.", at: t0 - 120, unread: true },
+        ],
+        alex: [],
+      };
+      for (const c of conv) { const h = histories[c.id] || []; c.last = h.length ? h[h.length - 1] : null; }
+      const previewMessaging = async (msg) => {
+        const kind = msg.type.split("/").pop();
+        if (kind === "conversations") return { conversations: conv, revision: seq };
+        if (kind === "history") return { messages: histories[msg.contact] || [] };
+        if (kind === "read") { const c = conv.find((x) => x.id === msg.contact); if (c) c.unread = 0; return { read: 1 }; }
+        if (kind === "send") {
+          const h = histories[msg.contact] ||= [];
+          const m = { seq: ++seq, message_id: seq.toString(16).padStart(32, "0"), direction: "out", text: msg.text, at: Date.now() / 1000, state: "sending" };
+          h.push(m);
+          conv.find((x) => x.id === msg.contact).last = m;
+          setTimeout(() => { m.state = "delivered"; preview.notify(); }, 1500);
+          return { message_id: m.message_id, state: "queued" };
+        }
+        if (kind === "contact_add") { const id = msg.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"); conv.push({ id, name: msg.name, address: msg.address, origin: "dashboard", heard: false, unread: 0, last: null }); histories[id] = []; return { contact: id }; }
+        return {};
+      };
+      const preview = { listeners: [], notify() { for (const l of this.listeners) l({ type: "changed" }); } };
+      const hass = {
+        connection: { subscribeMessage: async (cb) => { preview.listeners.push(cb); setTimeout(() => cb({ type: "changed" }), 0); return () => {}; } },
+        language: "en-GB",
+        themes: { darkMode: q.get("theme") === "dark" },
+        states,
+        entities: { [E("status")]: { entity_id: E("status"), device_id: "dev1" } },
+        devices: { dev1: { sw_version: "0.2.0" } },
+        formatEntityState: (s) => (s.state in labels ? labels[s.state] : `${s.state}${s.attributes.unit_of_measurement ? ` ${s.attributes.unit_of_measurement}` : ""}`),
+        callWS: async (msg) => {
+          if (msg.type === "meshbeacon/panel") {
+            if (scenario === "loading") return new Promise(() => {});
+            if (scenario === "error") throw { code: "unknown_command", message: "Unknown command." };
+            return { nodes: scenario === "empty" ? [] : [node] };
+          }
+          if (msg.type.startsWith("meshbeacon/messaging/")) return previewMessaging(msg);
+          if (scenario === "nohistory") throw { code: "unknown_command" };
+          if (msg.type === "history/history_during_period") {
+            return {
+              [E("receive_rate")]: history(E("receive_rate"), 0.7, 0.4),
+              [E("send_rate")]: history(E("send_rate"), 0.3, 0.2),
+              [E("processor_use")]: history(E("processor_use"), 1.8, 0.6),
+              [E("memory_use")]: history(E("memory_use"), 76, 2),
+            };
+          }
+          return {};
+        },
+      };
+      if (q.get("source") === "snapshot") {
+        // Second delivery: the same views fed by the core's schema-1 snapshot (no Home Assistant).
+        const sec = (msAgo) => (now - msAgo) / 1000;
+        const snapshot = {
+          schema: 1, generated_at: now / 1000,
+          app: { version: "0.2.0", rns_version: "1.6.0", arch: "aarch64",
+                 state: scenario === "problem" ? "needs_attention" : "running",
+                 connectivity: scenario === "problem" ? "partial" : "online",
+                 problem: scenario === "problem" ? "some_peers_unreachable" : "none", message: null, started_at: sec(7.5 * 60e3) },
+          node: { running: true, started_at: sec(7 * 60e3), transport_enabled: true, restarts: 0, memory_restarts: 0 },
+          network: { peers_configured: 2, peers_connected: scenario === "problem" ? 1 : 2, rx_bytes: 280000, tx_bytes: 120000,
+                     rx_rate: 700, tx_rate: 300, packets_rx: 900, packets_tx: 800, paths: busy ? 2048 : 1312, relayed_links: 0,
+                     announces_rx: 300, announces_tx: 20 },
+          peers: [
+            { name: "Emerald", connected: true, connected_since: sec(7 * 60e3), rx_bytes: 200000, tx_bytes: 90000, rx_rate: 500, tx_rate: 200, announces_rx: 200, announces_tx: 10, reconnections: 0 },
+            { name: "Quartz", connected: scenario !== "problem", connected_since: scenario === "problem" ? null : sec(3 * 3600e3), rx_bytes: 80000, tx_bytes: 30000, rx_rate: 200, tx_rate: 100, announces_rx: 100, announces_tx: 10, reconnections: 3 },
+          ],
+          resources: { memory_bytes: 78 * 2 ** 20, core_memory_bytes: 21 * 2 ** 20, reticulum_memory_bytes: 57 * 2 ** 20, cpu_percent: 1.8 },
+        };
+        if (messaging) {
+          snapshot.messaging = messaging === "off" ? { enabled: false, state: "disabled", message: null } : {
+            enabled: true, state: messaging === "running" ? "running" : "error", address: messaging === "running" ? ADDRESS : null,
+            contacts_configured: 2, contacts_reachable: 1, received: 4, replies_sent: 4, last_reply_state: "delivered",
+            last_received_at: sec(3 * 60e3), last_received_from: "My phone", auto_reply: true,
+            message: messaging === "error" ? "Messaging could not start: Reticulum was not reachable. MeshBeacon will try again shortly." : null,
+          };
+        }
+        const series = (base, wobble) => {
+          const out = [];
+          for (let t = now - 7 * 24 * 3600e3; t <= now; t += 5 * 60e3) out.push({ t, v: Math.max(0, base + wobble * Math.sin(t / 7e6)) });
+          return out;
+        };
+        const source = new SnapshotSource({
+          history: async () => (scenario === "nohistory" ? Promise.reject(new Error("none")) : {
+            receive_rate: series(0.7, 0.4), send_rate: series(0.3, 0.2), cpu: series(1.8, 0.6), memory: series(76, 2),
+          }),
+        });
+        source.update(scenario === "unavailable" ? null : snapshot);
+        if (scenario === "unavailable") { source.update(snapshot); source.update(null); }
+        const host = document.createElement("div");
+        if (q.get("theme") === "dark") host.setAttribute("data-theme", "dark"); else host.setAttribute("data-theme", "light");
+        document.body.append(host);
+        loadFonts();
+        const ui = new InterfaceController({
+          root: host.attachShadow({ mode: "open" }),
+          source,
+          copy: {
+            unavailable: "MeshBeacon's core is not answering. Values reappear automatically.",
+            problemHint: "Details and suggested steps are in the MeshBeacon app's log.",
+            historyUnavailable: "History is not available.",
+            historyEmpty: "No history yet. It builds up while the app runs (kept in memory for 7 days).",
+            diagnosticsNote: null,
+            ranges: ["6h", "24h", "7d"],
+            notSetUp: { title: "MeshBeacon is starting", lines: ["Waiting for the first report."] },
+            loadError: (reason) => ({ title: "MeshBeacon could not be loaded", lines: [`Reason: ${reason}`] }),
+          },
+        });
+        ui.tab = q.get("tab") || "overview";
+        ui.render();
+        ui.loadHistory(true);
+      } else {
+      const panel = document.createElement("meshbeacon-panel");
+      panel.narrow = innerWidth < 870;
+      panel.panel = { url_path: "meshbeacon" };
+      panel.route = { path: q.get("tab") ? `/${q.get("tab")}` : "" };
+      panel.hass = hass;
+      document.body.append(panel);
+      }
+    </script>
+  </body>
+</html>

@@ -11,6 +11,12 @@ conflict, the answer is a safe default plus one clearly explained choice — not
 connection **within five minutes**, without editing a file, opening a terminal or knowing what an
 interface is.
 
+**Permanent (maintainer, 18 Nov 2026):** the five minutes end in MeshBeacon's **own interface**,
+which comes with the app, and never require the optional integration, HACS, a terminal or YAML
+([vision](../vision.md), principle 2). The proposed path through Ingress is in the
+[built-in interface validation](../research/built-in-interface.md) §5. Until ADR 0013 is
+implemented, step 6 below (the app log) is the interim confirmation.
+
 ## 2. The five-minute path
 
 | Step | User action | Time budget | Notes |
@@ -33,7 +39,7 @@ Few options, plain names, safe defaults. Illustrative only — not an implementa
 
 | Option (UI label) | Type | Default | Notes |
 |---|---|---|---|
-| **Public peers** | Multi-select from verified presets | *none* | Description includes the privacy notice. Diamond shows its rules. |
+| **Public Reticulum network** | Single choice (dropdown): `custom` or one preset | `custom` (none) | Implemented (ADR 0004 amendment, 20 Nov 2026). Description includes the privacy notice and Diamond's rules. Own peers are added alongside. |
 | **Your own peers** | List of { name, host, port, network name (optional), passphrase (optional) } | *empty* | Always available. Passphrase is a `password` field, never logged. |
 | **Share my connection with others (transport mode)** | On/off | **Off** | See §4. |
 | **Log detail** | quiet / normal / detailed | normal | Maps to RNS log levels 2 / 4 / 5; never higher by default |

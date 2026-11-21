@@ -1,8 +1,11 @@
 # ADR 0006: Read-only local status API, delivered to Home Assistant by Supervisor discovery
 
-- **Status:** **Accepted in principle** (maintainer, 18 November 2026), subject to the remaining
-  security review. The `home_assistant_integration` option stays **off by default, permanently**.
-  That is a decision, not a placeholder until approval.
+- **Status:** **Accepted**; amended 19 Nov 2026 (discovery transport, below).
+- **Original status:** **Accepted** (maintainer, 18 November 2026, after a positive independent review of
+  PR #3 with all 14 CI checks confirmed passing). The `home_assistant_integration` option stays
+  **off by default, permanently**. That is a decision, not a placeholder until approval.
+  Follow-up after acceptance: the client's response reading was made complete and bounded (threat
+  model T37).
 - **Date:** 18 November 2026; revised after independent review the same day
 - **Evidence:** [v0.2 feasibility, architecture and security review](../research/v0.2-observability.md),
   [threat model T11, T28–T36](../security/threat-model.md),
@@ -89,6 +92,65 @@ app); an Ingress UI (a second monitoring implementation). See
   The main one: anything that can read Home Assistant's configuration (admins, apps mapping
   `/config`, HA backups) can read the current token until the next app restart. It grants read-only
   access to non-identifying metrics.
+
+## Amendment (19 November 2026, M1): how discovery reaches the Supervisor
+
+Decision 4 says the token and fingerprint reach Home Assistant only through Supervisor discovery.
+That remains true of *reading* them, but the delivery path needs a precise statement:
+
+| | Status |
+|---|---|
+| On Supervisor 2026.11.0 and older, the app posts its discovery message to `http://supervisor` over the internal network in plain HTTP, with its Supervisor token | **Confirmed** from source |
+| Apps keep `NET_RAW` unless the Supervisor's opt-in `app_drop_net_raw` flag is set | **Confirmed** from source |
+| A co-installed app can intercept or alter that message on Home Assistant OS | **Not verified.** The same class as T34; not reproduced. A lab test is planned (W3-4) |
+| Impact if it can | Read-only, non-identifying metrics until the next app start (residual RR-9a, threat T28) |
+
+**Change (implemented in M1):** where the Supervisor gives the app its own Unix socket (newer
+Supervisors), the app posts discovery through it, via a small root-owned relay
+(`core/meshbeacon/discovery_relay.py`), because the socket is root-only and the core runs
+unprivileged. The token is then not used at all. Older Supervisors keep the compatibility path
+above. The relay adds no `config.yaml` privilege and sends only MeshBeacon's own validated message.
+
+**Correction (M1.2, after the M1.1 review).** The M1 relay accepted any process of the `meshbeacon`
+user, which includes the Reticulum child, so it did not serve "only the core" as stated above. It
+now accepts **root only** (socket 0600 in a 0700 folder, and a peer check). The core's s6 run
+script, while still root, opens the one link (`core/meshbeacon/relay_link.py`) and hands the
+descriptor to the core, which keeps it out of every child process. Reticulum therefore cannot
+announce or withdraw. In socket mode the run script no longer passes the Supervisor token to the
+core at all, and a missing link means no discovery, never a fall-back to the internal network.
+Separate Unix users for the core and Reticulum were assessed and deferred: the core starts,
+stops, signals and memory-limits Reticulum directly, which an unprivileged core cannot do for
+another user without new root code or a supervisor rewrite. They are to be designed in an ADR
+before any write-capable credential exists. The deployed behaviour under the Supervisor-loaded
+AppArmor profile still needs acceptance test SO-1.
+
+**Second correction (M1.2, after the M1.2 re-review).** The first correction closed the relay only
+in socket mode. On the compatibility path (every released Supervisor today) the core still received
+the Supervisor token in its initial environment, and **ptrace read is not denied** by MeshBeacon's
+AppArmor profile (only ptrace trace is), so another process of the same user, the Reticulum child
+included, could read it from `/proc/<core>/environ` and announce or withdraw over HTTP. Now:
+
+| Control | Where |
+|---|---|
+| The root start step passes the token through a **one-time pipe**, never an environment; the core reads it once and closes it | `relay_link.py --token-file`, `supervisor.read_token_fd` |
+| The core is **non-dumpable** before it reads any credential or starts any child: the kernel refuses other **non-root** processes (Reticulum among them) access to its `/proc` environment, descriptors, memory map and memory, and ptrace. Root keeps some read access even without `CAP_SYS_PTRACE`, but root already controls the container | `procinfo.set_not_dumpable` |
+| Adversarial container tests in **both** transports: as Reticulum's user, nothing of the core is readable and the token is not found; against the previous image the same test finds the token | `tests/container`, `tools/acceptance/relay_probe.py` |
+
+The pipe does **not** secure the network transport: on the compatibility path the token is still
+sent in plain HTTP to the Supervisor (RR-9a, T73).
+
+**Mandatory gate (maintainer, 19 Nov 2026).** Separate Unix users for the management core,
+Reticulum, LXMF messaging and each future community service, with least-privilege access to
+credentials, storage and IPC, proven by adversarial isolation tests, must be **implemented** before
+M4 is accepted or any additional community service is introduced. An ADR alone is not sufficient
+([roadmap](../roadmap.md), isolation gate IS-1 to IS-4).
+
+**Amended by [ADR 0024](0024-messaging-in-home-assistant.md) (20 Nov 2026):** the messaging key is
+delivered over both transports, an approved trade-off (RR-9b); it is still never persisted by Home
+Assistant. Original rule, for the record: no write-capable credential (for example a future messaging key) is ever
+delivered over the compatibility path ([secure interface options](../research/secure-interface-options.md),
+D7). Home Assistant keeps no field from a discovery message other than the status connection's
+(config entry v2, `ENTRY_KEYS`).
 
 ## Review triggers
 

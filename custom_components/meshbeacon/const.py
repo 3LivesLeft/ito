@@ -15,6 +15,14 @@ SCHEMA_VERSION: Final = 1
 
 CONF_TOKEN: Final = "token"  # noqa: S105 - the option key, not a secret
 CONF_CERT: Final = "cert_sha256"  # pinned certificate fingerprint (not secret)
+CONF_NODE_KEY: Final = "node_key"  # stable prefix of entity unique IDs (nodes.py)
+CONF_APP_SLUG: Final = "app_slug"  # the app this entry talks to now (nodes.py)
+
+# Config entry version. 2: node_key and app_slug kept apart from the unique ID (nodes.py).
+ENTRY_VERSION: Final = 2
+# The only keys a config entry may hold. Anything else that arrives in a discovery message (for
+# example a future messaging credential) is never written to Home Assistant's storage (D7).
+ENTRY_KEYS: Final = frozenset({"host", "port", CONF_TOKEN, CONF_CERT, CONF_NODE_KEY, CONF_APP_SLUG})
 
 # Keep in step with meshbeacon/core/meshbeacon/supervisor.py (a test checks this).
 STATES: Final = ("starting", "running", "restarting", "needs_attention")
@@ -34,6 +42,19 @@ PROBLEMS: Final = (
     "data_folder",
     "preparation_failed",
     "unexpected",
+)
+
+# The optional LXMF messaging engine (M4, D-M4-8). Keep in step with engine_supervisor.public().
+MESSAGING_STATES: Final = ("disabled", "starting", "running", "error", "paused")
+DELIVERY_STATES: Final = (
+    "queued",
+    "sending",
+    "sent_unconfirmed",
+    "delivered",
+    "stored_on_node",
+    "failed",
+    "rejected",
+    "expired",
 )
 
 # Repair issues and the problem codes that raise them.

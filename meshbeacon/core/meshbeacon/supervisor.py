@@ -16,6 +16,7 @@ import platform
 import selectors
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -28,16 +29,19 @@ from importlib import metadata
 from pathlib import Path
 from typing import IO, Any
 
-from . import __version__, fsutil, procinfo
-from .api import ApiServer, Discovery, StatusStore, TlsError, container_hostname, make_tls, new_token
+from . import __version__, fsutil, networks, procinfo
+from .api import ApiServer, Discovery, RelayLink, StatusStore, TlsError, container_hostname, make_tls, new_token
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
+from .engine_supervisor import DISABLED, EngineSupervisor
 from .health import HealthServer, Heartbeat
 from .logfilter import RateLimiter, Redactor
 from .metrics import Collector
 from .paths import Paths
 from .policy import RestartPolicy, StartHistory, Timings
 from .prepare import FREE_SPACE_FLOOR, FREE_SPACE_WARN
-from .settings import Settings, ValidationError, parse_options
+from .relay_link import RELAY_FD_ENV, TOKEN, TOKEN_FD_ENV
+from .services import Services, drain
+from .settings import Messaging, Settings, ValidationError, parse_options
 
 MSG_GAVE_UP = (
     "✖ The Reticulum service keeps failing, so MeshBeacon has stopped trying. "
@@ -46,6 +50,24 @@ MSG_GAVE_UP = (
 MSG_STORAGE = (
     "✖ Free storage has fallen below 200 MB, so MeshBeacon has stopped Reticulum to protect "
     "Home Assistant. Free some space and restart the app."
+)
+MSG_DISCOVERY_SOCKET = "Home Assistant is told about MeshBeacon through the Supervisor's local socket."
+MSG_DISCOVERY_UNAVAILABLE = (
+    "⚠ Home Assistant cannot be told about MeshBeacon: the link to the Supervisor's local socket could "
+    "not be set up. The node works normally; restart the app to try again."
+)
+MSG_NO_ISOLATION = (
+    "✖ MeshBeacon could not set up the separate Reticulum service it runs under its own user, so it "
+    "has not started Reticulum. Restart the app; if this repeats, please report it."
+)
+MSG_RELAY_LOST = (
+    "⚠ The link to the discovery relay was lost (the relay restarted). Home Assistant keeps showing "
+    "MeshBeacon's status until the next app start, but MeshBeacon cannot refresh it: restart the app "
+    "to restore the link."
+)
+MSG_DISCOVERY_TCP = (
+    "Home Assistant is told about MeshBeacon over the Supervisor's internal network (this Supervisor "
+    "has no app socket yet)."
 )
 MSG_API_STARTED = (
     "Home Assistant integration: on. MeshBeacon shares its status with Home Assistant over the "
@@ -85,6 +107,7 @@ PROBLEMS = (
     "unexpected",
 )
 SUPERVISOR_TOKEN_ENV = "SUPERVISOR_TOKEN"  # noqa: S105 - the variable name, not a secret
+SUPERVISOR_SOCKET_ENV = "SUPERVISOR_SOCKET"
 
 
 @functools.cache
@@ -125,6 +148,7 @@ class Child:
     status_buf: LineBuffer
     last_status: float
     stable: bool = False
+    owns_fds: bool = True  # False for an s6 service: its FIFOs stay open for the next run
 
 
 def default_python() -> list[str]:
@@ -164,8 +188,14 @@ class Supervisor:
         api_port: int = 8100,
         supervisor_token: str | None = None,
         supervisor_url: str | None = None,
+        discovery_relay: RelayLink | None = None,
+        socket_mode: bool = False,
+        services: Services | None = None,
+        require_services: bool = False,
         hostname: Callable[[], str] = container_hostname,
         discovery_timing: dict[str, float] | None = None,
+        engine: EngineSupervisor | None = None,
+        engine_factory: Callable[[Messaging], EngineSupervisor] | None = None,
     ) -> None:
         self.paths = paths
         self.t = timings or Timings()
@@ -199,11 +229,33 @@ class Supervisor:
         self.api_server: ApiServer | None = None
         self._supervisor_token = supervisor_token
         self.supervisor_url = supervisor_url
+        self.discovery_relay = discovery_relay
+        # ADR 0018: in the app image, Reticulum and the prepare step are s6 services under their
+        # own user; otherwise (development, tests) they are this process's children.
+        self.services = services
+        # True in the app image: never fall back to running Reticulum as this process's child.
+        self.require_services = require_services
+        # True where the Supervisor provides the app socket: then the token is never used, even if
+        # the relay link is missing (no fall-back to the internal network).
+        self.socket_mode = socket_mode or discovery_relay is not None
         self.hostname = hostname
         self.discovery_results: list[bool] = []  # appended by the discovery thread
         self.discovery_ok: bool | None = None
         self.discovery_stop = threading.Event()
         self.discovery_timing = discovery_timing or {}  # shorter back-off in tests only
+        # M4: the optional messaging engine (D-M4-8). Built in boot() from the factory, and only
+        # when the validated options switch it on; otherwise None and nothing of it runs.
+        self.engine: EngineSupervisor | None = None
+        self.engine_factory = engine_factory
+        self.engine_buf = LineBuffer()
+        if engine is not None:
+            self.attach_engine(engine)
+
+    def attach_engine(self, engine: EngineSupervisor) -> None:
+        self.engine = engine
+        engine.say = self.say  # through the core's redaction
+        if self.services is not None and self.services.engine_out is not None:
+            self.selector.register(self.services.engine_out, selectors.EVENT_READ, "engine")
 
     # -- output ------------------------------------------------------------------------------
     def say(self, message: str) -> None:
@@ -261,6 +313,18 @@ class Supervisor:
         s = self.settings
         if s is not None:
             self.say(f"Transport mode: {'on — sharing your connection with others' if s.transport else 'off'}.")
+            preset = networks.presets().get(s.network)
+            self.say(
+                f"Public network: {preset.name} (run by {preset.operator})."
+                if preset
+                else "Public network: none (custom — only your own peers)."
+            )
+            if preset and preset.id == "ratspeak_diamond" and s.transport:
+                self.say(
+                    "⚠ Transport mode is on and Ratspeak Diamond is selected. Diamond bans nodes that "
+                    "relay for 50 remote peers; consider switching transport mode off or choosing "
+                    "another network."
+                )
             if s.peers:
                 for p in s.peers:
                     self.say(f"Peer configured: {p.name} ({p.host}, port {p.port}).")
@@ -292,6 +356,9 @@ class Supervisor:
         env["MESHBEACON_DATA"] = str(self.paths.data)
         env["MESHBEACON_OPTIONS"] = str(self.paths.options)
         env.pop(SUPERVISOR_TOKEN_ENV, None)  # never handed to prepare or Reticulum
+        env.pop(SUPERVISOR_SOCKET_ENV, None)
+        env.pop(RELAY_FD_ENV, None)
+        env.pop(TOKEN_FD_ENV, None)
         return env
 
     def wait_responsive(self, proc: subprocess.Popen[bytes], timeout: float) -> bool:
@@ -311,6 +378,8 @@ class Supervisor:
                     return False
 
     def run_prepare(self, mode: str) -> dict[str, Any] | None:
+        if self.services is not None:
+            return self._run_prepare_service(mode)
         result_path = self.paths.prepare_result
         result_path.unlink(missing_ok=True)
         with tempfile.TemporaryFile() as output:  # a file, so a chatty child can never block on a pipe
@@ -332,6 +401,39 @@ class Supervisor:
             return None
         value = fsutil.read_json(result_path)
         result_path.unlink(missing_ok=True)
+        return value if isinstance(value, dict) else None
+
+    def _run_prepare_service(self, mode: str) -> dict[str, Any] | None:
+        """The prepare step as the ``rns-prepare`` service, as Reticulum's user (ADR 0018)."""
+        assert self.services is not None  # noqa: S101 - checked by the caller
+        services = self.services
+        output = drain(services.prepare_out)  # nothing left over from an earlier run
+        try:
+            proc = services.start_prepare(mode)
+        except (OSError, ValueError):
+            return None
+        deadline = self.clock() + self.t.prepare_timeout
+        finished = True
+        while proc.poll() is None:
+            self.heartbeat.beat()
+            output += drain(services.prepare_out, 256 * 1024)  # never let a chatty step block
+            if self.clock() >= deadline:
+                proc.kill()
+                with contextlib.suppress(subprocess.TimeoutExpired):
+                    proc.wait(self.t.stop_grace)
+                finished = False
+                break
+            time.sleep(0.2)
+        output += drain(services.prepare_out, 256 * 1024)
+        for line in output[: 256 * 1024].decode("utf-8", "replace").splitlines()[:200]:
+            self.forward("prepare", line)
+        raw = drain(services.prepare_result, 64 * 1024)
+        if not finished or not raw:
+            return None
+        try:
+            value = json.loads(raw.decode("utf-8", "replace").strip().splitlines()[-1])
+        except (ValueError, IndexError):
+            return None
         return value if isinstance(value, dict) else None
 
     def prepare_or_attention(self, mode: str) -> bool:
@@ -359,6 +461,9 @@ class Supervisor:
 
     # -- child process -----------------------------------------------------------------------
     def start_child(self) -> None:
+        if self.services is not None:
+            self._start_child_service()
+            return
         read_fd, write_fd = os.pipe()
         cmd = [
             *module_command(self.python, self.node_module),
@@ -395,10 +500,42 @@ class Supervisor:
         self.monitor(self.collector.child_started)
         self.publish()
 
+    def _start_child_service(self) -> None:
+        """Reticulum as the ``reticulum`` s6 service, as its own user (ADR 0018)."""
+        assert self.services is not None  # noqa: S101 - checked by the caller
+        services = self.services
+        for fd in (services.node_out, services.node_status):
+            drain(fd)  # lines from an earlier run were already handled
+        try:
+            proc = services.start("reticulum")
+        except OSError:
+            self.child_failed("The Reticulum service could not be started.")
+            return
+        now = self.clock()
+        self.child = Child(
+            proc,  # type: ignore[arg-type]  # the part of Popen the supervisor uses
+            now,
+            services.node_out,
+            services.node_status,
+            LineBuffer(),
+            LineBuffer(),
+            now,
+            owns_fds=False,
+        )
+        self.selector.register(services.node_out, selectors.EVENT_READ, "out")
+        self.selector.register(services.node_status, selectors.EVENT_READ, "status")
+        self.policy.attempt_started()
+        self.cpu_samples.clear()
+        self.state = "running"
+        self.monitor(self.collector.child_started)
+        self.publish()
+
     def _close_child_fds(self, child: Child) -> None:
         for fd in (child.out_fd, child.status_fd):
             with contextlib.suppress(KeyError, ValueError):
                 self.selector.unregister(fd)
+        if not child.owns_fds:
+            return  # an s6 service's FIFOs: kept open for its next run
         with contextlib.suppress(OSError):
             os.close(child.status_fd)
         if child.proc.stdout is not None:
@@ -507,11 +644,13 @@ class Supervisor:
             return
         cpu = procinfo.cpu_seconds(child.proc.pid)
         core_cpu = procinfo.cpu_seconds(os.getpid())
+        engine_pid = getattr(self.engine.proc, "pid", 0) if self.engine is not None else 0
+        engine_cpu = procinfo.cpu_seconds(engine_pid) if isinstance(engine_pid, int) and engine_pid > 0 else None
         self.monitor(
             self.collector.resources,
             procinfo.memory_bytes(os.getpid()),
             mem,
-            None if cpu is None or core_cpu is None else cpu + core_cpu,
+            None if cpu is None or core_cpu is None else cpu + core_cpu + (engine_cpu or 0.0),
         )
         if cpu is not None:
             now = self.clock()
@@ -558,6 +697,9 @@ class Supervisor:
         memory = f"memory {core_mem // 1048576} MB core"
         if child_mem:
             memory += f" + {child_mem // 1048576} MB Reticulum"
+        engine_mem = self.engine.memory_bytes() if self.engine is not None else None
+        if engine_mem:
+            memory += f" + {engine_mem // 1048576} MB messaging"
         parts.append(memory)
         self.say("Status: " + "; ".join(parts) + ".")
 
@@ -579,7 +721,31 @@ class Supervisor:
         }.get(snap.state, "none")
         return code, None if code == "none" else self.redact(describe(snap).lstrip("⚠ "))
 
+    def messaging_status(self) -> dict[str, Any]:
+        if self.engine is not None:
+            return self.engine.public()
+        if self.settings is not None and self.settings.messaging.enabled:
+            return {
+                "enabled": True,
+                "state": "error" if self.attention is None else "starting",
+                "message": None
+                if self.attention is not None
+                else "Messaging is switched on but is not available in this installation.",
+            }
+        return dict(DISABLED)
+
     def build_snapshot(self) -> dict[str, Any]:
+        document = self._node_snapshot()
+        messaging = self.messaging_status()
+        document["messaging"] = messaging
+        engine_memory = messaging.get("memory_bytes")
+        resources = document["resources"]
+        resources["messaging_memory_bytes"] = engine_memory
+        if isinstance(engine_memory, int) and isinstance(resources.get("memory_bytes"), int):
+            resources["memory_bytes"] += engine_memory
+        return document
+
+    def _node_snapshot(self) -> dict[str, Any]:
         code, message = self.problem()
         snap = self.snapshot
         return self.collector.snapshot(
@@ -600,21 +766,24 @@ class Supervisor:
         self._supervisor_token = None  # keep only inside the discovery helper
         if self.settings is None:
             return
-        discovery = (
-            Discovery(
-                token, self.paths.meshbeacon / "discovery.json", base_url=self.supervisor_url or "http://supervisor"
-            )
-            if token
-            else None
-        )
+        state = self.paths.meshbeacon / "discovery.json"
+        discovery: Discovery | None = None
+        if self.discovery_relay is not None:
+            # The Supervisor's own socket, through the relay: nothing crosses the internal network.
+            discovery = Discovery(None, state, relay=self.discovery_relay)
+        elif token and not self.socket_mode:
+            # Compatibility path for Supervisors without app sockets (2026.11.0 and older).
+            discovery = Discovery(token, state, base_url=self.supervisor_url or "http://supervisor")
         if not self.settings.home_assistant_integration:
             if discovery is not None and (self.paths.meshbeacon / "discovery.json").exists():
                 threading.Thread(target=discovery.withdraw, name="discovery", daemon=True).start()
             return
         api_token = new_token()
+        # M5 (ADR 0024): a separate key for messaging, made only while messaging is on, per start.
+        messaging_key = new_token() if self.settings.messaging.enabled else ""
         try:
             tls, fingerprint = make_tls(self.python, self.child_env())
-            self.api_store = StatusStore(api_token)
+            self.api_store = StatusStore(api_token, messaging_key or None, self.forward_messaging)
             self.api_server = ApiServer(self.api_store, self.api_host, self.api_port, tls=tls)
             self.api_server.start()
         except (OSError, TlsError):  # never falls back to plain HTTP
@@ -623,8 +792,14 @@ class Supervisor:
             return
         self.publish()
         self.say(MSG_API_STARTED)
+        if discovery is not None:
+            self.say(MSG_DISCOVERY_SOCKET if discovery.transport == "socket" else MSG_DISCOVERY_TCP)
         if discovery is None:
-            self.say("⚠ Not running under the Home Assistant Supervisor, so Home Assistant cannot be told about it.")
+            self.say(
+                MSG_DISCOVERY_UNAVAILABLE
+                if self.socket_mode
+                else "⚠ Not running under the Home Assistant Supervisor, so Home Assistant cannot be told about it."
+            )
             return
         host, port = self.hostname(), self.api_server.port
 
@@ -637,12 +812,20 @@ class Supervisor:
                     self.discovery_stop,
                     self.discovery_results.append,
                     cert_sha256=fingerprint,
+                    messaging_key=messaging_key,
                     **self.discovery_timing,
                 )
             except Exception:  # never let monitoring take anything else down
                 self.discovery_results.append(False)
 
         threading.Thread(target=announce, name="discovery", daemon=True).start()
+
+    def forward_messaging(self, request: Any) -> tuple[int, dict[str, Any]]:
+        """The messaging endpoint's requests (API thread). Messaging failures never reach Reticulum."""
+        engine = self.engine
+        if engine is None:
+            return 503, {"ok": False, "error": "unavailable"}
+        return engine.forward(request)
 
     def monitor(self, fn: Callable[..., object], *args: Any, **kwargs: Any) -> None:
         """Run a metrics update. Monitoring is never allowed to interrupt supervision of Reticulum."""
@@ -682,7 +865,8 @@ class Supervisor:
             elif ok and self.discovery_ok is False:
                 self.say(MSG_DISCOVERY_RECOVERED)
             elif not ok and self.discovery_ok is not False:
-                self.say(MSG_DISCOVERY_FAILED)  # said once per outage, not at every retry
+                lost = self.discovery_relay is not None and self.discovery_relay.broken
+                self.say(MSG_RELAY_LOST if lost else MSG_DISCOVERY_FAILED)  # once per outage, not per retry
             self.discovery_ok = ok
         if self.due("api_refused", 3600):
             refused = self.api_store.take_refused()
@@ -696,8 +880,13 @@ class Supervisor:
     def step(self, timeout: float = 1.0) -> None:
         self.heartbeat.beat()
         for key, _mask in self.selector.select(timeout):
+            if key.data == "engine":
+                with contextlib.suppress(BlockingIOError, OSError):
+                    for line in self.engine_buf.feed(os.read(key.fd, 65536)):
+                        self.forward("messaging", line)
+                continue
             if self.child is None:
-                break
+                continue
             buf = self.child.out_buf if key.data == "out" else self.child.status_buf
             try:
                 data = os.read(key.fd, 65536)
@@ -707,6 +896,8 @@ class Supervisor:
                 self._handle_lines(key.data, buf.feed(data))
         self.flush_suppressed()
         self.api_housekeeping()
+        if self.engine is not None:
+            self.engine.step(self.node_ready())
         if self.attention is not None:
             if self.due("attention", self.t.attention_reminder):
                 for m in self.attention:
@@ -721,6 +912,16 @@ class Supervisor:
             if self.prepare_or_attention("restart"):
                 self.start_child()
         self.periodic_report()
+
+    def drain_engine_output(self) -> None:
+        if self.services is None or self.services.engine_out is None:
+            return
+        for line in self.engine_buf.feed(drain(self.services.engine_out)):
+            self.forward("messaging", line)
+
+    def node_ready(self) -> bool:
+        """Reticulum is running and has reported at least once: its shared instance is up."""
+        return self.attention is None and self.child is not None and self.snapshot is not None
 
     def boot(self) -> bool:
         """Start-up sequence. Returns False if MeshBeacon is waiting for the user."""
@@ -749,12 +950,22 @@ class Supervisor:
                 "restart_loop_paused",
             )
             return False
+        if self.require_services and self.services is None:
+            self.enter_attention([MSG_NO_ISOLATION], "unexpected")  # fail closed (ADR 0018)
+            return False
         if not self.prepare_or_attention("start"):
             return False
         self.load_settings()
         if self.settings is None:  # pragma: no cover - prepare validated the same file
             self.enter_attention(["✖ The app options could not be read."], "options")
             return False
+        if self.settings.messaging.enabled and self.engine is None and self.engine_factory is not None:
+            self.attach_engine(self.engine_factory(self.settings.messaging))
+        self.say(
+            "LXMF messaging: on — it starts once Reticulum is running."
+            if self.settings.messaging.enabled
+            else "LXMF messaging: off (tick “Enable LXMF messaging” in the Configuration tab to use it)."
+        )
         if not self.settings.peers:
             self.snapshot = evaluate((), None)
             self.say(describe(self.snapshot))
@@ -772,6 +983,9 @@ class Supervisor:
                 self.step()
         finally:
             self.say("Stopping MeshBeacon.")
+            if self.engine is not None:
+                self.engine.stop()  # before Reticulum, so that it leaves cleanly
+                self.drain_engine_output()
             self.stop_child()
             self.discovery_stop.set()
             if self.api_server is not None:
@@ -780,14 +994,90 @@ class Supervisor:
         return 0
 
 
+def read_token_fd(fd: int) -> str | None:
+    """The Supervisor token from the one-time pipe the root start step filled (relay_link.py).
+
+    Reads it once and closes the pipe at once, whatever it holds. Anything other than a pipe, or a
+    malformed token, gives None.
+    """
+    try:
+        if not stat.S_ISFIFO(os.fstat(fd).st_mode):
+            return None
+        os.set_blocking(fd, False)  # the write end is already closed: never wait
+        data = b""
+        while len(data) <= 4096:
+            try:
+                chunk = os.read(fd, 4097 - len(data))
+            except BlockingIOError:
+                break
+            if not chunk:
+                break
+            data += chunk
+    except OSError:
+        return None
+    finally:
+        with contextlib.suppress(OSError):
+            os.close(fd)
+    token = data.strip().decode("ascii", "replace")
+    return token if TOKEN.match(token) else None
+
+
+def discovery_transport(
+    environ: dict[str, str] | os._Environ[str],
+) -> tuple[str | None, RelayLink | None, bool]:
+    """(token, relay link, socket mode): how this start reaches the Supervisor for discovery.
+
+    Removes every related variable from ``environ``, so that no child process inherits it, and
+    never takes the token from the environment: the root start step (relay_link.py) passes it
+    through a one-time pipe (``MESHBEACON_TOKEN_FD``), so it is never in any process environment.
+
+    Newer Supervisors give the app its own socket (``SUPERVISOR_SOCKET``): then the root start step
+    has opened a link to the root relay (``MESHBEACON_RELAY_FD``) instead, no token is passed at all,
+    and a missing link never falls back to the internal network. Otherwise the token is used over
+    the internal network (the compatibility path for Supervisor 2026.11.0 and older).
+    """
+    environ.pop(SUPERVISOR_TOKEN_ENV, None)  # never used from the environment (M1.2)
+    socket_mode = bool(environ.pop(SUPERVISOR_SOCKET_ENV, None))
+    relay_fd = environ.pop(RELAY_FD_ENV, "")
+    token_fd = environ.pop(TOKEN_FD_ENV, "")
+    token = read_token_fd(int(token_fd)) if token_fd.isdecimal() else None
+    if socket_mode:
+        link = RelayLink.from_fd(int(relay_fd)) if relay_fd.isdecimal() else None
+        return None, link, True
+    return token, None, False
+
+
 def main() -> int:
+    # First, before any secret is read and before any child exists: no other process of this user
+    # (the Reticulum child) may read this one's memory, environment or descriptors (threat T72).
+    procinfo.set_not_dumpable()
     os.umask(0o077)
     with contextlib.suppress(OSError):
         os.nice(10)  # Home Assistant always wins CPU contention
     port = int(os.environ.get("MESHBEACON_HEALTH_PORT", "8099"))
     host = os.environ.get("MESHBEACON_HEALTH_HOST", "0.0.0.0")
     api_port = int(os.environ.get("MESHBEACON_API_PORT", "8100"))
-    supervisor_token = os.environ.pop(SUPERVISOR_TOKEN_ENV, None) or None
+    supervisor_token, relay, socket_mode = discovery_transport(os.environ)
+    require_services = os.environ.pop("MESHBEACON_S6", "") == "1"
+    services = None
+    if require_services:
+        for _ in range(150):  # the services start beside the core: wait at most 15 s
+            if Services.available():
+                services = Services()
+                break
+            time.sleep(0.1)
+    factory = None
+    if services is not None and services.has("messaging"):
+        engine_services = services
+
+        def factory(messaging: Messaging) -> EngineSupervisor:
+            return EngineSupervisor(
+                lambda: engine_services.start("messaging"),
+                print,  # replaced by the supervisor's own output
+                time.monotonic,
+                messaging=messaging,
+            )
+
     return Supervisor(
         Paths.from_env(),
         health_host=host,
@@ -796,6 +1086,11 @@ def main() -> int:
         api_port=api_port,
         supervisor_token=supervisor_token,
         supervisor_url=os.environ.get("MESHBEACON_SUPERVISOR_URL"),
+        discovery_relay=relay,
+        socket_mode=socket_mode,
+        services=services,
+        require_services=require_services,
+        engine_factory=factory,
     ).run()
 
 

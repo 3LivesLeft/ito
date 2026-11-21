@@ -1,0 +1,62 @@
+#!/bin/sh
+# The optional LXMF messaging engine's folders (M4, D-M4-8; ADR 0018). Runs as root after
+# 10-meshbeacon at every start. When messaging is off (the default) it does nothing at all: no
+# messaging folder or data is created, and the engine's s6 service stays down. The core reads and
+# validates the same option; this only decides whether the folders are needed.
+set -u
+enabled="$(/usr/local/bin/python3 -I -c '
+import json
+try:
+    print("yes" if json.load(open("/data/options.json")).get("messaging_enabled") is True else "no")
+except Exception:
+    print("no")
+' 2>/dev/null)"
+[ "$enabled" = "yes" ] || exit 0
+
+# The engine's data (identity, queue): its user only. Kept when messaging is switched off again.
+mkdir -p /data/messaging
+chown -R mb-lxmf:mb-lxmf /data/messaging
+chmod 0700 /data/messaging
+# The engine's socket: only the engine's user can create it; only the group mb-msg (the core and the
+# engine, nobody else) can reach it. No setgid bit: the AppArmor profile denies CAP_FSETID, so root
+# could not set one here; the engine gives its socket the folder's group itself.
+mkdir -p /run/meshbeacon-messaging
+chown mb-lxmf:mb-msg /run/meshbeacon-messaging
+chmod 0750 /run/meshbeacon-messaging
+# Its settings, written by the core from the options and readable by the engine: the core's folder,
+# group mb-msg, so the engine can read but never change them (and never sees options.json).
+mkdir -p /run/meshbeacon-messaging/config
+chown meshbeacon:mb-msg /run/meshbeacon-messaging/config
+chmod 0750 /run/meshbeacon-messaging/config
+# The shared instance's RPC key (ADR 0023): new at every container start, root's file, readable by
+# the group mb-rpc only (Reticulum's user, for the node's configuration, and the engine's user,
+# for its client configuration). RNS 1.6.0 authenticates every local client of the shared
+# instance with this one key. It is written by Python, never passed through the shell or printed.
+mkdir -p /run/meshbeacon-rpc
+chown root:mb-rpc /run/meshbeacon-rpc
+chmod 0750 /run/meshbeacon-rpc
+/usr/local/bin/python3 -I -c '
+import grp, os, secrets
+folder = "/run/meshbeacon-rpc"
+temporary = os.path.join(folder, ".rpc_key.new")
+try:
+    os.unlink(temporary)
+except FileNotFoundError:
+    pass
+fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+try:
+    os.write(fd, (secrets.token_hex(32) + "\n").encode())
+    os.fchown(fd, 0, grp.getgrnam("mb-rpc").gr_gid)
+    os.fchmod(fd, 0o640)
+    os.fsync(fd)
+finally:
+    os.close(fd)
+os.replace(temporary, os.path.join(folder, "rpc_key"))
+' || echo "[meshbeacon] warning: could not create the messaging engine's access key for Reticulum" \
+    "(the app's security profile may be out of date: update the app; Rebuild does not replace it)"
+# Its output FIFO, beside Reticulum's (root:meshbeacon, 0660; opened by root in the run script).
+mkdir -p /run/meshbeacon-io/messaging
+[ -p /run/meshbeacon-io/messaging/out ] || mkfifo /run/meshbeacon-io/messaging/out
+chown -R root:meshbeacon /run/meshbeacon-io/messaging
+chmod 0750 /run/meshbeacon-io/messaging
+chmod 0660 /run/meshbeacon-io/messaging/out

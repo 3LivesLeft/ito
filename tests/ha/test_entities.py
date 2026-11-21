@@ -166,3 +166,63 @@ async def test_example_dashboard_uses_only_real_entities(hass, mock_entry, aiocl
     assert referenced
     missing = {e for e in referenced if hass.states.get(e) is None}
     assert not missing, missing
+
+
+ADDRESS = "a1" * 16
+MESSAGING = {
+    "enabled": True,
+    "state": "running",
+    "message": None,
+    "address": ADDRESS,
+    "contacts_configured": 1,
+    "contacts_reachable": 1,
+    "accept_anyone": False,
+    "auto_reply": True,
+    "received": 3,
+    "refused": 1,
+    "replies_sent": 3,
+    "last_reply_state": "delivered",
+    "last_received_at": 1763474600.0,
+    "last_received_from": "Phone",
+    "memory_bytes": 44 * 2**20,
+    "restarts": 0,
+}
+
+
+async def test_no_messaging_entities_for_an_app_without_messaging(hass, mock_entry, aioclient_mock):
+    """A v0.2 app reports no messaging section: no empty messaging entities appear."""
+    aioclient_mock.get(URL, json=snapshot())
+    await setup(hass, mock_entry)
+    assert eid(hass, "sensor", "messaging") is None
+
+
+async def test_messaging_entities_show_state_and_address_but_never_record_it(hass, mock_entry, aioclient_mock):
+    aioclient_mock.get(URL, json={**snapshot(), "messaging": MESSAGING})
+    await setup(hass, mock_entry)
+    state = hass.states.get(eid(hass, "sensor", "messaging"))
+    assert state.state == "running"
+    assert state.attributes["address"] == ADDRESS and state.attributes["last_received_from"] == "Phone"
+    assert hass.states.get(eid(hass, "sensor", "messages_received")).state == "3"
+    assert hass.states.get(eid(hass, "sensor", "messaging_contacts_reachable")).state == "1"
+    assert hass.states.get(eid(hass, "sensor", "messaging_last_reply")).state == "delivered"
+    assert er.async_get(hass).async_get(eid(hass, "sensor", "messaging_memory")).disabled
+    # The address is shown and copyable but is never written to Home Assistant's history.
+    from custom_components.meshbeacon.sensor import MeshBeaconMessagingSensor
+
+    assert {"address", "message", "last_received_from"} <= MeshBeaconMessagingSensor._unrecorded_attributes
+
+
+async def test_messaging_off_and_problem_states(hass, mock_entry, aioclient_mock):
+    aioclient_mock.get(URL, json={**snapshot(), "messaging": {"enabled": False, "state": "disabled", "message": None}})
+    await setup(hass, mock_entry)
+    assert hass.states.get(eid(hass, "sensor", "messaging")).state == "disabled"
+    assert hass.states.get(eid(hass, "sensor", "messaging")).attributes["address"] is None
+    assert hass.states.get(eid(hass, "sensor", "messages_received")).state == STATE_UNKNOWN
+
+
+async def test_diagnostics_redact_the_messaging_address_and_contacts(hass, mock_entry, aioclient_mock):
+    aioclient_mock.get(URL, json={**snapshot(), "messaging": {**MESSAGING, "message": "x"}})
+    await setup(hass, mock_entry)
+    text = repr(await async_get_config_entry_diagnostics(hass, mock_entry))
+    assert ADDRESS not in text and "Phone" not in text
+    assert "'received': 3" in text

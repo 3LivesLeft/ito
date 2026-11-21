@@ -1,0 +1,112 @@
+# Release dry run (M1, decision D3). Builds the release candidate image exactly as a release would,
+# twice, and verifies it. It NEVER publishes: there is no registry login, no push, no signing and no
+# GitHub release, and it has read-only permissions. Publishing is M2, after the maintainer's
+# approval (docs/releasing.md). All third-party actions are pinned to commit SHAs, and every image
+# the build itself runs (QEMU's binfmt, BuildKit, the SBOM scanner, the Dockerfile frontend) by
+# digest (M1.2, review M-2). No action cache is used: a release build reads nothing another run
+# could have written.
+name: Release dry run
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop, "feature/**"]
+  pull_request:
+    paths:
+      - "meshbeacon/**"
+      - "custom_components/**"
+      - "hacs.json"
+      - "repository.yaml"
+      - "project.yaml"
+      - "tools/check_release.py"
+      - "tools/verify_image.py"
+      - ".github/workflows/release-dry-run.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-dry-run-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    name: Build, reproduce and verify the release candidate (no publishing)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.13" }
+      - run: pip install --require-hashes -r requirements-release.txt
+      - name: Release layout (app store, Marketplace, one version everywhere)
+        run: python tools/check_release.py
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          image: tonistiigi/binfmt:qemu-v10.2.3@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+          cache-image: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=moby/buildkit:v0.34.2@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe
+          cache-binary: false
+      - name: Build both architectures twice, from scratch, with fixed timestamps
+        run: |
+          set -eu
+          version="$(python -c 'import yaml; print(yaml.safe_load(open("meshbeacon/config.yaml"))["version"])')"
+          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          export SOURCE_DATE_EPOCH
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          for n in 1 2; do
+            docker buildx build --no-cache \
+              --platform linux/amd64,linux/arm64 \
+              --build-arg BUILD_VERSION="$version" \
+              --build-arg SOURCE_DATE_EPOCH \
+              --sbom=generator=docker.io/docker/buildkit-syft-scanner:1.12.1@sha256:873a7458c3c8ac8e32c7b796c10e1600b07b963d2aa000a72a2d97aaaa2d6315 --provenance=mode=max \
+              --output "type=oci,dest=candidate-$n.tar,rewrite-timestamp=true" \
+              meshbeacon
+          done
+      - name: Verify platforms, labels, SBOM and provenance, and reproducibility
+        # digests.json records the verified digests. Publishing (M2) must push candidate-1.tar itself
+        # and check the registry against this file, never rebuild (docs/releasing.md, step 4).
+        run: >-
+          python tools/verify_image.py candidate-1.tar candidate-2.tar --version "$VERSION"
+          --summary "$GITHUB_STEP_SUMMARY" --write-digests digests.json
+      - name: Vulnerability scan, amd64 (any critical finding fails)
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_PLATFORM: linux/amd64  # each platform's image explicitly; the log shows the digest read
+        with:
+          image: oci-archive:candidate-1.tar
+          fail-build: true
+          severity-cutoff: critical
+          output-format: table
+      - name: Vulnerability scan, amd64 (a high finding with a fix available fails)
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_PLATFORM: linux/amd64
+        with:
+          image: oci-archive:candidate-1.tar
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true
+          output-format: table
+      - name: Vulnerability scan, arm64 (any critical finding fails)
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_PLATFORM: linux/arm64  # each platform's image explicitly; the log shows the digest read
+        with:
+          image: oci-archive:candidate-1.tar
+          fail-build: true
+          severity-cutoff: critical
+          output-format: table
+      - name: Vulnerability scan, arm64 (a high finding with a fix available fails)
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_PLATFORM: linux/arm64
+        with:
+          image: oci-archive:candidate-1.tar
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true
+          output-format: table

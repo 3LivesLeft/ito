@@ -1,0 +1,10 @@
+#!/bin/sh
+# The optional messaging engine as its own user (ADR 0018, D-M4-8). It starts down; the core starts
+# it only when messaging is switched on, once Reticulum is up, watches it and restarts it with
+# back-off (MS-15). Output goes through a FIFO that root opens here, so the core can redact it
+# before it reaches the log. Its settings are the core's file, which it can read but not change.
+exec >/run/meshbeacon-io/messaging/out 2>&1
+umask 077
+exec nice -n 10 /command/s6-setuidgid mb-lxmf /usr/local/bin/python3 -I -u -m meshbeacon.messaging \
+    --data /data/messaging --socket /run/meshbeacon-messaging/engine.sock \
+    --settings /run/meshbeacon-messaging/config/settings.json

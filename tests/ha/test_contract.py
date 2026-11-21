@@ -89,3 +89,14 @@ def test_strings_and_translation_identical():
     assert (base / "strings.json").read_text() == (base / "translations/en.json").read_text()
     strings = json.loads((base / "strings.json").read_text())
     assert set(strings["entity"]["sensor"]["problem"]["state"]) == set(PROBLEMS)
+
+
+def test_messaging_states_match_the_core():
+    """Keep MESSAGING_STATES in step with engine_supervisor (the core's messaging section)."""
+    import re as _re
+
+    from custom_components.meshbeacon.const import MESSAGING_STATES
+
+    source = (Path(__file__).resolve().parents[2] / "meshbeacon/core/meshbeacon/engine_supervisor.py").read_text()
+    reported = set(_re.findall(r'state, message = "(\w+)"', source)) | {"disabled"}
+    assert reported == set(MESSAGING_STATES)

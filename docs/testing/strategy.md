@@ -21,6 +21,7 @@ Status: **Proposed (Phase 0)**. Nothing here is implemented yet.
 | Integration — isolated RNS | Real `rnsd` processes in temp config dirs, loopback/bridge TCP | pytest + subprocess fixtures | Every push |
 | Container | Build image for amd64 and aarch64 (QEMU); start it with a fake `/data/options.json`; assert health, permissions, no listening host ports | Docker Buildx, pytest | Every PR |
 | HA integration (v0.2+) | Custom component against HA's test harness | `pytest-homeassistant-custom-component` | Every PR |
+| HA release check (v0.3+) | The integration in a real Home Assistant of the supported series (2026.11.2): migration, entities, panel, no stray stored fields | `tools/ha_smoke_test.py`, strict mypy against that release | Every PR |
 | Supervisor end-to-end | App installed in HA devcontainer (Supervisor + Core) | `home-assistant/devcontainer` | Before release |
 | Reference environment | Raspberry Pi 4B, HA OS 18.5, co-installed apps, real network: compatibility, soak, outage, power and backup tests (§6) | Manual, maintainer-run | Before release |
 | Interop | Against Sideband, NomadNet, MeshChat, Ratspeak (v0.3+) | Manual checklist, scripted where possible | Before release |
@@ -264,3 +265,11 @@ results are recorded in the repository with date, RNS version and tester.
 
 - Core: ≥ 90 % line coverage, 100 % of validation, config rendering, identity and permission code paths.
 - Every bug fix lands with a regression test.
+
+## Home Assistant harness lag (19 Nov 2026)
+
+The minimum supported Home Assistant is 2026.11.0 (the Marketplace release), but no
+`pytest-homeassistant-custom-component` release exists for 2026.11 yet, and the 2026.10 one
+(0.13.375) cannot load Home Assistant 2026.11.2. The pytest harness therefore stays on 2026.10.4,
+and 2026.11 is covered by strict type checking and the real-Home Assistant smoke test. Move the
+harness to the first 2026.11 release of the plugin when it appears.

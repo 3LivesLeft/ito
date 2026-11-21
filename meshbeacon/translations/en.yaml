@@ -1,8 +1,21 @@
 configuration:
+  network:
+    name: Public Reticulum network
+    description: >-
+      Choose a public network to join it with one click, then save and restart the app.
+      "custom" (the default) joins no public network: MeshBeacon connects only to the peers you
+      add below, and to nobody if you add none. ratspeak_ruby, ratspeak_emerald and
+      ratspeak_diamond are run by Ratspeak; reticulumnet is run by Reticulum Netherlands.
+      Diamond bans nodes that relay for 50 others or open more than 20 connections from one IP
+      address, so do not use it with transport mode. Your own peers below are always used as
+      well. Privacy: the network's operator can see your home's public IP address and how much
+      data you exchange, and may keep logs; they cannot read your end-to-end-encrypted
+      Reticulum traffic. Public networks are run by volunteers with no uptime guarantee.
   peers:
     name: Your own peers
     description: >-
-      Reticulum nodes to connect to, such as a friend's node or your own node elsewhere. Each needs
+      Reticulum nodes to connect to, such as a friend's node or your own node elsewhere. They are
+      used together with the public network chosen above, if any. Each needs
       a name you choose, a host (for example rns.example.org or an IP address) and a port. Network
       name and passphrase are only needed if the peer's operator gave you them.
       Privacy: the operator of each peer can see your home's public IP address and how much data
@@ -40,3 +53,41 @@ configuration:
       by a key that changes every time the app starts. Nothing is sent anywhere else, and Home
       Assistant cannot control your node through it. You also need to install the ito
       integration in Home Assistant once (see the Documentation tab).
+  messaging_enabled:
+    name: Enable LXMF messaging
+    description: >-
+      Off by default. On: after you save and restart the app, MeshBeacon starts its LXMF messaging
+      service, which apps such as Sideband can message. It has its own address, separate from your
+      node's, created the first time. Read and send messages in the Messages tab of the MeshBeacon
+      dashboard in Home Assistant (with "Show MeshBeacon's status in Home Assistant" on). Turning it
+      off stops only messaging; Reticulum keeps running, and the messaging address, contacts and
+      conversations are kept for next time.
+  messaging_contacts:
+    name: "Messaging: contacts"
+    description: >-
+      Optional: contacts are easier to add in the dashboard's Messages tab. Contacts listed here are
+      added there when the app starts; after that, the Messages tab is where you rename or remove
+      them. Each needs a name and their LXMF address (32 characters, shown in their app). Messages
+      from anyone who is not a contact are refused unless "accept messages from anyone" is on.
+  messaging_accept_anyone:
+    name: "Messaging: accept messages from anyone"
+    description: >-
+      Off (recommended): only your contacts can message MeshBeacon. On: anyone can, but their app
+      must do a small proof-of-work calculation ("stamp") for each message, which keeps spam away.
+  messaging_auto_reply:
+    name: "Messaging: automatic reply"
+    description: >-
+      On: MeshBeacon answers a contact's message with a short automatic confirmation, at most once
+      every six hours per contact, so two automatic responders can never keep answering each
+      other. The reply is marked as automatic in the conversation. Turn it off once you answer
+      messages yourself in the Messages tab.
+  messaging_display_name:
+    name: "Messaging: display name (optional)"
+    description: >-
+      A name other LXMF apps show for MeshBeacon when it announces itself, for example "Home".
+      Empty by default, so nothing about your home is announced.
+  messaging_propagation_node:
+    name: "Messaging: propagation node (optional)"
+    description: >-
+      The LXMF address of a propagation node to hold messages for contacts who are offline. Leave
+      empty unless you run or trust one.

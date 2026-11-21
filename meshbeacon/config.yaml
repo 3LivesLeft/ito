@@ -3,10 +3,11 @@
 # or Home Assistant API access, no extra capabilities, no device access, custom AppArmor profile.
 # v0.2: Supervisor discovery for the optional Home Assistant integration (ADR 0006). Posting a
 # discovery message needs no Supervisor API permission; only Home Assistant Core can read it.
-name: ito
-version: "0.2.0"
+# M4 (D-M4-8): optional LXMF messaging, off by default; it needs no new permission either.
+name: MeshBeacon
+version: "0.4.0"
 slug: meshbeacon
-description: Private, decentralised connectivity for your home — powered by Reticulum.
+description: Decentralised connectivity for your home.
 url: https://github.com/3LivesLeft/meshbeacon
 arch:
   - aarch64
@@ -27,13 +28,19 @@ backup_exclude:
 ulimits:
   nofile: 4096
 options:
+  network: custom
   peers: []
   transport: false
   log_level: normal
   memory_limit_mb: 256
   replace_identity: false
   home_assistant_integration: false
+  messaging_enabled: false
+  messaging_contacts: []
+  messaging_accept_anyone: false
+  messaging_auto_reply: true
 schema:
+  network: list(custom|ratspeak_ruby|ratspeak_emerald|ratspeak_diamond|reticulumnet)
   peers:
     - name: "match(^[A-Za-z0-9](?:[A-Za-z0-9 _.-]{0,30}[A-Za-z0-9_.-])?$)"
       host: "match(^[A-Za-z0-9.:-]{1,253}$)"
@@ -45,4 +52,12 @@ schema:
   memory_limit_mb: "int(128,1024)"
   replace_identity: bool
   home_assistant_integration: bool
+  messaging_enabled: bool
+  messaging_contacts:
+    - name: "match(^[A-Za-z0-9](?:[A-Za-z0-9 _.-]{0,30}[A-Za-z0-9_.-])?$)"
+      address: "match(^\\s*<?[0-9A-Fa-f]{32}>?\\s*$)"
+  messaging_accept_anyone: bool
+  messaging_auto_reply: bool
+  messaging_display_name: "match(^[A-Za-z0-9](?:[A-Za-z0-9 _.-]{0,30}[A-Za-z0-9_.-])?$)?"
+  messaging_propagation_node: "match(^\\s*<?[0-9A-Fa-f]{32}>?\\s*$)?"
 # No `image:` key: the app is built locally until public release gates RG-1 to RG-12 are met.

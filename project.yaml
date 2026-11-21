@@ -1,0 +1,17 @@
+# Project identifiers, in one place.
+#
+# The final project name is decided before the first published release. To rename: change the
+# values here, then run `pytest tests/unit/test_project_identifiers.py`. It lists every file that
+# must follow (app, integration, core, packaging and documentation), because those places cannot
+# read this file at run time. tools/check_release.py reads it directly.
+#
+# Changing `slug` after users have installed the app moves its data folder (the Supervisor keys
+# an app's data by slug) and changes the integration's domain; do it only before the first release.
+name: MeshBeacon
+# App slug, integration domain and Supervisor discovery service.
+slug: meshbeacon
+repository: https://github.com/3LivesLeft/meshbeacon
+# Multi-arch image the app store pulls once images are published (M2).
+image: ghcr.io/3livesleft/meshbeacon
+# First Home Assistant release with the built-in Marketplace (decision D2).
+minimum_home_assistant: 2026.11.0

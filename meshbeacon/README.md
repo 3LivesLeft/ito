@@ -1,10 +1,11 @@
-# ito
+# MeshBeacon
 
 **Decentralised connectivity for your home.**
 
-ito runs a private [Reticulum](https://github.com/markqvist/Reticulum) node on your Home
-Assistant device, using the unmodified Reticulum reference implementation.
+MeshBeacon runs a private [Reticulum](https://github.com/markqvist/Reticulum) node on your Home
+Assistant device, using the unmodified Reticulum reference implementation. Private by default,
+light on resources, and set up from the Configuration tab: no terminal, no YAML.
 
 > **Experimental — local prototype.** Not yet published. Build and install it as a local app;
-> see the Documentation tab. Not affiliated with the unrelated MeshBeacon disaster-response project
+> see the Documentation tab. Not affiliated with the MeshBeacon disaster-response project
 > (meshbeacon.org).

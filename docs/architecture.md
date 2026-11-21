@@ -291,13 +291,34 @@ Design:
 - AppArmor: a custom profile (revised after the v0.1.0 start-up failure on the reference Pi).
   Read access to the container's own filesystem; execution only from the image's program
   directories and s6-overlay's run-time service directories (never from `/data` or `/tmp`); writes
-  only to `/data`, `/run` and `/tmp`; a short capability list; mount, pivot_root and ptrace
-  denied. s6-overlay starts with shell scripts (`/init` is `#!/bin/sh -e`), and an interpreter must
+  only to `/data`, `/tmp`, s6-overlay's own folders in `/run` and the discovery relay's folder
+  (owner-only rule; narrowed in M1.2); a short capability list (none added since v0.1); mount,
+  pivot_root and ptrace denied. One profile covers every process: AppArmor selects a profile by
+  executable path, and the core and Reticulum both run `python3`, so a separate Reticulum profile
+  would need a second interpreter path. That, and running Reticulum as another user, is deferred
+  to an ADR before any write-capable credential exists. s6-overlay starts with shell scripts (`/init` is `#!/bin/sh -e`), and an interpreter must
   be able to read a script it runs — the 0.1.0 profile allowed only execution, so `/bin/sh` could
   not open `/init`. **The Supervisor loads the profile only on install and on update to a new
   version, not on Rebuild** (Supervisor 2026.11.0, `apps/app.py`), and renames it to the app slug.
 - "Where supported": if a future feature needs root (none in v0.1), it must be isolated in its own
   s6 service, documented and justified in an ADR.
+- **v0.3 (M1): the discovery relay** is the first such root service
+  (`services.d/discovery-relay`, `core/meshbeacon/discovery_relay.py`;
+  [ADR 0006 amendment](adr/0006-local-metrics-api.md#amendment-19-november-2026-m1-how-discovery-reaches-the-supervisor)).
+  Newer Supervisors give the app a root-only (0600) socket. The relay's own socket is root-only
+  too; the core's run script runs a short root start step (`relay_link.py`) that opens the link
+  and hands it to the core. On the compatibility path the same step passes the Supervisor token
+  through a one-time pipe instead, so it is in no process environment. The core makes itself
+  non-dumpable before it reads either, so Reticulum, though it runs as the same user, cannot reach
+  the core's memory, environment or descriptors (threat T72; M1.2). The relay sends only
+  MeshBeacon's validated discovery message and does not run where there is no socket.
+- **Process isolation (ADR 0018, M4 WP1):** the core runs as `meshbeacon` (9100); Reticulum and its
+  prepare step run as `mb-rns` (9101) as s6 services that start down, which the core controls
+  (`s6-svc`, permissions granted by `s6-svperms`) and reads through FIFOs in `/run/meshbeacon-io/`.
+  `/data/meshbeacon` belongs to the core and `/data/reticulum` (identity, backup, configuration) to
+  Reticulum; `/data` is 0711 and `options.json` is readable by the `mb-options` group only. Separate
+  users for LXMF and each community service are mandatory before M4 is accepted or any community
+  service is introduced ([roadmap](roadmap.md#process-isolation-gate-mandatory)).
 
 ### 4.8 Storage layout (under `/data`)
 
@@ -339,16 +360,69 @@ Design:
 - **No image is published** until the licensing obligations O1–O7 are implemented
   ([licensing §5](research/licensing.md#5-obligations-before-publishing-images)).
 
+## 6a. Interface layers (v0.2; maintainer requirement, 18 Nov 2026)
+
+The core, the secure API, the presentation and the delivery mechanism are maintained
+independently. Each layer depends only on the one below through a versioned contract, so a new
+delivery (the built-in interface, once a secure one exists) or a new feature (LXMF messaging,
+I2P, LoRa) adds a part without reworking the others.
+
+```text
+ delivery     meshbeacon-panel.js (integration panel, today) | future built-in interface (ADR 0013, blocked)
+                     │ chooses a source, supplies chrome (menu button, routing) and wording
+ presentation ui/controller.js · ui/views.js · ui/components.js · ui/style.js · ui/dom.js · tokens.js
+                     │ reads only the view-data contract (model.js NODE_KEYS / PEER_KEYS / HISTORY_KEYS)
+ data sources sources/hass.js (HA entities + recorder) | sources/snapshot.js (core snapshot + history provider)
+                     │
+ secure API   GET /api/v1/status, schema 1, pinned TLS (ADR 0006) → integration entities
+                     │
+ core         metrics.py (the only metrics implementation), supervisor, RNS child
+```
+
+| Layer | Contract | Rules (enforced by tests) |
+|---|---|---|
+| Core | Status snapshot, schema 1 | Metrics computed only in `metrics.py` |
+| Secure API | `GET /api/v1/status` | Pinned TLS, token, read-only (ADR 0006); messaging adds its own scoped API (ADR 0010, proposed) |
+| Data sources | `reading(key)`, `has`, `peers`, `peerState`, `availability`, `version`, `history` | No DOM (`tests/frontend/sources.test.mjs`); both sources return complete readings for every key |
+| Presentation | Components and views take plain values or a source | No Home Assistant objects, network or storage (`sources.test.mjs`); only design tokens (`tokens.test.mjs`); `textContent` only |
+| Delivery | Wires a source, the controller and host chrome | The only place that knows its host (Home Assistant today) |
+
+`tools/panel_preview.html?source=snapshot` renders the same views from a schema-1 snapshot
+through `sources/snapshot.js`, with no Home Assistant. It shows that the presentation does not
+depend on the delivery. The built-in interface's remaining needs are a secure delivery and the
+seven-day memory-only history (decision D3), not new presentation code.
+
+## 6b. Distribution and node identity in Home Assistant (v0.3, M1)
+
+[ADR 0015](adr/0015-distribution-and-updates.md):
+
+- One repository serves two installers: the Supervisor **app store** reads `repository.yaml` and
+  `meshbeacon/config.yaml`; Home Assistant's **Marketplace** reads `hacs.json` and
+  `custom_components/meshbeacon/`. One version and one tag cover both
+  ([releasing](releasing.md)); `tools/check_release.py` checks the layout.
+- Identifiers live in `project.yaml`; `tests/unit/test_project_identifiers.py` checks every copy.
+- The integration's config entry (version 2) separates **`node_key`** (the stable prefix of entity
+  unique IDs) from **`app_slug`** (the app it talks to now), so the app can move between slugs
+  without changing entity IDs or history. Config entries hold only allow-listed keys.
+- The integration and the app may update at different times; `compatibility.py` raises a repair
+  that names the part to update.
+
+## 6c. Node services independent of Home Assistant
+
+[ADR 0017](adr/0017-independent-node-services.md): the core and its services (messaging from v0.3;
+later pages, boards, libraries, voice) run without Home Assistant; Home Assistant is a first-class
+management interface, through bindings of a versioned management contract, never a runtime
+dependency.
+
 ## 7. Evolution by version
 
 | Version | Architectural additions |
 |---|---|
 | **v0.1** | Init step, core supervisor, config renderer, identity manager, health endpoint, status reporter, resource guards, app wrapper. **Nothing else.** |
-| v0.2 | **In progress** ([v0.2 design](research/v0.2-observability.md), [ADR 0006](adr/0006-local-metrics-api.md)): opt-in, read-only, token-authenticated status API on internal port 8100; Supervisor discovery (verified: needs no `hassio_api`, Q-11); HA integration (entities, repairs, diagnostics); metrics computed only in `core/meshbeacon/metrics.py`. Identity import deferred |
-| v0.3 | LXMF service, notify platform, optional propagation node |
-| v0.4 | Optional I2P (separate router process); public-gateway investigation |
-| v0.5 | RNode via explicit device mapping |
-| v0.6 | Authenticated remote commands with allowlists and replay protection |
+| v0.2 | **In progress** ([v0.2 design](research/v0.2-observability.md), [ADR 0006](adr/0006-local-metrics-api.md)): opt-in, read-only, token-authenticated status API on internal port 8100; Supervisor discovery (verified: needs no `hassio_api`, Q-11); HA integration (entities, repairs, diagnostics); metrics computed only in `core/meshbeacon/metrics.py`; a sidebar panel served by the integration ([ADR 0007](adr/0007-sidebar-panel.md)): one plain JS module, live values from HA entities, history from HA's recorder, admin-only, no app-side change. Identity import deferred |
+| v0.3 | LXMF service, notify platform, optional propagation node. Decisions that could constrain later milestones: [forward-compatibility review](research/long-term-direction.md) |
+| v0.4–v0.8+ | *Proposed* ([roadmap](roadmap.md#long-term-direction-proposed)): page hosting, community services, voice bursts, replication. Not designed |
+| Unscheduled | Optional I2P (separate router process); RNode via explicit device mapping; authenticated remote commands with allowlists and replay protection ([previously planned items](roadmap.md#previously-planned-items)) |
 | v1.0 | Standalone Docker packaging |
 
 ## 8. Deliberately excluded

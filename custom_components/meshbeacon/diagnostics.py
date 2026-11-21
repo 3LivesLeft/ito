@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Redacted diagnostics download. The key and host are removed, and peer names are replaced,
-because diagnostics are often attached to public bug reports."""
+"""Redacted diagnostics download. The key and host are removed, peer names are replaced, and the
+messaging address and contact names are removed, because diagnostics are often attached to public
+bug reports."""
 
 from __future__ import annotations
 
@@ -23,7 +24,17 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: MeshBea
     if coordinator is not None and coordinator.data is not None:
         data = coordinator.data
         peers = tuple(replace(p, name=f"peer {i + 1}") for i, p in enumerate(data.peers))
-        status = asdict(replace(data, peers=peers, message="**REDACTED**" if data.message else None))
+        messaging = data.messaging
+        if messaging is not None:  # the messaging address and contact names are personal
+            messaging = replace(
+                messaging,
+                address="**REDACTED**" if messaging.address else None,
+                last_received_from="**REDACTED**" if messaging.last_received_from else None,
+                message="**REDACTED**" if messaging.message else None,
+            )
+        status = asdict(
+            replace(data, peers=peers, message="**REDACTED**" if data.message else None, messaging=messaging)
+        )
     return {
         "entry": async_redact_data(dict(entry.data), TO_REDACT),
         "last_update_success": None if coordinator is None else coordinator.last_update_success,
