@@ -4,16 +4,18 @@
 // tests/frontend/tokens.test.mjs checks that text and status colours meet WCAG 2.2 AA.
 
 export const BRAND = Object.freeze({
-  deep: "#284C40", // primary brand (ito deep green), accent on light surfaces
+  forest: "#0B1A14", // dark background and brand ink
+  deep: "#1F4D3A", // deep moss: accessible brand accent on light surfaces
+  leaf: "#3E8F6E", // secondary brand accent
   sage: "#A6C9B2", // accent on dark surfaces; the thread in the mark
   mist: "#E8F3ED", // pale brand background
   sky: "#0EA5E9", // information and charts
   emerald: "#10B981", // success / online
   amber: "#F59E0B", // warning
   red: "#EF4444", // error / offline
-  navy: "#0B1220", // dark background
-  offWhite: "#F8FAFC", // light background, light text
-  slate: "#0F172A", // dark text
+  navy: "#0B1A14", // forest background from the approved creative direction
+  offWhite: "#E8F3ED", // mist background, light text
+  slate: "#0B1A14", // forest ink
 });
 
 // Per theme. "*Text" variants are for text and small marks on the surface (contrast >= 4.5:1);
@@ -43,7 +45,7 @@ export const THEMES = Object.freeze({
   }),
   dark: Object.freeze({
     bg: BRAND.navy,
-    surface: "#111A2E",
+    surface: "#1F4D3A",
     text: BRAND.offWhite,
     muted: "#94A3B8",
     line: "#1E293B",
@@ -66,7 +68,7 @@ export const THEMES = Object.freeze({
 });
 
 export const TYPE = Object.freeze({
-  family: '"MeshBeacon Inter", Inter, var(--ha-font-family-body, system-ui), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  family: '"ito Inter", Inter, var(--ha-font-family-body, system-ui), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   regular: 400, // body
   medium: 500, // labels, navigation
   semibold: 600, // headings
