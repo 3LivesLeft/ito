@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 — unreleased (develop)
+## 0.4.1 — unreleased (develop)
 
 - **MeshBeacon is now called ito.** The app, the integration, the sidebar panel and its messages,
   the app's log and the documentation use the new name, with new provisional artwork (a thread
@@ -8,6 +8,17 @@
   data, your node and messaging identities and address, contacts, conversations, settings, and
   your existing entity IDs (`sensor.meshbeacon_…`). Only a new installation gets `sensor.ito_…`
   entity IDs. Optional: an "ito sage" theme for Home Assistant (`docs/home-assistant/ito-theme.yaml`).
+- **The repository has moved to `https://github.com/3LivesLeft/ito`.** If you already have the app,
+  change nothing: keep the repository address you added (with `#develop` if you used it). GitHub
+  forwards the old address, so this update arrives as usual. Adding the new address instead
+  installs a second, separate app with a new identity
+  ([details](../docs/getting-started.md#the-repository-has-moved-installed-before-21-nov-2026)).
+
+**To update:** Settings → Apps → MeshBeacon (ito once updated) → **Update** (not Rebuild), then update the integration if
+Home Assistant offers it or a repair asks. Both should be 0.4.1.
+
+## 0.4.0 — unreleased (develop)
+
 - **Read and answer LXMF messages in Home Assistant.** The MeshBeacon dashboard has a new
   **Messages** tab: your contacts and conversations, unread counts, MeshBeacon's own address to
   copy, and a box to write and send replies. New messages and delivery changes appear without
