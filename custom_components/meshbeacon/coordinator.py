@@ -37,8 +37,8 @@ type MeshBeaconConfigEntry = ConfigEntry[MeshBeaconCoordinator]
 
 # Where the user finds the update. Version mismatches link to the update guide.
 LEARN_MORE = {
-    ISSUE_APP_OUTDATED: "https://github.com/3LivesLeft/meshbeacon/blob/main/docs/getting-started.md#updating",
-    ISSUE_INTEGRATION_OUTDATED: "https://github.com/3LivesLeft/meshbeacon/blob/main/docs/getting-started.md#updating",
+    ISSUE_APP_OUTDATED: "https://github.com/3LivesLeft/ito/blob/main/docs/getting-started.md#updating",
+    ISSUE_INTEGRATION_OUTDATED: "https://github.com/3LivesLeft/ito/blob/main/docs/getting-started.md#updating",
 }
 ISSUES = (ISSUE_ISOLATED, ISSUE_UNREACHABLE, ISSUE_ATTENTION, ISSUE_APP_OUTDATED, ISSUE_INTEGRATION_OUTDATED)
 

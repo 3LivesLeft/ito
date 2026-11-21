@@ -135,6 +135,71 @@ async def test_the_apps_refusal_is_passed_on_as_a_plain_code(hass, hass_ws_clien
     assert result["error"]["code"] == "rate_limited"
 
 
+@pytest.mark.parametrize(
+    ("kind", "fields", "answer"),
+    [
+        ("conversations", {}, {"ok": True, "conversations": [], "revision": 1}),
+        ("history", {"contact": "alice"}, {"ok": True, "messages": []}),
+        ("history", {"contact": "alice", "before": 3}, {"ok": True, "messages": []}),
+    ],
+)
+async def test_reading_announces_no_change_so_the_panel_cannot_loop(  # noqa: PLR0917 - pytest fixtures
+    hass, hass_ws_client, mock_entry, aioclient_mock, kind, fields, answer
+):
+    """Regression (reconnection storm): the panel reads again on every "changed" event, so a read
+    that announced one made an endless conversations/history loop that used up the app's
+    per-minute request allowance within about a second of opening a conversation."""
+    await _set_up(hass, mock_entry, aioclient_mock)
+    hub = mock_entry.runtime_data.messaging
+    events: list[dict[str, Any]] = []
+    hub._listeners.append(events.append)  # a subscribed panel, without the long poll
+    aioclient_mock.post(MURL, json=answer)
+    result = await _call(hass, hass_ws_client, mock_entry, kind, **fields)
+    assert result["success"]
+    assert events == []
+
+
+def test_every_command_is_either_a_read_or_an_announced_change():
+    assert messaging.CHANGES | {"conversations", "history"} == set(messaging.COMMANDS)
+    assert not messaging.CHANGES & {"conversations", "history"}
+
+
+async def test_a_change_is_still_announced_to_every_panel(hass, hass_ws_client, mock_entry, aioclient_mock):
+    await _set_up(hass, mock_entry, aioclient_mock)
+    hub = mock_entry.runtime_data.messaging
+    events: list[dict[str, Any]] = []
+    hub._listeners.append(events.append)
+    aioclient_mock.post(MURL, json={"ok": True, "message_id": "e" * 32, "state": "queued"})
+    result = await _call(
+        hass, hass_ws_client, mock_entry, "send", contact="alice", text="x", **{"idempotency_key": CLICK}
+    )
+    assert result["success"] and events == [{"type": "changed"}]
+
+
+@pytest.mark.parametrize("kind", ["conversations", "history"])
+async def test_a_refused_read_is_busy_not_too_many_messages(hass, hass_ws_client, mock_entry, aioclient_mock, kind):
+    """The app refuses reads beyond its per-minute allowance with the same code as sends; reading is
+    not sending, so the panel must not say "Too many messages" (the send allowance is separate)."""
+    await _set_up(hass, mock_entry, aioclient_mock)
+    aioclient_mock.post(MURL, status=429, json={"ok": False, "error": "rate_limited"})
+    fields = {"contact": "alice"} if kind == "history" else {}
+    result = await _call(hass, hass_ws_client, mock_entry, kind, **fields)
+    assert result["error"]["code"] == "busy"
+
+
+async def test_refusals_are_logged_once_a_minute_without_content(
+    hass, hass_ws_client, mock_entry, aioclient_mock, caplog
+):
+    await _set_up(hass, mock_entry, aioclient_mock)
+    caplog.set_level("INFO")
+    aioclient_mock.post(MURL, status=429, json={"ok": False, "error": "rate_limited"})
+    for _ in range(5):
+        await _call(hass, hass_ws_client, mock_entry, "history", contact="alice")
+    lines = [r for r in caplog.records if r.name.endswith("conversations") and "refused" in r.getMessage()]
+    assert len(lines) == 1  # not one line per request
+    assert "alice" not in caplog.text and KEY not in caplog.text
+
+
 async def test_messaging_off_in_the_app_is_reported_as_such(hass, hass_ws_client, mock_entry, aioclient_mock):
     await _set_up(hass, mock_entry, aioclient_mock, key=None)
     result = await _call(hass, hass_ws_client, mock_entry, "conversations")

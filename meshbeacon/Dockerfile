@@ -91,5 +91,5 @@ LABEL \
     io.hass.arch="aarch64|amd64" \
     org.opencontainers.image.title="ito" \
     org.opencontainers.image.description="Private, decentralised connectivity for your home, powered by Reticulum" \
-    org.opencontainers.image.source="https://github.com/3LivesLeft/meshbeacon" \
+    org.opencontainers.image.source="https://github.com/3LivesLeft/ito" \
     org.opencontainers.image.licenses="Apache-2.0 AND LicenseRef-Reticulum"

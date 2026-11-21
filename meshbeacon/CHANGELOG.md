@@ -21,6 +21,12 @@
 - **Automatic replies** are sent at most once every six hours per contact, so two automatic
   responders cannot answer each other for ever, and are marked as automatic in the conversation.
 - Only Home Assistant administrators can read or send messages.
+- **Fixed: the Messages tab no longer reconnects over and over.** Opening a conversation made the
+  dashboard read it again and again, until it showed *Reconnecting* and *Too many messages in a
+  short time*, the composer was disabled and the conversation looked empty. No messages, contacts
+  or identities were affected. It now reads a conversation once and again only when something
+  changes; if a read is refused or the app restarts, it waits a little longer each time and comes
+  back by itself. Such refusals are now written to the app's and Home Assistant's logs.
 
 **To update** (your node identity, messaging identity, contacts, conversations-to-be and settings
 are all kept):

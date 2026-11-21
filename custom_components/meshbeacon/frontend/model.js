@@ -364,6 +364,8 @@ export const MESSAGING_ERRORS = Object.freeze({
   unreachable: "Home Assistant cannot reach the ito app. It may be restarting.",
   unauthorised: "ito has a new key and Home Assistant is fetching it. Try again in a moment.",
   rate_limited: "Too many messages in a short time. Wait a minute, then try again.",
+  // Reading was refused for a while (too many requests); the send allowance is separate.
+  busy: "Messaging is busy. The conversation is updated again shortly; you can still send.",
   queue_full: "Too many messages are waiting to be sent. Wait until some are delivered.",
   too_long: "This message is too long. Keep it under about 8,000 characters.",
   invalid_address: "That is not an LXMF address. It has 32 characters, using 0–9 and a–f.",

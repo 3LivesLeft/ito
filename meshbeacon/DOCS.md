@@ -137,7 +137,7 @@ does not restart it pointlessly.
 This is optional and **off by default**.
 
 1. Install the ito integration once, from Home Assistant's Marketplace:
-   [open ito in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=3LivesLeft&repository=meshbeacon&category=integration).
+   [open ito in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=3LivesLeft&repository=ito&category=integration).
    Until ito is in the Marketplace's catalog, Home Assistant asks you to connect GitHub
    first (read-only). If Home Assistant asks for a restart, use the repair it shows.
 2. Switch on **Show ito's status in Home Assistant** in the Configuration tab and restart

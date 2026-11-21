@@ -14,10 +14,10 @@
     "panel_custom",
     "websocket_api"
   ],
-  "documentation": "https://github.com/3LivesLeft/meshbeacon/blob/main/docs/home-assistant-integration.md",
+  "documentation": "https://github.com/3LivesLeft/ito/blob/main/docs/home-assistant-integration.md",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/3LivesLeft/meshbeacon/issues",
+  "issue_tracker": "https://github.com/3LivesLeft/ito/issues",
   "requirements": [],
   "version": "0.4.0"
 }

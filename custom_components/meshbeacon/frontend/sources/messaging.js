@@ -8,9 +8,25 @@ import { conversationItem, messageItem, newIdempotencyKey } from "../model.js";
 
 const PAGE = 50;
 const RESUBSCRIBE = [5_000, 15_000, 30_000, 60_000];
+// Reads that follow a "changed" event: at most one every REFRESH_GAP, however many events arrive,
+// so the view can never read in a tight loop (two dashboards stay well inside the app's 240 reads
+// a minute). After a failed read, the next automatic one waits (bounded, jittered back-off).
+const REFRESH_GAP = 2_000;
+const BACKOFF = [2_000, 5_000, 15_000, 30_000, 60_000];
+const JITTER = 0.2; // ±20 %
+// Refused because of how often we asked (the app's limit is per minute): start at 15 s, not 2 s.
+const THROTTLED = new Set(["rate_limited", "busy"]);
+// Codes that mean the messaging path itself is down (shown as "Reconnecting"). Any other failure,
+// such as a refused read, is not an outage: the engine is working and sending stays possible.
+const OUTAGE = new Set(["unavailable", "unreachable", "not_enabled", "not_found", "unauthorised"]);
 
 export class HassMessaging {
-  constructor() {
+  /** `timers` replaces setTimeout/clearTimeout/Date.now/Math.random (tests use a fake clock). */
+  constructor(timers = {}) {
+    this._setTimeout = timers.setTimeout || ((fn, ms) => setTimeout(fn, ms));
+    this._clearTimeout = timers.clearTimeout || ((handle) => clearTimeout(handle));
+    this._now = timers.now || (() => Date.now());
+    this._random = timers.random || Math.random;
     this.hass = null;
     this.entryId = null;
     this.phase = "idle"; // idle | loading | ready | error
@@ -28,6 +44,9 @@ export class HassMessaging {
     this._active = false;
     this._refreshing = null;
     this._again = false;
+    this._retry = null; // the one scheduled automatic read, if any
+    this._holdUntil = 0; // no automatic read before this time
+    this._readFailures = 0;
   }
 
   onChange(listener) {
@@ -56,15 +75,19 @@ export class HassMessaging {
 
   /** Live updates while the Messages view is shown; nothing at all otherwise. */
   start() {
+    // Home Assistant calls this on every update of the panel: it must be idempotent.
     this._active = true;
-    if (this.phase === "idle" || this.phase === "error") this.refresh();
+    if (this.phase === "idle") this.refresh();
+    else if (this.phase === "error") this._scheduleRefresh(); // respects a back-off under way
     this._subscribe();
   }
 
   stop() {
     this._active = false;
-    clearTimeout(this._timer);
+    this._clearTimeout(this._timer);
     this._timer = null;
+    this._clearTimeout(this._retry);
+    this._retry = null;
     const unsubscribe = this._unsubscribe;
     this._unsubscribe = null;
     if (unsubscribe) Promise.resolve(unsubscribe()).catch(() => {});
@@ -92,10 +115,10 @@ export class HassMessaging {
       this._failures = 0;
     } catch (_err) {
       // Back off, then try again (the integration may still be starting).
-      const delay = RESUBSCRIBE[Math.min(this._failures, RESUBSCRIBE.length - 1)];
+      const delay = this._jitter(RESUBSCRIBE[Math.min(this._failures, RESUBSCRIBE.length - 1)]);
       this._failures += 1;
-      clearTimeout(this._timer);
-      this._timer = setTimeout(() => this._subscribe(), delay);
+      this._clearTimeout(this._timer);
+      this._timer = this._active ? this._setTimeout(() => this._subscribe(), delay) : null;
     } finally {
       this._subscribing = false;
     }
@@ -108,8 +131,37 @@ export class HassMessaging {
       this._emit();
     } else if (event.type === "changed") {
       this.available = true;
-      this.refresh();
+      this._scheduleRefresh();
     }
+  }
+
+  _jitter(ms) {
+    return Math.round(ms * (1 - JITTER + 2 * JITTER * this._random()));
+  }
+
+  /** How long to wait after the n-th failed read in a row. */
+  _backoff(code, n) {
+    const step = Math.max(n, 1) - 1 + (THROTTLED.has(code) ? 2 : 0);
+    return this._jitter(BACKOFF[Math.min(step, BACKOFF.length - 1)]);
+  }
+
+  /** Read again when allowed: at once, or once the gap or back-off is over. Never two waiting. */
+  _scheduleRefresh() {
+    if (!this._active || this._retry) return;
+    const wait = this._holdUntil - this._now();
+    if (wait <= 0 && !this._refreshing) {
+      this.refresh();
+      return;
+    }
+    this._retry = this._setTimeout(() => {
+      this._retry = null;
+      this._scheduleRefresh();
+    }, Math.max(wait, 0) || REFRESH_GAP);
+  }
+
+  _readFailed(code) {
+    this._readFailures += 1;
+    this._holdUntil = this._now() + this._backoff(code, this._readFailures);
   }
 
   /** Read the conversation list and every open conversation again (coalesced). */
@@ -122,6 +174,8 @@ export class HassMessaging {
       this.phase = "loading";
       this._emit();
     }
+    this._holdUntil = Math.max(this._holdUntil, this._now() + REFRESH_GAP);
+    let failed = null;
     this._refreshing = (async () => {
       try {
         const answer = await this._call("conversations");
@@ -129,20 +183,28 @@ export class HassMessaging {
         this.phase = "ready";
         this.error = null;
         this.available = true;
-        await Promise.all([...this.histories.keys()].map((contact) => this._loadLatest(contact)));
+        const codes = await Promise.all([...this.histories.keys()].map((contact) => this._loadLatest(contact)));
+        failed = codes.find(Boolean) || null;
       } catch (err) {
-        this.error = (err && err.code) || "unavailable";
+        failed = (err && err.code) || "unavailable";
+        this.error = failed;
         this.phase = this.phase === "ready" ? "ready" : "error";
-        this.available = false;
+        // Only an outage of the messaging path is "Reconnecting"; a refused read is not.
+        if (OUTAGE.has(failed)) this.available = false;
       }
     })();
     try {
       await this._refreshing;
     } finally {
       this._refreshing = null;
+      if (failed) this._readFailed(failed);
+      else this._readFailures = 0;
       this._emit();
     }
-    if (this._again) {
+    if (failed) {
+      this._again = false;
+      this._scheduleRefresh(); // one retry, after the back-off; changes meanwhile are covered by it
+    } else if (this._again) {
       this._again = false;
       return this.refresh();
     }
@@ -177,9 +239,13 @@ export class HassMessaging {
       const first = latest.length ? latest[0].seq : Infinity;
       const kept = latest.length < PAGE ? [] : old.messages.filter((m) => m.seq < first); // a short page is everything
       this.histories.set(contact, { messages: [...kept, ...latest], complete: old.complete || latest.length < PAGE, loading: false });
+      return null;
     } catch (err) {
+      // Keep what is shown: a failed read never empties a conversation.
       const old = this.history(contact);
-      this.histories.set(contact, { ...old, loading: false, error: (err && err.code) || "unavailable" });
+      const code = (err && err.code) || "unavailable";
+      this.histories.set(contact, { ...old, loading: false, error: code });
+      return code;
     }
   }
 

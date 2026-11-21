@@ -13,6 +13,7 @@ markers = [
   "integration: runs real, isolated Reticulum processes (loopback only)",
   "slow: long-running test",
   "container: needs Docker and a built image",
+  "shard_per_test: wide-scoped fixtures in this module hold no state between tests (see tests/conftest.py)",
 ]
 addopts = "-ra --strict-markers"
 filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]

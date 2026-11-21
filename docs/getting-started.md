@@ -26,7 +26,7 @@ administrator account. No terminal, no YAML and no copying of files.
 
 1. Select this button, or open the link on a device signed in to your Home Assistant:
 
-   [Open ito in your Home Assistant](https://my.home-assistant.io/redirect/supervisor_app/?app=ce27fbb5_meshbeacon&repository_url=https://github.com/3LivesLeft/meshbeacon)
+   [Open ito in your Home Assistant](https://my.home-assistant.io/redirect/supervisor_app/?app=d6f2aa84_meshbeacon&repository_url=https://github.com/3LivesLeft/ito)
 
    Home Assistant asks whether to add the ito app repository. Choose **Add**.
 2. On the ito page, select **Install**. Home Assistant downloads the app (about a minute
@@ -41,7 +41,7 @@ administrator account. No terminal, no YAML and no copying of files.
 
 1. Select this button (it is also in the app's **Documentation** tab):
 
-   [Open ito in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=3LivesLeft&repository=meshbeacon&category=integration)
+   [Open ito in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=3LivesLeft&repository=ito&category=integration)
 
 2. Until ito is listed in the Marketplace's catalog, Home Assistant first asks you to
    **connect GitHub**: it shows a code, you enter it at github.com and approve. The connection
@@ -75,6 +75,21 @@ If one is much newer than the other, a repair under **Settings → System → Re
 to update. Take a backup before updating if you want to be able to go back: restoring that backup
 is the way to return to an earlier version.
 
+### The repository has moved (installed before 21 Nov 2026?)
+
+The project's repository is now `https://github.com/3LivesLeft/ito` (it was
+`https://github.com/3LivesLeft/meshbeacon`). **If you already have the app, change nothing**: keep the
+repository you added. GitHub forwards the old address to the new one, so updates keep arriving, and
+the app keeps its identity, contacts, conversations and settings. Its name in Home Assistant changes
+to ito with the update that renames it.
+
+Do **not** remove the old repository and add the new address to "switch over". Home Assistant
+identifies an app by the exact address it was installed from, so the new address installs a
+**second, separate app** with a new, empty identity, and uninstalling the old one deletes its data.
+Home Assistant will not let you remove a repository while an app from it is installed. If you
+already uninstalled the old app, its identity survives only in a Home Assistant backup taken
+before that; a backup restores into the old app, never into the new one.
+
 ## Removing
 
 - **The dashboard:** Settings → Devices & services → ito → **Delete**. Home Assistant then
@@ -89,7 +104,7 @@ published, the app store can still install ito from this repository by **buildin
 device**: the same steps as above, but step 2 takes several minutes on a Raspberry Pi 4, needs
 internet access for the build, and is more likely to fail. Use a test installation, not one you
 depend on. To try an unreleased branch, add the repository as
-`https://github.com/3LivesLeft/meshbeacon#<branch>`: the app store treats it as a **different app,
+`https://github.com/3LivesLeft/ito#<branch>`: the app store treats it as a **different app,
 with its own data and identity**, so it never touches an installation from the main repository. The
 older [local prototype guide](install-local-prototype.md) (copying the folder) still works.
 

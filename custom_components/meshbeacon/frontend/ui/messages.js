@@ -217,6 +217,10 @@ export class MessagesView {
     if (summary.state === "running" && this.messaging.available === false) {
       return h("span", {}, chip("warn", "Reconnecting"), h("span", { class: "muted small", text: errorText(this.messaging.error) }));
     }
+    if (summary.state === "running" && this.messaging.error === "busy") {
+      // Reading was refused for a while: messaging works and sending is still possible.
+      return h("span", {}, chip("warn", "Busy"), h("span", { class: "muted small", text: errorText("busy") }));
+    }
     if (summary.state === "running") return chip("good", "Messaging is working");
     if (summary.state === "starting") return h("span", {}, chip("info", "Starting"), h("span", { class: "muted small", text: summary.message || "Messaging is starting. Messages you write are sent once it is ready." }));
     return h("span", {}, chip("bad", summary.label), h("span", { class: "muted small", text: summary.message || "" }));
