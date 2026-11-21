@@ -68,7 +68,7 @@ export const THEMES = Object.freeze({
 });
 
 export const TYPE = Object.freeze({
-  family: '"ito Inter", Inter, var(--ha-font-family-body, system-ui), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  family: '"MeshBeacon Inter", Inter, var(--ha-font-family-body, system-ui), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   regular: 400, // body
   medium: 500, // labels, navigation
   semibold: 600, // headings
