@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// The MeshBeacon interface stylesheet: design tokens (../tokens.js) and component styles. Shared
+// The ito interface stylesheet: design tokens (../tokens.js) and component styles. Shared
 // by every delivery (integration panel today; the built-in interface later). docs/branding.md §6.
 
 import { baseCss, themeCss } from "../tokens.js";
