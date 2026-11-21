@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.1 — unreleased (develop)
+
+- **MeshBeacon is now called ito.** The app, the integration, the sidebar panel and its messages,
+  the app's log and the documentation use the new name, with new provisional artwork (a thread
+  around the earth) and a globe icon in the sidebar. Updating in place keeps everything: the app's
+  data, your node and messaging identities and address, contacts, conversations, settings, and
+  your existing entity IDs (`sensor.meshbeacon_…`). Only a new installation gets `sensor.ito_…`
+  entity IDs. Optional: an "ito sage" theme for Home Assistant (`docs/home-assistant/ito-theme.yaml`).
+- **The repository has moved to `https://github.com/3LivesLeft/ito`.** If you already have the app,
+  change nothing: keep the repository address you added (with `#develop` if you used it). GitHub
+  forwards the old address, so this update arrives as usual. Adding the new address instead
+  installs a second, separate app with a new identity
+  ([details](../docs/getting-started.md#the-repository-has-moved-installed-before-21-nov-2026)).
+
+**To update:** Settings → Apps → MeshBeacon (ito once updated) → **Update** (not Rebuild), then update the integration if
+Home Assistant offers it or a repair asks. Both should be 0.4.1.
+
 ## 0.4.0 — unreleased (develop)
 
 - **Read and answer LXMF messages in Home Assistant.** The MeshBeacon dashboard has a new
@@ -25,13 +42,14 @@
 **To update** (your node identity, messaging identity, contacts, conversations-to-be and settings
 are all kept):
 
-1. Settings → Apps → MeshBeacon → **Update** (not Rebuild), then **Start** if it is not running.
-2. Settings → Devices & services: if Home Assistant offers an update for the **MeshBeacon
-   integration** (or shows a repair asking for it), install it and restart Home Assistant when
-   asked. The app and the integration must both be 0.4.0 for the Messages tab.
-3. Open **MeshBeacon** in the sidebar → **Messages**. If you have not yet, check that **Enable LXMF
-   messaging** and **Show MeshBeacon's status in Home Assistant** are both on in the app's
-   Configuration tab.
+1. Settings → Apps → MeshBeacon (called **ito** after the update) → **Update** (not Rebuild), then
+   **Start** if it is not running.
+2. Settings → Devices & services: if Home Assistant offers an update for the **ito integration**
+   (formerly MeshBeacon; or shows a repair asking for it), install it and restart Home Assistant
+   when asked. The app and the integration must both be 0.4.0 for the Messages tab.
+3. Open **ito** in the sidebar → **Messages**. If you have not yet, check that **Enable LXMF
+   messaging** and **Show ito's status in Home Assistant** are both on in the app's Configuration
+   tab.
 
 ## 0.3.1 — unreleased (develop)
 

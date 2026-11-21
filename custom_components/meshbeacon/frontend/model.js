@@ -68,7 +68,7 @@ export const ABSENT = Object.freeze({ available: false, known: false, state: nul
 export const CONNECTIVITY_TEXT = {
   online: "Connected to every configured peer.",
   partial: "Connected to some peers. The others are being retried automatically.",
-  offline: "Cannot reach any peer. MeshBeacon keeps retrying.",
+  offline: "Cannot reach any peer. ito keeps retrying.",
   isolated: "No peers are configured, so this node only reaches devices on its own network.",
   unknown: "Waiting for the first report from the app.",
 };
@@ -294,15 +294,15 @@ LABELS.delivery = {
 };
 export const MESSAGING_TONES = { disabled: "neutral", starting: "info", running: "good", error: "bad", paused: "bad", unavailable: "neutral" };
 export const MESSAGING_OFF_TEXT =
-  "LXMF messaging is off. To use it, open Settings → Apps → MeshBeacon → Configuration, tick “Enable LXMF messaging”, save, and restart the app.";
+  "LXMF messaging is off. To use it, open Settings → Apps → ito → Configuration, tick “Enable LXMF messaging”, save, and restart the app.";
 export const MESSAGING_STEPS = Object.freeze([
-  "In your LXMF app (for example Sideband), connect to the same Reticulum network as MeshBeacon, for example through the same peer.",
-  "Add MeshBeacon as a contact in that app, using the address above.",
-  "In MeshBeacon's Messages tab, choose “Add contact” and enter your app's own LXMF address.",
-  "Send MeshBeacon a message from your app. It appears in the Messages tab, where you can reply.",
+  "In your LXMF app (for example Sideband), connect to the same Reticulum network as ito, for example through the same peer.",
+  "Add ito as a contact in that app, using the address above.",
+  "In ito's Messages tab, choose “Add contact” and enter your app's own LXMF address.",
+  "Send ito a message from your app. It appears in the Messages tab, where you can reply.",
 ]);
 export const MESSAGING_NOTE =
-  "Read and answer messages in the Messages tab. Conversations are kept by the MeshBeacon app, never in Home Assistant's history.";
+  "Read and answer messages in the Messages tab. Conversations are kept by the ito app, never in Home Assistant's history.";
 
 const ADDRESS = /^[0-9a-f]{32}$/;
 const count = (v) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : null);
@@ -359,10 +359,10 @@ export const DELIVERY_TONE = Object.freeze({
 });
 // Plain-English messages for the codes the integration and the app return.
 export const MESSAGING_ERRORS = Object.freeze({
-  not_enabled: "Messaging is off in the MeshBeacon app.",
+  not_enabled: "Messaging is off in the ito app.",
   unavailable: "Messaging is not running right now. It usually comes back by itself within a minute.",
-  unreachable: "Home Assistant cannot reach the MeshBeacon app. It may be restarting.",
-  unauthorised: "MeshBeacon has a new key and Home Assistant is fetching it. Try again in a moment.",
+  unreachable: "Home Assistant cannot reach the ito app. It may be restarting.",
+  unauthorised: "ito has a new key and Home Assistant is fetching it. Try again in a moment.",
   rate_limited: "Too many messages in a short time. Wait a minute, then try again.",
   // Reading was refused for a while (too many requests); the send allowance is separate.
   busy: "Messaging is busy. The conversation is updated again shortly; you can still send.",
@@ -372,11 +372,11 @@ export const MESSAGING_ERRORS = Object.freeze({
   invalid_name: "Give the contact a name of up to 32 characters.",
   contact_exists: "This address is already one of your contacts.",
   too_many_contacts: "You have reached the limit of 100 contacts.",
-  own_address: "That is MeshBeacon's own address. Enter your contact's address instead.",
+  own_address: "That is ito's own address. Enter your contact's address instead.",
   unknown_contact: "This contact no longer exists.",
   unknown_message: "This message no longer exists.",
   not_retryable: "This message cannot be sent again.",
-  not_found: "MeshBeacon is not set up in Home Assistant.",
+  not_found: "ito is not set up in Home Assistant.",
 });
 export const MESSAGE_MAX_BYTES = 8192;
 const LXMF_ADDRESS = /^[0-9a-f]{32}$/;

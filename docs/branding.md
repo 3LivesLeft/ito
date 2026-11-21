@@ -1,14 +1,18 @@
-# MeshBeacon brand and visual identity
+# ito brand and visual identity
 
-**Status:** the reference for every MeshBeacon surface. **Consistent branding is a permanent
-product principle** ([vision](vision.md), principle 3; [CLAUDE.md](../CLAUDE.md)). Changes to
-anything here need the maintainer's approval and must keep the accessibility and resource rules
-below.
+**Status:** the reference for every ito surface. **Consistent branding is a permanent product
+principle** ([vision](vision.md), principle 3; [CLAUDE.md](../CLAUDE.md)). Changes to anything
+here need the maintainer's approval and must keep the accessibility and resource rules below.
+
+> **Provisional artwork (21 Nov 2026).** The name **ito** is decided ([ADR 0025](adr/0025-rename-to-ito.md)).
+> The mark is a vector interpretation of the "thread around the earth" idea, carried over from the
+> first proposal (PR #12), and is **pending visual review**. Until it is approved, treat the
+> shapes as replaceable: the masters below can be redrawn and every asset regenerated in one step.
 
 <p>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../branding/png/logo-full-dark.png">
-    <img src="../branding/png/logo-full-light.png" alt="MeshBeacon: Decentralised connectivity for your home" width="560">
+    <img src="../branding/png/logo-full-light.png" alt="ito: The internet, reimagined" width="560">
   </picture>
 </p>
 
@@ -16,17 +20,19 @@ below.
 
 | | |
 |---|---|
-| Name | **MeshBeacon**: one word, capital M and B. Never "Mesh Beacon", "meshbeacon" (except in identifiers) or "MB" |
-| Tagline | **Decentralised connectivity for your home.** (UK spelling, full stop in running text; set in capitals without the full stop in the logo lockup) |
-| Personality | Modern, dependable, approachable, privacy-first, technically capable |
+| Name | **ito**: always lower case, also at the start of a sentence and in titles. Never "Ito" or "ITO" |
+| Former name | MeshBeacon. Identifiers keep it (app slug, integration domain, discovery service, Python package, data paths); see ADR 0025. Not affiliated with the unrelated MeshBeacon disaster-response project (meshbeacon.org) |
+| Tagline | **The internet, reimagined.** (full stop in running text; set in capitals without the full stop in the logo lockup) |
+| Website | [ito.earth](https://ito.earth) |
+| Personality | Calm, clear, practical, privacy-first, technically capable |
 | Design language | Clean, minimal, professional, understated. Subtle borders, restrained shadows, generous spacing. **No** heavy gradients, glows, decorative animation or clutter |
-| Relationship to Home Assistant | Complements it. Inside Home Assistant, MeshBeacon follows the user's theme for surfaces and text, and brings its own accent, status colours, mark and typography |
-| Design reference | The maintainer's branding concept (18 Nov 2026). The vector artwork was redrawn from it; it was not cropped |
+| Relationship to Home Assistant | Complements it. Inside Home Assistant, ito follows the user's theme for surfaces and text, and brings its own accent, status colours, mark and typography |
+| Tone | UK English, short direct sentences, plain language and precise privacy claims. Reticulum and LXMF are always named correctly |
 
 ## 2. Logo
 
-The mark is a lighthouse transmitting radio signals above an interconnected mesh network, framed
-by an open arc.
+The mark is a thread encircling the earth: a globe with a meridian pair and three parallels, and
+a sage thread across it that ends in a node.
 
 | Asset | Use | Files |
 |---|---|---|
@@ -37,17 +43,17 @@ by an open arc.
 | App icon (mark on a rounded tile) | App store, launchers, social previews | `branding/svg/icon-{dark,light,mono-dark,mono-light}.svg`, PNG at 128/256/512 |
 | Small-format mark and icon (16–48 px) | Favicons, the interface header | `branding/svg/mark-small-*.svg`, `icon-small-*.svg`, `favicon.svg`, `favicon-{16,32,64}.png` |
 
-**Variants:** *dark* for dark backgrounds, *light* for light backgrounds, *mono-dark* (off-white)
-and *mono-light* (slate) for single-colour use such as print or embossing.
+**Variants:** *dark* for dark backgrounds, *light* for light backgrounds, *mono-dark* (mist) and
+*mono-light* (deep green) for single-colour use such as print or embossing.
 
 **Rules**
 - Use the supplied files. Do not redraw, recolour outside the palette, stretch, rotate, add
-  effects or outlines, or set the wordmark in another typeface.
-- Clear space around the logo is at least the lantern's height (about a tenth of the mark). Do
-  not place the logo on busy images.
+  effects or outlines, or set the wordmark in another typeface or in capitals.
+- Clear space around the logo is at least the node's diameter. Do not place the logo on busy
+  images.
 - Minimum sizes: the full mark at 48 px or more; below that, use the small-format mark. The
   horizontal logo at 24 px high or more; the full logo with tagline at 64 px high or more.
-- The light variant goes on backgrounds lighter than `#94A3B8`; the dark variant on darker ones.
+- The light variant goes on pale backgrounds (mist, white); the dark variant on dark ones.
 
 **Source of truth:** the master SVGs in `branding/src/`:
 - `mark.svg`, `mark-small.svg`: geometry only, coloured through classes;
@@ -69,7 +75,10 @@ python3 tools/brand/build.py --check  # standard library only
 
 | Purpose | Name | Hex |
 |---|---|---|
-| Primary brand | Sky blue | `#0EA5E9` |
+| Primary brand; accent on light surfaces; text on mist | Deep green | `#284C40` |
+| Accent on dark surfaces; the thread in the mark | Sage | `#A6C9B2` |
+| Pale brand background (logo tile, theme background) | Mist | `#E8F3ED` |
+| Information and charts | Sky blue | `#0EA5E9` |
 | Success / online | Emerald green | `#10B981` |
 | Warning | Amber | `#F59E0B` |
 | Error / offline | Red | `#EF4444` |
@@ -78,18 +87,20 @@ python3 tools/brand/build.py --check  # standard library only
 | Dark text | Slate | `#0F172A` |
 | Light text | Off-white | `#F8FAFC` |
 
-Data-only colours for charts (never for status): violet `#7C3AED` (light) and `#A78BFA` (dark) as
-the second series.
+Artwork only: forest `#17302A` (dark tiles) and leaf `#496A5D` (the tagline on light
+backgrounds). Data-only colours for charts (never for status): violet `#7C3AED` (light) and
+`#A78BFA` (dark) as the second series. Sage is too pale for text or indicators on light surfaces
+(about 1.7:1 on white), so it is used there only as the decorative thread.
 
 ### 3.2 Accessible variants
 
-The brand hues are bright, so text uses deeper or lighter shades of the same hue to reach WCAG
-2.2 AA (4.5:1 for text, 3:1 for indicators). These are design tokens, not extra brand colours.
+Text uses deeper or lighter shades of each hue to reach WCAG 2.2 AA (4.5:1 for text, 3:1 for
+indicators). These are design tokens, not extra brand colours.
 
 | Token | Light theme | Dark theme | Use |
 |---|---|---|---|
-| `accent` | `#0EA5E9` | `#0EA5E9` | Focus rings, active tab bar, chart fill |
-| `accent-text` | `#0369A1` | `#38BDF8` | Links, active tab label, the "Beacon" in the header |
+| `accent` | `#284C40` | `#A6C9B2` | Focus rings, active tab bar, buttons, message tints |
+| `accent-text` | `#284C40` | `#A6C9B2` | Links, active tab label, the header wordmark, the mark's globe |
 | `good` / `good-text` | `#059669` / `#047857` | `#10B981` / `#34D399` | Online, connected, no problems |
 | `warn` / `warn-text` | `#D97706` / `#B45309` | `#F59E0B` / `#FBBF24` | Partly connected, attention |
 | `bad` / `bad-text` | `#DC2626` / `#B91C1C` | `#EF4444` / `#F87171` | Offline, problem, not connected |
@@ -123,11 +134,11 @@ Assistant's default light and dark surfaces.
 
 | Surface | Icon |
 |---|---|
-| Home Assistant sidebar (integration panel now; Ingress `panel_icon` if ADR 0013 is approved) | **`mdi:lighthouse-on`**: Home Assistant accepts only Material Design Icons here, and this is the closest to the mark (verified present in Home Assistant's frontend 20260930.5 icon set). No custom-icon workaround is used |
-| Status sensor | `mdi:lighthouse-on`; the other entities keep their descriptive MDI icons (`icons.json`) |
-| App store and app page | `meshbeacon/icon.png` (128 × 128) and `meshbeacon/logo.png` (250 × 100). These are the Supervisor's documented names and sizes; no dark variants are documented for apps, so both sit on their own navy tile |
+| Home Assistant sidebar (integration panel now; Ingress `panel_icon` if ADR 0013 is approved) | **`mdi:earth`**: Home Assistant accepts only Material Design Icons here, and a globe is the closest to the mark. No custom-icon workaround is used |
+| Status sensor | `mdi:earth`; the other entities keep their descriptive MDI icons (`icons.json`) |
+| App store and app page | `meshbeacon/icon.png` (128 × 128) and `meshbeacon/logo.png` (250 × 100). These are the Supervisor's documented names and sizes; no dark variants are documented for apps, so both sit on their own forest-green tile |
 | Integration (Settings → Devices & services, HACS) | Local brand images in `custom_components/meshbeacon/brand/` (Home Assistant 2026.3 and later): `icon.png` 256, `icon@2x.png` 512, `logo.png` and `logo@2x.png` (shortest side 128 / 256), and `dark_` variants. Verified against Home Assistant 2026.10.4's `components/brands` (allowed names and fallbacks) and served in tests |
-| Inside the interface | MDI icons from Home Assistant (`ha-icon`) for figures; the MeshBeacon mark in the header and in empty and error states; status shapes (tick, exclamation, cross, dash, question mark) next to colour |
+| Inside the interface | MDI icons from Home Assistant (`ha-icon`) for figures; the ito mark in the header and in empty and error states; status shapes (tick, exclamation, cross, dash, question mark) next to colour |
 
 ## 6. Interface design system
 
@@ -144,7 +155,7 @@ that the tokens do not define.
 | Group | Tokens |
 |---|---|
 | Surfaces | `bg`, `surface`, `line`, `text`, `muted`. **Inside Home Assistant these follow the user's theme** (`--primary-background-color`, `--card-background-color`, `--divider-color`, `--primary-text-color`, `--secondary-text-color`); the brand values are the fallbacks |
-| Accent and status | Section 3.2 (always MeshBeacon's) |
+| Accent and status | Section 3.2 (always ito's) |
 | Type | `--mb-font`; weights 400/500/600/700 |
 | Space | `--mb-space-xs` 4, `sm` 8, `md` 12, `lg` 16, `xl` 24, `xxl` 32 (px) |
 | Shape | `--mb-radius-sm` 8, `md` 12 (cards), `lg` 16, `pill` |
@@ -157,7 +168,7 @@ without it (preview, a future built-in interface), the device's `prefers-color-s
 
 | Component | Pattern | Accessibility |
 |---|---|---|
-| App header | Mark (32 px) + "Mesh**Beacon**" wordmark in Semibold; the Home Assistant menu button on narrow screens; an app picker only if there are several | `h1`; mark hidden from screen readers |
+| App header | Mark (32 px) + "ito" wordmark in Bold, accent text; the Home Assistant menu button on narrow screens; an app picker only if there are several | `h1`; mark hidden from screen readers |
 | Navigation | Text tabs, accent underline for the current tab; route `/meshbeacon/<tab>` | `role="tablist"`, `aria-selected`, 44 px targets |
 | Status hero | Card with a coloured left edge, a status mark (shape + colour), the state in words, an explanation and chips | Status text plus shape; `role="img"` with a label |
 | Chip | Tinted pill with a dot and words | Text always present |

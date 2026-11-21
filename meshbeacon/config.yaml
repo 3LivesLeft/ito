@@ -1,13 +1,13 @@
-# MeshBeacon — Home Assistant app (formerly add-on) configuration.
+# ito — Home Assistant app (formerly add-on) configuration.
 # Security posture (docs/architecture.md §5): no host network, no published ports, no Supervisor
 # or Home Assistant API access, no extra capabilities, no device access, custom AppArmor profile.
 # v0.2: Supervisor discovery for the optional Home Assistant integration (ADR 0006). Posting a
 # discovery message needs no Supervisor API permission; only Home Assistant Core can read it.
 # M4 (D-M4-8): optional LXMF messaging, off by default; it needs no new permission either.
 name: ito
-version: "0.4.0"
+version: "0.4.1"
 slug: meshbeacon
-description: Decentralised connectivity for your home.
+description: Private, decentralised connectivity for your home — powered by Reticulum.
 url: https://github.com/3LivesLeft/ito
 arch:
   - aarch64

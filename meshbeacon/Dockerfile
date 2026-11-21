@@ -5,7 +5,7 @@ FROM ghcr.io/home-assistant/base-python:3.13-alpine3.24@sha256:c7d34ae22a87275d4
 # which runs, as its own user and s6 service, only when the user switches messaging on (off by
 # default). Nothing of it runs, and no messaging data is created, while it is off.
 
-ARG BUILD_VERSION=0.4.0
+ARG BUILD_VERSION=0.4.1
 ARG BUILD_ARCH
 
 ENV \
@@ -90,6 +90,6 @@ LABEL \
     io.hass.type="app" \
     io.hass.arch="aarch64|amd64" \
     org.opencontainers.image.title="ito" \
-    org.opencontainers.image.description="Decentralised connectivity for your home" \
+    org.opencontainers.image.description="Private, decentralised connectivity for your home, powered by Reticulum" \
     org.opencontainers.image.source="https://github.com/3LivesLeft/ito" \
     org.opencontainers.image.licenses="Apache-2.0 AND LicenseRef-Reticulum"

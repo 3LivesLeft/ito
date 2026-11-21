@@ -2,7 +2,7 @@
   "entity": {
     "sensor": {
       "status": {
-        "default": "mdi:lighthouse-on"
+        "default": "mdi:earth"
       },
       "connectivity": {
         "default": "mdi:lan-connect"

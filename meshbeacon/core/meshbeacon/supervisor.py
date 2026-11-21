@@ -44,48 +44,46 @@ from .services import Services, drain
 from .settings import Messaging, Settings, ValidationError, parse_options
 
 MSG_GAVE_UP = (
-    "✖ The Reticulum service keeps failing, so MeshBeacon has stopped trying. "
-    "Fix the cause shown above, then restart the app."
+    "✖ The Reticulum service keeps failing, so ito has stopped trying. Fix the cause shown above, then restart the app."
 )
 MSG_STORAGE = (
-    "✖ Free storage has fallen below 200 MB, so MeshBeacon has stopped Reticulum to protect "
+    "✖ Free storage has fallen below 200 MB, so ito has stopped Reticulum to protect "
     "Home Assistant. Free some space and restart the app."
 )
-MSG_DISCOVERY_SOCKET = "Home Assistant is told about MeshBeacon through the Supervisor's local socket."
+MSG_DISCOVERY_SOCKET = "Home Assistant is told about ito through the Supervisor's local socket."
 MSG_DISCOVERY_UNAVAILABLE = (
-    "⚠ Home Assistant cannot be told about MeshBeacon: the link to the Supervisor's local socket could "
+    "⚠ Home Assistant cannot be told about ito: the link to the Supervisor's local socket could "
     "not be set up. The node works normally; restart the app to try again."
 )
 MSG_NO_ISOLATION = (
-    "✖ MeshBeacon could not set up the separate Reticulum service it runs under its own user, so it "
+    "✖ ito could not set up the separate Reticulum service it runs under its own user, so it "
     "has not started Reticulum. Restart the app; if this repeats, please report it."
 )
 MSG_RELAY_LOST = (
     "⚠ The link to the discovery relay was lost (the relay restarted). Home Assistant keeps showing "
-    "MeshBeacon's status until the next app start, but MeshBeacon cannot refresh it: restart the app "
+    "ito's status until the next app start, but ito cannot refresh it: restart the app "
     "to restore the link."
 )
 MSG_DISCOVERY_TCP = (
-    "Home Assistant is told about MeshBeacon over the Supervisor's internal network (this Supervisor "
-    "has no app socket yet)."
+    "Home Assistant is told about ito over the Supervisor's internal network (this Supervisor has no app socket yet)."
 )
 MSG_API_STARTED = (
-    "Home Assistant integration: on. MeshBeacon shares its status with Home Assistant over the "
+    "Home Assistant integration: on. ito shares its status with Home Assistant over the "
     "internal network only, protected by a key that changes at every start."
 )
 MSG_DISCOVERY_FAILED = (
-    "⚠ MeshBeacon could not reach the Home Assistant Supervisor to share its status. The node works "
-    "normally, and MeshBeacon will keep trying by itself."
+    "⚠ ito could not reach the Home Assistant Supervisor to share its status. The node works "
+    "normally, and ito will keep trying by itself."
 )
 MSG_DISCOVERY_OK = (
-    "Home Assistant has been told about MeshBeacon's status. In Home Assistant, open Settings → "
-    'Devices & services and add "MeshBeacon" when it is shown as discovered. If it is not shown, '
-    "install the MeshBeacon integration first and restart Home Assistant (see the app's "
+    "Home Assistant has been told about ito's status. In Home Assistant, open Settings → "
+    'Devices & services and add "ito" when it is shown as discovered. If it is not shown, '
+    "install the ito integration first and restart Home Assistant (see the app's "
     "Documentation tab)."
 )
-MSG_DISCOVERY_RECOVERED = "Home Assistant can now see MeshBeacon's status again."
+MSG_DISCOVERY_RECOVERED = "Home Assistant can now see ito's status again."
 MSG_MONITORING_ERROR = (
-    "⚠ MeshBeacon's status reporting for Home Assistant hit an unexpected problem ({name}). "
+    "⚠ ito's status reporting for Home Assistant hit an unexpected problem ({name}). "
     "Reticulum is not affected. If this repeats, please report it."
 )
 # Problem codes shown in Home Assistant (docs/research/v0.2-observability.md §1). Keep in step with
@@ -309,7 +307,7 @@ class Supervisor:
             rns_version = metadata.version("rns")
         except metadata.PackageNotFoundError:
             rns_version = "unknown"
-        self.say(f"MeshBeacon {__version__} starting (Reticulum {rns_version}, {platform.machine()}).")
+        self.say(f"ito {__version__} starting (Reticulum {rns_version}, {platform.machine()}).")
         s = self.settings
         if s is not None:
             self.say(f"Transport mode: {'on — sharing your connection with others' if s.transport else 'off'}.")
@@ -349,7 +347,7 @@ class Supervisor:
         try:
             fsutil.atomic_write_json(self.paths.start_history, history.to_json())
         except OSError:
-            self.say("⚠ MeshBeacon could not save its start history (storage problem).")
+            self.say("⚠ ito could not save its start history (storage problem).")
 
     def child_env(self) -> dict[str, str]:
         env = dict(os.environ)
@@ -441,7 +439,7 @@ class Supervisor:
         if result is None:
             self.enter_attention(
                 [
-                    "✖ MeshBeacon could not finish preparing Reticulum, so it has not started it. "
+                    "✖ ito could not finish preparing Reticulum, so it has not started it. "
                     "Restart the app; if this repeats, please report it."
                 ],
                 "preparation_failed",
@@ -578,7 +576,7 @@ class Supervisor:
         if self.policy.breaker_open:
             minutes = round(self.t.breaker_cooldown / 60)
             self.say(
-                f"⚠ The Reticulum service keeps failing. MeshBeacon will try again in {minutes} minutes. "
+                f"⚠ The Reticulum service keeps failing. ito will try again in {minutes} minutes. "
                 "See the lines above for the cause."
             )
         else:
@@ -673,7 +671,7 @@ class Supervisor:
         if free < FREE_SPACE_FLOOR:
             self.enter_attention([MSG_STORAGE], "storage")
         elif free < FREE_SPACE_WARN and self.due("storage_warning", 6 * 3600, first=True):
-            self.say("⚠ Free storage is below 1 GB. MeshBeacon will stop Reticulum below 200 MB.")
+            self.say("⚠ Free storage is below 1 GB. ito will stop Reticulum below 200 MB.")
 
     def periodic_report(self) -> None:
         snapshot = self.snapshot
@@ -788,7 +786,7 @@ class Supervisor:
             self.api_server.start()
         except (OSError, TlsError):  # never falls back to plain HTTP
             self.api_store = self.api_server = None
-            self.say("⚠ MeshBeacon could not start its Home Assistant status interface. The node works normally.")
+            self.say("⚠ ito could not start its Home Assistant status interface. The node works normally.")
             return
         self.publish()
         self.say(MSG_API_STARTED)
@@ -932,7 +930,7 @@ class Supervisor:
             fsutil.ensure_dir(self.paths.meshbeacon)
         except OSError:
             self.enter_attention(
-                ["✖ MeshBeacon cannot write to its data folder. Restart the app; if this repeats, reinstall it."],
+                ["✖ ito cannot write to its data folder. Restart the app; if this repeats, reinstall it."],
                 "data_folder",
             )
             return False
@@ -943,7 +941,7 @@ class Supervisor:
             when = time.strftime("%H:%M", time.localtime(retry_after or self.wall()))
             self.enter_attention(
                 [
-                    "✖ MeshBeacon has been restarted many times in a short period, so it has paused "
+                    "✖ ito has been restarted many times in a short period, so it has paused "
                     f"to avoid a restart loop. Restart it after {when}, or change any option to try "
                     "again now."
                 ],
@@ -982,7 +980,7 @@ class Supervisor:
             while not self.stopping:
                 self.step()
         finally:
-            self.say("Stopping MeshBeacon.")
+            self.say("Stopping ito.")
             if self.engine is not None:
                 self.engine.stop()  # before Reticulum, so that it leaves cleanly
                 self.drain_engine_output()

@@ -51,7 +51,7 @@ async def test_v1_entry_migrates_without_changing_any_entity(hass, mock_entry, a
     assert mock_entry.unique_id == "local_meshbeacon"
     assert registry.async_get(old.entity_id).unique_id == "local_meshbeacon_status"
     assert registry.async_get(renamed.entity_id).entity_id == "sensor.my_custom_name"  # user's ID kept
-    assert hass.states.get("sensor.meshbeacon_status").state == "running"
+    assert hass.states.get(old.entity_id).state == "running"  # the existing ID, not a new ito_ one
     after = er.async_entries_for_config_entry(registry, mock_entry.entry_id)
     assert all(item.unique_id.startswith("local_meshbeacon_") for item in after)
     assert len({item.unique_id for item in after}) == len(after) >= before  # no duplicates
@@ -106,7 +106,7 @@ async def test_entities_follow_the_node_key_not_the_app_slug(hass, entry_data, a
     items = er.async_entries_for_config_entry(registry, entry.entry_id)
     assert items and all(item.unique_id.startswith("local_meshbeacon_") for item in items)
     assert not any(item.unique_id.startswith(PUBLISHED) for item in items)
-    assert hass.states.get("sensor.meshbeacon_status").state == "running"
+    assert hass.states.get("sensor.ito_status").state == "running"
 
 
 async def test_key_refresh_matches_the_app_slug_after_a_move(

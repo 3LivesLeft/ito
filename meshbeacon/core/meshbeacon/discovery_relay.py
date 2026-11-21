@@ -3,13 +3,13 @@
 
 Newer Supervisors give each app its own socket at ``/run/supervisor/api/supervisor.sock`` and
 identify the app by the socket itself, so no token travels over the internal network. The socket
-is owned by root with mode 0600 (Supervisor ``api/sockets.py``), and MeshBeacon's core runs as the
+is owned by root with mode 0600 (Supervisor ``api/sockets.py``), and ito's core runs as the
 unprivileged ``meshbeacon`` user, so it cannot open it.
 
 This relay is the smallest privileged piece that bridges the two. It runs as root in its own s6
 service and does exactly two things:
 
-- ``announce``: POST MeshBeacon's discovery message, built here from strictly validated fields
+- ``announce``: POST ito's discovery message, built here from strictly validated fields
   (host, port, token, fingerprint). Nothing else can be sent, and the service is fixed.
 - ``withdraw``: DELETE one earlier message by its UUID.
 
@@ -312,7 +312,7 @@ def main() -> int:
     except RelayError:
         print(
             "[meshbeacon] The discovery relay found something unexpected in its run-time folder and has "
-            "not started. Home Assistant will not be told about MeshBeacon; restart the app.",
+            "not started. Home Assistant will not be told about ito; restart the app.",
             flush=True,
         )
         signal.pause()  # fail closed, without a restart loop

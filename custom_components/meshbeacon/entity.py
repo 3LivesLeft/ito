@@ -20,7 +20,7 @@ def node_id(coordinator: MeshBeaconCoordinator) -> str:
 def node_device(coordinator: MeshBeaconCoordinator) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, node_id(coordinator))},
-        name="MeshBeacon",
+        name="ito",
         manufacturer=MANUFACTURER,
         model="Reticulum node",
         sw_version=coordinator.data.version if coordinator.data else None,

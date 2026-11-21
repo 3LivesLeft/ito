@@ -64,7 +64,7 @@ async def test_newer_app_asks_to_update_the_integration(hass, mock_entry, aiocli
         "integration_version": INTEGRATION_VERSION,
     }
     assert issue.learn_more_url and issue.learn_more_url.endswith("#updating")
-    assert hass.states.get("sensor.meshbeacon_status").state == "running"  # still works meanwhile
+    assert hass.states.get("sensor.ito_status").state == "running"  # still works meanwhile
 
 
 async def test_repair_goes_once_the_app_is_updated(hass, mock_entry, aioclient_mock):

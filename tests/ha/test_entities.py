@@ -50,9 +50,9 @@ async def test_node_and_peer_entities(hass, mock_entry, aioclient_mock):
     assert hass.states.get(eid(hass, "sensor", "peer_emerald_connected_since")).state == "2025-11-18T13:53:40+00:00"
 
     devices = dr.async_entries_for_config_entry(dr.async_get(hass), mock_entry.entry_id)
-    assert [(d.name, d.sw_version) for d in devices] == [("MeshBeacon", "0.2.0")]  # peers are not devices
+    assert [(d.name, d.sw_version) for d in devices] == [("ito", "0.2.0")]  # peers are not devices
     peer_state = hass.states.get(eid(hass, "binary_sensor", "peer_emerald_connected"))
-    assert peer_state.name == "MeshBeacon Emerald connected"
+    assert peer_state.name == "ito Emerald connected"
 
     # Disabled by default: detailed memory figures.
     assert er.async_get(hass).async_get(eid(hass, "sensor", "core_memory")).disabled
@@ -153,6 +153,36 @@ async def test_unsupported_schema_fails_setup_cleanly(hass, mock_entry, aioclien
     assert mock_entry.state is ConfigEntryState.SETUP_RETRY
 
 
+async def test_an_installation_from_before_the_rename_keeps_its_entity_ids(hass, mock_entry, aioclient_mock):
+    """ADR 0025: the device is now called ito, so new installations get ito_* entity IDs. Entities
+    registered under the old name keep their meshbeacon_* IDs, so automations, dashboards and
+    history carry on; only the device's display name changes."""
+    registry = er.async_get(hass)
+    old = {
+        ("sensor", "status"): "sensor.meshbeacon_status",
+        ("binary_sensor", "peer_emerald_connected"): "binary_sensor.meshbeacon_emerald_connected",
+    }
+    for (platform, unique), entity_id in old.items():
+        registry.async_get_or_create(
+            platform,
+            DOMAIN,
+            f"local_meshbeacon_{unique}",
+            suggested_object_id=entity_id.split(".", 1)[1],
+            config_entry=mock_entry,
+        )
+    aioclient_mock.get(URL, json=snapshot())
+    await setup(hass, mock_entry)
+
+    for (platform, unique), entity_id in old.items():
+        assert eid(hass, platform, unique) == entity_id
+        assert hass.states.get(entity_id) is not None
+    assert hass.states.get("sensor.meshbeacon_status").state == "running"
+    assert hass.states.get("sensor.ito_status") is None  # not duplicated under the new name
+    assert eid(hass, "sensor", "connectivity") == "sensor.ito_connectivity"  # a new entity: new name
+    [device] = dr.async_entries_for_config_entry(dr.async_get(hass), mock_entry.entry_id)
+    assert device.name == "ito"
+
+
 async def test_example_dashboard_uses_only_real_entities(hass, mock_entry, aioclient_mock):
     import yaml
 
@@ -162,7 +192,7 @@ async def test_example_dashboard_uses_only_real_entities(hass, mock_entry, aiocl
     await setup(hass, mock_entry)
     text = (ROOT / "docs/home-assistant/dashboard.yaml").read_text()
     yaml.safe_load(text)
-    referenced = set(re.findall(r"(?:sensor|binary_sensor)\.meshbeacon_[a-z_]+", text))
+    referenced = set(re.findall(r"(?:sensor|binary_sensor)\.ito_[a-z_]+", text))
     assert referenced
     missing = {e for e in referenced if hass.states.get(e) is None}
     assert not missing, missing

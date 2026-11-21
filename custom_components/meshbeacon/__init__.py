@@ -41,7 +41,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     guessed at: going back is done by restoring a backup (docs/marketplace.md).
     """
     if entry.version > ENTRY_VERSION:
-        _LOGGER.error("This MeshBeacon entry was written by a newer version of the integration; update it")
+        _LOGGER.error("This ito entry was written by a newer version of the integration; update it")
         return False
     if entry.version == 1:
         old = entry.unique_id or entry.entry_id

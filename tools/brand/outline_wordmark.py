@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Outline the MeshBeacon wordmark and tagline from Inter into SVG paths (branding/src).
+"""Outline the ito wordmark and tagline from Inter into SVG paths (branding/src).
 
 A developer tool, run rarely (only if the wordmark changes). It needs fontTools and brotli, which
 are not project dependencies, and Inter's WOFF2 files (Inter 5.3.0 from the @fontsource/inter
@@ -49,26 +49,25 @@ def main() -> int:
     parser.add_argument("--fonts", type=Path, required=True, help="folder with inter-latin-{500,700}-normal.woff2")
     args = parser.parse_args()
     bold, medium = args.fonts / "inter-latin-700-normal.woff2", args.fonts / "inter-latin-500-normal.woff2"
-    mesh, beacon = outline(bold, "Mesh", 100), outline(bold, "Beacon", 100)
-    tagline = outline(medium, "DECENTRALISED CONNECTIVITY FOR YOUR HOME", 100, tracking=0.18)
-    width = float(mesh["width"]) + float(beacon["width"])
+    word = outline(bold, "ito", 100, tracking=-0.02)
+    tagline = outline(medium, "THE INTERNET, REIMAGINED", 100, tracking=0.18)
     (SRC / "wordmark.svg").write_text(
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width:.0f} 100">\n{HEADER}'
-        '  <!-- MeshBeacon wordmark (master): "Mesh" and "Beacon" in Inter Bold (700), outlined to paths\n'
-        "       so no font is needed. Regenerate with tools/brand/outline_wordmark.py (Inter 5.3.0,\n"
-        "       SIL OFL 1.1; see branding/fonts/OFL.txt). Cap height 72.75, ascent 96.88 units. -->\n"
-        "  <title>MeshBeacon</title>\n"
-        "  <style>.mesh{fill:#F8FAFC}.beacon{fill:#0EA5E9}</style>\n"
-        f'  <path class="mesh" d="{mesh["d"]}"/>\n'
-        f'  <path class="beacon" transform="translate({float(mesh["width"]):.1f} 0)" d="{beacon["d"]}"/>\n'
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {float(word["width"]):.0f} 100">\n{HEADER}'
+        '  <!-- ito wordmark (master): "ito", always lower case, in Inter Bold (700) with -0.02 em\n'
+        "       tracking, outlined to paths so no font is needed. Regenerate with\n"
+        "       tools/brand/outline_wordmark.py (Inter 5.3.0, SIL OFL 1.1; see branding/fonts/OFL.txt).\n"
+        "       Units as Inter at 100: ascent 96.88, cap height 72.75. -->\n"
+        "  <title>ito</title>\n"
+        "  <style>.word{fill:#284C40}</style>\n"
+        f'  <path class="word" d="{word["d"]}"/>\n'
         "</svg>\n"
     )
     (SRC / "tagline.svg").write_text(
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {float(tagline["width"]):.0f} 100">\n{HEADER}'
-        '  <!-- Tagline, "Decentralised connectivity for your home.", set in capitals for the logo lockup:\n'
+        '  <!-- Tagline, "The internet, reimagined.", set in capitals for the logo lockup:\n'
         "       Inter Medium (500), 0.18 em tracking, outlined to paths (tools/brand/outline_wordmark.py). -->\n"
-        "  <title>Decentralised connectivity for your home</title>\n"
-        "  <style>.tagline{fill:#CBD5E1}</style>\n"
+        "  <title>The internet, reimagined</title>\n"
+        "  <style>.tagline{fill:#496A5D}</style>\n"
         f'  <path class="tagline" d="{tagline["d"]}"/>\n'
         "</svg>\n"
     )

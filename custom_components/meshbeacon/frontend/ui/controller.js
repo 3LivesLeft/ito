@@ -104,7 +104,7 @@ export class InterfaceController {
       this.onMessages(messagesShown);
     }
     if (phase === "error") main = message({ ...this.copy.loadError(this.source.error), alert: true, action: { label: "Try again", onClick: this.onRetry } });
-    else if (phase === "loading") main = skeletonPage("Loading MeshBeacon");
+    else if (phase === "loading") main = skeletonPage("Loading ito");
     else if (phase === "empty") main = message(this.copy.notSetUp);
     else {
       showTabs = true;
@@ -119,7 +119,7 @@ export class InterfaceController {
     }
     const header = h("header", {}, ...this.headerExtras().slice(0, 1), brandTitle(), ...this.headerExtras().slice(1));
     const nav = showTabs
-      ? tabsBar("MeshBeacon sections", tabs, tab, (t) => {
+      ? tabsBar("ito sections", tabs, tab, (t) => {
           this.setTab(t);
           this.onNavigate(t);
         })

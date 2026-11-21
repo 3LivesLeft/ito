@@ -185,7 +185,7 @@ def test_sigterm_stops_cleanly(run):
     start = time.monotonic()
     sh("docker", "stop", "-t", "20", c.name, timeout=60)
     assert time.monotonic() - start < 20 * SCALE
-    assert "Stopping MeshBeacon." in c.logs()
+    assert "Stopping ito." in c.logs()
     assert sh("docker", "inspect", "-f", "{{.State.ExitCode}}", c.name).strip() == "0"
 
 

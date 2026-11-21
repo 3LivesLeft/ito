@@ -11,9 +11,9 @@ import { chip, copyButton } from "./components.js";
 import { h, icon } from "./dom.js";
 
 const KEPT_WHILE_OFF = "Your contacts and conversations are kept, and appear here again when messaging is switched on.";
-const STRANGERS_NOTE = "These senders are not your contacts, so MeshBeacon cannot reply to them here.";
+const STRANGERS_NOTE = "These senders are not your contacts, so ito cannot reply to them here.";
 const EMPTY_STEPS = [
-  "Copy MeshBeacon's address above and add it as a contact in your LXMF app (for example Sideband or Ratspeak).",
+  "Copy ito's address above and add it as a contact in your LXMF app (for example Sideband or Ratspeak).",
   "Choose “Add contact” and paste your app's own LXMF address.",
   "Send a message from either side. Replies appear here as they arrive.",
 ];
@@ -233,9 +233,9 @@ export class MessagesView {
       h(
         "div",
         { class: "my-address" },
-        h("div", { class: "label small", text: "MeshBeacon's address" }),
+        h("div", { class: "label small", text: "ito's address" }),
         summary.address
-          ? h("div", { class: "address" }, h("code", { text: summary.address, "aria-label": "MeshBeacon's LXMF address" }), copyButton(summary.address))
+          ? h("div", { class: "address" }, h("code", { text: summary.address, "aria-label": "ito's LXMF address" }), copyButton(summary.address))
           : h("p", { class: "muted small", text: "The address appears once messaging is running." }),
       ),
     );
@@ -355,7 +355,7 @@ export class MessagesView {
             { class: "menu-items" },
             h("button", { type: "button", text: "Rename", onclick: () => { this.renaming = true; this._render(); } }),
             h("button", { type: "button", text: "Delete conversation", onclick: () => { if (globalThis.confirm(`Delete the conversation with ${c.name}? Messages still waiting to be sent are kept.`)) this._act(() => m.clearConversation(c.id)); } }),
-            h("button", { type: "button", class: "danger", text: "Remove contact", onclick: () => { if (globalThis.confirm(`Remove ${c.name}? Their conversation is deleted and MeshBeacon stops accepting their messages.`)) this._act(() => m.removeContact(c.id)); } }),
+            h("button", { type: "button", class: "danger", text: "Remove contact", onclick: () => { if (globalThis.confirm(`Remove ${c.name}? Their conversation is deleted and ito stops accepting their messages.`)) this._act(() => m.removeContact(c.id)); } }),
           ),
         );
     return h(

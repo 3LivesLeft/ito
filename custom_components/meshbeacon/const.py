@@ -7,7 +7,7 @@ from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "meshbeacon"
-MANUFACTURER: Final = "MeshBeacon"
+MANUFACTURER: Final = "ito"
 # 60 s matches the app's 60 s rate window and keeps recorder growth small (v0.2 review).
 SCAN_INTERVAL: Final = timedelta(seconds=60)
 REQUEST_TIMEOUT: Final = 10

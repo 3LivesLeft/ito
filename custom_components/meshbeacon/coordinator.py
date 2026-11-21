@@ -74,13 +74,13 @@ class MeshBeaconCoordinator(DataUpdateCoordinator[Status]):
                 try:
                     status = await self.client.async_get_status()
                 except MeshBeaconError as retry_exc:
-                    raise UpdateFailed(f"MeshBeacon is not reachable ({type(retry_exc).__name__})") from retry_exc
+                    raise UpdateFailed(f"ito is not reachable ({type(retry_exc).__name__})") from retry_exc
                 self._update_issues(status)
                 self._messaging_changed(status)
                 return status
-            raise UpdateFailed("MeshBeacon has a new key; waiting for Home Assistant to receive it") from exc
+            raise UpdateFailed("ito has a new key; waiting for Home Assistant to receive it") from exc
         except MeshBeaconError as exc:
-            raise UpdateFailed(f"MeshBeacon is not reachable ({type(exc).__name__}: {exc})") from exc
+            raise UpdateFailed(f"ito is not reachable ({type(exc).__name__}: {exc})") from exc
         self._update_issues(status)
         self._messaging_changed(status)
         return status

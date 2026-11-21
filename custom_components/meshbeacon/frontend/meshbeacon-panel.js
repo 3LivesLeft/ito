@@ -16,24 +16,24 @@ import { h } from "./ui/dom.js";
 
 const COPY = {
   unavailable: "The app may be stopped or restarting. Values reappear automatically when it is back; history below is kept by Home Assistant.",
-  problemHint: "Details and suggested steps are in Settings → Repairs and in the MeshBeacon app's log.",
+  problemHint: "Details and suggested steps are in Settings → Repairs and in the ito app's log.",
   historyUnavailable: "History is not available. Home Assistant's History integration and recorder must be running.",
   historyEmpty: "No history for this period yet. It builds up as Home Assistant records new values.",
   diagnosticsNote:
     "Some detailed sensors are switched off by default to keep Home Assistant's database small. " +
-    "To see them here, enable them under Settings → Devices & services → MeshBeacon.",
+    "To see them here, enable them under Settings → Devices & services → ito.",
   ranges: RANGES.map((r) => r.key),
   notSetUp: {
-    title: "MeshBeacon is not connected yet",
+    title: "ito is not connected yet",
     lines: [
-      "In the MeshBeacon app's Configuration tab, switch on “Show MeshBeacon's status in Home Assistant” and restart the app. " +
-        "Then add MeshBeacon when Home Assistant offers it under Settings → Devices & services.",
+      "In the ito app's Configuration tab, switch on “Show ito's status in Home Assistant” and restart the app. " +
+        "Then add ito when Home Assistant offers it under Settings → Devices & services.",
     ],
   },
   loadError: (reason) => ({
-    title: "MeshBeacon could not be loaded",
+    title: "ito could not be loaded",
     lines: [
-      "Home Assistant did not return MeshBeacon's details. Check that the MeshBeacon integration is loaded, then try again.",
+      "Home Assistant did not return ito's details. Check that the ito integration is loaded, then try again.",
       `Reason: ${reason}`,
     ],
   }),
@@ -149,7 +149,7 @@ class MeshBeaconPanel extends HTMLElement {
         ? h(
             "select",
             {
-              "aria-label": "MeshBeacon app",
+              "aria-label": "ito app",
               onchange: (ev) => {
                 this._source.select(Number(ev.target.value));
                 this._source.update(this._hass);

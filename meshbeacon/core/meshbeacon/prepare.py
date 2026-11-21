@@ -56,7 +56,7 @@ def load_settings(paths: Paths, result: PrepareResult) -> Settings | None:
     except FileNotFoundError:
         raw = {}
     except (OSError, ValueError):
-        result.fail("MeshBeacon could not read its options. Open the Configuration tab and save them again.", "options")
+        result.fail("ito could not read its options. Open the Configuration tab and save them again.", "options")
         return None
     try:
         return parse_options(raw)
@@ -72,13 +72,13 @@ def check_storage(paths: Paths, result: PrepareResult) -> bool:
     free = shutil.disk_usage(paths.data).free
     if free < FREE_SPACE_FLOOR:
         result.fail(
-            "There is less than 200 MB of free storage, so MeshBeacon has not started Reticulum. "
+            "There is less than 200 MB of free storage, so ito has not started Reticulum. "
             "Free some space on your Home Assistant device and restart the app.",
             "storage",
         )
         return False
     if free < FREE_SPACE_WARN:
-        result.warnings.append("Free storage is below 1 GB. MeshBeacon will stop Reticulum below 200 MB.")
+        result.warnings.append("Free storage is below 1 GB. ito will stop Reticulum below 200 MB.")
     return True
 
 
@@ -160,7 +160,7 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
         text = rnsconfig.render(settings, rpc_key, share_instance=settings.messaging.enabled)
     except rnsconfig.RenderError:
         return result.fail(
-            "MeshBeacon could not build a safe Reticulum configuration from your options, so it "
+            "ito could not build a safe Reticulum configuration from your options, so it "
             "has not started Reticulum. Check the peer details in the Configuration tab.",
             "configuration",
         )
@@ -181,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         result = prepare(paths, mode=args.mode)
     except Exception as exc:  # unexpected: report, never loop
         result = PrepareResult().fail(
-            f"MeshBeacon hit an unexpected problem while preparing to start ({type(exc).__name__}). "
+            f"ito hit an unexpected problem while preparing to start ({type(exc).__name__}). "
             "It has not started Reticulum. Restart the app; if this repeats, please report it.",
             "unexpected",
         )
