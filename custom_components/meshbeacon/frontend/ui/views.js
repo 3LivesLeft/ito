@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// MeshBeacon views (Overview, Diagnostics). They read data only through the view-data contract
+// ito views (Overview, Diagnostics). They read data only through the view-data contract
 // (source.reading/has/peers/peerState/availability/version: model.js NODE_KEYS, PEER_KEYS) and
 // build the page from components. No Home Assistant objects, no network, no storage.
 //
