@@ -9,7 +9,7 @@ import { h, icon, s } from "./dom.js";
 const CHART_W = 600;
 const CHART_H = 150;
 
-/** The MeshBeacon mark, built element by element from generated geometry (no markup parsed). */
+/** The ito mark, built element by element from generated geometry (no markup parsed). */
 export function brandMark(size = "small", label = null) {
   const svg = s("svg", { viewBox: "0 0 256 256", focusable: "false" });
   if (label) {
