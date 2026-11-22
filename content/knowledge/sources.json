@@ -375,6 +375,118 @@
       "url": "https://www.semtech.com/design-support/faq/faq-lora/p0",
       "accessed": "2026-11-22",
       "limitations": "Receiver sensitivity varies by device and radio settings."
+    },
+    {
+      "id": "ofgem-psr",
+      "organisation": "Ofgem",
+      "title": "Join your supplier\u2019s Priority Services Register",
+      "url": "https://www.ofgem.gov.uk/your-energy-supply/how-manage-your-energy-supply/join-your-suppliers-priority-services-register",
+      "accessed": "2026-11-22",
+      "limitations": "Registration provides extra support; it does not guarantee uninterrupted supply."
+    },
+    {
+      "id": "ofgem-cut",
+      "organisation": "Ofgem",
+      "title": "Check if you can get a payment for a power cut",
+      "url": "https://www.ofgem.gov.uk/your-energy-supply/problems-your-energy-supply/check-if-you-can-get-payment-power-cut",
+      "accessed": "2026-11-22",
+      "limitations": "105 reaches a network operator in Great Britain; support varies."
+    },
+    {
+      "id": "lfb-batteries",
+      "organisation": "London Fire Brigade",
+      "title": "Chargers, batteries and fire safety",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/electrical-items/batteries-and-chargers/",
+      "accessed": "2026-11-22",
+      "limitations": "Use the device manufacturer\u2019s instructions and compatible equipment."
+    },
+    {
+      "id": "bucks-batteries",
+      "organisation": "Buckinghamshire Fire and Rescue Service",
+      "title": "Lithium-ion batteries",
+      "url": "https://bucksfire.gov.uk/safety-hub/lithium-ion-batteries/",
+      "accessed": "2026-11-22",
+      "limitations": "Charging and fire advice; equipment-specific precautions may differ."
+    },
+    {
+      "id": "esf-bank",
+      "organisation": "Electrical Safety First",
+      "title": "Power banks and portable chargers",
+      "url": "https://www.electricalsafetyfirst.org.uk/safety-advice/products-and-appliances/gadgets-entertainment/power-banks/",
+      "accessed": "2026-11-22",
+      "limitations": "Device capacities and outputs depend on manufacturer specifications."
+    },
+    {
+      "id": "esf-power",
+      "organisation": "Electrical Safety First",
+      "title": "Ratings of electrical appliances",
+      "url": "https://www.electricalsafetyfirst.org.uk/safety-advice/home-and-people/house-maintenance/ratings-of-electrical-appliances/",
+      "accessed": "2026-11-22",
+      "limitations": "Examples are estimates; check actual equipment labels."
+    },
+    {
+      "id": "nationalgrid-solar",
+      "organisation": "National Grid Electricity Distribution",
+      "title": "Low carbon technology protection FAQs",
+      "url": "https://customer.nationalgrid.co.uk/downloads-view-reciteme/689152",
+      "accessed": "2026-11-22",
+      "limitations": "Installed systems vary; a suitably designed island-mode system is required."
+    },
+    {
+      "id": "hseni-generator",
+      "organisation": "Health and Safety Executive Northern Ireland",
+      "title": "Safety tips: using a portable generator in an emergency",
+      "url": "https://www.hseni.gov.uk/news/safety-tips-using-portable-generator-emergency",
+      "accessed": "2026-11-22",
+      "limitations": "Electrical connection and ventilation requirements depend on installation."
+    },
+    {
+      "id": "gov-generator",
+      "organisation": "UK Government",
+      "title": "Keeping warm or cool in extreme weather",
+      "url": "https://www.gov.uk/government/publications/public-health-advice-from-uk-cmos-during-a-national-power-outage/keeping-warm-or-cool-in-extreme-weather-scripts-for-broadcast-media",
+      "accessed": "2026-11-22",
+      "limitations": "Generator distance is a minimum precaution; site and manufacturer guidance also apply."
+    },
+    {
+      "id": "nationalgrid-safety",
+      "organisation": "National Grid Electricity Distribution",
+      "title": "Safety first",
+      "url": "https://powercuts.nationalgrid.co.uk/power-cut-advice/safety-first",
+      "accessed": "2026-11-22",
+      "limitations": "Keep away from all fallen or damaged power lines."
+    },
+    {
+      "id": "ecoflow-solar",
+      "organisation": "EcoFlow",
+      "title": "RIVER Gen4 support",
+      "url": "https://www.ecoflow.com/eu/river-4-series-portable-power-station/support",
+      "accessed": "2026-11-22",
+      "limitations": "Illustrative manufacturer guidance; input limits vary by product."
+    },
+    {
+      "id": "fsa-powercut",
+      "organisation": "Food Standards Agency",
+      "title": "Food safety in a power cut",
+      "url": "https://www.gov.uk/government/publications/food-safety-in-a-power-cut-advice-for-consumers/food-safety-in-a-power-cut-advice-for-consumers",
+      "accessed": "2026-11-22",
+      "limitations": "England, Wales and Northern Ireland; storage temperatures and times matter."
+    },
+    {
+      "id": "energy-solar",
+      "organisation": "US Department of Energy",
+      "title": "Solar and resilience basics",
+      "url": "https://www.energy.gov/cmei/systems/solar-and-resilience-basics",
+      "accessed": "2026-11-22",
+      "limitations": "General technology explanation; UK installations and requirements differ."
+    },
+    {
+      "id": "gov-battery-recycle",
+      "organisation": "UK Government",
+      "title": "Consumer products: recycling batteries and electrical waste",
+      "url": "https://www.gov.uk/guidance/consumer-products-recycling-batteries-and-electrical-waste",
+      "accessed": "2026-11-22",
+      "limitations": "Disposal arrangements vary by location and battery type."
     }
   ]
 }

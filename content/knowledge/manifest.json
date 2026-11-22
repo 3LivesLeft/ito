@@ -974,6 +974,261 @@
         "communications-radio"
       ],
       "page_type": "standard"
+    },
+    {
+      "id": "power-prepare",
+      "title": "Preparing for a power cut",
+      "category": "power",
+      "path": "pages/power/prepare.mu",
+      "description": "Keep a torch, charged phone, power bank and written emergency numbers within reach.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofgem-cut",
+        "ofgem-psr",
+        "nhs-co",
+        "fsa-powercut"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1063,
+      "sha256": "db866cf7f55c244f5ddfac3da21d188daa249deb632a3ae80c5f885576f0d6f2",
+      "related_pages": [
+        "power-medical",
+        "power-generator",
+        "preparedness-power-cut"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-capacity",
+      "title": "Battery capacity and power",
+      "category": "power",
+      "path": "pages/power/capacity.mu",
+      "description": "Watt-hours describe stored energy; watts describe the rate at which a device uses it.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "esf-bank",
+        "esf-power"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1012,
+      "sha256": "74af5de97115723916d81d3e4611bd5650b771e5377bdffa02124851dbf8a08c",
+      "related_pages": [
+        "power-runtime",
+        "power-station"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-runtime",
+      "title": "Estimating battery runtime",
+      "category": "power",
+      "path": "pages/power/runtime.mu",
+      "description": "Estimate runtime using usable watt-hours divided by the device\u2019s average watts.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "esf-bank",
+        "esf-power"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1012,
+      "sha256": "1f147270a3e0d6c3ecd5ebaae0d2183124eb1de2808940e0335662a190280b1b",
+      "related_pages": [
+        "power-capacity",
+        "power-loads",
+        "power-medical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-station",
+      "title": "Using a portable power station",
+      "category": "power",
+      "path": "pages/power/station.mu",
+      "description": "Check the output is suitable before connecting an appliance.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "esf-bank",
+        "lfb-batteries",
+        "hseni-generator"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1076,
+      "sha256": "c16faca4f15ddb8f94356bbbe6254f331fb001addc9f2500e16bf5bf88ecee8c",
+      "related_pages": [
+        "power-capacity",
+        "power-solar-portable",
+        "power-electrical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-solar-portable",
+      "title": "Charging from portable solar",
+      "category": "power",
+      "path": "pages/power/solar-portable.mu",
+      "description": "Match the panel and connector to the power station\u2019s specified solar input.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ecoflow-solar",
+        "lfb-batteries"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1000,
+      "sha256": "03e6465be399f333ba25f9c812c2d020a4c19c2149c1cb70d6cf4cd39ef85843",
+      "related_pages": [
+        "power-station",
+        "power-capacity"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-solar-home",
+      "title": "Home solar during a power cut",
+      "category": "power",
+      "path": "pages/power/solar-home.mu",
+      "description": "Do not assume rooftop solar will power your home when the grid fails.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nationalgrid-solar",
+        "energy-solar",
+        "hseni-generator"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1030,
+      "sha256": "c8aa847c30f55d0b96a76baba4bdcd4de8beea3e11200e1c281c86eb301adbed",
+      "related_pages": [
+        "power-solar-portable",
+        "power-electrical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-loads",
+      "title": "Prioritising electrical loads",
+      "category": "power",
+      "path": "pages/power/loads.mu",
+      "description": "List essential loads and estimate both their energy use and peak power.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "esf-power",
+        "fsa-powercut",
+        "ofgem-psr"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1042,
+      "sha256": "523b8be318ae946a836d7fc8e096b8f7e62831ba8032c0ed59cb212ed9ca1c0e",
+      "related_pages": [
+        "power-capacity",
+        "power-runtime",
+        "power-medical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-battery-safety",
+      "title": "Charging and storing batteries",
+      "category": "power",
+      "path": "pages/power/battery-safety.mu",
+      "description": "Use the manufacturer\u2019s charger or an approved compatible replacement.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "lfb-batteries",
+        "bucks-batteries",
+        "gov-battery-recycle"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1002,
+      "sha256": "21d990395797771b570a95235bfa57208bed82c25d3485badeabc7def756e1b1",
+      "related_pages": [
+        "power-station",
+        "shelter-house-fire"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-generator",
+      "title": "Using a fuel generator safely",
+      "category": "power",
+      "path": "pages/power/generator.mu",
+      "description": "Never use a fuel generator indoors, in a garage or in a partially enclosed space.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-generator",
+        "hseni-generator",
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1035,
+      "sha256": "f54f83211ebfdf013e9b370f6308140fa539ddebba12f729c217e1296e742c7b",
+      "related_pages": [
+        "shelter-carbon-monoxide",
+        "power-electrical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-electrical",
+      "title": "Electrical danger during an outage",
+      "category": "power",
+      "path": "pages/power/electrical.mu",
+      "description": "Keep clear of fallen power lines: assume they are live.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nationalgrid-safety",
+        "hseni-generator",
+        "lfb-batteries"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 993,
+      "sha256": "d25dffcdb68f000d9cf735abf0a97c3b1e9978fc6ba9e0624e8934f57f2cedcb",
+      "related_pages": [
+        "power-generator",
+        "power-solar-home"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-medical",
+      "title": "Power for medical equipment",
+      "category": "power",
+      "path": "pages/power/medical.mu",
+      "description": "If loss of power puts someone in immediate danger, call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofgem-psr",
+        "gov-power",
+        "ofcom-storm"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1050,
+      "sha256": "39f397435ad5a313157f2f5b36d6a184e2966751f1de01cabff32a33fb46920d",
+      "related_pages": [
+        "power-prepare",
+        "power-runtime"
+      ],
+      "page_type": "standard"
     }
   ]
 }
