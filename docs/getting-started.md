@@ -23,8 +23,18 @@ a network or add a peer. The sidebar entry is added on first start; if you later
 ## Daily use
 
 **Overview** shows connections and recent charts. **Messages** manages contacts and conversations.
-**Diagnostics** shows detailed readings. **Settings** manages your connections, messaging and
-advanced options. Use the Light/Dark button to change the dashboard theme.
+**Pages** reads Nomad Network pages and publishes your own (off until you switch it on; see
+[Nomad Network pages](../meshbeacon/DOCS.md#nomad-network-pages-optional-experimental)).
+**Diagnostics** shows detailed readings. **Settings** manages your connections, messaging, pages
+and advanced options. Use the Light/Dark button to change the dashboard theme.
+
+### Your first page in five minutes
+
+1. **Pages → Switch on pages** (ito restarts briefly).
+2. **My pages**: type a node name, choose **Start publishing**. A welcome page is published.
+3. **Edit** it, **Save and publish**, and copy your node's address to share it.
+4. To read someone else's pages: **Browse**, paste their node address (or choose a heard node)
+   and **Open**. Both of you need to be on the same Reticulum network.
 
 ## Updating
 

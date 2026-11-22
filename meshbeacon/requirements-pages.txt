@@ -7,8 +7,9 @@
 nomadnet==1.5.0 \
     --hash=sha256:deb9d34d8b514c26cf6f15b43d01b058f2cb04ff1892900d8d44b4a584400b6d
 # urwid (LGPL-2.1-only) and wcwidth (MIT): imported by nomadnet at start even in daemon mode.
-urwid==5.1.3 \
-    --hash=sha256:6ec613909e3839f665dd23aa5b46c2698e476f3af8f8b760b5d012938af99475
-wcwidth==0.9.5 \
-    --hash=sha256:6ac35755bb1748b2e36f9ea758e90da251824d530b5fe46fb7a68b9d1ba2d985 \
-    --hash=sha256:76523d4013b1373b74654b19f4c68ce2af2deb00bacdd7ef497403eeeaff2ec6
+# Releases public for some weeks are preferred over the newest (supply chain).
+urwid==5.0.1 \
+    --hash=sha256:eb505055118375fe21e1054fbeee79e15d2cdf7f3881ebd3d288c9796dbed856
+wcwidth==0.9.4 \
+    --hash=sha256:17619066f95c10f44d7ae08ee456602456bc66cc9d5e91966ec73d799acebc5f \
+    --hash=sha256:d8905f1390d828d745fdd1904374c90386d902d3cfa9ee88e9875099f75a4e17

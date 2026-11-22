@@ -199,3 +199,32 @@ def test_app_bundle_matches_shared_frontend():
     assert {p.relative_to(source): p.read_bytes() for p in source.rglob("*") if p.is_file()} == {
         p.relative_to(target): p.read_bytes() for p in target.rglob("*") if p.is_file()
     }
+
+
+def test_pages_endpoint_is_csrf_protected_and_off_unless_switched_on(tmp_path):
+    """v0.6 (ADR 0027): /api/pages follows the same Ingress rules; without pages it is refused."""
+    (tmp_path / "ingress.js").write_text("// app")
+    seen = []
+    off = Dashboard(FakeControl(), lambda request: (200, {"ok": True}), tmp_path)
+    on = Dashboard(
+        FakeControl(),
+        lambda request: (200, {"ok": True}),
+        tmp_path,
+        pages=lambda r: (seen.append(r), (200, {"ok": True}))[1],
+    )
+    headers = {"Content-Type": "application/json", "X-Ito-Request": "1"}
+    for dashboard, expected in ((off, 409), (on, 200)):
+        server = IngressServer(dashboard, "127.0.0.1", 0, allowed_peer="127.0.0.1")
+        server.start()
+        try:
+            assert request(server, "/api/pages", '{"op":"overview"}')[0] == 403  # no CSRF header
+            assert (
+                request(server, "/api/pages", '{"op":"overview"}', {**headers, "X-Remote-User-Groups": "users"})[0]
+                == 403
+            )
+            assert request(server, "/api/pages", "{" * 65537, headers)[0] == 400
+            status, _, body = request(server, "/api/pages", '{"op":"overview"}', headers)
+            assert status == expected, body
+        finally:
+            server.stop()
+    assert seen == [{"op": "overview"}]

@@ -179,6 +179,9 @@ without it (preview, a future built-in interface), the device's `prefers-color-s
 | Message bubble (M5) | Incoming: neutral tint, left; outgoing: accent tint, right; time and delivery state in words below (tone colour plus words, a double tick only for Delivered); automatic replies italic with a label | Text only as text (`pre-wrap`); state never by colour alone; log is `role="log"` |
 | Composer (M5) | Growing textarea and a pill **Send** button; plain-language note when sending is unavailable; byte count only near the limit | Labelled; Enter sends, Shift+Enter new line; errors `role="alert"` |
 | Quiet button | Outlined pill in accent text (Add contact, Copy, Send again) | 36 px minimum height |
+| Page viewer (0.6) | A card with a remote Nomad Network page in the interface font: headings, bold, italic, underline, dividers, literal blocks on a background tint; links as underlined accent text; links ito cannot follow dotted and muted; remote colours are never shown | Built from text only; links are buttons; the viewer takes focus after a page loads; `aria-busy` while loading; errors as text |
+| Item row (0.6) | Bordered row: name (600), muted detail line, chips, and pill buttons on the right that wrap below on phones (heard nodes, bookmarks, your pages) | Every button names its item ("Open Hill farm"); 44 px targets |
+| Inline confirmation (0.6) | Under the row: a sentence and a red-text **Delete page** button beside **Cancel**; focus moves to the confirming button | `role="alertdialog"` with a label; no browser dialog |
 
 New features (LXMF messaging, I2P, LoRa) add views made of these components and tokens. A new
 pattern is added here first, in the same change.
@@ -191,6 +194,8 @@ pattern is added here first, in the same change.
   the list, and one conversation full width with a Back button.
 - Charts: one column below 900 px; traffic full width with processor and memory side by side
   above it. No horizontal scrolling at 320 px.
+- Pages: one column up to 980 px; Browse and My pages as a segmented control; every card shrinks to
+  the screen, and wide literal blocks scroll inside the viewer.
 
 ## 7. Accessibility requirements (WCAG 2.2 AA)
 

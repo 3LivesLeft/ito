@@ -3,6 +3,8 @@
 rns==1.6.0
 lxmf==1.3.0  # M4 messaging tests (never in production images)
 nomadnet==1.5.0  # v0.6 pages: the unmodified Nomad Network daemon (GPL-3.0, separate program)
+urwid==5.0.1  # nomadnet's dependencies, as pinned in meshbeacon/requirements-pages.txt
+wcwidth==0.9.4
 pytest==9.0.3
 hypothesis==6.170.15
 pyyaml==6.0.3

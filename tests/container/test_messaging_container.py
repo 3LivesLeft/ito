@@ -135,7 +135,7 @@ def test_the_standard_image_carries_the_messaging_engine():
     assert seen == {
         "engine": True, "lxmf": True, "service": True, "starts_down": True, "init": True, "marker": False,
         "engine_uid": 9102, "msg_group": ["mb-lxmf", "meshbeacon"],
-        "rpc_group": ["mb-lxmf", "mb-rns"],  # ADR 0023: never the core
+        "rpc_group": ["mb-lxmf", "mb-nomad", "mb-rns"],  # ADR 0023, ADR 0027 (pages): never the core
     }  # fmt: skip
 
 
