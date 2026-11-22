@@ -12,7 +12,6 @@ from __future__ import annotations
 import os
 import secrets
 import signal
-import subprocess
 import sys
 import time
 from collections.abc import Iterator
@@ -94,11 +93,17 @@ class World:
     def close(self) -> None:
         for proc in reversed(self.procs):
             proc.stop()
-        # The daemon is the service's child: it must never outlive it.
-        stray = subprocess.run(
-            ["pgrep", "-f", str(self.root / "nomadnet")], capture_output=True, text=True, check=False
-        )
-        assert not stray.stdout.strip(), "a Nomad Network daemon outlived the pages service"
+        # The daemon is the service's child: it must never outlive it. (/proc, not pgrep: CI's
+        # test container has no procps.)
+        marker = str(self.root / "nomadnet").encode()
+        stray = []
+        for pid in filter(str.isdigit, os.listdir("/proc")):
+            try:
+                if marker in Path(f"/proc/{pid}/cmdline").read_bytes():
+                    stray.append(pid)
+            except OSError:
+                continue
+        assert not stray, "a Nomad Network daemon outlived the pages service"
 
 
 @pytest.fixture

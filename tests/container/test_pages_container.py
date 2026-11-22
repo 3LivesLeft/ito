@@ -194,7 +194,7 @@ def test_switching_pages_off_keeps_pages_and_identity_and_leaves_messaging_runni
     assert owners(off, "meshbeacon.pages") == [] and daemons(off) == []
     assert count_engines(off) == 1  # messaging unaffected
     assert "share_instance = Yes" in off.exec("cat", "/data/reticulum/config")  # still shared for messaging
-    assert (app.data / "pages" / "public" / "index.mu").exists()
+    assert off.ok("test", "-f", "/data/pages/public/index.mu")  # inside: the folder is not the runner's
     assert off.exec("sha256sum", "/data/nomadnet/nomadnet/storage/identity").split()[0] == identity
     off.remove()
 
@@ -241,7 +241,7 @@ def test_upgrade_from_0_5_keeps_identities_contacts_and_messages_and_leaves_page
     history = engine_request(new, {"op": "history", "contact": "phone", "limit": 10})
     assert history and any(m.get("text") == "Kept across the update" for m in history["messages"]), history
     assert "Nomad Network pages: off" in new.logs() and owners(new, "meshbeacon.pages") == []
-    assert not (old.data / "nomadnet").exists() and not (old.data / "pages").exists()
+    assert not new.ok("test", "-e", "/data/nomadnet") and not new.ok("test", "-e", "/data/pages")
     new.remove()
 
     on = apps(IMAGE, {**MESSAGING_ON, "pages_enabled": True}, data=old.data)
