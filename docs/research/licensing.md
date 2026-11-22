@@ -211,8 +211,9 @@ for genuine human review and editing of AI drafts.
 
 ## 7. Honest disclosure of AI assistance
 
-**[Decision]** Retained from Phase 0: AI assistance is disclosed in the README, CONTRIBUTING and
-the Git history (the assistant's commits use its own identity). Attribution is never stripped.
+The [README](../../README.md#how-this-project-is-made) describes how ito uses AI assistance.
+[CONTRIBUTING](../../CONTRIBUTING.md#ai-assistance) sets out the expectations for accurate
+credit, contributor accountability and maintainer review.
 
 ## 8. Name and trademarks
 
