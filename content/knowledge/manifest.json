@@ -122,7 +122,8 @@
       "version": "0.1.0",
       "last_reviewed": "2026-11-22",
       "sources": [
-        "cdc-water"
+        "cdc-water",
+        "gov-water-outage"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
@@ -215,7 +216,8 @@
       "last_reviewed": "2026-11-22",
       "sources": [
         "gov-flood",
-        "gov-ready"
+        "gov-ready",
+        "gov-flood-during"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",

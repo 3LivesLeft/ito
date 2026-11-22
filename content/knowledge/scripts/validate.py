@@ -7,6 +7,13 @@ p=argparse.ArgumentParser(); p.add_argument('--category'); args=p.parse_args()
 m=json.loads((root/'manifest.json').read_text()); sources=json.loads((root/'sources.json').read_text())['sources']; source_ids={x['id'] for x in sources}; errors=[]; warnings=[]
 entries=m['pages']; ids=set(); paths=set(); contents={}; link_re=re.compile(r'`\[([^\]\n]+)`:(/page/[a-z0-9_./-]+\.mu)\]')
 def fail(msg): errors.append(msg)
+if len(source_ids)!=len(sources): fail('duplicate source id')
+for source in sources:
+ for key in ('id','organisation','title','url','accessed','limitations','relevant_pages'):
+  if not source.get(key) and key!='relevant_pages': fail(f"source missing {key}: {source.get('id')}")
+ expected=sorted(e.get('id') for e in entries if source.get('id') in e.get('sources',[]))
+ if sorted(source.get('relevant_pages',[]))!=expected: fail(f"source mapping mismatch: {source.get('id')}")
+ if not str(source.get('url','')).startswith('https://'): fail(f"invalid source URL: {source.get('id')}")
 for e in entries:
  for key in ('id','title','category','path','description','version','last_reviewed','sources','safety_critical','review_status','size_bytes','sha256','related_pages','page_type'):
   if key not in e: fail(f"{e.get('id')}: missing {key}")
@@ -15,8 +22,13 @@ for e in entries:
  path=e.get('path',''); file=root/path
  if path in paths: fail(f'duplicate path {path}')
  paths.add(path)
- if not path.startswith('pages/') or '..' in Path(path).parts or not file.is_file(): fail(f'bad path {path}'); continue
+ if not path.startswith('pages/') or '..' in Path(path).parts or not file.is_file() or not file.resolve().is_relative_to(pages.resolve()): fail(f'bad path {path}'); continue
  if not e.get('sources') or set(e['sources'])-source_ids: fail(f'missing sources: {path}')
+ if not re.fullmatch(r'[a-z0-9-]+',str(e.get('id',''))) or not re.fullmatch(r'[a-z0-9-]+',str(e.get('category',''))): fail(f'invalid id or category: {path}')
+ if not re.fullmatch(r'\d{4}-\d{2}-\d{2}',str(e.get('last_reviewed',''))): fail(f'invalid review date: {path}')
+ if not isinstance(e.get('safety_critical'),bool) or e.get('review_status') not in ('requires_independent_review','reviewed'): fail(f'invalid review status: {path}')
+ if not e.get('description') or not e.get('version'): fail(f'empty metadata: {path}')
+ if file.is_symlink() or file.stat().st_mode & 0o111: fail(f'page must be static and non-executable: {path}')
  for rel in e.get('related_pages',[]):
   if rel not in {x.get('id') for x in entries}: fail(f'unknown related page: {path} {rel}')
  if args.category and e.get('category') != args.category: continue
@@ -37,7 +49,7 @@ for f in allfiles:
  rel=f.relative_to(pages).as_posix(); matches=list(link_re.finditer(body))
  for match in matches:
   target=pages/match.group(2)[6:]
-  if not target.is_file(): fail(f'broken link: {rel} -> {match.group(2)}')
+  if '..' in Path(match.group(2)).parts or not target.resolve().is_relative_to(pages.resolve()) or not target.is_file(): fail(f'broken or unsafe link: {rel} -> {match.group(2)}')
  stripped=link_re.sub('',body)
  if '`' in stripped or '<script' in stripped.lower() or re.search(r'https?://|<[^>]+>',stripped): fail(f'unsupported markup or external dependency: {rel}')
  if not body.startswith('>'): fail(f'no heading: {rel}')

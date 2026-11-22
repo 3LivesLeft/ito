@@ -11,3 +11,7 @@ Ito develop at 3582c86 is a Home Assistant app and separate integration; Nomad s
 ## Transfer estimates
 
 Ideal payload-only seconds = UTF-8 bytes × 8 / assumed effective application bits per second. At 100/500/1,000/2,000 bit/s, 1,024 bytes takes 81.92/16.38/8.19/4.10 s and 2,048 bytes takes 163.84/32.77/16.38/8.19 s. These are illustrative effective application rates, not radio bitrate or measured speeds; no additional overhead is applied to an already effective rate. Setup, stalls and duty-cycle waiting can still add time. Multi-hop airtime may multiply without scaling elapsed time linearly.
+
+## Parser check
+
+On 22 November 2026 the actual NomadNet Micron parser, upstream commit `c9dbc11d9d7cd314a2ab3207ddf9a1d0d4becf8b`, was exercised against all 88 pages using a mock UI and urwid rendering at 40 columns. All 365 parsed link targets matched the static source. This verifies the chosen Micron syntax in that parser version, not serving, actual interaction, other clients, or radio delivery. Reproduce using `scripts/check_nomad_parser.py` with a compatible NomadNet checkout and its dependencies on PYTHONPATH.

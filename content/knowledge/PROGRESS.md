@@ -1,6 +1,6 @@
 # Progress checkpoint — 22 November 2026
 
-Status: INCOMPLETE. Branch `feature/ito-knowledge-library` created from develop commit `3582c86`. Changes confined to content/knowledge. No application or concurrent worktree changed. No PR requested until the complete library is ready.
+Status: CONTENT DRAFT COMPLETE; NOT PUBLICATION-READY. Branch `feature/ito-knowledge-library` was created from develop commit `3582c86`. Changes confined to content/knowledge. No application or concurrent worktree changed. A draft PR is suitable for integration review; all 78 guides need independent safety or subject-matter review before publication.
 
 ## Completed batch 1
 
@@ -55,10 +55,19 @@ Status: INCOMPLETE. Branch `feature/ito-knowledge-library` created from develop 
 - Sources: Ordnance Survey, Mountain Rescue England and Wales, AdventureSmartUK, RHS and existing UK Government safety sources. All 10 new guides require independent safety or subject-matter review. Compass bearing instructions need field assessment; no real-world test has been completed.
 - Focused navigation and self-sufficiency validation: 0 errors, 0 size warnings. Real Nomad and radio tests remain outstanding.
 
+## Final package checks
+
+- Final full validator: 78 guide entries and 88 Micron files, 0 errors and 0 target-size warnings. Seven automated failure-mode tests passed.
+- Real upstream NomadNet parser at `c9dbc11d9d7cd314a2ab3207ddf9a1d0d4becf8b` rendered all pages at 40 columns using a mock UI; all 365 parsed link targets matched. No running node, remote retrieval or radio tests were conducted.
+- Source records now include their relevant page IDs; authoritative water-butt and flood references added. Individual claims still require independent professional review. 78 pages flagged `requires_independent_review`.
+- Full statistics and throughput estimates are in VALIDATION_REPORT.md. No LoRa measurements were performed.
+
 ## Decisions
 
 Use static Micron with `:/page/...` same-node targets, no external assets; preserve safety content regardless of size. Review status is explicit in the manifest. Page files have non-executable normal file permissions. Metadata stays out of transmitted pages except review date. Main and category indexes are not counted as guide entries. This is a draft, not a complete release.
 
 ## Outstanding and next steps
 
-All planned content batches are drafted. Finalise source-to-page mappings, validator checks and tests, independent-review tracking, technical research and integration handover; run complete validation once and create a draft PR. Avoid duplication, target roughly 50–75 guides but prioritise completeness and safety, and update this file and commit after each. Target 50–75 guides. Verify rainwater, flooding and every existing warning against direct primary guidance. Expand validator tests for malformed syntax, duplicated IDs, missing category links and malicious paths, and validate real Micron rendering with an actual Nomad parser/client where possible. The present duplicate-page check detects exact content only; it cannot detect paraphrased duplicates. Check source references support each page's actual claims. Generate final size and safety review report. Re-run full validation once when all batches are done. Test LoRa only with actual hardware; otherwise explicitly mark untested. Complete handover, push branch and create draft PR against current develop after completion; do not merge. The current checkpoint is not a complete deliverable.
+Independent safety, clinical, food, public-health, radio/legal, electrical and outdoor review of all 78 guides is required before publication. Confirm source applicability and country-specific details, particularly infant CPR and choking, water and food treatment, sanitation, generator isolation, UK radio conditions, and compass bearings. The validator only detects exact duplicate pages and cannot establish semantic accuracy or detect paraphrases. Secure authenticated content updates are a future integration requirement.
+
+After the Nomad implementation is ready, follow INTEGRATION.md to test local and remote serving, link navigation, selective hosting, offline caching, interrupted transfer, malformed requests, mirrors, LoRa and multi-hop. No radio hardware tests have been performed. Review the draft PR against current develop without touching concurrent work; do not merge until the requested independent review and integration tests are complete.
