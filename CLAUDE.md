@@ -11,7 +11,7 @@ Assistant. Phase 0 (research and design) is complete. **Phase 1 (v0.1.0 foundati
 branch `feature/v0.1.0-foundation` (PR #2). **v0.2.0 (monitoring and observability) is authorised**
 on branch `feature/v0.2.0-observability` (draft PR #3), based on PR #2's reviewed head `192db5f`;
 ADR 0006 is accepted, and its option stays off by default permanently. ADR 0007 (integration sidebar panel) is accepted as the interim
-dedicated interface; Ingress (ADR 0013) is blocked. **v0.3 plan approved (19 Nov 2026):** v0.3.0 is the installation and distribution
+dedicated interface; Ingress is now approved by the maintainer (21 Nov 2026), superseding ADR 0013; see ADR 0026. **v0.3 plan approved (19 Nov 2026):** v0.3.0 is the installation and distribution
 release (app store + Home Assistant's Marketplace, ADR 0015); **M1 (install-ready repository) is authorised** on
 `feature/v0.3.0-install-ready`. Nothing is published before M2's approval. The LXMF engine stays out of production images until
 M4's gate; Home Assistant messaging and migration of existing installations are later milestones. LoRa, I2P and remote control
@@ -71,10 +71,10 @@ infrastructure or deploy to the maintainer's Home Assistant without explicit app
     statistics, automations); nothing essential may depend on it.
   - It never overrides security, privacy or resource principles. Do not duplicate monitoring
     logic to achieve it.
-  - The proposed delivery is Supervisor Ingress ([ADR 0013](docs/adr/0013-built-in-interface-ingress.md)).
-    It is **blocked by security review**: do not enable or implement Ingress, and never treat
-    read-only as a mitigation for session exposure. Read-only is a temporary restriction, not
-    the product's limit ([secure interface options](docs/research/secure-interface-options.md)).
+  - The dashboard is bundled in the app through Supervisor Ingress (ADR 0026, maintainer-approved
+    21 Nov 2026). Configuration lives there and the app adds its sidebar entry by default.
+    Keep the internal source-peer restriction, CSRF header, bounded server and self-only management
+    operations. The integration is optional for entities, automations and recorder history.
   - Do not publish or commit details of security findings under responsible disclosure.
 - **Consistent branding is a permanent product principle** ([vision](docs/vision.md) principle 3;
   [docs/branding.md](docs/branding.md)):

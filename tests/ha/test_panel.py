@@ -180,3 +180,12 @@ def test_module_url_changes_with_the_files(tmp_path, monkeypatch):
     before = panel._fingerprint()
     (tmp_path / "model.js").write_text("// changed\n")
     assert panel._fingerprint() != before
+
+
+async def test_new_app_keeps_recorder_panel_distinct_from_bundled_dashboard(hass, mock_entry, aioclient_mock):
+    data = snapshot()
+    data["app"]["version"] = "0.5.0"
+    aioclient_mock.get(URL, json=data)
+    assert await hass.config_entries.async_setup(mock_entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.data[frontend.DATA_PANELS][panel.PANEL_URL].sidebar_title == "ito history"

@@ -108,7 +108,7 @@ def test_defaults_non_root_permissions_health_and_no_connections(run):
         mode, kind, _path = line.split("|", 2)
         assert mode == ("700" if kind == "directory" else "600"), line
     time.sleep(15)
-    # Only the health listener; no outbound or established sockets.
+    # Only health and Supervisor-only Ingress listeners; no outbound peer connections.
     docker_dns = "0B00007F:"  # 127.0.0.11: Docker's embedded resolver on user-defined networks, not ours
     tcp = [
         line for line in c.exec("cat", "/proc/net/tcp").splitlines()[1:] if not line.split()[1].startswith(docker_dns)
@@ -116,7 +116,7 @@ def test_defaults_non_root_permissions_health_and_no_connections(run):
     states = {line.split()[3] for line in tcp}
     assert states <= {"0A", "06"}, tcp  # LISTEN, TIME_WAIT (from our own health request)
     assert [line for line in tcp if line.split()[3] == "0A"] and all(
-        line.split()[1].endswith(":1FA3") for line in tcp if line.split()[3] == "0A"
+        line.split()[1].split(":")[-1] in {"1FA1", "1FA3"} for line in tcp if line.split()[3] == "0A"
     )
 
 
@@ -445,13 +445,13 @@ def test_home_assistant_integration_end_to_end(run, network, tmp_path):
         assert version and snap["app"]["version"] == version.group(1)
         # D-M4-8: the status API reports messaging, off by default, with nothing else about it.
         assert snap["messaging"] == {"enabled": False, "state": "disabled", "message": None}
-        # Listeners: health (8099) and the API (8100); nothing published, nothing outbound to peers.
+        # Listeners: Ingress (8097), health (8099) and the API (8100); nothing published, nothing outbound to peers.
         listening = {
             line.split()[1].split(":")[1]
             for line in c.exec("cat", "/proc/net/tcp").splitlines()[1:]
             if line.split()[3] == "0A" and not line.split()[1].startswith("0B00007F:")
         }
-        assert listening == {"1FA3", "1FA4"}, listening
+        assert listening == {"1FA1", "1FA3", "1FA4"}, listening
         # The Supervisor token is never passed to the prepare step or Reticulum.
         rns = c.exec("pgrep", "-f", "meshbeacon.node").split()[0]
         # Read as Reticulum's own user (ADR 0018): root in the container lacks CAP_SYS_PTRACE.

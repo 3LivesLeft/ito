@@ -1,5 +1,8 @@
 # A built-in interface that can safely carry private data and actions
 
+> **Superseded for app 0.5.0:** the maintainer approved Ingress and a bundled dashboard on
+> 21 November 2026. See [ADR 0026](../adr/0026-app-dashboard-and-setup.md). The original decision below is retained as history.
+
 **Status: security review in progress.** The built-in interface through Ingress
 ([ADR 0013](../adr/0013-built-in-interface-ingress.md)) is **not enabled**. Some findings are
 **withheld under responsible disclosure**: they concern Home Assistant's Ingress mechanism in

@@ -32,6 +32,7 @@ header {
 .brand { display: flex; align-items: center; gap: var(--mb-space-sm); flex: 1; min-width: 0; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .brand svg { width: 32px; height: 32px; flex: none; }
 .brand .brand-wordmark { width: 46px; height: 25px; }
+header button { font: inherit; min-height: 44px; padding: 8px 12px; border: 1px solid var(--mb-line); border-radius: var(--mb-radius-sm); background: var(--mb-surface); color: var(--mb-text); cursor: pointer; }
 header select { font: inherit; font-size: 14px; color: inherit; background: var(--mb-surface); border: 1px solid var(--mb-line); border-radius: var(--mb-radius-sm); padding: 6px 8px; min-height: 32px; }
 nav[role="tablist"] {
   display: flex; gap: var(--mb-space-xs); padding: 0 var(--mb-space-lg); overflow-x: auto;
@@ -137,7 +138,7 @@ dl { margin: 0; }
 .messages-main { max-width: 1280px; }
 .msg { display: grid; gap: var(--mb-space-md); }
 .msg-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mb-space-sm); }
-.msg-status .chip { background: color-mix(in srgb, var(--tone, var(--mb-neutral)) 6%, transparent); }
+.msg-status .chip { background: var(--mb-surface); }
 .msg-status > span { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--mb-space-sm); }
 .msg-panes { display: grid; gap: var(--mb-space-lg); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 870px) { .msg-panes { grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); align-items: start; } }

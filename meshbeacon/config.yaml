@@ -5,7 +5,7 @@
 # discovery message needs no Supervisor API permission; only Home Assistant Core can read it.
 # M4 (D-M4-8): optional LXMF messaging, off by default; it needs no new permission either.
 name: ito
-version: "0.4.1"
+version: "0.5.0"
 slug: meshbeacon
 description: Private, decentralised connectivity for your home — powered by Reticulum.
 url: https://github.com/3LivesLeft/ito
@@ -21,6 +21,11 @@ apparmor: true
 watchdog: "http://[HOST]:[PORT:8099]/health"
 discovery:
   - meshbeacon
+ingress: true
+ingress_port: 8097
+panel_icon: mdi:earth
+panel_title: ito
+panel_admin: true
 backup: hot
 backup_exclude:
   - "reticulum/storage/cache/*"

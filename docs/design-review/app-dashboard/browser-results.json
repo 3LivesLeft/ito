@@ -1,0 +1,8 @@
+{
+  "errors": [],
+  "checks": [
+    "Save and apply: persisted preset, messaging enabled, restart and automatic reconnect",
+    "Contact creation and message send through the production Ingress HTTP route and a fake engine",
+    "24 viewport/theme/view checks, no horizontal overflow"
+  ]
+}

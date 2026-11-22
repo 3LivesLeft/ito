@@ -16,21 +16,18 @@ ito is a free, open-source, privacy-first, decentralised communications gateway 
 [Home Assistant](https://www.home-assistant.io/), powered by the
 [Reticulum](https://github.com/markqvist/Reticulum) reference implementation.
 
-> [!WARNING]
-> **Experimental — do not depend on this yet.** ito is in **Phase 1**: a v0.1.0 local
-> prototype that you can build and install as a local Home Assistant app
-> ([`meshbeacon/DOCS.md`](meshbeacon/DOCS.md)). No images or releases are published. Physical
-> Raspberry Pi validation is still pending ([results so far](docs/testing/phase1-results.md)).
+**Experimental.** The app includes a Reticulum node, LXMF messaging and, from 0.5.0, its own
+Home Assistant Ingress dashboard. No images or releases are published by this change.
 
-## What it will do
+## Install and use
 
-- Run a Reticulum node as a Home Assistant app (formerly "add-on"), on the machine you already
-  have — no extra hardware required to start.
-- Show node and network health as Home Assistant entities.
-- Send end-to-end-encrypted notifications from Home Assistant to Reticulum messaging apps
-  (via [LXMF](https://github.com/markqvist/LXMF)).
-- Next (v0.3): installation from an app repository once release gates are met, and private LXMF
-  messaging.
+Add `https://github.com/3LivesLeft/ito` under **Settings → Apps → App store → Repositories**.
+Install ito, start it and choose **Open Web UI**. The sidebar entry is added automatically.
+Choose connections and messaging options in **ito → Settings**, then **Save and apply**.
+The dashboard and app update together. Existing identities and conversations are preserved.
+
+The Marketplace integration is optional, for Home Assistant entities, automations and recorder
+history. [Full installation and update guide](docs/getting-started.md).
 
 **Long-term direction (proposed, not committed):** an offline-first community network over
 Reticulum, including LoRa — Nomad Network-compatible pages, bulletin boards and offline libraries,
@@ -63,8 +60,8 @@ See the [vision](docs/vision.md) and the provisional [roadmap](docs/roadmap.md).
 | [Threat model](docs/security/threat-model.md) | Assets, threats and controls |
 | [Testing strategy](docs/testing/strategy.md) | How we will test against isolated Reticulum networks |
 | [Phase 1 results](docs/testing/phase1-results.md) | What has been verified so far, and what has not |
-| [App documentation](meshbeacon/DOCS.md) | Using the local prototype |
-| [Getting started](docs/getting-started.md) | Installing and updating from Home Assistant's app store and Marketplace (from the first release) |
+| [App documentation](meshbeacon/DOCS.md) | App setup and use |
+| [Getting started](docs/getting-started.md) | Installing and updating the bundled app dashboard |
 | [Installing the local prototype](docs/install-local-prototype.md) | Step-by-step on Home Assistant OS, without published images |
 | [Releasing](docs/releasing.md) | One version for the app and the integration; build, verify and publish steps |
 | [Marketplace](docs/marketplace.md) | What Home Assistant's Marketplace reads from this repository |

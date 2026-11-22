@@ -1,5 +1,8 @@
 # ADR 0013: The built-in MeshBeacon interface, served through Supervisor Ingress
 
+> **Superseded for app 0.5.0:** the maintainer approved Ingress and a bundled dashboard on
+> 21 November 2026. See [ADR 0026](../adr/0026-app-dashboard-and-setup.md). The original decision below is retained as history.
+
 - **Status:** **Blocked by security review** (18 Nov 2026). The independent review gave D1
   conditional approval (read-only Ingress, *if* its security concerns are resolved), and decided
   D2–D4. Source inspection of Supervisor 2026.11.0 then confirmed concerns that MeshBeacon cannot

@@ -31,9 +31,11 @@ from typing import IO, Any
 
 from . import __version__, fsutil, networks, procinfo
 from .api import ApiServer, Discovery, RelayLink, StatusStore, TlsError, container_hostname, make_tls, new_token
+from .app_control import AppControl
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
 from .engine_supervisor import DISABLED, EngineSupervisor
 from .health import HealthServer, Heartbeat
+from .ingress import Dashboard, IngressServer
 from .logfilter import RateLimiter, Redactor
 from .metrics import Collector
 from .paths import Paths
@@ -225,6 +227,10 @@ class Supervisor:
         self.api_port = api_port
         self.api_store: StatusStore | None = None
         self.api_server: ApiServer | None = None
+        self.dashboard = Dashboard(
+            AppControl(discovery_relay, supervisor_token, socket_mode=socket_mode), self.forward_messaging
+        )
+        self.ingress_server: IngressServer | None = None
         self._supervisor_token = supervisor_token
         self.supervisor_url = supervisor_url
         self.discovery_relay = discovery_relay
@@ -893,6 +899,8 @@ class Supervisor:
             if data:
                 self._handle_lines(key.data, buf.feed(data))
         self.flush_suppressed()
+        if self.ingress_server is not None and self.due("dashboard", 5, first=True):
+            self.monitor(lambda: self.dashboard.publish(self.build_snapshot()))
         self.api_housekeeping()
         if self.engine is not None:
             self.engine.step(self.node_ready())
@@ -962,7 +970,7 @@ class Supervisor:
         self.say(
             "LXMF messaging: on — it starts once Reticulum is running."
             if self.settings.messaging.enabled
-            else "LXMF messaging: off (tick “Enable LXMF messaging” in the Configuration tab to use it)."
+            else "LXMF messaging: off (open ito → Settings to switch it on)."
         )
         if not self.settings.peers:
             self.snapshot = evaluate((), None)
@@ -976,7 +984,18 @@ class Supervisor:
         signal.signal(signal.SIGINT, self._on_signal)
         self.health.start()
         try:
+            if self.require_services:
+                try:
+                    self.ingress_server = IngressServer(self.dashboard)
+                    self.ingress_server.start()
+                except OSError:
+                    self.say("ito could not open its dashboard. Restart the app to try again.")
             self.boot()
+            if self.ingress_server is not None:
+                self.monitor(lambda: self.dashboard.publish(self.build_snapshot()))
+                threading.Thread(
+                    target=self.dashboard.add_sidebar, args=(self.paths.meshbeacon / "sidebar.json",), daemon=True
+                ).start()
             while not self.stopping:
                 self.step()
         finally:
@@ -988,6 +1007,8 @@ class Supervisor:
             self.discovery_stop.set()
             if self.api_server is not None:
                 self.api_server.stop()
+            if self.ingress_server is not None:
+                self.ingress_server.stop()
             self.health.stop()
         return 0
 

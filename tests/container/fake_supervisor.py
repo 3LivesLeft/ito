@@ -19,7 +19,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
         record = {"path": self.path, "auth": self.headers.get("Authorization"), "body": body}
-        Path("/out/discovery.json").write_text(json.dumps(record))
+        target = "discovery.json" if self.path == "/discovery" else "self-options.json"
+        Path("/out", target).write_text(json.dumps(record))
         reply = json.dumps({"result": "ok", "data": {"uuid": "abc123"}}).encode()
         self.send_response(200)
         self.send_header("Content-Length", str(len(reply)))

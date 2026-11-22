@@ -227,3 +227,11 @@ pattern is added here first, in the same change.
 | README, installation docs, user guides | Logo header (light/dark `<picture>`), tagline |
 | Example dashboard | Title "ito", icon `mdi:earth` |
 | Release notes | [Release notes template](releasing.md) |
+
+### Bundled dashboard delivery (0.5.0)
+
+The Ingress shell shares the existing view components, brand SVGs, fonts and tokens. Settings
+uses the same surfaces, text colours and focus accent. `python tools/sync_frontend.py` copies
+the canonical frontend into the app build context; CI checks exact equality. Every bundled
+asset URL carries a fingerprint of the complete frontend so logo and font changes update with
+the app. Regenerate branding before synchronising the frontend.

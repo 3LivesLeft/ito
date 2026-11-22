@@ -180,7 +180,7 @@ function messagingCard(ctx) {
   const lang = ctx.source.language;
   const head = h("div", { class: "section-head" }, h("h2", { text: "Messaging" }), chip(m.tone, m.label));
   if (m.state === "disabled") {
-    return h("section", { class: "card messaging", "data-tone": m.tone, "aria-label": "Messaging" }, head, h("p", { class: "muted small", text: MESSAGING_OFF_TEXT }));
+    return h("section", { class: "card messaging", "data-tone": m.tone, "aria-label": "Messaging" }, head, h("p", { class: "muted small", text: ctx.copy.messagingOff || MESSAGING_OFF_TEXT }));
   }
   const rows = [];
   const add = (label, text) => rows.push(h("dt", { text: label }), h("dd", { text }));

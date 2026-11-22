@@ -37,7 +37,9 @@ jobs:
       - run: ruff format --check meshbeacon/core custom_components tests tools
       - run: mypy
       - name: Release layout (app store, Marketplace, one version everywhere)
-        run: python tools/check_release.py
+        run: |
+          python tools/check_release.py
+          python tools/sync_frontend.py --check
       - name: Panel and design-token tests, including WCAG contrast (Node's built-in runner; no packages)
         run: node --test tests/frontend/*.test.mjs
       - name: Shell scripts

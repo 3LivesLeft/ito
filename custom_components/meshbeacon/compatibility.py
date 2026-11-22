@@ -41,3 +41,9 @@ def mismatch(app_version: str | None, integration_version: str | None) -> str | 
     if app[1] < integration[1] - 1:
         return ISSUE_APP_OUTDATED
     return None
+
+
+def has_app_dashboard(version: str | None) -> bool:
+    """v0.5 onwards bundles the primary dashboard through Ingress."""
+    parsed = _parse(version)
+    return parsed is not None and parsed >= (0, 5, 0)

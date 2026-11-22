@@ -6,9 +6,9 @@ ito runs a [Reticulum](https://github.com/markqvist/Reticulum) node on your Home
 device. Reticulum is an encrypted, decentralised network that works over the internet today and,
 in later versions of ito, over radio as well.
 
-> ⚠ **Experimental.** This is the v0.1.0 local prototype. Do not depend on it yet.
+> ⚠ **Experimental.** This is experimental software. Do not depend on it yet.
 
-## What it does (v0.1.0)
+## What it does
 
 - Runs the **unmodified Reticulum reference implementation** (RNS 1.6.0) for you.
 - Connects to **peers you choose** — nothing else. With the default settings ito makes
@@ -23,22 +23,23 @@ below). It does not use radio.
 
 ## Installing and updating
 
-From the first release, ito installs from Home Assistant's own app store and updates under
-**Settings → Updates**, with no terminal or file copying (Home Assistant 2026.11 or newer). Step
-by step: `docs/getting-started.md` in the repository.
+Install ito from **Settings → Apps**, start it, then select **Open Web UI** or the **ito** sidebar
+entry. The dashboard is included and added by default. Configure connections and messaging under
+its **Settings** tab. Select **Save and apply** to save and restart automatically. No Marketplace
+installation or Devices & services setup is required for the dashboard or messaging.
 
-Until then, testers install it as a local app: `docs/install-local-prototype.md` in the
-repository.
+App updates update the dashboard, artwork and fonts together. Update the existing app in place
+so its identities, contacts, messages and settings are retained. Recent charts are held in memory
+and restart with the app. The optional Home Assistant integration adds entities, automations and
+recorder history; its separate updates are only needed if you use it.
 
-After the first successful start, switch on **Watchdog** on the app's Info tab (recommended).
-ito is designed so that the watchdog only restarts it if ito itself stops
-responding, never because your internet is down.
+Full guide: https://github.com/3LivesLeft/ito/blob/main/docs/getting-started.md
 
 ## Join a public network
 
 The quickest way to get connected. No addresses to type.
 
-1. Open the **Configuration** tab and choose one under **Public Reticulum network**:
+1. Open **ito → Settings** and choose one under **Public Reticulum network**:
 
    | Choice | Network | Run by | Address it connects to |
    |---|---|---|---|
@@ -51,7 +52,7 @@ The quickest way to get connected. No addresses to type.
    None of them needs a network name or passphrase. **Diamond** bans nodes that relay for 50
    remote peers or open more than 20 connections from one IP address, so do not combine it with
    transport mode (ito warns you if you do).
-2. **Save**, then **Restart** the app.
+2. **Save and apply**. ito restarts and reconnects automatically.
 3. In the **Log** tab, look for *"Public network: Ratspeak Emerald"* and then *"Connected to
    Ratspeak Emerald. Your node is online."* The network also appears as a peer, with its
    connection status, in the ito dashboard and in Home Assistant's entities.
@@ -64,12 +65,12 @@ A **peer** is another Reticulum node — for example a friend's node or your own
 Your own peers are used **together with** the public network you chose, if any. Leave the network
 on `custom` to connect only to them.
 
-1. Open the **Configuration** tab and add an entry under **Your own peers** (up to 10):
+1. Open **ito → Settings** and add an entry under **Your own peers** (up to 10):
    - **name**: anything you like, e.g. `Home peer`
    - **host**: the peer's address, e.g. `rns.example.org` or an IP address
    - **port**: the peer's port, e.g. `4242`
    - **network name** and **passphrase**: only if the peer's operator gave you them
-2. **Save**, then **Restart** the app.
+2. **Save and apply**. ito restarts and reconnects automatically.
 3. In the **Log** tab, look for *"Connected to Home peer. Your node is online."*
 
 ito keeps reconnecting automatically if a peer or your internet connection drops. Peers you
@@ -132,55 +133,22 @@ folder. ito will not start while the option is left on after a replacement.
 ito always stays "running" in Home Assistant while it waits for you, so that the watchdog
 does not restart it pointlessly.
 
-## Show ito's status in Home Assistant (the dashboard)
+## Optional Home Assistant integration
 
-This is optional and **off by default**.
-
-1. Install the ito integration once, from Home Assistant's Marketplace:
-   [open ito in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=3LivesLeft&repository=ito&category=integration).
-   Until ito is in the Marketplace's catalog, Home Assistant asks you to connect GitHub
-   first (read-only). If Home Assistant asks for a restart, use the repair it shows.
-2. Switch on **Show ito's status in Home Assistant** in the Configuration tab and restart
-   the app.
-3. Home Assistant shows **ito discovered** under Settings → Devices & services. Choose
-   **Add**.
-
-You get sensors for status, connectivity, peers, traffic, known paths, links relayed for others,
-processor and memory use and restarts. Home Assistant keeps their history and statistics itself. An
-example dashboard is in the repository (`docs/home-assistant/dashboard.yaml`).
-
-- **Status is read-only.** Home Assistant cannot control your node. With messaging on,
-  administrators can read and send messages and edit contacts in the Messages tab; nothing else.
-- **Private.** The status stays on Home Assistant's internal network, encrypted, and protected by
-  a key and a certificate that change every time the app starts. It contains no addresses, keys,
-  passphrases or network names. Nothing is sent anywhere else.
-- **How Home Assistant gets the key.** ito hands the key to Home Assistant through the
-  Supervisor. Newer Supervisors provide a local socket for this, and ito uses it
-  automatically. On current Supervisors the hand-over crosses the internal network without
-  encryption, so another installed app able to spoof on that network might read the key; this has
-  not been demonstrated. The status key only allows reading the status, until the next app start.
-  With messaging on, a separate messaging key travels the same way and would allow reading and
-  sending messages until the next app start (an accepted risk; Home Assistant keeps that key in
-  memory only). You can
-  reduce this risk with the Supervisor's advanced `app_drop_net_raw` feature flag.
-- **Honest numbers.** Anything Reticulum does not report is shown as "unknown". **Links relayed for
-  others** shows that transport mode is carrying other people's connections. It is not a count of
-  forwarded packets, which Reticulum does not report, so ito does not show one.
-- After an app restart, the sensors are unavailable briefly while Home Assistant receives the new
-  key. This happens by itself.
-- Home Assistant keeps the current key in its configuration (and so in its backups). It only allows
-  reading the status, and stops working at the next app start.
-
-Full details: `docs/home-assistant-integration.md` in the repository.
+The dashboard is already bundled in the app. Install the separate ito Marketplace integration
+only for entities, automations and long-term recorder history. In **ito → Settings**, enable
+**Share status with the optional Home Assistant integration**, then **Save and apply**. Accept
+the discovered ito entry under **Settings → Devices & services**. Its retained panel is called
+**ito history** with the current integration and app. Existing entities and recorder data remain.
 
 ## LXMF messaging (optional, experimental)
 
 ito can run an LXMF messaging service, so that apps such as Sideband can send it messages.
 It is **off** unless you switch it on.
 
-1. Open the **Configuration** tab and tick **Enable LXMF messaging**.
-2. Make sure **Show ito's status in Home Assistant** is on too (the Messages tab needs it).
-3. **Save**, then **Restart** the app. The log says `LXMF messaging: on`.
+1. Open **ito → Settings** and tick **Enable messaging**.
+2. You can leave the optional Home Assistant integration switched off.
+3. **Save and apply**. ito restarts and reconnects automatically. The log says `LXMF messaging: on`.
 4. Open **ito** in Home Assistant's sidebar → **Messages**. Copy ito's address and add
    it as a contact in your app.
 5. Choose **Add contact** and paste your app's own LXMF address (32 characters, shown in your app).
@@ -219,7 +187,7 @@ Reticulum if free storage falls below 200 MB.
 
 ## Security and privacy
 
-- No host networking, no published ports, no access to the Home Assistant or Supervisor APIs, no
+- No host networking, no published ports, no broad Home Assistant or Supervisor API permission, no
   extra privileges or devices. Runs as a dedicated non-root user.
 - No telemetry, analytics or "phone home".
 - Apps with elevated privileges (for example an SSH app with protection mode disabled) can read
