@@ -1229,6 +1229,236 @@
         "power-runtime"
       ],
       "page_type": "standard"
+    },
+    {
+      "id": "food-storage",
+      "title": "Emergency food storage",
+      "category": "food",
+      "path": "pages/food/storage.mu",
+      "description": "Store foods your household can eat without refrigeration or cooking.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-food-poison",
+        "gov-ready"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 721,
+      "sha256": "c7a78c58055e814f8ee701aa5403f26d63571952d584726332168e048738274d",
+      "related_pages": [
+        "food-power-cut"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-power-cut",
+      "title": "Food safety during a power cut",
+      "category": "food",
+      "path": "pages/food/power-cut.mu",
+      "description": "Keep fridge and freezer doors closed; check temperature with a thermometer.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-powercut",
+        "fsa-food-poison",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 925,
+      "sha256": "878d351acc8b4dc840cbfee9605fdde85406c7e751288e7010ec36bd6c1ce271",
+      "related_pages": [
+        "food-storage",
+        "shelter-camping"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-cooking",
+      "title": "Cooking without mains power",
+      "category": "food",
+      "path": "pages/food/cooking.mu",
+      "description": "Use food that needs no cooking when safe cooking or water is unavailable.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-powercut",
+        "fsa-cooking",
+        "wales-camping",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 974,
+      "sha256": "d8e20cdba736f12e59188cab99f4ed2d09ae908333dc3d472b2fbd53b9ab9950",
+      "related_pages": [
+        "food-hygiene",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-stoves",
+      "title": "Camping stove safety",
+      "category": "food",
+      "path": "pages/food/stoves.mu",
+      "description": "Use a camping stove outdoors, away from people, tents and flammable materials.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "wales-camping",
+        "gov-outdoor-fire",
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 858,
+      "sha256": "2f31aa27eb39b580d0dd9641c529b48d63623f1ab5dfe068b44b5c512a984a7c",
+      "related_pages": [
+        "shelter-camping",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-preservation",
+      "title": "Preserving food safely",
+      "category": "food",
+      "path": "pages/food/preservation.mu",
+      "description": "Use food storage methods and recipes from reliable, tested guidance.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-botulism",
+        "fsa-chilling",
+        "fsa-powercut"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 902,
+      "sha256": "d24ead7561b9dbded08dbd5c8ed35a424165b4e2e270340251c5adbdc7817dfd",
+      "related_pages": [
+        "food-storage",
+        "food-power-cut"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-planning",
+      "title": "Planning emergency meals",
+      "category": "food",
+      "path": "pages/food/planning.mu",
+      "description": "Choose familiar food that fits the household\u2019s needs and can be prepared safely.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready",
+        "fsa-powercut",
+        "fsa-food-poison"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 857,
+      "sha256": "d5b79e081f6b39fcef3b2ee2aea84a9473607015ff1b846941dc897fde2f1fdf",
+      "related_pages": [
+        "food-storage",
+        "food-power-cut"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-hygiene",
+      "title": "Preventing food contamination",
+      "category": "food",
+      "path": "pages/food/hygiene.mu",
+      "description": "Wash hands with soap and safe water before handling food and after using the toilet.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-cleaning",
+        "fsa-food-poison",
+        "fsa-powercut",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 868,
+      "sha256": "f5329f9303e885b799b384eeca9c8de4243cf2b3fef54458b2587aaf1f9845d2",
+      "related_pages": [
+        "water-safe-water",
+        "food-cooking"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-sanitation",
+      "title": "Emergency sanitation",
+      "category": "preparedness",
+      "path": "pages/preparedness/sanitation.mu",
+      "description": "If water or sewage services fail, follow the water company and local authority instructions.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-sanitation",
+        "gov-water-outage",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 990,
+      "sha256": "ddf297ac601436dfef2190e6939c0a58e2fe07d4d4a749ed0607bf411408ec8f",
+      "related_pages": [
+        "water-storage",
+        "food-hygiene"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-evacuation",
+      "title": "Emergency evacuation",
+      "category": "preparedness",
+      "path": "pages/preparedness/evacuation.mu",
+      "description": "Leave promptly when instructed or when staying places you in immediate danger.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-flood-during",
+        "met-weatherready",
+        "gov-flood"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 853,
+      "sha256": "b9e14024c8c8f00307bdf3727f197fcbc2bc61f59f61b53f27e295542d4af5cb",
+      "related_pages": [
+        "preparedness-kit",
+        "preparedness-flood"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-storm",
+      "title": "Preparing for a severe storm",
+      "category": "preparedness",
+      "path": "pages/preparedness/storm.mu",
+      "description": "Check warnings, secure loose items before weather worsens and stay away from hazards.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "met-weatherready",
+        "nationalgrid-safety",
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 922,
+      "sha256": "37e3dc0d14491afc48341fd16b10e07ebaae4db538d4b08a82d2e4702b1b5596",
+      "related_pages": [
+        "power-prepare",
+        "preparedness-evacuation"
+      ],
+      "page_type": "standard"
     }
   ]
 }

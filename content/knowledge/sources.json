@@ -487,6 +487,126 @@
       "url": "https://www.gov.uk/guidance/consumer-products-recycling-batteries-and-electrical-waste",
       "accessed": "2026-11-22",
       "limitations": "Disposal arrangements vary by location and battery type."
+    },
+    {
+      "id": "fsa-food-poison",
+      "organisation": "Food Standards Agency",
+      "title": "Food poisoning",
+      "url": "https://www.food.gov.uk/food-safety-and-hygiene/food-poisoning",
+      "accessed": "2026-11-22",
+      "limitations": "Use-by dates concern safety, not just quality."
+    },
+    {
+      "id": "fsa-chilling",
+      "organisation": "Food Standards Agency",
+      "title": "How to chill, freeze and defrost food safely",
+      "url": "https://www.food.gov.uk/print/pdf/node/195",
+      "accessed": "2026-11-22",
+      "limitations": "Household recommendations; follow current local notices."
+    },
+    {
+      "id": "fsa-cooking",
+      "organisation": "Food Standards Agency",
+      "title": "Cooking your food",
+      "url": "https://www.food.gov.uk/safety-hygiene/cooking-your-food",
+      "accessed": "2026-11-22",
+      "limitations": "Specific foods and vulnerable people may need additional precautions."
+    },
+    {
+      "id": "fsa-cleaning",
+      "organisation": "Food Standards Agency",
+      "title": "Cleaning",
+      "url": "https://www.food.gov.uk/print/pdf/node/194",
+      "accessed": "2026-11-22",
+      "limitations": "Use safe water and appropriate cleaning products."
+    },
+    {
+      "id": "fsa-botulism",
+      "organisation": "Food Standards Agency",
+      "title": "Botulism",
+      "url": "https://www.food.gov.uk/safety-hygiene/botulism-clostridium-botulinum",
+      "accessed": "2026-11-22",
+      "limitations": "Home preservation requires validated methods."
+    },
+    {
+      "id": "gov-water-outage",
+      "organisation": "UK Government",
+      "title": "Water supply interruptions or outages",
+      "url": "https://beready.campaign.gov.uk/be-informed-about-hazards/water-supply-interruptions-or-outages/",
+      "accessed": "2026-11-22",
+      "limitations": "Rainwater is not a potable supply."
+    },
+    {
+      "id": "gov-sanitation",
+      "organisation": "UK Government",
+      "title": "Water and sanitation: power outage",
+      "url": "https://www.gov.uk/government/publications/public-health-advice-from-uk-cmos-during-a-national-power-outage/water-and-sanitation-scripts-for-broadcast-media",
+      "accessed": "2026-11-22",
+      "limitations": "Guidance is for national power outages; follow local waste instructions."
+    },
+    {
+      "id": "gov-flood-during",
+      "organisation": "UK Government",
+      "title": "What to do before or during a flood",
+      "url": "https://www.gov.uk/help-during-flood",
+      "accessed": "2026-11-22",
+      "limitations": "Follow local evacuation and emergency service instructions."
+    },
+    {
+      "id": "met-weatherready",
+      "organisation": "Met Office",
+      "title": "Top tips to be WeatherReady",
+      "url": "https://weather.metoffice.gov.uk/warnings-and-advice/weatherready/top-tips-to-be-weatherready",
+      "accessed": "2026-11-22",
+      "limitations": "Forecasts and local risks can change."
+    },
+    {
+      "id": "os-map",
+      "organisation": "Ordnance Survey",
+      "title": "Map reading",
+      "url": "https://www.ordnancesurvey.co.uk/documents/resources/map-reading.pdf",
+      "accessed": "2026-11-22",
+      "limitations": "Map symbols and magnetic variation change; use the map\u2019s legend."
+    },
+    {
+      "id": "os-compass",
+      "organisation": "Ordnance Survey",
+      "title": "Compass bearings",
+      "url": "https://www.ordnancesurvey.co.uk/mapzone/map-skills/compass-bearings/page-three",
+      "accessed": "2026-11-22",
+      "limitations": "Magnetic declination varies by location and date."
+    },
+    {
+      "id": "rhs-containers",
+      "organisation": "Royal Horticultural Society",
+      "title": "Vegetables in containers",
+      "url": "https://www.rhs.org.uk/vegetables/containers",
+      "accessed": "2026-11-22",
+      "limitations": "Crop selection and timings vary with growing conditions."
+    },
+    {
+      "id": "rhs-water",
+      "organisation": "Royal Horticultural Society",
+      "title": "Watering vegetables and fruit",
+      "url": "https://www.rhs.org.uk/vegetables/watering",
+      "accessed": "2026-11-22",
+      "limitations": "Water needs vary by crop and conditions."
+    },
+    {
+      "id": "mre-safety",
+      "organisation": "Mountain Rescue England and Wales",
+      "title": "Stay safe",
+      "url": "https://www.mountain.rescue.org.uk/safety/",
+      "accessed": "2026-11-22",
+      "limitations": "Emergency procedure is for England and Wales; follow the call handler."
+    },
+    {
+      "id": "gov-flood-health",
+      "organisation": "UK Government",
+      "title": "How to recover from flooding",
+      "url": "https://www.gov.uk/government/publications/flooding-and-health-advice-for-frontline-responders/how-to-recover-from-flooding",
+      "accessed": "2026-11-22",
+      "limitations": "Flood water may contain sewage and chemicals."
     }
   ]
 }

@@ -6,3 +6,4 @@ Initial draft: independent safety review required.
 `[Fire and shelter`:/page/shelter/index.mu]
 `[Communications`:/page/communications/index.mu]
 `[Emergency power`:/page/power/index.mu]
+`[Food and cooking`:/page/food/index.mu]
