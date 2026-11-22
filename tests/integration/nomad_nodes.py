@@ -52,7 +52,7 @@ def remote(folder: Path, port: int, name: str) -> None:
     }
     cfg.write()
     args = [sys.executable, "-I", "-u", "-m", "nomadnet.nomadnet", "--daemon", "--console"]
-    os.execv(sys.executable, [*args, "--config", str(folder / "nn"), "--rnsconfig", str(folder / "rns")])
+    os.execv(sys.executable, [*args, "--config", str(folder / "nn"), "--rnsconfig", str(folder / "rns")])  # noqa: S606
 
 
 def emit(event: dict[str, Any]) -> None:
@@ -90,16 +90,18 @@ def fetcher(folder: Path, port: int) -> None:
         done = threading.Event()
         out: dict[str, Any] = {"result": "failed"}
 
-        def established(link: Any, path: str = command["path"], out: dict[str, Any] = out) -> None:
-            def response(receipt: Any) -> None:
+        def established(
+            link: Any, path: str = command["path"], out: dict[str, Any] = out, done: threading.Event = done
+        ) -> None:
+            def response(receipt: Any, done: threading.Event = done) -> None:
                 data = receipt.response
                 out["result"] = "ok" if isinstance(data, bytes) else "empty"
                 out["content"] = data.decode("utf-8", "replace") if isinstance(data, bytes) else None
                 done.set()
 
-            link.request(path, None, response_callback=response, failed_callback=lambda _r: done.set(), timeout=20)
+            link.request(path, None, response_callback=response, failed_callback=lambda _r, d=done: d.set(), timeout=20)
 
-        link = RNS.Link(destination, established_callback=established, closed_callback=lambda _l: done.set())
+        link = RNS.Link(destination, established_callback=established, closed_callback=lambda _l, d=done: d.set())
         done.wait(40)
         link.teardown()
         emit({"event": "fetched", "tag": command["tag"], **out})

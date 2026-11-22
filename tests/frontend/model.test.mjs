@@ -181,9 +181,9 @@ test("frontend files make no external requests and never use innerHTML", () => {
 
 test("the frontend folder holds only code and the bundled Inter font with its licence", () => {
   const top = readdirSync(FRONTEND).sort();
-  assert.deepEqual(top, ["brand-mark.js", "fonts", "fonts.js", "ingress.js", "meshbeacon-panel.js", "model.js", "page.css", "sources", "tokens.js", "ui"]);
+  assert.deepEqual(top, ["brand-mark.js", "fonts", "fonts.js", "ingress.js", "meshbeacon-panel.js", "micron.js", "model.js", "page.css", "sources", "tokens.js", "ui"]);
   assert.deepEqual(readdirSync(new URL("sources/", FRONTEND)).sort(), ["hass.js", "ingress.js", "messaging.js", "snapshot.js"]);
-  assert.deepEqual(readdirSync(new URL("ui/", FRONTEND)).sort(), ["components.js", "controller.js", "dom.js", "messages.js", "settings.js", "style.js", "views.js"]);
+  assert.deepEqual(readdirSync(new URL("ui/", FRONTEND)).sort(), ["components.js", "controller.js", "dom.js", "messages.js", "pages.js", "settings.js", "style.js", "views.js"]);
   const fonts = readdirSync(new URL("fonts/inter-5.3.0/", FRONTEND)).sort();
   assert.deepEqual(fonts, [
     "OFL.txt",

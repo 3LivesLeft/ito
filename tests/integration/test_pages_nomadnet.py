@@ -81,7 +81,7 @@ class World:
                 "8",
             ]
         )
-        wait_for(lambda: self.socket.exists(), 60, why=lambda: self.lines(self.service))  # type: ignore[arg-type]
+        wait_for(self.socket.exists, 60, why=lambda: self.lines(self.service))  # type: ignore[arg-type]
 
     def stop_service(self) -> None:
         assert self.service is not None
