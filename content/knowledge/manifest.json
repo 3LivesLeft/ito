@@ -1,0 +1,228 @@
+{
+  "version": "0.1.0-draft",
+  "pages": [
+    {
+      "id": "water-safe-water",
+      "title": "Making water safe",
+      "category": "water",
+      "path": "pages/water/safe-water.mu",
+      "description": "Use a known safe supply first. Follow the water supplier\u2019s notice.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water",
+        "dwi"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 724,
+      "sha256": "003b13c439c153efaf0087f7871b8a710a90a361e154498ffed6046ddb0fa572",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-sources",
+      "title": "Finding emergency water",
+      "category": "water",
+      "path": "pages/water/sources.mu",
+      "description": "Use water from a confirmed safe source.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water",
+        "cdc-storage"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 714,
+      "sha256": "a360ea6cf108c177853feee73a180f1ab0d1346e2b73d06002b0770353d9601c",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-boiling",
+      "title": "Boiling water",
+      "category": "water",
+      "path": "pages/water/boiling.mu",
+      "description": "Boiling kills disease-causing germs; it does not remove chemical pollution.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water",
+        "dwi"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 641,
+      "sha256": "47c6c5befdcf9c8e234482452f39543c94ce2926c5ca905c267855bb2e3b837d",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-filtration",
+      "title": "Water filters and their limits",
+      "category": "water",
+      "path": "pages/water/filtration.mu",
+      "description": "A clear-looking drink can still be unsafe.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 674,
+      "sha256": "b238973d48b055b407bc82319cfee0c39df4f82f66da4da56829f1cb722b7151",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-disinfection",
+      "title": "Chemical disinfection",
+      "category": "water",
+      "path": "pages/water/disinfection.mu",
+      "description": "Use only a product labelled for drinking water and follow its instructions.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 745,
+      "sha256": "18dd16e291ca7c1cb141ec2af0e3af5a3d3f6e3b9cf2421966ff7825185e3f27",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-storage",
+      "title": "Storing drinking water",
+      "category": "water",
+      "path": "pages/water/storage.mu",
+      "description": "Store safe drinking water in clean, food-grade containers with tight lids.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-storage",
+        "lfb-kit"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 727,
+      "sha256": "33f416a33412cdd8ecca0758e3a1d5aedc3151f865c47e0c1cdad32fef4fc487",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-rainwater",
+      "title": "Collecting rainwater",
+      "category": "water",
+      "path": "pages/water/rainwater.mu",
+      "description": "Rainwater from a roof or water butt is not safe to drink untreated.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 640,
+      "sha256": "05ed1579bacd944d6cde5f24d21708864143d7091e8ae066337fa6f3e6cdda07",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-dehydration",
+      "title": "Recognising dehydration",
+      "category": "water",
+      "path": "pages/water/dehydration.mu",
+      "description": "Offer safe fluids early if the person is awake and able to swallow.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-dehydration"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 739,
+      "sha256": "2984c8e439359b6f2eddbc5330a617c00b6cda4696ed228e098666631e3ac391",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-kit",
+      "title": "Household emergency kit",
+      "category": "preparedness",
+      "path": "pages/preparedness/kit.mu",
+      "description": "Keep essential supplies together where everyone can find them.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready",
+        "lfb-kit"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 701,
+      "sha256": "00b6d8be7ccd42b4cdb3cd455c5bca32fb4f1b1ce8fa1614bcd9a69e899c1242",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-plan",
+      "title": "Household emergency plan",
+      "category": "preparedness",
+      "path": "pages/preparedness/plan.mu",
+      "description": "Agree how to contact each other and where to meet.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 653,
+      "sha256": "7975dd06d0b06f8f4b2cc4927b0215c49c95dae03fdd852bec7838510eb4bdb2",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-power-cut",
+      "title": "During a power cut",
+      "category": "preparedness",
+      "path": "pages/preparedness/power-cut.mu",
+      "description": "Check whether neighbours are affected and report the fault.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-power",
+        "gov-ready"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 749,
+      "sha256": "038fd4bbc4ae9ad501d0fb900bb8ef548c89e5ac78b7495a06a73c1fddd7add0",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-flood",
+      "title": "Preparing for flooding",
+      "category": "preparedness",
+      "path": "pages/preparedness/flood.mu",
+      "description": "If in immediate danger call 999. Never walk or drive through floodwater.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-flood",
+        "gov-ready"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 717,
+      "sha256": "a02fa71a52af5fa320ac1cd4234dc9dd4aa00b59aefb70fb88953453af6465bc",
+      "related_pages": [],
+      "page_type": "standard"
+    }
+  ]
+}

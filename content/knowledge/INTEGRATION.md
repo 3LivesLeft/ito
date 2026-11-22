@@ -1,0 +1,15 @@
+# Integration handover — draft
+
+The package is unfinished and every safety-critical page requires independent review before publication. Pages are static UTF-8 Micron under pages/; manifest.json contains IDs, descriptions, versions, review status, sources, byte sizes and SHA-256 hashes. sources.json holds attribution and limitations. Nothing in a served page requires network access beyond the Reticulum path used to fetch it. Copy the entire pages tree into the Nomad page root so `/page/index.mu` and `/page/<category>/...` resolve. If instead mounted under a prefix, rewrite every target consistently and revalidate. Do not overwrite an existing node index without an explicit product decision.
+
+Announce or otherwise provide the node's actual Nomad destination address; same-node links intentionally omit it. Verify the precise implementation's request mapping and client compatibility. A user must choose and trust a host; a hash identifies an endpoint, not a guarantee that its content is accurate. Host mirrors independently and allow selection of categories. Do not automatically replicate or announce every page. A selective subset needs regenerated indexes and links.
+
+Cache pages on the receiving device and support offline cached reading. Key cache entries by verified host identity, canonical request path, content version and digest, with sensible expiry and a user-visible stale status. Nomad's guide describes a default cache lifetime of 12 hours; clients may differ. Never imply a digest alone authenticates a source: obtain signed manifests or trusted update channels and protect signing keys in a future design. Verify hashes before replacing content, preserve last-known-good data, support rollback and record provenance. Hash metadata is not a signature.
+
+Serve only allowed canonical paths within the static directory; reject traversal, symlinks escaping the root, malformed encodings and excessively large requests/files. Do not execute content, interpret shell commands or render untrusted active content. Limit concurrent and repeated requests and bound resource use. Show host identity and content age. Place warnings in pages, not just metadata. No automatic internet, DNS or external asset dependency.
+
+Keep pages small, prioritise emergency actions, allow opt-in hosting and caching; respect local duty-cycle and power rules and network congestion. Updates should avoid retransmitting unchanged pages; no synchronisation is implemented here.
+
+Future dashboard: browse local and cached pages, opt in/out of hosting, show serving status and destination, selected categories, version and last update, and offer verified updates. No dashboard implementation is included.
+
+Integration acceptance tests (all pending implementation): local Nomad access; remote Reticulum access; LoRa and, where possible, multi-hop; internet disconnected; interrupted transfers and retries; cached access offline and stale warnings; invalid/traversal requests; broken links; different host addresses and mirrors; selective category indexes; safe update and rollback. Real radio performance is unmeasured.

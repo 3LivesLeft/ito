@@ -1,0 +1,68 @@
+{
+  "sources": [
+    {
+      "id": "cdc-water",
+      "organisation": "CDC",
+      "title": "How to Make Water Safe in an Emergency",
+      "url": "https://www.cdc.gov/water-emergency/about/index.html",
+      "accessed": "2026-11-22",
+      "limitations": "US guidance; altitude in feet; use local authority notices first."
+    },
+    {
+      "id": "cdc-storage",
+      "organisation": "CDC",
+      "title": "How to Create an Emergency Water Supply",
+      "url": "https://www.cdc.gov/water-emergency/about/how-to-create-and-store-an-emergency-water-supply.html",
+      "accessed": "2026-11-22",
+      "limitations": "US bleach concentrations and container advice; label directions vary."
+    },
+    {
+      "id": "dwi",
+      "organisation": "Drinking Water Inspectorate",
+      "title": "Receiving a Boil Water Notice",
+      "url": "https://www.dwi.gov.uk/receiving-a-boil-water-notice/",
+      "accessed": "2026-11-22",
+      "limitations": "Follow water supplier local notices."
+    },
+    {
+      "id": "nhs-dehydration",
+      "organisation": "NHS",
+      "title": "Dehydration",
+      "url": "https://www.nhs.uk/conditions/dehydration/",
+      "accessed": "2026-11-22",
+      "limitations": "England contact numbers; assessment differs by age."
+    },
+    {
+      "id": "gov-ready",
+      "organisation": "UK Government",
+      "title": "Be ready for emergencies",
+      "url": "https://beready.campaign.gov.uk/be-ready-for-emergencies/",
+      "accessed": "2026-11-22",
+      "limitations": "England / UK contact arrangements can vary."
+    },
+    {
+      "id": "gov-power",
+      "organisation": "UK Government",
+      "title": "Power cuts",
+      "url": "https://beready.campaign.gov.uk/be-informed-about-hazards/power-cuts/",
+      "accessed": "2026-11-22",
+      "limitations": "Check locally for current arrangements."
+    },
+    {
+      "id": "gov-flood",
+      "organisation": "GOV.UK",
+      "title": "Prepare for flooding: protect your property",
+      "url": "https://www.gov.uk/prepare-for-flooding/protect-your-property",
+      "accessed": "2026-11-22",
+      "limitations": "England flooding advice; only isolate utilities if safe."
+    },
+    {
+      "id": "lfb-kit",
+      "organisation": "London Fire Brigade",
+      "title": "Be Ready",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/be-ready/",
+      "accessed": "2026-11-22",
+      "limitations": "Water estimate is for drinking; household needs vary."
+    }
+  ]
+}
