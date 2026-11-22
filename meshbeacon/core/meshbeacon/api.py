@@ -299,12 +299,13 @@ class RelayLink:
             value = json.loads(data.split(b"\n", 1)[0])
         except ValueError as exc:
             raise RelayRefusedError("bad reply") from exc
-        if isinstance(value, dict) and request.get("op") in {
+        op = request.get("op") if isinstance(request, dict) else None
+        if isinstance(value, dict) and op in (
             "config_read",
             "config_save",
             "app_restart",
             "sidebar_enable",
-        }:
+        ):
             return value
         if not isinstance(value, dict) or value.get("ok") is not True:
             raise RelayRefusedError(str(value.get("error", "refused")) if isinstance(value, dict) else "refused")
