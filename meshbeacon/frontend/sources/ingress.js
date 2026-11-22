@@ -34,3 +34,9 @@ export class IngressMessaging extends HassMessaging {
     }, 5_000);
   }
 }
+
+export async function loadKnowledgeBundle() {
+  const response = await fetch(new URL("../knowledge.json", import.meta.url));
+  if (!response.ok) throw new Error("Library unavailable");
+  return response.json();
+}

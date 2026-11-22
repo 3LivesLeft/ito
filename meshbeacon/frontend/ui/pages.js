@@ -127,8 +127,8 @@ export class PagesView {
    * @param {(path: string, body?: object) => Promise<object>} o.request the dashboard API
    * @param {() => Promise<void>} [o.onEnable] switches the option on and applies it
    */
-  constructor({ request, onEnable = null, bundledLibrary = false, now = () => Date.now() }) {
-    Object.assign(this, { request, onEnable, bundledLibrary, now });
+  constructor({ request, onEnable = null, loadKnowledge = null, now = () => Date.now() }) {
+    Object.assign(this, { request, onEnable, loadKnowledge, now });
     this.data = null; // the last overview
     this.nodes = [];
     this.history = [];
@@ -178,11 +178,7 @@ export class PagesView {
   async readKnowledge(path = "/page/ito-guide--index.mu") {
     this.libraryViewer.hidden = false;
     try {
-      this.libraryBundle ??= await fetch(new URL("../knowledge.json", import.meta.url))
-        .then((response) => {
-          if (!response.ok) throw new Error("Library unavailable");
-          return response.json();
-        });
+      this.libraryBundle ??= await this.loadKnowledge();
       const filename = path.slice("/page/".length);
       const { pages, version } = this.libraryBundle;
       if (!Object.hasOwn(pages, filename)) throw new Error("Page unavailable");
@@ -300,7 +296,7 @@ export class PagesView {
     this.host = h("div", { class: "host hidden", style: "display:grid;gap:var(--mb-space-lg)" },
       h("div", { class: "card", style: "display:grid;gap:12px" },
         h("h2", { text: "Publish your own pages" }), this.hostState, this.hostMessage, this.addressBox,
-        ...(this.bundledLibrary ? [h("label", {}, this.libraryShare, "Share knowledge library over Nomad"), this.libraryAddress, this.libraryFeedback] : []),
+        ...(this.loadKnowledge ? [h("label", {}, this.libraryShare, "Share knowledge library over Nomad"), this.libraryAddress, this.libraryFeedback] : []),
         h("div", { class: "row" }, this.hostToggle)),
       h("div", { class: "card" }, site),
       this.editor,
@@ -308,7 +304,7 @@ export class PagesView {
         h("div", { class: "bar" }, h("h2", { text: "Your pages" }), h("button", { type: "button", text: "New page", onclick: () => this.openEditor(null) })),
         this.pagesFeedback, this.pagesList));
 
-    this.element.append(h("style", { text: PAGES_STYLE }), ...(this.bundledLibrary ? [library] : []), this.off, this.modeBar, this.serviceLine, this.browse, this.host);
+    this.element.append(h("style", { text: PAGES_STYLE }), ...(this.loadKnowledge ? [library] : []), this.off, this.modeBar, this.serviceLine, this.browse, this.host);
     this._marks = "";
     this._nodes = "";
     this._pages = "";
