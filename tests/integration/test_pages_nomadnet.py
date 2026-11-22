@@ -205,3 +205,74 @@ def test_hosts_pages_with_the_upstream_daemon_for_other_nodes(world: World) -> N
     world.ask({"op": "sync", "hosting": True, "node_name": "ito test node", "log_level": "normal"})
     again = wait_for(lambda: (s := world.ask({"op": "status"}))["hosting"]["state"] == "running" and s, 60)
     assert again["hosting"]["address"] == address
+
+
+def test_bundled_library_is_discoverable_from_nomad_homepage(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    import RNS
+
+    from meshbeacon.pages import nomadconfig
+
+    from .lxmf_nodes import write_config
+
+    bundle = Path(__file__).resolve().parents[2] / "meshbeacon/frontend/knowledge.json"
+    monkeypatch.setattr(store_mod, "KNOWLEDGE_BUNDLE", bundle)
+    assert world.store.handle({"op": "site_save", "node_name": "Library test"})["ok"]
+    assert world.store.handle({"op": "hosting", "enabled": True})["ok"]
+    assert world.store.handle({"op": "share_knowledge", "enabled": True})["ok"]
+
+    folder = world.root / "standalone"
+    port = free_port()
+    listener = {"type": "TCPServerInterface", "enabled": "yes", "listen_ip": "127.0.0.1", "listen_port": str(port)}
+    write_config(folder / "rns", {"share_instance": "No"}, {"Listener": listener})
+    config = folder / "nomad"
+    config.mkdir()
+    files = folder / "files"
+    files.mkdir()
+    (config / "config").write_text(nomadconfig.render("Library test", world.store.public, files))
+
+    daemon = world.start(
+        [
+            sys.executable,
+            "-I",
+            "-u",
+            "-m",
+            "nomadnet.nomadnet",
+            "--daemon",
+            "--console",
+            "--config",
+            str(config),
+            "--rnsconfig",
+            str(folder / "rns"),
+        ]
+    )
+    identity_file = config / "storage" / "identity"
+    wait_for(identity_file.is_file, 15, why=lambda: world.lines(daemon))
+    identity = RNS.Identity.from_file(str(identity_file))
+    address = RNS.Destination.hash(identity, "nomadnetwork", "node").hex()
+    fetcher = world.start(
+        [*PY, "-m", "tests.integration.nomad_nodes", "fetcher", str(world.root / "fetcher"), str(port)],
+        stdin=True,
+    )
+    fetcher.wait_event(lambda e: e.get("event") == "ready", 60)
+
+    def fetch(path: str, tag: str) -> dict[str, Any]:
+        fetcher.send({"address": address, "path": path, "tag": tag})
+        return fetcher.wait_event(lambda e: e.get("event") == "fetched" and e.get("tag") == tag, 60)
+
+    home = fetch("/page/index.mu", "home")
+    assert home["result"] == "ok"
+    library_path = "/page/ito-guide--index.mu"
+    assert f":{library_path}]" in home["content"]
+    library = fetch(library_path, "library")
+    assert library["result"] == "ok"
+    category_path = "/page/ito-guide--water-index.mu"
+    assert f":{category_path}]" in library["content"]
+    category = fetch(category_path, "water")
+    assert category["result"] == "ok"
+    guide_path = "/page/ito-guide--water-boiling.mu"
+    assert f":{guide_path}]" in category["content"]
+    assert fetch(guide_path, "guide")["content"].startswith(">Boiling water")
+    assert world.store.handle({"op": "share_knowledge", "enabled": False})["ok"]
+    assert library_path not in fetch("/page/index.mu", "sharing-off")["content"]
+    assert fetch(guide_path, "guide-off")["result"] != "ok"
+    assert daemon.p.poll() is None

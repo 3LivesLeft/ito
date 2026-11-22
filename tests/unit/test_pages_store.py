@@ -171,8 +171,14 @@ def test_bundled_library_sharing_and_upgrade(store: Store, monkeypatch: pytest.M
     ok(store.handle({"op": "site_save", "node_name": "Test node"}))
     ok(store.handle({"op": "hosting", "enabled": True}))
     assert not (store.public / filename).exists()
+    homepage = store.public / "index.mu"
+    original = homepage.read_bytes()
+    ok(store.handle({"op": "page_save", "id": "index", "title": "Welcome", "content": ">Unpublished edit"}))
     ok(store.handle({"op": "share_knowledge", "enabled": True}))
     assert (store.public / filename).read_text() == ">Version one"
+    assert homepage.read_bytes() == store_mod.KNOWLEDGE_HOME_LINK.encode() + original
+    assert store.view()["pages"][0]["changed"] is True
+    assert ok(store.handle({"op": "page_get", "id": "index"}))["content"] == ">Unpublished edit"
     assert public_files_are_safe(store.public)
     assert [page["id"] for page in store.view()["pages"]] == ["index"]
 
@@ -187,4 +193,4 @@ def test_bundled_library_sharing_and_upgrade(store: Store, monkeypatch: pytest.M
     assert (store.public / filename).exists()
     ok(restarted.handle({"op": "share_knowledge", "enabled": False}))
     assert not (store.public / filename).exists()
-    assert (store.public / "index.mu").exists()
+    assert homepage.read_bytes() == original

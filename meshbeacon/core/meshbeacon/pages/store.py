@@ -123,6 +123,7 @@ def slug(title: str, taken: set[str]) -> str:
 
 
 KNOWLEDGE_BUNDLE = Path("/usr/share/meshbeacon/frontend/knowledge.json")
+KNOWLEDGE_HOME_LINK = "`[Browse the ito knowledge library`:/page/ito-guide--index.mu]\n\n"
 KNOWLEDGE_FILE = re.compile(r"ito-guide--[a-z0-9-]{1,29}\.mu")
 
 
@@ -202,18 +203,39 @@ class Store:
         try:
             if not stat.S_ISREG(path.lstat().st_mode):
                 return None
-            return path.read_bytes()[:MAX_CONTENT].decode("utf-8", "replace")
+            limit = MAX_CONTENT
+            if pid == "index" and folder == self.public:
+                limit += len(KNOWLEDGE_HOME_LINK.encode())
+            return path.read_bytes()[:limit].decode("utf-8", "replace")
         except OSError:
             return None
 
     def _publish_file(self, pid: str, content: str) -> None:
         fsutil.atomic_write(self.public / f"{pid}.mu", content.encode(), mode=PUBLIC_MODE, group=self.gid)
 
+    @staticmethod
+    def _knowledge_home(content: str, wanted: bool) -> str:
+        # Leave leading Micron directives in place, including cache settings.
+        directives = re.match(r"(?:#![^\n]*\n)*", content)
+        offset = directives.end() if directives else 0
+        body = content[offset:].removeprefix(KNOWLEDGE_HOME_LINK)
+        return content[:offset] + (KNOWLEDGE_HOME_LINK if wanted else "") + body
+
+    def _sync_knowledge_home(self, wanted: bool) -> None:
+        live = self._read(self.public, "index")
+        if live is None:
+            return
+        updated = self._knowledge_home(live, wanted)
+        if updated != live:
+            self._publish_file("index", updated)
+
     # -- views -----------------------------------------------------------------------------------
     def _pages(self, site: dict[str, Any]) -> list[dict[str, Any]]:
         out = []
         for pid, meta in site["pages"].items():
             draft, live = self._read(self.drafts, pid), self._read(self.public, pid)
+            if pid == "index" and live is not None and site["hosting"] and site["share_knowledge"]:
+                live = self._knowledge_home(live, False)
             out.append(
                 {
                     "id": pid,
@@ -264,12 +286,16 @@ class Store:
                 raise StoreError("invalid", "The library contains a conflicting page name.")
         self._library_synced = None
         self._prepare()
+        if not wanted:
+            self._sync_knowledge_home(False)
         for entry in self.public.glob("ito-guide--*.mu"):
             if KNOWLEDGE_FILE.fullmatch(entry.name) and entry.stem not in site["pages"] and entry.name not in desired:
                 entry.unlink()
         for name in sorted(desired, key=lambda name: name == "ito-guide--index.mu"):
             item = desired[name]
             self._publish_file(name[:-3], item["content"])
+        if wanted:
+            self._sync_knowledge_home(True)
         self._library_synced = wanted
 
     # -- operations ----------------------------------------------------------------------------
@@ -307,7 +333,10 @@ class Store:
             return {}
         if op == "page_publish":
             pid = self._page_id(request, site)
-            self._publish_file(pid, self._read(self.drafts, pid) or "")
+            content = self._read(self.drafts, pid) or ""
+            if pid == "index" and site["hosting"] and site["share_knowledge"]:
+                content = self._knowledge_home(content, True)
+            self._publish_file(pid, content)
             site["pages"][pid]["published"] = self.clock()
             self._save(site)
             return {}
