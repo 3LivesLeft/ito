@@ -143,7 +143,14 @@ def test_a_damaged_site_file_never_breaks_the_store(store: Store) -> None:
     store.site_file.write_text(
         json.dumps({"pages": {"../x": {"title": "bad"}, "ok": {"title": 5}}, "node_name": "a\nb"})
     )
-    assert store.view() == {"hosting": False, "share_knowledge": False, "node_name": "", "description": "", "pages": [], "bookmarks": []}
+    assert store.view() == {
+        "hosting": False,
+        "share_knowledge": False,
+        "node_name": "",
+        "description": "",
+        "pages": [],
+        "bookmarks": [],
+    }
 
 
 def test_node_names_and_micron_escaping() -> None:

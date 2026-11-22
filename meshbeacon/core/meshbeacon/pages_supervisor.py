@@ -37,7 +37,16 @@ HEALTH_INTERVAL, HEALTH_TIMEOUT, HEALTH_MISSES = 10.0, 15.0, 3
 FETCH_TIMEOUT = 40.0  # the service's own limit is 30 s; under the dashboard's 45 s deadline
 STOP_GRACE = 10.0
 STORE_OPS = frozenset(
-    {"page_get", "page_save", "page_delete", "page_publish", "page_unpublish", "site_save", "hosting", "share_knowledge"}
+    {
+        "page_get",
+        "page_save",
+        "page_delete",
+        "page_publish",
+        "page_unpublish",
+        "site_save",
+        "hosting",
+        "share_knowledge",
+    }
     | {"bookmark_add", "bookmark_remove"}
 )
 WRITE_LIMIT, FETCH_LIMIT, READ_LIMIT = (60, 60.0), (30, 60.0), (240, 60.0)
