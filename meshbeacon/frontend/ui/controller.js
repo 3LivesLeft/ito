@@ -24,8 +24,9 @@ export class InterfaceController {
    * @param {object} [o.messages] the Messages view (ui/messages.js), when the delivery offers messaging
    * @param {(shown: boolean) => void} [o.onMessages] told when the Messages view is shown or hidden
    */
-  constructor({ root, source, copy, headerExtras = () => [], onNavigate = () => {}, onRetry = () => {}, messages = null, onMessages = () => {}, settings = null }) {
-    Object.assign(this, { root, source, copy, headerExtras, onNavigate, onRetry, messages, onMessages, settings });
+  constructor({ root, source, copy, headerExtras = () => [], onNavigate = () => {}, onRetry = () => {}, messages = null, onMessages = () => {}, settings = null, pages = null }) {
+    Object.assign(this, { root, source, copy, headerExtras, onNavigate, onRetry, messages, onMessages, settings, pages });
+    this._pagesShown = false;
     this.unread = () => 0;
     this._messagesShown = false;
     // Persistent slots: the Messages view stays mounted across renders, so a message being written,
@@ -87,7 +88,7 @@ export class InterfaceController {
   tabs() {
     const hasMessaging = Boolean(this.messages && this.source.messaging && this.source.messaging());
     const available = this.settings ? [...TABS, { key: "settings", label: "Settings" }] : TABS;
-    return available.filter((t) => t.key !== "messages" || hasMessaging).map((t) => {
+    return available.filter((t) => (t.key !== "messages" || hasMessaging) && (t.key !== "pages" || this.pages)).map((t) => {
       const unread = t.key === "messages" ? this.unread() : 0;
       return unread ? { ...t, label: `${t.label} (${unread > 99 ? "99+" : unread})` } : t;
     });
@@ -104,6 +105,11 @@ export class InterfaceController {
       this._messagesShown = messagesShown;
       this.onMessages(messagesShown);
     }
+    const pagesShown = phase === "ready" && tab === "pages" && Boolean(this.pages);
+    if (pagesShown !== this._pagesShown) {
+      this._pagesShown = pagesShown;
+      this.pages?.show(pagesShown);
+    }
     if (phase === "error") main = message({ ...this.copy.loadError(this.source.error), alert: true, action: { label: "Try again", onClick: this.onRetry } });
     else if (phase === "loading") main = skeletonPage("Loading ito");
     else if (phase === "empty") main = message(this.copy.notSetUp);
@@ -112,6 +118,10 @@ export class InterfaceController {
       if (tab === "settings" && this.settings) {
         const current = this._slots.main.firstElementChild;
         main = current && current.dataset.tab === "settings" ? current : h("main", { id: "content", role: "tabpanel", "data-tab": "settings" }, this.settings.element);
+      } else if (pagesShown) {
+        // Persistent, like Messages: the page being edited or read survives live updates.
+        const current = this._slots.main.firstElementChild;
+        main = current && current.dataset.tab === "pages" ? current : h("main", { id: "content", role: "tabpanel", "data-tab": "pages" }, this.pages.element);
       } else if (messagesShown) {
         this.messages.update({ summary: this.source.messaging(), language: this.source.language, now: Date.now() });
         const current = this._slots.main.firstElementChild;

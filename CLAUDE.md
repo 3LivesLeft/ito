@@ -133,6 +133,10 @@ docs/adr/0024-messaging-in-home-assistant.md  M5: Messages tab, messaging key (m
                                    contact store and history in the engine's queue.db
 custom_components/meshbeacon/conversations.py  M5 admin-only websocket commands + live updates
 docs/adr/0025-rename-to-ito.md     user-facing name ito; meshbeacon identifiers kept; provisional art
+docs/adr/0027-nomad-network-pages.md  v0.6 Nomad Network pages: upstream nomadnet daemon (GPL-3.0,
+                                   separate program) for hosting, ito's pages service for browsing
+meshbeacon/core/meshbeacon/pages/  pages service (mb-nomad), content store, daemon configuration
+custom_components/meshbeacon/frontend/micron.js, ui/pages.js  safe micron reader, Pages tab
 project.yaml                       project identifiers (name, slug, repository, image) in one place
 tools/check_release.py             release-layout check (app store, Marketplace, versions)
 tools/verify_image.py              release-candidate image check (platforms, labels, SBOM, reproducible)

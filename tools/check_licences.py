@@ -64,6 +64,11 @@ REVIEWED = {
     "rns": "LicenseRef-Reticulum",
     "lxmf": "LicenseRef-Reticulum",
     "pyserial": "BSD-3-Clause",  # verified from the 3.5 sdist LICENSE.txt
+    # v0.6 (ADR 0027), verified from the wheels' licence files. nomadnet's PyPI classifier says
+    # MIT, but its LICENSE and README are GPL-3.0: the licence file is the authority.
+    "nomadnet": "GPL-3.0-only",
+    "urwid": "LGPL-2.1-only",
+    "wcwidth": "MIT",
     "meshbeacon": "Apache-2.0",
     "python": "PSF-2.0",  # CPython built from source by the HA base image
     ".python-rundeps": "NONE-META",  # Alpine virtual package: a dependency list, no content
@@ -100,7 +105,13 @@ def identifiers(expression: str) -> set[str]:
     return {ALIASES.get(i, i) for i in ids}
 
 
+# Packages whose own metadata misstates the licence: the reviewed licence wins over the SBOM's.
+OVERRIDDEN = {"nomadnet"}
+
+
 def package_licence(pkg: dict) -> str:
+    if str(pkg.get("name", "")).lower() in OVERRIDDEN:
+        return REVIEWED[str(pkg["name"]).lower()]
     for key in ("licenseConcluded", "licenseDeclared"):
         value = pkg.get(key)
         if value and value not in ("NOASSERTION", "NONE"):

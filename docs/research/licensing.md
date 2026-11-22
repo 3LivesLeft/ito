@@ -98,6 +98,13 @@ generated SBOM** (§5) before publication:
 - MeshBeacon executes GPL tools in the base image (bash, BusyBox) only as **separate programs**.
   This is "mere aggregation"; it does not make MeshBeacon a derivative of them. It does create
   distribution obligations for those components (§5).
+- **[Verified]** (v0.6, ADR 0027) Nomad Network 1.5.0 is **GPL-3.0** (its wheel's `LICENSE` and
+  README; its PyPI classifier wrongly says MIT). ito installs the unmodified wheel and runs it only
+  as a separate program (`nomadnet --daemon`), never importing or linking it: mere aggregation, as
+  with BusyBox and bash. Its dependencies `urwid` (LGPL-2.1-only) and `wcwidth` (MIT) are
+  installed unmodified. The wheels are Python source, so the corresponding source for these is the
+  installed files themselves; they are added to O5 and to `THIRD_PARTY_NOTICES`. ito's micron
+  reader (`micron.js`) and page fetching are written for ito and copy no Nomad Network code.
 - **[Verified]** Rathole (GPL-3.0), Sideband (CC BY-NC-SA 4.0) and RNode firmware (GPL-3.0) are
   **not** distributed, so impose no obligations. CC BY-NC-SA's non-commercial term is
   incompatible with Apache-2.0 redistribution — another reason never to reuse Sideband code.

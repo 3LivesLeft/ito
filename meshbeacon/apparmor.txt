@@ -96,6 +96,11 @@ profile meshbeacon flags=(attach_disconnected,mediate_deleted) {
   # The shared instance's RPC key while messaging is on (ADR 0023): written by root's init step,
   # read by Reticulum's user and the engine's user through the group mb-rpc (0750/0640).
   /run/meshbeacon-rpc/{,**} rw,
+  # Nomad Network pages' socket (v0.6, ADR 0027; created only when pages are on). File modes
+  # (mb-nomad:mb-page 0750) keep Reticulum's and messaging's users out; nothing here runs. The
+  # published pages in /data/pages are covered by the /data rule above and, like all of /data,
+  # can never be executed: Nomad Network runs executable pages as scripts, and AppArmor refuses.
+  /run/meshbeacon-pages/{,**} rw,
   /dev/tty rw,
 
   # The Supervisor's per-app socket (newer Supervisors; used only by the discovery relay).

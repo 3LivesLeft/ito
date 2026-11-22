@@ -94,6 +94,8 @@ export class SettingsView {
         field("messaging_auto_reply", "Send an automatic reply to incoming messages", "checkbox"),
         field("messaging_propagation_node", "Propagation node address (optional)"),
         h("p", { text: "Add and manage your contacts in Messages. Existing conversations and identities are kept when settings change." })),
+      h("fieldset", {}, h("legend", { text: "Pages" }), field("pages_enabled", "Enable Nomad Network pages", "checkbox"),
+        h("p", { text: "Read pages that other Nomad Network nodes publish over Reticulum. Publishing your own is a separate switch in the Pages tab." })),
       h("fieldset", {}, h("legend", { text: "Advanced" }), field("transport", "Relay traffic for other Reticulum users", "checkbox"),
         field("memory_limit_mb", "Reticulum memory limit (MiB)", "number", { min: 128, max: 1024 }),
         h("label", {}, "Log detail", log), field("home_assistant_integration", "Share status with the optional Home Assistant integration", "checkbox"),

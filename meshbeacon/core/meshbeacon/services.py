@@ -117,6 +117,9 @@ class Services:
         # The messaging engine's output: the FIFO exists only when messaging is switched on (D-M4-8).
         engine_out = io_root / "messaging" / "out"
         self.engine_out = open_fifo(engine_out) if engine_out.exists() else None
+        # The pages service's output (ADR 0027): only when pages are switched on.
+        pages_out = io_root / "pages" / "out"
+        self.pages_out = open_fifo(pages_out) if pages_out.exists() else None
 
     def has(self, name: str) -> bool:
         return (self.service_root / name / "supervise" / "control").exists()

@@ -82,6 +82,7 @@ export const RANGES = [
 export const TABS = [
   { key: "overview", label: "Overview" },
   { key: "messages", label: "Messages" }, // shown only for an app with messaging (M5)
+  { key: "pages", label: "Pages" }, // shown only where the delivery offers pages (v0.6, the app dashboard)
   { key: "diagnostics", label: "Diagnostics" },
 ];
 
