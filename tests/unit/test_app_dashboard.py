@@ -228,3 +228,18 @@ def test_pages_endpoint_is_csrf_protected_and_off_unless_switched_on(tmp_path):
         finally:
             server.stop()
     assert seen == [{"op": "overview"}]
+
+
+def test_a_full_page_of_escaped_text_fits_the_pages_body_limit(tmp_path):
+    """32 KiB of backslashes is 64 KiB once JSON-escaped: still accepted on /api/pages only."""
+    (tmp_path / "ingress.js").write_text("// app")
+    dashboard = Dashboard(FakeControl(), lambda r: (200, {"ok": True}), tmp_path, pages=lambda r: (200, {"ok": True}))
+    server = IngressServer(dashboard, "127.0.0.1", 0, allowed_peer="127.0.0.1")
+    server.start()
+    try:
+        headers = {"Content-Type": "application/json", "X-Ito-Request": "1"}
+        body = json.dumps({"op": "page_save", "title": "x", "content": "\\" * 32768})
+        assert request(server, "/api/pages", body, headers)[0] == 200
+        assert request(server, "/api/messaging", body, headers)[0] == 400  # unchanged elsewhere
+    finally:
+        server.stop()

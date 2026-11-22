@@ -277,3 +277,44 @@ def test_nothing_imports_nomadnet_and_the_core_never_imports_the_service() -> No
             assert not any(n.endswith("helper") for n in names), path  # the core never runs the service
     for path in (CORE / "pages" / "store.py", CORE / "pages" / "__init__.py", CORE / "pages_supervisor.py"):
         assert not any(n.startswith("RNS") for n in imports(path)), path
+
+
+def test_a_stop_for_a_damaged_identity_or_full_storage_stays_until_switched_off_and_on(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The core repeats the hosting switch every 10 s; that must not undo a deliberate stop."""
+    from meshbeacon.pages import helper
+
+    storage = tmp_path / "nomadnet" / "storage"
+    storage.mkdir(parents=True)
+    (storage / "identity").write_bytes(b"damaged")
+    procs: list[FakeProc] = []
+    monkeypatch.setattr(helper.subprocess, "Popen", lambda *a, **k: procs.append(FakeProc()) or procs[-1])
+    host = Host(tmp_path, tmp_path / "public", tmp_path / "rns")
+    for _ in range(3):
+        host.sync(True, "Home", "normal")
+        host.step(connected=True)
+    assert host.state == "error" and procs == []
+    (storage / "identity").unlink()  # the user restored a backup (here: none, so a new one is made)
+    host.sync(False, "Home", "normal")
+    host.sync(True, "Home", "normal")
+    host.step(connected=True)
+    assert len(procs) == 1
+    monkeypatch.setattr(helper, "STORAGE_LIMIT", 0)  # now the daemon's storage is "full"
+    host.last_storage = -1e9
+    host.step(connected=True)
+    assert host.state == "error" and "64 MiB" in (host.message or "")
+    host.sync(True, "Home", "normal")
+    host.step(connected=True)
+    assert host.state == "error" and len(procs) == 1  # not restarted by the periodic sync
+
+
+def test_a_damaged_daemon_identity_is_restored_from_its_verified_backup(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("meshbeacon.pages.helper.subprocess.Popen", lambda *a, **k: FakeProc())
+    host = Host(tmp_path, tmp_path / "public", tmp_path / "rns")
+    host.identity()
+    storage = tmp_path / "nomadnet" / "storage"
+    good, address = (storage / "identity").read_bytes(), host.address
+    (storage / "identity").write_bytes(b"damaged")
+    assert host.identity() is not None and host.address == address
+    assert (storage / "identity").read_bytes() == good

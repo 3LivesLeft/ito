@@ -212,7 +212,8 @@ class IngressServer:
                     return
                 try:
                     size = int(self.headers.get("Content-Length", "0"))
-                    limit = 32768 if self.path == "/api/config" else MAX_BODY
+                    # Pages: 32 KiB of text can take twice that once JSON-escaped (ADR 0027).
+                    limit = 32768 if self.path == "/api/config" else 131072 if self.path == "/api/pages" else MAX_BODY
                     if not 0 < size <= limit:
                         raise ValueError
                     request = json.loads(self.rfile.read(size))

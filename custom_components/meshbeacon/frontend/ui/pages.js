@@ -596,6 +596,10 @@ export class PagesView {
 
   async savePage(publish) {
     if (!this.editing) return;
+    if (new TextEncoder().encode(this.textInput.value).length > 32 * 1024) {
+      this.editorFeedback.textContent = "The page is too long: at most 32 KiB. Split it into two pages.";
+      return;
+    }
     this.editorFeedback.textContent = "Saving…";
     const body = { op: "page_save", title: this.titleInput.value.trim(), content: this.textInput.value };
     if (this.editing.id) body.id = this.editing.id;

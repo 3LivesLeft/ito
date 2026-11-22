@@ -334,17 +334,18 @@ class Host:
 
     # -- identity (rule 13) ----------------------------------------------------------------------
     def identity(self) -> Any | None:
-        """The daemon's identity: created on the first start, else checked; never replaced."""
+        """The daemon's identity: created on the first start, else checked; restored from its
+        verified backup if damaged (as messaging's, ADR 0009); never replaced by a new one."""
         import RNS
 
         storage = self.config / "storage"
         fsutil.ensure_dir(storage)
         path, backup = storage / "identity", storage / "identity.backup"
         try:
-            data = path.read_bytes()
+            data: bytes | None = path.read_bytes()
         except FileNotFoundError:
             data = None
-        if data is None:
+        if data is None or from_bytes(data) is None:
             with contextlib.suppress(FileNotFoundError):
                 saved = backup.read_bytes()
                 if from_bytes(saved) is not None:
@@ -396,7 +397,8 @@ class Host:
                         self.last_storage = now
                         if fsutil.tree_size(self.config) > STORAGE_LIMIT:
                             self._stop()
-                            self.wanted, self.state, self.message = False, "error", MSG["storage"]
+                            # Stays stopped until the user switches hosting off and on (sync).
+                            self.state, self.message = "error", MSG["storage"]
                     return
                 self.proc = None
                 self._failed(now)
@@ -407,13 +409,13 @@ class Host:
 
     def _launch(self, now: float) -> None:
         if self.identity() is None:
-            self.state, self.message, self.wanted = "error", MSG["identity"], False
+            self.state, self.message = "error", MSG["identity"]  # until hosting is switched off and on
             return
         try:
             fsutil.ensure_dir(self.files)
             text = nomadconfig.render(self.node_name, self.pages, self.files, self.log_level)
         except (nomadconfig.ConfigError, OSError):
-            self.state, self.message, self.wanted = "error", MSG["config"], False
+            self.state, self.message = "error", MSG["config"]
             return
         fsutil.atomic_write(self.config / "config", text.encode())
         self.reap_stale()
