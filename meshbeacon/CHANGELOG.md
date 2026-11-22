@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2 — unreleased (develop)
+
+- When you share the knowledge library over Nomad, your node's published homepage now links
+  to the library. Turning sharing off removes the link.
+
 ## 0.6.1 — unreleased (develop)
 
 - The Ito app now bundles 78 draft emergency and preparedness guides. Open **Pages → Read bundled
