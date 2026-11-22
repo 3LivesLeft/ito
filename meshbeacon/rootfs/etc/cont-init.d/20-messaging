@@ -4,15 +4,22 @@
 # messaging folder or data is created, and the engine's s6 service stays down. The core reads and
 # validates the same option; this only decides whether the folders are needed.
 set -u
+# v0.6 (ADR 0027): the shared instance's RPC key below is also needed when Nomad Network pages are on;
+# their own folders are prepared by 30-pages.
 enabled="$(/usr/local/bin/python3 -I -c '
 import json
 try:
-    print("yes" if json.load(open("/data/options.json")).get("messaging_enabled") is True else "no")
+    options = json.load(open("/data/options.json"))
+    messaging = options.get("messaging_enabled") is True
+    pages = options.get("pages_enabled") is True
+    print("messaging" if messaging else "pages" if pages else "no")
 except Exception:
     print("no")
 ' 2>/dev/null)"
-[ "$enabled" = "yes" ] || exit 0
+[ "$enabled" = "no" ] && exit 0
+[ "$enabled" = "messaging" ] || { rpc_only=yes; }
 
+if [ "${rpc_only:-no}" = "no" ]; then
 # The engine's data (identity, queue): its user only. Kept when messaging is switched off again.
 mkdir -p /data/messaging
 chown -R mb-lxmf:mb-lxmf /data/messaging
@@ -28,6 +35,7 @@ chmod 0750 /run/meshbeacon-messaging
 mkdir -p /run/meshbeacon-messaging/config
 chown meshbeacon:mb-msg /run/meshbeacon-messaging/config
 chmod 0750 /run/meshbeacon-messaging/config
+fi
 # The shared instance's RPC key (ADR 0023): new at every container start, root's file, readable by
 # the group mb-rpc only (Reticulum's user, for the node's configuration, and the engine's user,
 # for its client configuration). RNS 1.6.0 authenticates every local client of the shared
@@ -54,6 +62,7 @@ finally:
 os.replace(temporary, os.path.join(folder, "rpc_key"))
 ' || echo "[meshbeacon] warning: could not create the messaging engine's access key for Reticulum" \
     "(the app's security profile may be out of date: update the app; Rebuild does not replace it)"
+[ "${rpc_only:-no}" = "no" ] || exit 0
 # Its output FIFO, beside Reticulum's (root:meshbeacon, 0660; opened by root in the run script).
 mkdir -p /run/meshbeacon-io/messaging
 [ -p /run/meshbeacon-io/messaging/out ] || mkfifo /run/meshbeacon-io/messaging/out

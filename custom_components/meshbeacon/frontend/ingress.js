@@ -5,6 +5,7 @@ import { api, IngressMessaging } from "./sources/ingress.js";
 import { InterfaceController } from "./ui/controller.js";
 import { MessagesView } from "./ui/messages.js";
 import { SettingsView } from "./ui/settings.js";
+import { PagesView } from "./ui/pages.js";
 import { h } from "./ui/dom.js";
 
 const COPY = {
@@ -25,9 +26,10 @@ class ItoDashboard extends HTMLElement {
     this.source = new SnapshotSource({ history: async (range) => (await api(`history?range=${range.key}`)).values });
     this.messaging = new IngressMessaging();
     this.settings = new SettingsView({ request: api, onSaved: () => this.apply() });
+    this.pages = new PagesView({ request: api, bundledLibrary: true, onEnable: () => this.enablePages() });
     this.ui = new InterfaceController({
       root: this.attachShadow({ mode: "open" }), source: this.source, copy: COPY,
-      messages: new MessagesView({ messaging: this.messaging, offText: COPY.messagingOff }), settings: this.settings,
+      messages: new MessagesView({ messaging: this.messaging, offText: COPY.messagingOff }), settings: this.settings, pages: this.pages,
       onMessages: (shown) => shown && this.messaging.refresh(),
       onRetry: () => this.refresh(),
       onNavigate: (tab) => { history.replaceState(null, "", `#${tab}`); },
@@ -47,7 +49,7 @@ class ItoDashboard extends HTMLElement {
     await this.refresh();
     const options = await this.settings.load();
     const tab = location.hash.slice(1);
-    this.ui.setTab(["overview", "messages", "diagnostics", "settings"].includes(tab) ? tab : options && options.network === "custom" && !options.peers?.length ? "settings" : "overview");
+    this.ui.setTab(["overview", "messages", "pages", "diagnostics", "settings"].includes(tab) ? tab : options && options.network === "custom" && !options.peers?.length ? "settings" : "overview");
     if (this.isConnected) this.timer = setInterval(() => { if (!document.hidden) this.refresh(); }, 5_000);
   }
   disconnectedCallback() {
@@ -60,7 +62,7 @@ class ItoDashboard extends HTMLElement {
     try {
       const data = await api("status");
       if (this.build && data.build !== this.build) {
-        if (![...this.messaging.drafts.values()].some(Boolean) && !this.messaging.pending.size && this.ui.tab !== "settings") location.reload();
+        if (![...this.messaging.drafts.values()].some(Boolean) && !this.messaging.pending.size && this.ui.tab !== "settings" && !this.pages.dirty()) location.reload();
         else this.updateReady = true;
       }
       this.build = data.build;
@@ -73,6 +75,12 @@ class ItoDashboard extends HTMLElement {
       this.source.update(null); this.source.fail("unavailable"); this.messaging.stop();
     } finally { this.refreshing = false; }
     this.ui.render(); this.ui.maybeRefreshHistory();
+  }
+  /** The Pages tab's "Switch on pages": the same validated, conflict-checked save as Settings. */
+  async enablePages() {
+    const current = await api("config");
+    await api("config", { op: "config_save", revision: current.revision, patch: { pages_enabled: true } });
+    await this.apply();
   }
   async apply() {
     const before = this.instance;

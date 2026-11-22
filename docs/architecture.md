@@ -452,6 +452,24 @@ How the design above was implemented, and decisions taken during implementation.
 | Build | Base image pinned by multi-arch digest; runtime wheels hash-pinned and binary-only from PyPI; optional BuildKit secret `build_ca` for builds behind TLS-intercepting proxies (never stored in the image) | `Dockerfile` |
 | AppArmor | Rewritten after the start-up failure on the Pi. Tested statically (every program the profile lets run must also be readable if it is a script) and **under real enforcement in CI** on an AppArmor-enabled runner; still to be confirmed on the Pi | `apparmor.txt`, `tests/apparmor/`, CI |
 
+## Nomad Network pages (0.6.0)
+
+See [ADR 0027](adr/0027-nomad-network-pages.md). One more optional service, off by default:
+
+```text
+ core (meshbeacon)            pages content store (/data/pages), /api/pages, supervision
+   │  JSON lines over /run/meshbeacon-pages/pages.sock (peer-checked, group mb-page)
+   ▼
+ pages service (mb-nomad)     python -m meshbeacon.pages: RNS shared-instance client
+   ├─ browse                  Link + request for /page/*.mu, plain text back to the core
+   ├─ discover                announce handler for nomadnetwork.node (500 nodes, nodes.json)
+   └─ host (while on)         child: unmodified `nomadnet --daemon`, pages_path = /data/pages/public
+```
+
+Storage: `/data/pages/` (core, group `mb-page`: `site.json`, `drafts/` 0700, `public/` 0750 with
+0640 files) and `/data/nomadnet/` (`mb-nomad` 0700: `rns/` client configuration, `nomadnet/`
+daemon configuration and storage including its identity, `nodes.json`, `files/`).
+
 ## Bundled app dashboard (0.5.0)
 
 See [ADR 0026](adr/0026-app-dashboard-and-setup.md) for the accepted Ingress trust boundary,

@@ -16,8 +16,11 @@ ito is a free, open-source, privacy-first, decentralised communications gateway 
 [Home Assistant](https://www.home-assistant.io/), powered by the
 [Reticulum](https://github.com/markqvist/Reticulum) reference implementation.
 
-**Experimental.** The app includes a Reticulum node, LXMF messaging and, from 0.5.0, its own
-Home Assistant Ingress dashboard. No images or releases are published by this change.
+**Experimental.** The app includes a Reticulum node, LXMF messaging, from 0.5.0 its own
+Home Assistant Ingress dashboard and, from 0.6.0, Nomad Network pages: read pages other people
+publish over Reticulum and publish your own, also without the internet (optional, off by
+default; [how to](meshbeacon/DOCS.md#nomad-network-pages-optional-experimental)). No images or
+releases are published by this change.
 
 ## Install and use
 

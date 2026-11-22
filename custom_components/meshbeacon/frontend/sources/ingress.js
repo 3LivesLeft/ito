@@ -12,7 +12,7 @@ export async function api(path, body) {
       body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(45_000),
     });
     const answer = await response.json();
-    if (!response.ok || answer.ok === false) throw { code: answer.error || "unavailable", problems: answer.problems };
+    if (!response.ok || answer.ok === false) throw { code: answer.error || "unavailable", problems: answer.problems, message: answer.message };
     return answer;
   } catch (error) {
     throw error && typeof error.code === "string" ? error : { code: "unavailable" };

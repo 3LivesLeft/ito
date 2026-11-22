@@ -28,10 +28,16 @@ MAX_BODY = 65536
 
 class Dashboard:
     def __init__(
-        self, control: AppControl, messaging: Callable[[Any], tuple[int, dict[str, Any]]], assets: Path = ASSETS
+        self,
+        control: AppControl,
+        messaging: Callable[[Any], tuple[int, dict[str, Any]]],
+        assets: Path = ASSETS,
+        *,
+        pages: Callable[[Any], tuple[int, dict[str, Any]]] | None = None,
     ) -> None:
         self.control = control
         self.messaging = messaging
+        self.pages = pages or (lambda _request: (409, {"ok": False, "error": "disabled"}))
         self.assets = assets
         digest = hashlib.sha256()
         for path in sorted(assets.rglob("*")):
@@ -181,7 +187,7 @@ class IngressServer:
                         or ".." in relative.split("/")
                         or not asset.is_file()
                         or asset.is_symlink()
-                        or asset.suffix not in {".js", ".css", ".woff2", ".svg", ".png"}
+                        or (relative != "knowledge.json" and asset.suffix not in {".js", ".css", ".woff2", ".svg", ".png"})
                     ):
                         self.answer(404, {"ok": False, "error": "not_found"})
                     else:
@@ -206,7 +212,8 @@ class IngressServer:
                     return
                 try:
                     size = int(self.headers.get("Content-Length", "0"))
-                    limit = 32768 if self.path == "/api/config" else MAX_BODY
+                    # Pages: 32 KiB of text can take twice that once JSON-escaped (ADR 0027).
+                    limit = 32768 if self.path == "/api/config" else 131072 if self.path == "/api/pages" else MAX_BODY
                     if not 0 < size <= limit:
                         raise ValueError
                     request = json.loads(self.rfile.read(size))
@@ -217,6 +224,8 @@ class IngressServer:
                     status, answer = dashboard.configure(request)
                 elif self.path == "/api/messaging":
                     status, answer = dashboard.messaging(request)
+                elif self.path == "/api/pages":
+                    status, answer = dashboard.pages(request)
                 else:
                     status, answer = 404, {"ok": False, "error": "not_found"}
                 self.answer(status, answer)
