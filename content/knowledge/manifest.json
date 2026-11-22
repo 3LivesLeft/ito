@@ -223,6 +223,237 @@
       "sha256": "a02fa71a52af5fa320ac1cd4234dc9dd4aa00b59aefb70fb88953453af6465bc",
       "related_pages": [],
       "page_type": "standard"
+    },
+    {
+      "id": "first-aid-assess",
+      "title": "Assessing an emergency",
+      "category": "first-aid",
+      "path": "pages/first-aid/assess.mu",
+      "description": "Make the scene safe. Call 999 or 112 for life-threatening danger.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-firstaid",
+        "rcuk-adult"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 970,
+      "sha256": "609f70b653ec1cebdb69a84ed81609bfd78cdc7dd2f39fd9e4aa3bc500ad88e3",
+      "related_pages": [
+        "first-aid-adult-cpr"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-adult-cpr",
+      "title": "Adult CPR and defibrillator",
+      "category": "first-aid",
+      "path": "pages/first-aid/adult-cpr.mu",
+      "description": "Unresponsive and not breathing normally, or only gasping: call 999 and start CPR.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rcuk-adult"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 981,
+      "sha256": "7b84686e90c882c16ff8c8f393cdf08fbc002c05534b40b5757fe62ad5909b78",
+      "related_pages": [
+        "first-aid-child-cpr"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-child-cpr",
+      "title": "Child and baby CPR",
+      "category": "first-aid",
+      "path": "pages/first-aid/child-cpr.mu",
+      "description": "A child or baby who is unresponsive and not breathing normally needs immediate CPR.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rcuk-child",
+        "nhs-firstaid"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 963,
+      "sha256": "af37afc644892aded63330063f5fca304110957cf0443d2974f8b1667fc2a0b8",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-bleeding",
+      "title": "Severe bleeding",
+      "category": "first-aid",
+      "path": "pages/first-aid/bleeding.mu",
+      "description": "Press firmly on the wound immediately and call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "sja-bleeding",
+        "nhs-cuts"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 869,
+      "sha256": "86a10fcc90b13c2101abef411f00b2077779deb7bd39093914d143e1dd5761eb",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-burns",
+      "title": "Burns and scalds",
+      "category": "first-aid",
+      "path": "pages/first-aid/burns.mu",
+      "description": "Cool the burn under cool or lukewarm running water for 20 minutes.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-burns"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 950,
+      "sha256": "47dd3204e2545104030b3b294a4f49c3ee541d8143cb8bdfb54f5ddbd72ed78e",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-choking",
+      "title": "Choking: adults and children",
+      "category": "first-aid",
+      "path": "pages/first-aid/choking.mu",
+      "description": "Call 999 as soon as you recognise choking; use speaker if alone.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rcuk-faq",
+        "rcuk-child"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1007,
+      "sha256": "88d26ddc67784195a093d9dfa369938d7b1eb432c2f8ae8cdeeb1b05e19b5ab3",
+      "related_pages": [
+        "first-aid-choking-baby"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-choking-baby",
+      "title": "Choking: baby under one",
+      "category": "first-aid",
+      "path": "pages/first-aid/choking-baby.mu",
+      "description": "Call 999 on speaker and act immediately if the baby cannot cough, cry or breathe effectively.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rcuk-child",
+        "rcuk-faq"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 970,
+      "sha256": "15fe025c18ea203c5378acee0e206f9607cc02f242ee03fea66222c9370a493b",
+      "related_pages": [
+        "first-aid-child-cpr"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-hypothermia",
+      "title": "Hypothermia first aid",
+      "category": "first-aid",
+      "path": "pages/first-aid/hypothermia.mu",
+      "description": "Suspected hypothermia is a medical emergency: call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-hypothermia",
+        "rcuk-adult"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 752,
+      "sha256": "54e104af6de1060957bd4986d33b2838b9f4151393512da56ffde8c5912fa55d",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-heat",
+      "title": "Heat exhaustion and heatstroke",
+      "category": "first-aid",
+      "path": "pages/first-aid/heat.mu",
+      "description": "Move the person somewhere cool and start cooling immediately.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-heat",
+        "rcuk-adult"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 826,
+      "sha256": "83474648dd853fcc748e2c9ae3089ffe99fbddc1538a9b9e52ade91a66729773",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-fractures",
+      "title": "Suspected broken bone",
+      "category": "first-aid",
+      "path": "pages/first-aid/fractures.mu",
+      "description": "Keep the injured part still and supported. Do not straighten it.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "sja-fractures"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 844,
+      "sha256": "4fbfaa814277408863a3e516646b9966b75c0e350f6280c36572e38c46b9336a",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-wounds",
+      "title": "Cleaning a minor wound",
+      "category": "first-aid",
+      "path": "pages/first-aid/wounds.mu",
+      "description": "First stop bleeding with direct pressure. Severe or uncontrollable bleeding needs 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-cuts"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 756,
+      "sha256": "dc7cb694f698fa93594b19e167685f40131bc251e8dae5b8f2053be07d7e0873",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-supplies",
+      "title": "First aid supplies",
+      "category": "first-aid",
+      "path": "pages/first-aid/supplies.mu",
+      "description": "Keep a first aid kit accessible, dry and easy to take with you.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "sja-kit"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 750,
+      "sha256": "d520207a6270f062270eb1aecf6391b759ad9789b46f13f21dc5125ecf79c6cd",
+      "related_pages": [],
+      "page_type": "standard"
     }
   ]
 }

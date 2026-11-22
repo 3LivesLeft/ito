@@ -63,6 +63,94 @@
       "url": "https://www.london-fire.gov.uk/safety/the-home/be-ready/",
       "accessed": "2026-11-22",
       "limitations": "Water estimate is for drinking; household needs vary."
+    },
+    {
+      "id": "rcuk-adult",
+      "organisation": "Resuscitation Council UK",
+      "title": "Adult basic life support Guidelines 2025",
+      "url": "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-basic-life-support-guidelines",
+      "accessed": "2026-11-22",
+      "limitations": "Adult guidance; paediatric resuscitation differs."
+    },
+    {
+      "id": "rcuk-child",
+      "organisation": "Resuscitation Council UK",
+      "title": "Paediatric Life Support 2025",
+      "url": "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/paediatric-basic-life-support-guidelines",
+      "accessed": "2026-11-22",
+      "limitations": "Guidance includes professional and layperson sequences."
+    },
+    {
+      "id": "rcuk-faq",
+      "organisation": "Resuscitation Council UK",
+      "title": "FAQs: Basic Life Support",
+      "url": "https://www.resus.org.uk/professional-library/faqs/faqs-basic-life-support-cpr",
+      "accessed": "2026-11-22",
+      "limitations": "Choking technique differs for infants and pregnant people."
+    },
+    {
+      "id": "sja-bleeding",
+      "organisation": "St John Ambulance",
+      "title": "Severe bleeding first aid",
+      "url": "https://www.sja.org.uk/first-aid-advice/severe-bleeding/",
+      "accessed": "2026-11-22",
+      "limitations": "Seek emergency help for severe bleeding."
+    },
+    {
+      "id": "nhs-burns",
+      "organisation": "NHS",
+      "title": "Burns and scalds: treatment",
+      "url": "https://www.nhs.uk/conditions/burns-and-scalds/treatment/",
+      "accessed": "2026-11-22",
+      "limitations": "Electrical and chemical injuries need specialist assessment."
+    },
+    {
+      "id": "nhs-firstaid",
+      "organisation": "NHS 111 Wales",
+      "title": "First aid",
+      "url": "https://111.wales.nhs.uk/encyclopaedia/f/article/firstaid/",
+      "accessed": "2026-11-22",
+      "limitations": "UK emergency telephone numbers; not a substitute for training."
+    },
+    {
+      "id": "nhs-hypothermia",
+      "organisation": "NHS",
+      "title": "Hypothermia",
+      "url": "https://www.nhs.uk/conditions/hypothermia/",
+      "accessed": "2026-11-22",
+      "limitations": "Medical emergency; prompt help required."
+    },
+    {
+      "id": "nhs-heat",
+      "organisation": "NHS",
+      "title": "Heat exhaustion and heatstroke",
+      "url": "https://www.nhs.uk/conditions/heat-exhaustion-heatstroke/",
+      "accessed": "2026-11-22",
+      "limitations": "Do not delay 999 for severe symptoms."
+    },
+    {
+      "id": "sja-fractures",
+      "organisation": "St John Ambulance",
+      "title": "Broken bones and fractures",
+      "url": "https://www.sja.org.uk/first-aid-advice/fractures-and-broken-bones/",
+      "accessed": "2026-11-22",
+      "limitations": "Urgency depends on injury and circulation."
+    },
+    {
+      "id": "nhs-cuts",
+      "organisation": "NHS",
+      "title": "Cuts and grazes",
+      "url": "https://www.nhs.uk/conditions/cuts-and-grazes/",
+      "accessed": "2026-11-22",
+      "limitations": "Minor wounds only; other injuries need professional care."
+    },
+    {
+      "id": "sja-kit",
+      "organisation": "St John Ambulance",
+      "title": "Emergency first aid kit",
+      "url": "https://www.sja.org.uk/get-advice/free-first-aid-resources/be-ready/",
+      "accessed": "2026-11-22",
+      "limitations": "Kit contents depend on household needs."
     }
   ]
 }
