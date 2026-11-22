@@ -1459,6 +1459,231 @@
         "preparedness-evacuation"
       ],
       "page_type": "standard"
+    },
+    {
+      "id": "navigation-maps",
+      "title": "Reading a map",
+      "category": "navigation",
+      "path": "pages/navigation/maps.mu",
+      "description": "Use the map\u2019s key, scale and contours to understand the ground.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "os-map",
+        "mre-safety"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 891,
+      "sha256": "7c5df2c75f97d6a6353d37162dcbf2a6b658466f984c124806d748089791b1c4",
+      "related_pages": [
+        "navigation-compass",
+        "navigation-route"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-compass",
+      "title": "Using a compass",
+      "category": "navigation",
+      "path": "pages/navigation/compass.mu",
+      "description": "Practise compass use with a map before you need it in poor visibility.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "os-compass",
+        "os-map"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 991,
+      "sha256": "8543da264ed5f1b2dfb4d168024e9748aa772817d97f2698e259d1af43da28c9",
+      "related_pages": [
+        "navigation-maps",
+        "navigation-route"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-without-gps",
+      "title": "Navigating without GPS",
+      "category": "navigation",
+      "path": "pages/navigation/without-gps.mu",
+      "description": "Use a paper map and compass; confirm your location frequently.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "os-map",
+        "mre-safety"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 882,
+      "sha256": "00490f2d6113ee007ce5d626040961c4dc557eaf030c538c1fc5190630701e09",
+      "related_pages": [
+        "navigation-maps",
+        "navigation-lost"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-route",
+      "title": "Planning a safe walking route",
+      "category": "navigation",
+      "path": "pages/navigation/route.mu",
+      "description": "Choose a route suited to the least experienced person in the group.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-safety",
+        "mre-shelter"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 882,
+      "sha256": "8d564d8b6918d0bbf133b7de514055a08f5b40ef7eefe4d8b78d59741af0fb17",
+      "related_pages": [
+        "navigation-lost",
+        "shelter-emergency"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-signal",
+      "title": "Signalling for help outdoors",
+      "category": "navigation",
+      "path": "pages/navigation/signal.mu",
+      "description": "Call 999 or 112 first if possible; give your location and stay available.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-safety",
+        "adventuresmart"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 869,
+      "sha256": "0f35650bd63cecb3f9c5241c0452096b24deea50dad48d11daed855427eab55f",
+      "related_pages": [
+        "communications-emergency",
+        "navigation-lost"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-lost",
+      "title": "What to do when lost",
+      "category": "navigation",
+      "path": "pages/navigation/lost.mu",
+      "description": "Stop in a safe place, stay together and work out your options.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-safety",
+        "adventuresmart"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 963,
+      "sha256": "661ac669a2d983bca4138be1db1eb2b685427d867ac5ce87de751db326c36b34",
+      "related_pages": [
+        "navigation-signal",
+        "shelter-emergency"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "self-sufficiency-growing",
+      "title": "Growing basic food crops",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/growing.mu",
+      "description": "Start with a few crops your household eats and a sunny, accessible growing space.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rhs-containers",
+        "rhs-water",
+        "fsa-cleaning"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 847,
+      "sha256": "1adc316b22c29dc3b6500a9e7e8b99295606a1ceb0b56ab4da959136b76c1e37",
+      "related_pages": [
+        "food-planning",
+        "self-sufficiency-water"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "self-sufficiency-water",
+      "title": "Reducing water use",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/water.mu",
+      "description": "Protect drinking water first; use separate non-drinking water where appropriate.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-water-outage",
+        "rhs-water",
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 918,
+      "sha256": "17622202ee6fd9509a55aaacfab3d2385621e7277990f5cd4f636b8f723488d0",
+      "related_pages": [
+        "water-rainwater",
+        "preparedness-sanitation"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "self-sufficiency-supplies",
+      "title": "Maintaining essential supplies",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/supplies.mu",
+      "description": "Keep a short inventory of what the household actually uses.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready",
+        "sja-kit",
+        "lfb-batteries"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 906,
+      "sha256": "d813dbf23ec2ef0926343a35d31c025588396a58a990f9a5c126e0ed4901fa6b",
+      "related_pages": [
+        "preparedness-kit",
+        "power-medical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "self-sufficiency-maintenance",
+      "title": "Maintaining essential equipment",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/maintenance.mu",
+      "description": "Inspect and test equipment before an emergency, following its instructions.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready",
+        "lfb-batteries",
+        "cdc-storage",
+        "hseni-generator"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 953,
+      "sha256": "7adffd9fbb79515869fcf1e33a05b7d2d8c687ce49d810ec8364529c60bc76dd",
+      "related_pages": [
+        "self-sufficiency-supplies",
+        "power-electrical"
+      ],
+      "page_type": "standard"
     }
   ]
 }

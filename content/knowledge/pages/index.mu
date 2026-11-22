@@ -7,3 +7,5 @@ Initial draft: independent safety review required.
 `[Communications`:/page/communications/index.mu]
 `[Emergency power`:/page/power/index.mu]
 `[Food and cooking`:/page/food/index.mu]
+`[Self-sufficiency`:/page/self-sufficiency/index.mu]
+`[Navigation and outdoors`:/page/navigation/index.mu]
