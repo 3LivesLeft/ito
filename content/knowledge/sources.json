@@ -263,6 +263,118 @@
       "url": "https://2026.adventuresmart.uk/know-how-and-when-to-get-help/?print=print",
       "accessed": "2026-11-22",
       "limitations": "Follow emergency operator directions; the situation determines whether movement is safe."
+    },
+    {
+      "id": "rns-understanding",
+      "organisation": "Reticulum Project",
+      "title": "Understanding Reticulum",
+      "url": "https://reticulum.network/manual/understanding.html",
+      "accessed": "2026-11-22",
+      "limitations": "Protocol behaviour and supported configuration depend on installed versions."
+    },
+    {
+      "id": "rns-interfaces",
+      "organisation": "Reticulum Project",
+      "title": "Configuring Interfaces",
+      "url": "https://reticulum.network/manual/interfaces.html",
+      "accessed": "2026-11-22",
+      "limitations": "Radio configuration examples do not establish legality in every jurisdiction."
+    },
+    {
+      "id": "rns-networks",
+      "organisation": "Reticulum Project",
+      "title": "Building Networks",
+      "url": "https://reticulum.network/manual/networks.html",
+      "accessed": "2026-11-22",
+      "limitations": "Topology and availability depend on configured transport nodes."
+    },
+    {
+      "id": "rns-using",
+      "organisation": "Reticulum Project",
+      "title": "Using Reticulum on Your System",
+      "url": "https://reticulum.network/manual/using.html",
+      "accessed": "2026-11-22",
+      "limitations": "Displayed radio metrics depend on interface and hardware support."
+    },
+    {
+      "id": "nomad-guide",
+      "organisation": "Nomad Network Project",
+      "title": "Nomad Network in-app guide",
+      "url": "https://github.com/markqvist/NomadNet/blob/master/nomadnet/ui/textui/Guide.py",
+      "accessed": "2026-11-22",
+      "limitations": "Applies to Nomad Network; Ito integration is not yet verified."
+    },
+    {
+      "id": "ofcom-ir2030",
+      "organisation": "Ofcom",
+      "title": "UK Interface Requirement 2030: Short Range Devices",
+      "url": "https://www.ofcom.org.uk/siteassets/resources/documents/spectrum/interface-requirements/ir-2030.pdf?v=426935",
+      "accessed": "2026-11-22",
+      "limitations": "Sub-band and use conditions differ and can change; consult the current version."
+    },
+    {
+      "id": "ofcom-amateur",
+      "organisation": "Ofcom",
+      "title": "Amateur radio guidance",
+      "url": "https://www.ofcom.org.uk/siteassets/resources/documents/manage-your-licence/amateur/amateur_radio_licence_guidance_for_licensees.pdf?v=405585",
+      "accessed": "2026-11-22",
+      "limitations": "General guidance; consult current licence conditions, including exceptions."
+    },
+    {
+      "id": "ofcom-storm",
+      "organisation": "Ofcom",
+      "title": "Stay connected in severe weather",
+      "url": "https://www.ofcom.org.uk/phones-and-broadband/vulnerable-customers/stay-connected-in-severe-weather",
+      "accessed": "2026-11-22",
+      "limitations": "Network and device availability varies; satellite service is device-dependent."
+    },
+    {
+      "id": "ofcom-sms",
+      "organisation": "Ofcom",
+      "title": "Accessibility of communications services",
+      "url": "https://www.ofcom.org.uk/phones-and-broadband/accessibility/accessibility",
+      "accessed": "2026-11-22",
+      "limitations": "Emergency SMS requires prior registration and network coverage."
+    },
+    {
+      "id": "ofcom-pmr",
+      "organisation": "Ofcom",
+      "title": "Business Radio Guidance 2025: PMR446",
+      "url": "https://www.ofcom.org.uk/siteassets/resources/documents/spectrum/business-radio-licences/business-radio-guidance-document.pdf?v=408940",
+      "accessed": "2026-11-22",
+      "limitations": "UK equipment and licensing conditions; non-protected shared channel."
+    },
+    {
+      "id": "ofcom-equipment",
+      "organisation": "Ofcom",
+      "title": "Rules on using radio equipment",
+      "url": "https://www.ofcom.org.uk/spectrum/radio-equipment/radio-spectrum-and-the-law",
+      "accessed": "2026-11-22",
+      "limitations": "Legal rules vary by equipment, use, location and licence."
+    },
+    {
+      "id": "gov-commsplan",
+      "organisation": "UK Government",
+      "title": "Be ready for emergencies",
+      "url": "https://beready.campaign.gov.uk/be-ready-for-emergencies/",
+      "accessed": "2026-11-22",
+      "limitations": "Prepare contacts and backup communications for the household."
+    },
+    {
+      "id": "esfi-antenna",
+      "organisation": "Electrical Safety Foundation International",
+      "title": "Protecting Big Ticket Items",
+      "url": "https://www.esfi.org/esfi-holiday-gift-guide-protecting-big-ticket-items/",
+      "accessed": "2026-11-22",
+      "limitations": "US safety advice; observe UK requirements and site conditions."
+    },
+    {
+      "id": "semtech-lora",
+      "organisation": "Semtech",
+      "title": "LoRa FAQ",
+      "url": "https://www.semtech.com/design-support/faq/faq-lora/p0",
+      "accessed": "2026-11-22",
+      "limitations": "Receiver sensitivity varies by device and radio settings."
     }
   ]
 }

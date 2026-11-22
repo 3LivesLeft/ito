@@ -230,7 +230,7 @@
       "category": "first-aid",
       "path": "pages/first-aid/assess.mu",
       "description": "Make the scene safe. Call 999 or 112 for life-threatening danger.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "last_reviewed": "2026-11-22",
       "sources": [
         "nhs-firstaid",
@@ -238,8 +238,8 @@
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 970,
-      "sha256": "609f70b653ec1cebdb69a84ed81609bfd78cdc7dd2f39fd9e4aa3bc500ad88e3",
+      "size_bytes": 1006,
+      "sha256": "cf3ad92ff1f05fefd07d0362b1e78dce86e90c326cf4769e735537ac2079c873",
       "related_pages": [
         "first-aid-adult-cpr"
       ],
@@ -699,6 +699,279 @@
       "sha256": "d6b960883159b6dd773fc792abecb7c83da0128b6a4c80c81a36bc712be02dba",
       "related_pages": [
         "shelter-outdoor-fire"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-emergency",
+      "title": "Getting emergency help",
+      "category": "communications",
+      "path": "pages/communications/emergency.mu",
+      "description": "For immediate danger call 999 or 112 and ask for the emergency service you need.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofcom-storm",
+        "ofcom-sms",
+        "mre-rescue"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1048,
+      "sha256": "b5b6471afc8572a272144d917574a1a2719581a4ce316b900c5a30e00fa00d90",
+      "related_pages": [
+        "communications-offline",
+        "communications-planning"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-reticulum",
+      "title": "Reticulum basics",
+      "category": "communications",
+      "path": "pages/communications/reticulum.mu",
+      "description": "Reticulum is a networking system that can operate over several kinds of connection.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-understanding",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1052,
+      "sha256": "7e04ef691c286ca3405f8b02a646fe54ad00d60b9f611e6fa21edc6beb109c06",
+      "related_pages": [
+        "communications-mesh",
+        "communications-offline"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-nomad",
+      "title": "Nomad Network basics",
+      "category": "communications",
+      "path": "pages/communications/nomad.mu",
+      "description": "Nomad Network lets a node host small pages that other reachable nodes can read.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nomad-guide",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 956,
+      "sha256": "d4e86a2e2055922750902d2d9bbf36f1b550145827e52549bf429992f2d97df2",
+      "related_pages": [
+        "communications-reticulum",
+        "communications-lora"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-lora",
+      "title": "LoRa basics",
+      "category": "communications",
+      "path": "pages/communications/lora.mu",
+      "description": "LoRa is a low-power radio method; compatible settings and software are needed at both ends.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-interfaces",
+        "ofcom-ir2030"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 984,
+      "sha256": "f581c61f4118f6ed2e3c5bfe918fe411ec1a29653a70f4237ad79721ffb91230",
+      "related_pages": [
+        "communications-mesh",
+        "communications-licensing"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-mesh",
+      "title": "How network relays work",
+      "category": "communications",
+      "path": "pages/communications/mesh.mu",
+      "description": "A relay can extend reach only if it is compatible, powered and able to hear both sides.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-networks",
+        "rns-understanding"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 914,
+      "sha256": "827f34d42df317a99ab37b2e2d017f1ca5cd05015b4067ad1c1307cf6775517f",
+      "related_pages": [
+        "communications-lora",
+        "communications-signal"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-offline",
+      "title": "Communicating without internet",
+      "category": "communications",
+      "path": "pages/communications/offline.mu",
+      "description": "Agree a primary and backup method with people before an outage.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-commsplan",
+        "ofcom-storm",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1032,
+      "sha256": "f827f7454f9debf2a9b29a488d213590d7bfe44fb217ef1032399200df94d6d1",
+      "related_pages": [
+        "communications-emergency",
+        "communications-planning"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-radio",
+      "title": "Using a radio to request help",
+      "category": "communications",
+      "path": "pages/communications/radio.mu",
+      "description": "Use an authorised radio and a channel where someone has agreed to listen.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofcom-pmr",
+        "ofcom-equipment",
+        "mre-rescue"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1004,
+      "sha256": "d229b1c4654b342a1c018e1e8bab734d08c75d7af7020afa497e378645d86beb",
+      "related_pages": [
+        "communications-emergency",
+        "communications-licensing"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-signal",
+      "title": "Understanding radio signal",
+      "category": "communications",
+      "path": "pages/communications/signal.mu",
+      "description": "A received signal reading is a clue, not a delivery guarantee.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-using",
+        "rns-interfaces",
+        "semtech-lora"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1034,
+      "sha256": "92ca0c072f4c4a9dbfab9a0e5fc04a3885a74116c7074c9a570e88cda5a908f1",
+      "related_pages": [
+        "communications-antenna",
+        "communications-mesh"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-antenna",
+      "title": "Positioning a radio antenna",
+      "category": "communications",
+      "path": "pages/communications/antenna.mu",
+      "description": "A clear, safely positioned antenna can improve a link; test both directions.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-interfaces",
+        "ofcom-ir2030",
+        "esfi-antenna"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1070,
+      "sha256": "099abca753d0c5c3c45df0c9063843508a1e7888fb3ea2e16ed08dbd324fd211",
+      "related_pages": [
+        "communications-signal",
+        "communications-licensing"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-power",
+      "title": "Conserving radio power",
+      "category": "communications",
+      "path": "pages/communications/power.mu",
+      "description": "Plan for the whole system: radio, host, network equipment and charging losses.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-commsplan",
+        "ofcom-storm",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1048,
+      "sha256": "63142b9302a12a0c0ea0711ed0f410e7286e3f3ed3eb0ef9dabe520e8d388921",
+      "related_pages": [
+        "communications-planning",
+        "communications-offline"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-planning",
+      "title": "Emergency communications plan",
+      "category": "communications",
+      "path": "pages/communications/planning.mu",
+      "description": "Write down who to contact, how to reach them and what to do if there is no reply.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-commsplan",
+        "ofcom-storm",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1000,
+      "sha256": "6dc1179f90c12ff8e34684a5a0902425ffcdf4ffe63a56fe82c901b2fd3bb4e3",
+      "related_pages": [
+        "communications-emergency",
+        "communications-offline"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-licensing",
+      "title": "UK radio rules",
+      "category": "communications",
+      "path": "pages/communications/licensing.mu",
+      "description": "Before transmitting, check the conditions that apply to your exact equipment, frequency and use.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofcom-ir2030",
+        "ofcom-amateur",
+        "ofcom-pmr",
+        "ofcom-equipment"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1098,
+      "sha256": "272145868e3c7240fce29648f987240a85a218daae58205382ddfbdf21333089",
+      "related_pages": [
+        "communications-lora",
+        "communications-radio"
       ],
       "page_type": "standard"
     }
