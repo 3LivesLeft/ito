@@ -282,7 +282,8 @@ copy in the app image, so internet and Reticulum connectivity are optional. The 
 needs access to the local dashboard. Updating the app updates the bundled copy.
 
 To share it, start Pages hosting and turn on **Share knowledge library over Nomad** in **My pages**.
-Other readers can open `<your Nomad address>:/page/ito-guide--index.mu`. Each host has its own
+Other readers can follow **Browse the ito knowledge library** on your published node homepage,
+or open `<your Nomad address>:/page/ito-guide--index.mu` directly. Each host has its own
 address. Sharing is off by default and operates only while hosting is on. Published guides are
 separate from editable pages. Allow up to one minute for Nomad to refresh its page list.
 
