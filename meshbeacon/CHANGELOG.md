@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1 — unreleased (develop)
+
+- The Ito app now bundles 78 draft emergency and preparedness guides. Open **Pages → Read bundled
+  guides** from the local dashboard, even without internet or Reticulum. App updates refresh
+  the bundled copy.
+- When hosting is on, **Share knowledge library over Nomad** lets you serve the same guides
+  to reachable nodes. Sharing starts off. Guides include source attribution and review status.
+
 ## 0.6.0 — unreleased (develop)
 
 - **Nomad Network pages.** A new **Pages** tab in the ito dashboard. Switch on *Nomad Network
