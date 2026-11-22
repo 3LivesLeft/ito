@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.6.0 — unreleased (develop)
+
+- **Nomad Network pages.** A new **Pages** tab in the ito dashboard. Switch on *Nomad Network
+  pages* in Settings (off by default), choose Save and apply, and you can:
+  - **Browse** pages published by other Nomad Network nodes: enter a node address or pick one
+    from the list of nodes ito has heard, follow links, go back and forward, and keep bookmarks.
+    Pages are shown as plain, formatted text: nothing in them can run in your browser.
+  - **Discover** nodes as they announce themselves, with their names and when they were last
+    heard. ito never calls a node online just because it was heard once.
+  - **Publish** your own pages, also without the internet: give your node a name, switch on
+    hosting, and ito publishes a simple welcome page you can edit. Create, edit, preview,
+    publish, unpublish and delete pages in the dashboard; copy your node's address to share it.
+- Hosting uses the unmodified Nomad Network program (1.5.0), run by ito as its own user only
+  while hosting is on. Its node has its own identity, separate from your Reticulum and messaging
+  identities, and is never replaced.
+- Pages, bookmarks and the node identity are kept across restarts, updates and backups.
+  Switching pages off stops only pages; Reticulum and messaging are not affected.
+- Reticulum now stops and starts again if another program ever holds its shared instance, instead
+  of running as that program's client.
+
+**To update:** Settings → Apps → ito → **Update** (not Rebuild). Everything you have is kept:
+your node and messaging identities, contacts, conversations and settings. Pages stay off until you
+switch them on.
+
 ## 0.5.1 — unreleased (develop)
 
 - Keep the message composer focused during live conversation updates so the on-screen keyboard stays open while you type.

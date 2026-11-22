@@ -4,8 +4,9 @@
 # v0.2: Supervisor discovery for the optional Home Assistant integration (ADR 0006). Posting a
 # discovery message needs no Supervisor API permission; only Home Assistant Core can read it.
 # M4 (D-M4-8): optional LXMF messaging, off by default; it needs no new permission either.
+# v0.6 (ADR 0027): optional Nomad Network pages, off by default; no new permission or port either.
 name: ito
-version: "0.5.1"
+version: "0.6.0"
 slug: meshbeacon
 description: Private, decentralised connectivity for your home — powered by Reticulum.
 url: https://github.com/3LivesLeft/ito
@@ -30,6 +31,8 @@ backup: hot
 backup_exclude:
   - "reticulum/storage/cache/*"
   - "reticulum/storage/resources/*"
+  - "nomadnet/nomadnet/storage/cache/*"
+  - "nomadnet/nomadnet/storage/resources/*"
 ulimits:
   nofile: 4096
 options:
@@ -44,6 +47,7 @@ options:
   messaging_contacts: []
   messaging_accept_anyone: false
   messaging_auto_reply: true
+  pages_enabled: false
 schema:
   network: list(custom|ratspeak_ruby|ratspeak_emerald|ratspeak_diamond|reticulumnet)
   peers:
@@ -65,4 +69,5 @@ schema:
   messaging_auto_reply: bool
   messaging_display_name: "match(^[A-Za-z0-9](?:[A-Za-z0-9 _.-]{0,30}[A-Za-z0-9_.-])?$)?"
   messaging_propagation_node: "match(^\\s*<?[0-9A-Fa-f]{32}>?\\s*$)?"
+  pages_enabled: bool
 # No `image:` key: the app is built locally until public release gates RG-1 to RG-12 are met.
