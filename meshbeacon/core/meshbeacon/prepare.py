@@ -143,21 +143,22 @@ def prepare(paths: Paths, *, mode: str) -> PrepareResult:
 
     cap_regenerable(paths, result)
 
-    rpc_key = rnsconfig.new_rpc_key()  # messaging off: a fresh key that nobody else holds
-    if settings.messaging.enabled:
-        # Messaging on: the key the engine is given too (ADR 0023). If it is missing, Reticulum
-        # still starts; only messaging is affected, and the dashboard says so.
+    rpc_key = rnsconfig.new_rpc_key()  # no optional service: a fresh key that nobody else holds
+    if settings.share_instance:
+        # Messaging or pages on: the key their services are given too (ADR 0023, ADR 0027). If it
+        # is missing, Reticulum still starts; only those services are affected, and the dashboard
+        # says so.
         shared = rnsconfig.read_shared_rpc_key()
         if shared is None:
             result.info.append(
-                "⚠ Messaging's access key for Reticulum is missing, so messaging cannot work. Home "
+                "⚠ The access key for Reticulum is missing, so messaging and pages cannot work. Home "
                 "Assistant is probably still using the app's previous security profile: update the "
                 "app to the latest version (Rebuild is not enough). Reticulum works normally."
             )
         else:
             rpc_key = shared
     try:
-        text = rnsconfig.render(settings, rpc_key, share_instance=settings.messaging.enabled)
+        text = rnsconfig.render(settings, rpc_key, share_instance=settings.share_instance)
     except rnsconfig.RenderError:
         return result.fail(
             "ito could not build a safe Reticulum configuration from your options, so it "

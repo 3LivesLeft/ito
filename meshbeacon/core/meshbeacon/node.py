@@ -19,6 +19,7 @@ import sys
 import time
 from typing import Any
 
+EXIT_INSTANCE_TAKEN = 4
 REPORTED_TYPES = frozenset({"TCPClientInterface"})
 
 # Allow-lists of the counters read from RNS's ``get_interface_stats()`` (see
@@ -77,6 +78,12 @@ def main(argv: list[str] | None = None) -> int:
     import RNS
 
     reticulum = RNS.Reticulum(configdir=args.config)
+    if reticulum.share_instance and not reticulum.is_shared_instance:
+        # Another local program already holds the shared instance (ADR 0027 point 6): running as
+        # its client would leave ito's own interfaces unused. Stop, so that the core stops the
+        # optional services first and starts Reticulum again in the right order.
+        print("ito: another program holds Reticulum's shared instance; Reticulum will be restarted.", flush=True)
+        return EXIT_INSTANCE_TAKEN
     while True:
         try:
             line = json.dumps(

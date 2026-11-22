@@ -28,10 +28,16 @@ MAX_BODY = 65536
 
 class Dashboard:
     def __init__(
-        self, control: AppControl, messaging: Callable[[Any], tuple[int, dict[str, Any]]], assets: Path = ASSETS
+        self,
+        control: AppControl,
+        messaging: Callable[[Any], tuple[int, dict[str, Any]]],
+        assets: Path = ASSETS,
+        *,
+        pages: Callable[[Any], tuple[int, dict[str, Any]]] | None = None,
     ) -> None:
         self.control = control
         self.messaging = messaging
+        self.pages = pages or (lambda _request: (409, {"ok": False, "error": "disabled"}))
         self.assets = assets
         digest = hashlib.sha256()
         for path in sorted(assets.rglob("*")):
@@ -217,6 +223,8 @@ class IngressServer:
                     status, answer = dashboard.configure(request)
                 elif self.path == "/api/messaging":
                     status, answer = dashboard.messaging(request)
+                elif self.path == "/api/pages":
+                    status, answer = dashboard.pages(request)
                 else:
                     status, answer = 404, {"ok": False, "error": "not_found"}
                 self.answer(status, answer)

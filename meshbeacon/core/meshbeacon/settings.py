@@ -44,6 +44,7 @@ ALLOWED_TOP_LEVEL = {
     "messaging_accept_anyone",
     "messaging_auto_reply",
     "messaging_propagation_node",
+    "pages_enabled",
 }
 ALLOWED_PEER_KEYS = {"name", "host", "port", "network_name", "passphrase"}
 ALLOWED_CONTACT_KEYS = {"name", "address"}
@@ -101,6 +102,14 @@ class Settings:
     replace_identity: bool = False
     home_assistant_integration: bool = False
     messaging: Messaging = field(default_factory=Messaging)
+    # v0.6 (ADR 0027): Nomad Network pages (browse, discover and, if the user switches it on in the
+    # Pages tab, host). Off by default; nothing of it runs while it is off.
+    pages_enabled: bool = False
+
+    @property
+    def share_instance(self) -> bool:
+        """Reticulum shares its instance only for an optional service that needs it (IS-3a)."""
+        return self.messaging.enabled or self.pages_enabled
 
     @property
     def secrets(self) -> tuple[str, ...]:
@@ -333,6 +342,7 @@ def parse_options(raw: Any) -> Settings:
     replace_identity = _bool(raw, "replace_identity", False, problems)
     integration = _bool(raw, "home_assistant_integration", False, problems)
     messaging = _parse_messaging(raw, problems)
+    pages = _bool(raw, "pages_enabled", False, problems)
 
     if problems:
         raise ValidationError(problems)
@@ -345,4 +355,5 @@ def parse_options(raw: Any) -> Settings:
         replace_identity=replace_identity,
         home_assistant_integration=integration,
         messaging=messaging,
+        pages_enabled=pages,
     )
