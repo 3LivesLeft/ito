@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { loadFonts } from "./fonts.js";
 import { SnapshotSource } from "./sources/snapshot.js";
-import { api, IngressMessaging } from "./sources/ingress.js";
+import { api, IngressMessaging, loadKnowledgeBundle } from "./sources/ingress.js";
 import { InterfaceController } from "./ui/controller.js";
 import { MessagesView } from "./ui/messages.js";
 import { SettingsView } from "./ui/settings.js";
@@ -26,7 +26,7 @@ class ItoDashboard extends HTMLElement {
     this.source = new SnapshotSource({ history: async (range) => (await api(`history?range=${range.key}`)).values });
     this.messaging = new IngressMessaging();
     this.settings = new SettingsView({ request: api, onSaved: () => this.apply() });
-    this.pages = new PagesView({ request: api, onEnable: () => this.enablePages() });
+    this.pages = new PagesView({ request: api, loadKnowledge: loadKnowledgeBundle, onEnable: () => this.enablePages() });
     this.ui = new InterfaceController({
       root: this.attachShadow({ mode: "open" }), source: this.source, copy: COPY,
       messages: new MessagesView({ messaging: this.messaging, offText: COPY.messagingOff }), settings: this.settings, pages: this.pages,

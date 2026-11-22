@@ -4,6 +4,8 @@
 import copy
 import http.client
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -194,11 +196,7 @@ def test_recent_history_is_bounded_and_unknown_is_not_zero():
 
 def test_app_bundle_matches_shared_frontend():
     root = Path(__file__).resolve().parents[2]
-    source = root / "custom_components/meshbeacon/frontend"
-    target = root / "meshbeacon/frontend"
-    assert {p.relative_to(source): p.read_bytes() for p in source.rglob("*") if p.is_file()} == {
-        p.relative_to(target): p.read_bytes() for p in target.rglob("*") if p.is_file()
-    }
+    subprocess.run([sys.executable, str(root / "tools/sync_frontend.py"), "--check"], check=True)
 
 
 def test_pages_endpoint_is_csrf_protected_and_off_unless_switched_on(tmp_path):

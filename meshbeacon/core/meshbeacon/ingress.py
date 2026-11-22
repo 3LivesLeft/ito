@@ -187,7 +187,10 @@ class IngressServer:
                         or ".." in relative.split("/")
                         or not asset.is_file()
                         or asset.is_symlink()
-                        or asset.suffix not in {".js", ".css", ".woff2", ".svg", ".png"}
+                        or (
+                            relative != "knowledge.json"
+                            and asset.suffix not in {".js", ".css", ".woff2", ".svg", ".png"}
+                        )
                     ):
                         self.answer(404, {"ok": False, "error": "not_found"})
                     else:

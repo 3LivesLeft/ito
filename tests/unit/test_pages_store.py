@@ -143,7 +143,14 @@ def test_a_damaged_site_file_never_breaks_the_store(store: Store) -> None:
     store.site_file.write_text(
         json.dumps({"pages": {"../x": {"title": "bad"}, "ok": {"title": 5}}, "node_name": "a\nb"})
     )
-    assert store.view() == {"hosting": False, "node_name": "", "description": "", "pages": [], "bookmarks": []}
+    assert store.view() == {
+        "hosting": False,
+        "share_knowledge": False,
+        "node_name": "",
+        "description": "",
+        "pages": [],
+        "bookmarks": [],
+    }
 
 
 def test_node_names_and_micron_escaping() -> None:
@@ -153,3 +160,31 @@ def test_node_names_and_micron_escaping() -> None:
     assert micron_text(">not a heading") == "\\>not a heading"
     assert micron_text("a `!b`!") == "a \\`!b\\`!"
     assert default_index("", "", []).startswith(">My ito node")
+
+
+def test_bundled_library_sharing_and_upgrade(store: Store, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    bundle = tmp_path / "knowledge.json"
+    filename = "ito-guide--index.mu"
+    bundle.write_text(json.dumps({"pages": {filename: {"content": ">Version one"}}}))
+    monkeypatch.setattr(store_mod, "KNOWLEDGE_BUNDLE", bundle)
+    assert not store.handle({"op": "share_knowledge", "enabled": True})["ok"]
+    ok(store.handle({"op": "site_save", "node_name": "Test node"}))
+    ok(store.handle({"op": "hosting", "enabled": True}))
+    assert not (store.public / filename).exists()
+    ok(store.handle({"op": "share_knowledge", "enabled": True}))
+    assert (store.public / filename).read_text() == ">Version one"
+    assert public_files_are_safe(store.public)
+    assert [page["id"] for page in store.view()["pages"]] == ["index"]
+
+    bundle.write_text(json.dumps({"pages": {filename: {"content": ">Version two"}}}))
+    restarted = Store(store.root, group=None)
+    restarted.sync_knowledge()
+    assert (store.public / filename).read_text() == ">Version two"
+
+    ok(restarted.handle({"op": "hosting", "enabled": False}))
+    assert not (store.public / filename).exists()
+    ok(restarted.handle({"op": "hosting", "enabled": True}))
+    assert (store.public / filename).exists()
+    ok(restarted.handle({"op": "share_knowledge", "enabled": False}))
+    assert not (store.public / filename).exists()
+    assert (store.public / "index.mu").exists()

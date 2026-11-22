@@ -274,3 +274,17 @@ ito is licensed under Apache-2.0. It includes Reticulum (RNS) and LXMF, licensed
 **Reticulum License**, which is not an OSI-approved open-source licence: it forbids use in systems
 designed to harm human beings and use in creating AI or machine-learning training datasets. Those
 conditions apply to you as a user of this app. Full notices: `THIRD_PARTY_NOTICES`.
+
+### Bundled knowledge library
+
+Open **Pages → Read bundled guides** over the local Home Assistant dashboard. This uses the
+copy in the app image, so internet and Reticulum connectivity are optional. The device still
+needs access to the local dashboard. Updating the app updates the bundled copy.
+
+To share it, start Pages hosting and turn on **Share knowledge library over Nomad** in **My pages**.
+Other readers can open `<your Nomad address>:/page/ito-guide--index.mu`. Each host has its own
+address. Sharing is off by default and operates only while hosting is on. Published guides are
+separate from editable pages. Allow up to one minute for Nomad to refresh its page list.
+
+Each guide displays its source organisations and review status. The local dashboard lists the
+original references. Draft guides await independent subject-matter review.

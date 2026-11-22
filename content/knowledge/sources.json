@@ -1,0 +1,953 @@
+{
+  "sources": [
+    {
+      "id": "cdc-water",
+      "organisation": "CDC",
+      "title": "How to Make Water Safe in an Emergency",
+      "url": "https://www.cdc.gov/water-emergency/about/index.html",
+      "accessed": "2026-11-22",
+      "limitations": "US guidance; altitude in feet; use local authority notices first.",
+      "relevant_pages": [
+        "water-safe-water",
+        "water-sources",
+        "water-boiling",
+        "water-filtration",
+        "water-disinfection",
+        "water-rainwater",
+        "self-sufficiency-water"
+      ]
+    },
+    {
+      "id": "cdc-storage",
+      "organisation": "CDC",
+      "title": "How to Create an Emergency Water Supply",
+      "url": "https://www.cdc.gov/water-emergency/about/how-to-create-and-store-an-emergency-water-supply.html",
+      "accessed": "2026-11-22",
+      "limitations": "US bleach concentrations and container advice; label directions vary.",
+      "relevant_pages": [
+        "water-sources",
+        "water-storage",
+        "self-sufficiency-maintenance"
+      ]
+    },
+    {
+      "id": "dwi",
+      "organisation": "Drinking Water Inspectorate",
+      "title": "Receiving a Boil Water Notice",
+      "url": "https://www.dwi.gov.uk/receiving-a-boil-water-notice/",
+      "accessed": "2026-11-22",
+      "limitations": "Follow water supplier local notices.",
+      "relevant_pages": [
+        "water-safe-water",
+        "water-boiling"
+      ]
+    },
+    {
+      "id": "nhs-dehydration",
+      "organisation": "NHS",
+      "title": "Dehydration",
+      "url": "https://www.nhs.uk/conditions/dehydration/",
+      "accessed": "2026-11-22",
+      "limitations": "England contact numbers; assessment differs by age.",
+      "relevant_pages": [
+        "water-dehydration"
+      ]
+    },
+    {
+      "id": "gov-ready",
+      "organisation": "UK Government",
+      "title": "Be ready for emergencies",
+      "url": "https://beready.campaign.gov.uk/be-ready-for-emergencies/",
+      "accessed": "2026-11-22",
+      "limitations": "England / UK contact arrangements can vary.",
+      "relevant_pages": [
+        "preparedness-kit",
+        "preparedness-plan",
+        "preparedness-power-cut",
+        "preparedness-flood",
+        "food-storage",
+        "food-planning",
+        "self-sufficiency-supplies",
+        "self-sufficiency-maintenance"
+      ]
+    },
+    {
+      "id": "gov-power",
+      "organisation": "UK Government",
+      "title": "Power cuts",
+      "url": "https://beready.campaign.gov.uk/be-informed-about-hazards/power-cuts/",
+      "accessed": "2026-11-22",
+      "limitations": "Check locally for current arrangements.",
+      "relevant_pages": [
+        "preparedness-power-cut",
+        "power-medical"
+      ]
+    },
+    {
+      "id": "gov-flood",
+      "organisation": "GOV.UK",
+      "title": "Prepare for flooding: protect your property",
+      "url": "https://www.gov.uk/prepare-for-flooding/protect-your-property",
+      "accessed": "2026-11-22",
+      "limitations": "England flooding advice; only isolate utilities if safe.",
+      "relevant_pages": [
+        "preparedness-flood",
+        "preparedness-evacuation"
+      ]
+    },
+    {
+      "id": "lfb-kit",
+      "organisation": "London Fire Brigade",
+      "title": "Be Ready",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/be-ready/",
+      "accessed": "2026-11-22",
+      "limitations": "Water estimate is for drinking; household needs vary.",
+      "relevant_pages": [
+        "water-storage",
+        "preparedness-kit"
+      ]
+    },
+    {
+      "id": "rcuk-adult",
+      "organisation": "Resuscitation Council UK",
+      "title": "Adult basic life support Guidelines 2025",
+      "url": "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-basic-life-support-guidelines",
+      "accessed": "2026-11-22",
+      "limitations": "Adult guidance; paediatric resuscitation differs.",
+      "relevant_pages": [
+        "first-aid-assess",
+        "first-aid-adult-cpr",
+        "first-aid-hypothermia",
+        "first-aid-heat"
+      ]
+    },
+    {
+      "id": "rcuk-child",
+      "organisation": "Resuscitation Council UK",
+      "title": "Paediatric Life Support 2025",
+      "url": "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/paediatric-basic-life-support-guidelines",
+      "accessed": "2026-11-22",
+      "limitations": "Guidance includes professional and layperson sequences.",
+      "relevant_pages": [
+        "first-aid-child-cpr",
+        "first-aid-choking",
+        "first-aid-choking-baby"
+      ]
+    },
+    {
+      "id": "rcuk-faq",
+      "organisation": "Resuscitation Council UK",
+      "title": "FAQs: Basic Life Support",
+      "url": "https://www.resus.org.uk/professional-library/faqs/faqs-basic-life-support-cpr",
+      "accessed": "2026-11-22",
+      "limitations": "Choking technique differs for infants and pregnant people.",
+      "relevant_pages": [
+        "first-aid-choking",
+        "first-aid-choking-baby"
+      ]
+    },
+    {
+      "id": "sja-bleeding",
+      "organisation": "St John Ambulance",
+      "title": "Severe bleeding first aid",
+      "url": "https://www.sja.org.uk/first-aid-advice/severe-bleeding/",
+      "accessed": "2026-11-22",
+      "limitations": "Seek emergency help for severe bleeding.",
+      "relevant_pages": [
+        "first-aid-bleeding"
+      ]
+    },
+    {
+      "id": "nhs-burns",
+      "organisation": "NHS",
+      "title": "Burns and scalds: treatment",
+      "url": "https://www.nhs.uk/conditions/burns-and-scalds/treatment/",
+      "accessed": "2026-11-22",
+      "limitations": "Electrical and chemical injuries need specialist assessment.",
+      "relevant_pages": [
+        "first-aid-burns"
+      ]
+    },
+    {
+      "id": "nhs-firstaid",
+      "organisation": "NHS 111 Wales",
+      "title": "First aid",
+      "url": "https://111.wales.nhs.uk/encyclopaedia/f/article/firstaid/",
+      "accessed": "2026-11-22",
+      "limitations": "UK emergency telephone numbers; not a substitute for training.",
+      "relevant_pages": [
+        "first-aid-assess",
+        "first-aid-child-cpr"
+      ]
+    },
+    {
+      "id": "nhs-hypothermia",
+      "organisation": "NHS",
+      "title": "Hypothermia",
+      "url": "https://www.nhs.uk/conditions/hypothermia/",
+      "accessed": "2026-11-22",
+      "limitations": "Medical emergency; prompt help required.",
+      "relevant_pages": [
+        "first-aid-hypothermia",
+        "shelter-warm-home",
+        "shelter-prevent-cold",
+        "shelter-insulation"
+      ]
+    },
+    {
+      "id": "nhs-heat",
+      "organisation": "NHS",
+      "title": "Heat exhaustion and heatstroke",
+      "url": "https://www.nhs.uk/conditions/heat-exhaustion-heatstroke/",
+      "accessed": "2026-11-22",
+      "limitations": "Do not delay 999 for severe symptoms.",
+      "relevant_pages": [
+        "first-aid-heat",
+        "shelter-heat-prevention"
+      ]
+    },
+    {
+      "id": "sja-fractures",
+      "organisation": "St John Ambulance",
+      "title": "Broken bones and fractures",
+      "url": "https://www.sja.org.uk/first-aid-advice/fractures-and-broken-bones/",
+      "accessed": "2026-11-22",
+      "limitations": "Urgency depends on injury and circulation.",
+      "relevant_pages": [
+        "first-aid-fractures"
+      ]
+    },
+    {
+      "id": "nhs-cuts",
+      "organisation": "NHS",
+      "title": "Cuts and grazes",
+      "url": "https://www.nhs.uk/conditions/cuts-and-grazes/",
+      "accessed": "2026-11-22",
+      "limitations": "Minor wounds only; other injuries need professional care.",
+      "relevant_pages": [
+        "first-aid-bleeding",
+        "first-aid-wounds"
+      ]
+    },
+    {
+      "id": "sja-kit",
+      "organisation": "St John Ambulance",
+      "title": "Emergency first aid kit",
+      "url": "https://www.sja.org.uk/get-advice/free-first-aid-resources/be-ready/",
+      "accessed": "2026-11-22",
+      "limitations": "Kit contents depend on household needs.",
+      "relevant_pages": [
+        "first-aid-supplies",
+        "self-sufficiency-supplies"
+      ]
+    },
+    {
+      "id": "nhs-co",
+      "organisation": "NHS",
+      "title": "Carbon monoxide poisoning",
+      "url": "https://www.nhs.uk/conditions/carbon-monoxide-poisoning/",
+      "accessed": "2026-11-22",
+      "limitations": "Urgent medical advice is needed even after leaving the source.",
+      "relevant_pages": [
+        "shelter-warm-home",
+        "shelter-carbon-monoxide",
+        "shelter-insulation",
+        "shelter-alarms",
+        "shelter-camping",
+        "power-prepare",
+        "power-generator",
+        "food-stoves",
+        "preparedness-storm"
+      ]
+    },
+    {
+      "id": "met-cold",
+      "organisation": "Met Office",
+      "title": "How cold weather affects your health",
+      "url": "https://weather.metoffice.gov.uk/warnings-and-advice/seasonal-advice/health-wellbeing/stay-well-in-winter",
+      "accessed": "2026-11-22",
+      "limitations": "Health risks differ between people.",
+      "relevant_pages": [
+        "shelter-warm-home",
+        "shelter-insulation"
+      ]
+    },
+    {
+      "id": "met-home",
+      "organisation": "Met Office",
+      "title": "Keeping your home warm this winter",
+      "url": "https://weather.metoffice.gov.uk/warnings-and-advice/seasonal-advice/your-home/keeping-your-home-warm-in-winter",
+      "accessed": "2026-11-22",
+      "limitations": "Maintain ventilation needed for fuel-burning appliances.",
+      "relevant_pages": [
+        "shelter-insulation"
+      ]
+    },
+    {
+      "id": "met-heat",
+      "organisation": "Met Office",
+      "title": "Hot weather and its impacts",
+      "url": "https://weather.metoffice.gov.uk/warnings-and-advice/seasonal-advice/health-wellbeing/hot-weather-and-its-impacts",
+      "accessed": "2026-11-22",
+      "limitations": "Personal heat risk differs, particularly with medical conditions.",
+      "relevant_pages": [
+        "shelter-heat-prevention"
+      ]
+    },
+    {
+      "id": "gov-outdoor-fire",
+      "organisation": "UK Government",
+      "title": "Fire safety outdoors",
+      "url": "https://www.gov.uk/government/publications/fire-safety-outdoors/fire-safety-outdoors-accessible-version",
+      "accessed": "2026-11-22",
+      "limitations": "Site rules and wildfire restrictions may be stricter.",
+      "relevant_pages": [
+        "shelter-outdoor-fire",
+        "shelter-camping",
+        "shelter-wildfire",
+        "food-stoves"
+      ]
+    },
+    {
+      "id": "gov-wildfires",
+      "organisation": "UK Government",
+      "title": "Wildfires",
+      "url": "https://beready.campaign.gov.uk/be-informed-about-hazards/wildfires/",
+      "accessed": "2026-11-22",
+      "limitations": "Follow current local warnings and emergency instructions.",
+      "relevant_pages": [
+        "shelter-outdoor-fire",
+        "shelter-wildfire"
+      ]
+    },
+    {
+      "id": "lfb-escape",
+      "organisation": "London Fire Brigade",
+      "title": "Houses and converted flats: escape plan",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/escape-plan/escape-plan-houses-and-converted-flats",
+      "accessed": "2026-11-22",
+      "limitations": "Building evacuation plans differ, especially in purpose-built flats.",
+      "relevant_pages": [
+        "shelter-house-fire",
+        "shelter-alarms"
+      ]
+    },
+    {
+      "id": "lfb-flats",
+      "organisation": "London Fire Brigade",
+      "title": "Purpose built flat or maisonette",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/escape-plan/escape-plan-blocks-of-flats",
+      "accessed": "2026-11-22",
+      "limitations": "Follow the specific building plan and fire service directions.",
+      "relevant_pages": [
+        "shelter-house-fire"
+      ]
+    },
+    {
+      "id": "lfb-alarms",
+      "organisation": "London Fire Brigade",
+      "title": "Smoke alarms and heat alarms",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/smoke-alarms-and-heat-alarms",
+      "accessed": "2026-11-22",
+      "limitations": "Seek tailored installation guidance for the home and occupants.",
+      "relevant_pages": [
+        "shelter-alarms"
+      ]
+    },
+    {
+      "id": "lfb-candles",
+      "organisation": "London Fire Brigade",
+      "title": "Candles",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/candles/",
+      "accessed": "2026-11-22",
+      "limitations": "Use a battery torch when possible.",
+      "relevant_pages": []
+    },
+    {
+      "id": "wales-camping",
+      "organisation": "Mid and West Wales Fire and Rescue Service",
+      "title": "Camping safety advice",
+      "url": "https://mawwfire.gov.uk/eng/your-safety/going-away/camping-safety-advice/",
+      "accessed": "2026-11-22",
+      "limitations": "Observe campsite-specific rules.",
+      "relevant_pages": [
+        "shelter-emergency",
+        "shelter-outdoor-fire",
+        "shelter-camping",
+        "food-cooking",
+        "food-stoves"
+      ]
+    },
+    {
+      "id": "mre-shelter",
+      "organisation": "Mountain Rescue England and Wales",
+      "title": "Ready for the unexpected \u2013 winter changes the rules",
+      "url": "https://www.mountain.rescue.org.uk/2026/10/ready-for-the-unexpected-winter-changes-the-rules/",
+      "accessed": "2026-11-22",
+      "limitations": "Mountain-specific advice; article includes a commercial partnership.",
+      "relevant_pages": [
+        "shelter-prevent-cold",
+        "shelter-emergency",
+        "navigation-route"
+      ]
+    },
+    {
+      "id": "mre-rescue",
+      "organisation": "Mountain Rescue England and Wales",
+      "title": "Fact File 6: How to stay safe",
+      "url": "https://www.mountain.rescue.org.uk/fact_file/fact-file-6-stay-safe-information/",
+      "accessed": "2026-11-22",
+      "limitations": "UK mountain-rescue arrangements; conditions vary.",
+      "relevant_pages": [
+        "shelter-prevent-cold",
+        "shelter-emergency",
+        "communications-emergency",
+        "communications-radio"
+      ]
+    },
+    {
+      "id": "adventuresmart",
+      "organisation": "AdventureSmartUK",
+      "title": "Know how and when to get help",
+      "url": "https://2026.adventuresmart.uk/know-how-and-when-to-get-help/?print=print",
+      "accessed": "2026-11-22",
+      "limitations": "Follow emergency operator directions; the situation determines whether movement is safe.",
+      "relevant_pages": [
+        "shelter-emergency",
+        "navigation-signal",
+        "navigation-lost"
+      ]
+    },
+    {
+      "id": "rns-understanding",
+      "organisation": "Reticulum Project",
+      "title": "Understanding Reticulum",
+      "url": "https://reticulum.network/manual/understanding.html",
+      "accessed": "2026-11-22",
+      "limitations": "Protocol behaviour and supported configuration depend on installed versions.",
+      "relevant_pages": [
+        "communications-reticulum",
+        "communications-mesh"
+      ]
+    },
+    {
+      "id": "rns-interfaces",
+      "organisation": "Reticulum Project",
+      "title": "Configuring Interfaces",
+      "url": "https://reticulum.network/manual/interfaces.html",
+      "accessed": "2026-11-22",
+      "limitations": "Radio configuration examples do not establish legality in every jurisdiction.",
+      "relevant_pages": [
+        "communications-lora",
+        "communications-signal",
+        "communications-antenna"
+      ]
+    },
+    {
+      "id": "rns-networks",
+      "organisation": "Reticulum Project",
+      "title": "Building Networks",
+      "url": "https://reticulum.network/manual/networks.html",
+      "accessed": "2026-11-22",
+      "limitations": "Topology and availability depend on configured transport nodes.",
+      "relevant_pages": [
+        "communications-reticulum",
+        "communications-nomad",
+        "communications-mesh",
+        "communications-offline",
+        "communications-power",
+        "communications-planning"
+      ]
+    },
+    {
+      "id": "rns-using",
+      "organisation": "Reticulum Project",
+      "title": "Using Reticulum on Your System",
+      "url": "https://reticulum.network/manual/using.html",
+      "accessed": "2026-11-22",
+      "limitations": "Displayed radio metrics depend on interface and hardware support.",
+      "relevant_pages": [
+        "communications-signal"
+      ]
+    },
+    {
+      "id": "nomad-guide",
+      "organisation": "Nomad Network Project",
+      "title": "Nomad Network in-app guide",
+      "url": "https://github.com/markqvist/NomadNet/blob/master/nomadnet/ui/textui/Guide.py",
+      "accessed": "2026-11-22",
+      "limitations": "Applies to Nomad Network; Ito integration is not yet verified.",
+      "relevant_pages": [
+        "communications-nomad"
+      ]
+    },
+    {
+      "id": "ofcom-ir2030",
+      "organisation": "Ofcom",
+      "title": "UK Interface Requirement 2030: Short Range Devices",
+      "url": "https://www.ofcom.org.uk/siteassets/resources/documents/spectrum/interface-requirements/ir-2030.pdf?v=426935",
+      "accessed": "2026-11-22",
+      "limitations": "Sub-band and use conditions differ and can change; consult the current version.",
+      "relevant_pages": [
+        "communications-lora",
+        "communications-antenna",
+        "communications-licensing"
+      ]
+    },
+    {
+      "id": "ofcom-amateur",
+      "organisation": "Ofcom",
+      "title": "Amateur radio guidance",
+      "url": "https://www.ofcom.org.uk/siteassets/resources/documents/manage-your-licence/amateur/amateur_radio_licence_guidance_for_licensees.pdf?v=405585",
+      "accessed": "2026-11-22",
+      "limitations": "General guidance; consult current licence conditions, including exceptions.",
+      "relevant_pages": [
+        "communications-licensing"
+      ]
+    },
+    {
+      "id": "ofcom-storm",
+      "organisation": "Ofcom",
+      "title": "Stay connected in severe weather",
+      "url": "https://www.ofcom.org.uk/phones-and-broadband/vulnerable-customers/stay-connected-in-severe-weather",
+      "accessed": "2026-11-22",
+      "limitations": "Network and device availability varies; satellite service is device-dependent.",
+      "relevant_pages": [
+        "communications-emergency",
+        "communications-offline",
+        "communications-power",
+        "communications-planning",
+        "power-medical"
+      ]
+    },
+    {
+      "id": "ofcom-sms",
+      "organisation": "Ofcom",
+      "title": "Accessibility of communications services",
+      "url": "https://www.ofcom.org.uk/phones-and-broadband/accessibility/accessibility",
+      "accessed": "2026-11-22",
+      "limitations": "Emergency SMS requires prior registration and network coverage.",
+      "relevant_pages": [
+        "communications-emergency"
+      ]
+    },
+    {
+      "id": "ofcom-pmr",
+      "organisation": "Ofcom",
+      "title": "Business Radio Guidance 2025: PMR446",
+      "url": "https://www.ofcom.org.uk/siteassets/resources/documents/spectrum/business-radio-licences/business-radio-guidance-document.pdf?v=408940",
+      "accessed": "2026-11-22",
+      "limitations": "UK equipment and licensing conditions; non-protected shared channel.",
+      "relevant_pages": [
+        "communications-radio",
+        "communications-licensing"
+      ]
+    },
+    {
+      "id": "ofcom-equipment",
+      "organisation": "Ofcom",
+      "title": "Rules on using radio equipment",
+      "url": "https://www.ofcom.org.uk/spectrum/radio-equipment/radio-spectrum-and-the-law",
+      "accessed": "2026-11-22",
+      "limitations": "Legal rules vary by equipment, use, location and licence.",
+      "relevant_pages": [
+        "communications-radio",
+        "communications-licensing"
+      ]
+    },
+    {
+      "id": "gov-commsplan",
+      "organisation": "UK Government",
+      "title": "Be ready for emergencies",
+      "url": "https://beready.campaign.gov.uk/be-ready-for-emergencies/",
+      "accessed": "2026-11-22",
+      "limitations": "Prepare contacts and backup communications for the household.",
+      "relevant_pages": [
+        "communications-offline",
+        "communications-power",
+        "communications-planning"
+      ]
+    },
+    {
+      "id": "esfi-antenna",
+      "organisation": "Electrical Safety Foundation International",
+      "title": "Protecting Big Ticket Items",
+      "url": "https://www.esfi.org/esfi-holiday-gift-guide-protecting-big-ticket-items/",
+      "accessed": "2026-11-22",
+      "limitations": "US safety advice; observe UK requirements and site conditions.",
+      "relevant_pages": [
+        "communications-antenna"
+      ]
+    },
+    {
+      "id": "semtech-lora",
+      "organisation": "Semtech",
+      "title": "LoRa FAQ",
+      "url": "https://www.semtech.com/design-support/faq/faq-lora/p0",
+      "accessed": "2026-11-22",
+      "limitations": "Receiver sensitivity varies by device and radio settings.",
+      "relevant_pages": [
+        "communications-signal"
+      ]
+    },
+    {
+      "id": "ofgem-psr",
+      "organisation": "Ofgem",
+      "title": "Join your supplier\u2019s Priority Services Register",
+      "url": "https://www.ofgem.gov.uk/your-energy-supply/how-manage-your-energy-supply/join-your-suppliers-priority-services-register",
+      "accessed": "2026-11-22",
+      "limitations": "Registration provides extra support; it does not guarantee uninterrupted supply.",
+      "relevant_pages": [
+        "power-prepare",
+        "power-loads",
+        "power-medical"
+      ]
+    },
+    {
+      "id": "ofgem-cut",
+      "organisation": "Ofgem",
+      "title": "Check if you can get a payment for a power cut",
+      "url": "https://www.ofgem.gov.uk/your-energy-supply/problems-your-energy-supply/check-if-you-can-get-payment-power-cut",
+      "accessed": "2026-11-22",
+      "limitations": "105 reaches a network operator in Great Britain; support varies.",
+      "relevant_pages": [
+        "power-prepare"
+      ]
+    },
+    {
+      "id": "lfb-batteries",
+      "organisation": "London Fire Brigade",
+      "title": "Chargers, batteries and fire safety",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/electrical-items/batteries-and-chargers/",
+      "accessed": "2026-11-22",
+      "limitations": "Use the device manufacturer\u2019s instructions and compatible equipment.",
+      "relevant_pages": [
+        "power-station",
+        "power-solar-portable",
+        "power-battery-safety",
+        "power-electrical",
+        "self-sufficiency-supplies",
+        "self-sufficiency-maintenance"
+      ]
+    },
+    {
+      "id": "bucks-batteries",
+      "organisation": "Buckinghamshire Fire and Rescue Service",
+      "title": "Lithium-ion batteries",
+      "url": "https://bucksfire.gov.uk/safety-hub/lithium-ion-batteries/",
+      "accessed": "2026-11-22",
+      "limitations": "Charging and fire advice; equipment-specific precautions may differ.",
+      "relevant_pages": [
+        "power-battery-safety"
+      ]
+    },
+    {
+      "id": "esf-bank",
+      "organisation": "Electrical Safety First",
+      "title": "Power banks and portable chargers",
+      "url": "https://www.electricalsafetyfirst.org.uk/safety-advice/products-and-appliances/gadgets-entertainment/power-banks/",
+      "accessed": "2026-11-22",
+      "limitations": "Device capacities and outputs depend on manufacturer specifications.",
+      "relevant_pages": [
+        "power-capacity",
+        "power-runtime",
+        "power-station"
+      ]
+    },
+    {
+      "id": "esf-power",
+      "organisation": "Electrical Safety First",
+      "title": "Ratings of electrical appliances",
+      "url": "https://www.electricalsafetyfirst.org.uk/safety-advice/home-and-people/house-maintenance/ratings-of-electrical-appliances/",
+      "accessed": "2026-11-22",
+      "limitations": "Examples are estimates; check actual equipment labels.",
+      "relevant_pages": [
+        "power-capacity",
+        "power-runtime",
+        "power-loads"
+      ]
+    },
+    {
+      "id": "nationalgrid-solar",
+      "organisation": "National Grid Electricity Distribution",
+      "title": "Low carbon technology protection FAQs",
+      "url": "https://customer.nationalgrid.co.uk/downloads-view-reciteme/689152",
+      "accessed": "2026-11-22",
+      "limitations": "Installed systems vary; a suitably designed island-mode system is required.",
+      "relevant_pages": [
+        "power-solar-home"
+      ]
+    },
+    {
+      "id": "hseni-generator",
+      "organisation": "Health and Safety Executive Northern Ireland",
+      "title": "Safety tips: using a portable generator in an emergency",
+      "url": "https://www.hseni.gov.uk/news/safety-tips-using-portable-generator-emergency",
+      "accessed": "2026-11-22",
+      "limitations": "Electrical connection and ventilation requirements depend on installation.",
+      "relevant_pages": [
+        "power-station",
+        "power-solar-home",
+        "power-generator",
+        "power-electrical",
+        "self-sufficiency-maintenance"
+      ]
+    },
+    {
+      "id": "gov-generator",
+      "organisation": "UK Government",
+      "title": "Keeping warm or cool in extreme weather",
+      "url": "https://www.gov.uk/government/publications/public-health-advice-from-uk-cmos-during-a-national-power-outage/keeping-warm-or-cool-in-extreme-weather-scripts-for-broadcast-media",
+      "accessed": "2026-11-22",
+      "limitations": "Generator distance is a minimum precaution; site and manufacturer guidance also apply.",
+      "relevant_pages": [
+        "power-generator"
+      ]
+    },
+    {
+      "id": "nationalgrid-safety",
+      "organisation": "National Grid Electricity Distribution",
+      "title": "Safety first",
+      "url": "https://powercuts.nationalgrid.co.uk/power-cut-advice/safety-first",
+      "accessed": "2026-11-22",
+      "limitations": "Keep away from all fallen or damaged power lines.",
+      "relevant_pages": [
+        "power-electrical",
+        "preparedness-storm"
+      ]
+    },
+    {
+      "id": "ecoflow-solar",
+      "organisation": "EcoFlow",
+      "title": "RIVER Gen4 support",
+      "url": "https://www.ecoflow.com/eu/river-4-series-portable-power-station/support",
+      "accessed": "2026-11-22",
+      "limitations": "Illustrative manufacturer guidance; input limits vary by product.",
+      "relevant_pages": [
+        "power-solar-portable"
+      ]
+    },
+    {
+      "id": "fsa-powercut",
+      "organisation": "Food Standards Agency",
+      "title": "Food safety in a power cut",
+      "url": "https://www.gov.uk/government/publications/food-safety-in-a-power-cut-advice-for-consumers/food-safety-in-a-power-cut-advice-for-consumers",
+      "accessed": "2026-11-22",
+      "limitations": "England, Wales and Northern Ireland; storage temperatures and times matter.",
+      "relevant_pages": [
+        "power-prepare",
+        "power-loads",
+        "food-power-cut",
+        "food-cooking",
+        "food-preservation",
+        "food-planning",
+        "food-hygiene"
+      ]
+    },
+    {
+      "id": "energy-solar",
+      "organisation": "US Department of Energy",
+      "title": "Solar and resilience basics",
+      "url": "https://www.energy.gov/cmei/systems/solar-and-resilience-basics",
+      "accessed": "2026-11-22",
+      "limitations": "General technology explanation; UK installations and requirements differ.",
+      "relevant_pages": [
+        "power-solar-home"
+      ]
+    },
+    {
+      "id": "gov-battery-recycle",
+      "organisation": "UK Government",
+      "title": "Consumer products: recycling batteries and electrical waste",
+      "url": "https://www.gov.uk/guidance/consumer-products-recycling-batteries-and-electrical-waste",
+      "accessed": "2026-11-22",
+      "limitations": "Disposal arrangements vary by location and battery type.",
+      "relevant_pages": [
+        "power-battery-safety"
+      ]
+    },
+    {
+      "id": "fsa-food-poison",
+      "organisation": "Food Standards Agency",
+      "title": "Food poisoning",
+      "url": "https://www.food.gov.uk/food-safety-and-hygiene/food-poisoning",
+      "accessed": "2026-11-22",
+      "limitations": "Use-by dates concern safety, not just quality.",
+      "relevant_pages": [
+        "food-storage",
+        "food-power-cut",
+        "food-planning",
+        "food-hygiene"
+      ]
+    },
+    {
+      "id": "fsa-chilling",
+      "organisation": "Food Standards Agency",
+      "title": "How to chill, freeze and defrost food safely",
+      "url": "https://www.food.gov.uk/print/pdf/node/195",
+      "accessed": "2026-11-22",
+      "limitations": "Household recommendations; follow current local notices.",
+      "relevant_pages": [
+        "food-preservation"
+      ]
+    },
+    {
+      "id": "fsa-cooking",
+      "organisation": "Food Standards Agency",
+      "title": "Cooking your food",
+      "url": "https://www.food.gov.uk/safety-hygiene/cooking-your-food",
+      "accessed": "2026-11-22",
+      "limitations": "Specific foods and vulnerable people may need additional precautions.",
+      "relevant_pages": [
+        "food-cooking"
+      ]
+    },
+    {
+      "id": "fsa-cleaning",
+      "organisation": "Food Standards Agency",
+      "title": "Cleaning",
+      "url": "https://www.food.gov.uk/print/pdf/node/194",
+      "accessed": "2026-11-22",
+      "limitations": "Use safe water and appropriate cleaning products.",
+      "relevant_pages": [
+        "food-hygiene",
+        "self-sufficiency-growing"
+      ]
+    },
+    {
+      "id": "fsa-botulism",
+      "organisation": "Food Standards Agency",
+      "title": "Botulism",
+      "url": "https://www.food.gov.uk/safety-hygiene/botulism-clostridium-botulinum",
+      "accessed": "2026-11-22",
+      "limitations": "Home preservation requires validated methods.",
+      "relevant_pages": [
+        "food-preservation"
+      ]
+    },
+    {
+      "id": "gov-water-outage",
+      "organisation": "UK Government",
+      "title": "Water supply interruptions or outages",
+      "url": "https://beready.campaign.gov.uk/be-informed-about-hazards/water-supply-interruptions-or-outages/",
+      "accessed": "2026-11-22",
+      "limitations": "Rainwater is not a potable supply.",
+      "relevant_pages": [
+        "water-rainwater",
+        "preparedness-sanitation",
+        "self-sufficiency-water"
+      ]
+    },
+    {
+      "id": "gov-sanitation",
+      "organisation": "UK Government",
+      "title": "Water and sanitation: power outage",
+      "url": "https://www.gov.uk/government/publications/public-health-advice-from-uk-cmos-during-a-national-power-outage/water-and-sanitation-scripts-for-broadcast-media",
+      "accessed": "2026-11-22",
+      "limitations": "Guidance is for national power outages; follow local waste instructions.",
+      "relevant_pages": [
+        "preparedness-sanitation"
+      ]
+    },
+    {
+      "id": "gov-flood-during",
+      "organisation": "UK Government",
+      "title": "What to do before or during a flood",
+      "url": "https://www.gov.uk/help-during-flood",
+      "accessed": "2026-11-22",
+      "limitations": "Follow local evacuation and emergency service instructions.",
+      "relevant_pages": [
+        "preparedness-flood",
+        "preparedness-evacuation"
+      ]
+    },
+    {
+      "id": "met-weatherready",
+      "organisation": "Met Office",
+      "title": "Top tips to be WeatherReady",
+      "url": "https://weather.metoffice.gov.uk/warnings-and-advice/weatherready/top-tips-to-be-weatherready",
+      "accessed": "2026-11-22",
+      "limitations": "Forecasts and local risks can change.",
+      "relevant_pages": [
+        "preparedness-evacuation",
+        "preparedness-storm"
+      ]
+    },
+    {
+      "id": "os-map",
+      "organisation": "Ordnance Survey",
+      "title": "Map reading",
+      "url": "https://www.ordnancesurvey.co.uk/documents/resources/map-reading.pdf",
+      "accessed": "2026-11-22",
+      "limitations": "Map symbols and magnetic variation change; use the map\u2019s legend.",
+      "relevant_pages": [
+        "navigation-maps",
+        "navigation-compass",
+        "navigation-without-gps"
+      ]
+    },
+    {
+      "id": "os-compass",
+      "organisation": "Ordnance Survey",
+      "title": "Compass bearings",
+      "url": "https://www.ordnancesurvey.co.uk/mapzone/map-skills/compass-bearings/page-three",
+      "accessed": "2026-11-22",
+      "limitations": "Magnetic declination varies by location and date.",
+      "relevant_pages": [
+        "navigation-compass"
+      ]
+    },
+    {
+      "id": "rhs-containers",
+      "organisation": "Royal Horticultural Society",
+      "title": "Vegetables in containers",
+      "url": "https://www.rhs.org.uk/vegetables/containers",
+      "accessed": "2026-11-22",
+      "limitations": "Crop selection and timings vary with growing conditions.",
+      "relevant_pages": [
+        "self-sufficiency-growing"
+      ]
+    },
+    {
+      "id": "rhs-water",
+      "organisation": "Royal Horticultural Society",
+      "title": "Watering vegetables and fruit",
+      "url": "https://www.rhs.org.uk/vegetables/watering",
+      "accessed": "2026-11-22",
+      "limitations": "Water needs vary by crop and conditions.",
+      "relevant_pages": [
+        "self-sufficiency-growing",
+        "self-sufficiency-water"
+      ]
+    },
+    {
+      "id": "mre-safety",
+      "organisation": "Mountain Rescue England and Wales",
+      "title": "Stay safe",
+      "url": "https://www.mountain.rescue.org.uk/safety/",
+      "accessed": "2026-11-22",
+      "limitations": "Emergency procedure is for England and Wales; follow the call handler.",
+      "relevant_pages": [
+        "navigation-maps",
+        "navigation-without-gps",
+        "navigation-route",
+        "navigation-signal",
+        "navigation-lost"
+      ]
+    },
+    {
+      "id": "gov-flood-health",
+      "organisation": "UK Government",
+      "title": "How to recover from flooding",
+      "url": "https://www.gov.uk/government/publications/flooding-and-health-advice-for-frontline-responders/how-to-recover-from-flooding",
+      "accessed": "2026-11-22",
+      "limitations": "Flood water may contain sewage and chemicals.",
+      "relevant_pages": [
+        "food-power-cut",
+        "food-cooking",
+        "food-hygiene",
+        "preparedness-sanitation"
+      ]
+    }
+  ]
+}

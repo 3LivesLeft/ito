@@ -122,6 +122,10 @@ def slug(title: str, taken: set[str]) -> str:
     return candidate
 
 
+KNOWLEDGE_BUNDLE = Path("/usr/share/meshbeacon/frontend/knowledge.json")
+KNOWLEDGE_FILE = re.compile(r"ito-guide--[a-z0-9-]{1,29}\.mu")
+
+
 class Store:
     def __init__(self, root: Path = ROOT, *, group: str | None = GROUP, clock: Any = time.time) -> None:
         self.root = root
@@ -129,6 +133,7 @@ class Store:
         self.public = root / "public"
         self.site_file = root / "site.json"
         self.clock = clock
+        self._library_synced: bool | None = None
         self.lock = threading.Lock()
         self.gid: int | None = None
         if group:
@@ -148,6 +153,7 @@ class Store:
         raw = fsutil.read_json(self.site_file)
         site: dict[str, Any] = {
             "hosting": False,
+            "share_knowledge": False,
             "default_created": False,
             "node_name": "",
             "description": "",
@@ -157,6 +163,7 @@ class Store:
         if not isinstance(raw, dict):
             return site
         site["hosting"] = raw.get("hosting") is True
+        site["share_knowledge"] = raw.get("share_knowledge") is True
         site["default_created"] = raw.get("default_created") is True
         if valid_node_name(raw.get("node_name")):
             site["node_name"] = raw["node_name"]
@@ -225,6 +232,7 @@ class Store:
             site = self._load()
             return {
                 "hosting": site["hosting"],
+                "share_knowledge": site["share_knowledge"],
                 "node_name": site["node_name"],
                 "description": site["description"],
                 "pages": self._pages(site),
@@ -235,6 +243,34 @@ class Store:
         with self.lock:
             site = self._load()
             return site["hosting"], site["node_name"]
+
+    def sync_knowledge(self) -> None:
+        """Reconcile the public copies after startup or an app image update."""
+        with self.lock:
+            site = self._load()
+            self._sync_knowledge(site)
+
+    def _sync_knowledge(self, site: dict[str, Any]) -> None:
+        wanted = site["hosting"] and site["share_knowledge"]
+        if self._library_synced == wanted:
+            return
+        desired = {}
+        if wanted:
+            bundle = fsutil.read_json(KNOWLEDGE_BUNDLE)
+            if not isinstance(bundle, dict) or not bundle.get("pages"):
+                raise StoreError("unavailable", "The bundled knowledge library is unavailable.")
+            desired = bundle["pages"]
+            if any(not KNOWLEDGE_FILE.fullmatch(name) or name[:-3] in site["pages"] for name in desired):
+                raise StoreError("invalid", "The library contains a conflicting page name.")
+        self._library_synced = None
+        self._prepare()
+        for entry in self.public.glob("ito-guide--*.mu"):
+            if KNOWLEDGE_FILE.fullmatch(entry.name) and entry.stem not in site["pages"] and entry.name not in desired:
+                entry.unlink()
+        for name in sorted(desired, key=lambda name: name == "ito-guide--index.mu"):
+            item = desired[name]
+            self._publish_file(name[:-3], item["content"])
+        self._library_synced = wanted
 
     # -- operations ----------------------------------------------------------------------------
     def handle(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -293,6 +329,14 @@ class Store:
             site["node_name"], site["description"] = name, desc.strip()
             self._save(site)
             return {}
+        if op == "share_knowledge":
+            enabled = request.get("enabled")
+            if not isinstance(enabled, bool) or (enabled and not site["hosting"]):
+                raise StoreError("invalid", "Start hosting before sharing the library.")
+            site["share_knowledge"] = enabled
+            self._sync_knowledge(site)
+            self._save(site)
+            return {}
         if op == "hosting":
             enabled = request.get("enabled")
             if not isinstance(enabled, bool):
@@ -311,6 +355,7 @@ class Store:
                 site["default_created"] = created = True
             site["hosting"] = enabled
             self._save(site)
+            self._sync_knowledge(site)
             return {"created_default": created}
         if op == "bookmark_add":
             item = {k: request.get(k) for k in ("address", "path", "title")}

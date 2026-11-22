@@ -7,6 +7,8 @@ import argparse
 import shutil
 from pathlib import Path
 
+from build_knowledge import build
+
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "custom_components/meshbeacon/frontend"
 TARGET = ROOT / "meshbeacon/frontend"
@@ -14,6 +16,8 @@ TARGET = ROOT / "meshbeacon/frontend"
 
 def sync(check: bool = False) -> bool:
     wanted = {p.relative_to(SOURCE): p.read_bytes() for p in SOURCE.rglob("*") if p.is_file()}
+    if (ROOT / "content/knowledge/manifest.json").is_file():
+        wanted[Path("knowledge.json")] = build(ROOT)
     existing = {p.relative_to(TARGET): p.read_bytes() for p in TARGET.rglob("*") if p.is_file()}
     if check:
         return wanted == existing
