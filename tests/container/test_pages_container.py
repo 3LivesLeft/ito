@@ -14,6 +14,7 @@ unaffected. Only local containers on no network; nothing connects outside.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from collections.abc import Callable, Iterator
@@ -25,8 +26,11 @@ from .test_container import DEFAULTS
 from .test_messaging_container import IMAGE, App, count_engines, engine_up, wait_for
 from .test_messaging_container import ON as MESSAGING_ON
 from .test_messaging_container import pytestmark as messaging_marks
+from .test_messaging_container import request as engine_request
 
 pytestmark = messaging_marks
+# The 0.5 app (the develop branch before 0.6.0), for the upgrade test.
+PREVIOUS_05 = os.environ.get("MESHBEACON_PREVIOUS_05_IMAGE", "")
 PAGES = {**DEFAULTS, "pages_enabled": True}
 HEX32 = re.compile(r"(?<![0-9a-f])[0-9a-f]{32,}(?![0-9a-f])", re.I)
 
@@ -206,3 +210,41 @@ def test_options_from_0_5_without_the_pages_key_still_start(apps):
     app = apps(IMAGE, options)
     assert wait_for(lambda: "not connected to anyone" in app.logs()), app.logs()
     assert "Nomad Network pages: off" in app.logs() and app.health()
+
+
+@pytest.mark.skipif(not PREVIOUS_05, reason="needs MESHBEACON_PREVIOUS_05_IMAGE (the 0.5 app)")
+def test_upgrade_from_0_5_keeps_identities_contacts_and_messages_and_leaves_pages_off(apps):
+    """Update in place from 0.5 with messaging on: the same data folder, the same options (which
+    have no ``pages_enabled``). Everything is kept and pages stay off until switched on."""
+    old = apps(PREVIOUS_05, MESSAGING_ON)
+    assert wait_for(lambda: engine_up(old), 120), old.logs()
+    sent = engine_request(
+        old,
+        {
+            "op": "send",
+            "contact": "phone",
+            "title": "",
+            "text": "Kept across the update",
+            "idempotency_key": "upgrade-05",
+        },
+    )
+    assert sent and sent.get("ok") is True, sent
+    before = {
+        path: old.exec("sha256sum", path).split()[0]
+        for path in ("/data/reticulum/storage/transport_identity", "/data/messaging/identity")
+    }
+    old.remove()
+
+    new = apps(IMAGE, MESSAGING_ON, data=old.data)
+    assert wait_for(lambda: engine_up(new), 120), new.logs()
+    assert {path: new.exec("sha256sum", path).split()[0] for path in before} == before
+    history = engine_request(new, {"op": "history", "contact": "phone", "limit": 10})
+    assert history and any(m.get("text") == "Kept across the update" for m in history["messages"]), history
+    assert "Nomad Network pages: off" in new.logs() and owners(new, "meshbeacon.pages") == []
+    assert not (old.data / "nomadnet").exists() and not (old.data / "pages").exists()
+    new.remove()
+
+    on = apps(IMAGE, {**MESSAGING_ON, "pages_enabled": True}, data=old.data)
+    assert wait_for(lambda: pages_up(on) and engine_up(on), 120), on.logs()
+    history = engine_request(on, {"op": "history", "contact": "phone", "limit": 10})
+    assert history and any(m.get("text") == "Kept across the update" for m in history["messages"]), history
