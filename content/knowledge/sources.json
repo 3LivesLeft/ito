@@ -151,6 +151,118 @@
       "url": "https://www.sja.org.uk/get-advice/free-first-aid-resources/be-ready/",
       "accessed": "2026-11-22",
       "limitations": "Kit contents depend on household needs."
+    },
+    {
+      "id": "nhs-co",
+      "organisation": "NHS",
+      "title": "Carbon monoxide poisoning",
+      "url": "https://www.nhs.uk/conditions/carbon-monoxide-poisoning/",
+      "accessed": "2026-11-22",
+      "limitations": "Urgent medical advice is needed even after leaving the source."
+    },
+    {
+      "id": "met-cold",
+      "organisation": "Met Office",
+      "title": "How cold weather affects your health",
+      "url": "https://weather.metoffice.gov.uk/warnings-and-advice/seasonal-advice/health-wellbeing/stay-well-in-winter",
+      "accessed": "2026-11-22",
+      "limitations": "Health risks differ between people."
+    },
+    {
+      "id": "met-home",
+      "organisation": "Met Office",
+      "title": "Keeping your home warm this winter",
+      "url": "https://weather.metoffice.gov.uk/warnings-and-advice/seasonal-advice/your-home/keeping-your-home-warm-in-winter",
+      "accessed": "2026-11-22",
+      "limitations": "Maintain ventilation needed for fuel-burning appliances."
+    },
+    {
+      "id": "met-heat",
+      "organisation": "Met Office",
+      "title": "Hot weather and its impacts",
+      "url": "https://weather.metoffice.gov.uk/warnings-and-advice/seasonal-advice/health-wellbeing/hot-weather-and-its-impacts",
+      "accessed": "2026-11-22",
+      "limitations": "Personal heat risk differs, particularly with medical conditions."
+    },
+    {
+      "id": "gov-outdoor-fire",
+      "organisation": "UK Government",
+      "title": "Fire safety outdoors",
+      "url": "https://www.gov.uk/government/publications/fire-safety-outdoors/fire-safety-outdoors-accessible-version",
+      "accessed": "2026-11-22",
+      "limitations": "Site rules and wildfire restrictions may be stricter."
+    },
+    {
+      "id": "gov-wildfires",
+      "organisation": "UK Government",
+      "title": "Wildfires",
+      "url": "https://beready.campaign.gov.uk/be-informed-about-hazards/wildfires/",
+      "accessed": "2026-11-22",
+      "limitations": "Follow current local warnings and emergency instructions."
+    },
+    {
+      "id": "lfb-escape",
+      "organisation": "London Fire Brigade",
+      "title": "Houses and converted flats: escape plan",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/escape-plan/escape-plan-houses-and-converted-flats",
+      "accessed": "2026-11-22",
+      "limitations": "Building evacuation plans differ, especially in purpose-built flats."
+    },
+    {
+      "id": "lfb-flats",
+      "organisation": "London Fire Brigade",
+      "title": "Purpose built flat or maisonette",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/escape-plan/escape-plan-blocks-of-flats",
+      "accessed": "2026-11-22",
+      "limitations": "Follow the specific building plan and fire service directions."
+    },
+    {
+      "id": "lfb-alarms",
+      "organisation": "London Fire Brigade",
+      "title": "Smoke alarms and heat alarms",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/smoke-alarms-and-heat-alarms",
+      "accessed": "2026-11-22",
+      "limitations": "Seek tailored installation guidance for the home and occupants."
+    },
+    {
+      "id": "lfb-candles",
+      "organisation": "London Fire Brigade",
+      "title": "Candles",
+      "url": "https://www.london-fire.gov.uk/safety/the-home/candles/",
+      "accessed": "2026-11-22",
+      "limitations": "Use a battery torch when possible."
+    },
+    {
+      "id": "wales-camping",
+      "organisation": "Mid and West Wales Fire and Rescue Service",
+      "title": "Camping safety advice",
+      "url": "https://mawwfire.gov.uk/eng/your-safety/going-away/camping-safety-advice/",
+      "accessed": "2026-11-22",
+      "limitations": "Observe campsite-specific rules."
+    },
+    {
+      "id": "mre-shelter",
+      "organisation": "Mountain Rescue England and Wales",
+      "title": "Ready for the unexpected \u2013 winter changes the rules",
+      "url": "https://www.mountain.rescue.org.uk/2026/10/ready-for-the-unexpected-winter-changes-the-rules/",
+      "accessed": "2026-11-22",
+      "limitations": "Mountain-specific advice; article includes a commercial partnership."
+    },
+    {
+      "id": "mre-rescue",
+      "organisation": "Mountain Rescue England and Wales",
+      "title": "Fact File 6: How to stay safe",
+      "url": "https://www.mountain.rescue.org.uk/fact_file/fact-file-6-stay-safe-information/",
+      "accessed": "2026-11-22",
+      "limitations": "UK mountain-rescue arrangements; conditions vary."
+    },
+    {
+      "id": "adventuresmart",
+      "organisation": "AdventureSmartUK",
+      "title": "Know how and when to get help",
+      "url": "https://2026.adventuresmart.uk/know-how-and-when-to-get-help/?print=print",
+      "accessed": "2026-11-22",
+      "limitations": "Follow emergency operator directions; the situation determines whether movement is safe."
     }
   ]
 }

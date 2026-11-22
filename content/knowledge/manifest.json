@@ -454,6 +454,253 @@
       "sha256": "d520207a6270f062270eb1aecf6391b759ad9789b46f13f21dc5125ecf79c6cd",
       "related_pages": [],
       "page_type": "standard"
+    },
+    {
+      "id": "shelter-warm-home",
+      "title": "Staying warm without heating",
+      "category": "shelter",
+      "path": "pages/shelter/warm-home.mu",
+      "description": "Keep dry, wear layers and seek help before a home becomes dangerously cold.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "met-cold",
+        "nhs-co",
+        "nhs-hypothermia"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 912,
+      "sha256": "0ad9819c247d910ac9d95733b6e69909eb4b4d4f7833e6592d45572fcdcee95c",
+      "related_pages": [
+        "first-aid-hypothermia",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-prevent-cold",
+      "title": "Preventing hypothermia",
+      "category": "shelter",
+      "path": "pages/shelter/prevent-cold.mu",
+      "description": "Cold, wind and wet clothes can cause dangerous heat loss, even above freezing.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-rescue",
+        "mre-shelter",
+        "nhs-hypothermia"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 867,
+      "sha256": "6346dabfbbf05a0372e7379389ad65ab7f8ee44344c1d868f60d0aade6218602",
+      "related_pages": [
+        "first-aid-hypothermia",
+        "shelter-emergency"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-emergency",
+      "title": "Emergency outdoor shelter",
+      "category": "shelter",
+      "path": "pages/shelter/emergency.mu",
+      "description": "Get out of immediate danger, protect the group from wind and rain, and call for help early.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-shelter",
+        "mre-rescue",
+        "adventuresmart",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1014,
+      "sha256": "e4f8a4ef83345e524b487c82a5434ba967d3655955dbf7660b9cc3eaa1823aa3",
+      "related_pages": [
+        "shelter-prevent-cold",
+        "first-aid-hypothermia"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-outdoor-fire",
+      "title": "Lighting a fire outdoors",
+      "category": "shelter",
+      "path": "pages/shelter/outdoor-fire.mu",
+      "description": "Avoid lighting a fire when there is wildfire risk or local rules prohibit it.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-outdoor-fire",
+        "gov-wildfires",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 946,
+      "sha256": "32889e748b6b2c0b48276e89d98eed21181976212d0b315a4b26fb6805ddd62a",
+      "related_pages": [
+        "shelter-wildfire",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-house-fire",
+      "title": "Fire in your home",
+      "category": "shelter",
+      "path": "pages/shelter/house-fire.mu",
+      "description": "Warn others. If you can escape safely, get out, stay out and call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "lfb-escape",
+        "lfb-flats"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 884,
+      "sha256": "0be854d2d32e8711b7f24897575bc0d4041a609647e9960cb7295b38f6f865e7",
+      "related_pages": [
+        "shelter-alarms"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-carbon-monoxide",
+      "title": "Carbon monoxide poisoning",
+      "category": "shelter",
+      "path": "pages/shelter/carbon-monoxide.mu",
+      "description": "If you suspect carbon monoxide, get outside into fresh air immediately.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1056,
+      "sha256": "864314baa972cc8e1a0c8bf5fe5473d1f69f3116a7cdc81c15667e846b28c342",
+      "related_pages": [
+        "shelter-warm-home",
+        "shelter-camping"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-insulation",
+      "title": "Keeping heat in safely",
+      "category": "shelter",
+      "path": "pages/shelter/insulation.mu",
+      "description": "Reduce draughts and use dry layers, while keeping essential ventilation clear.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "met-home",
+        "met-cold",
+        "nhs-co",
+        "nhs-hypothermia"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 933,
+      "sha256": "51690fa92b9906d684ce0e8266eaf08cc431afa642308cb3e73ae1f72a5b40a7",
+      "related_pages": [
+        "shelter-warm-home",
+        "first-aid-hypothermia"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-heat-prevention",
+      "title": "Staying safe in extreme heat",
+      "category": "shelter",
+      "path": "pages/shelter/heat-prevention.mu",
+      "description": "Move to a cooler place, drink regularly and watch for signs of heat illness.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "met-heat",
+        "nhs-heat"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 920,
+      "sha256": "b188f702959eb31bc3a1af03ad2600541be9c1d4e3542e1e26994d7f70312956",
+      "related_pages": [
+        "first-aid-heat"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-alarms",
+      "title": "Smoke, heat and CO alarms",
+      "category": "shelter",
+      "path": "pages/shelter/alarms.mu",
+      "description": "Working alarms give early warning. Test them regularly and keep exits clear.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "lfb-alarms",
+        "nhs-co",
+        "lfb-escape"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 971,
+      "sha256": "df66eb4883caad23aaa06ce8fe86d3c23403e7a9a5dab42d2a47d6b4d47fde93",
+      "related_pages": [
+        "shelter-house-fire",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-camping",
+      "title": "Tent and camping fire safety",
+      "category": "shelter",
+      "path": "pages/shelter/camping.mu",
+      "description": "Keep stoves, heaters, barbecues and flames out of tents and enclosed shelters.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "wales-camping",
+        "gov-outdoor-fire",
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 924,
+      "sha256": "79c1ad624a5966c361daa39970c393eee92de4f4c97b6db5de49545d7b4b68ff",
+      "related_pages": [
+        "shelter-carbon-monoxide",
+        "shelter-outdoor-fire"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-wildfire",
+      "title": "Wildfire safety",
+      "category": "shelter",
+      "path": "pages/shelter/wildfire.mu",
+      "description": "If you see an uncontrolled outdoor fire, move away and call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-wildfires",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 820,
+      "sha256": "d6b960883159b6dd773fc792abecb7c83da0128b6a4c80c81a36bc712be02dba",
+      "related_pages": [
+        "shelter-outdoor-fire"
+      ],
+      "page_type": "standard"
     }
   ]
 }
