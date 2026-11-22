@@ -6,4 +6,4 @@ The core has no Home Assistant dependencies. Only :mod:`meshbeacon.prepare` and
 that the long-running supervisor stays small.
 """
 
-__version__ = "0.4.1"
+__version__ = "0.6.1"

@@ -1,5 +1,8 @@
 # ADR 0015: Distribution through the app store and the Marketplace
 
+> **Superseded for app 0.5.0:** the maintainer approved Ingress and a bundled dashboard on
+> 21 November 2026. See [ADR 0026](../adr/0026-app-dashboard-and-setup.md). The original decision below is retained as history.
+
 - **Status:** **Accepted** (maintainer, 19 Nov 2026: decisions D1, D2, D4, D11; D3 in principle).
   Implemented as milestone M1 on `feature/v0.3.0-install-ready`. **Nothing is published:** images
   and releases follow at M2, after approval.

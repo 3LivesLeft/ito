@@ -66,3 +66,10 @@ def test_new_unreviewed_go_module_still_fails():
 def test_new_strong_copyleft_or_nc_still_fails():
     assert cl.check(sbom({"name": "x", "licenseDeclared": "AGPL-3.0-only"}))
     assert cl.check(sbom({"name": "y", "licenseDeclared": "LicenseRef-Unknown-Thing"}))
+
+
+def test_nomadnet_is_checked_as_gpl_whatever_its_metadata_says():
+    """Its PyPI classifier says MIT; its licence file says GPL-3.0 (ADR 0027 F1)."""
+    assert cl.package_licence({"name": "nomadnet", "licenseDeclared": "MIT"}) == "GPL-3.0-only"
+    assert not cl.check(sbom({"name": "nomadnet", "licenseDeclared": "MIT"}))
+    assert cl.package_licence({"name": "urwid", "licenseDeclared": "NOASSERTION"}) == "LGPL-2.1-only"

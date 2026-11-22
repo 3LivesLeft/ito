@@ -198,3 +198,32 @@ feasibility Q-27.
 
 Revisit this model at every minor version, whenever a permission or default changes, and before
 the v1.0 external security audit.
+
+## App dashboard amendment (21 Nov 2026, ADR 0026)
+
+Ingress is now accepted by the maintainer. The internal Supervisor-to-app hop is plain HTTP;
+network interception remains an accepted limitation. The app trusts only the actual Supervisor
+peer, uses no forwarded IP for authentication, and relies on Supervisor's admin-only Ingress
+access. POST requires JSON plus a non-simple request header; no CORS permission is emitted.
+Static paths are allow-listed and content-versioned. Requests, concurrency and time are bounded.
+Management admits only validated self-options, self-restart and first-run sidebar enablement.
+No arbitrary proxy, identity replacement, broader Supervisor role, external port or host mount is
+introduced. Optional integration TLS and existing process/user separation remain in place.
+
+## Nomad Network pages (v0.6.0, ADR 0027; implemented on the feature branch, awaiting review)
+
+New assets: the page host's identity (`/data/nomadnet/nomadnet/storage/identity`, `mb-nomad`
+0600), the user's drafts and published pages (`/data/pages`, the core's), bookmarks and heard
+nodes. New boundary B13: other Reticulum users ↔ the pages service and the Nomad Network daemon.
+
+| ID | Boundary | STRIDE | Threat | Control | Status |
+|---|---|---|---|---|---|
+| T84 | B13 → browser | T/E | **A remote page carries script, HTML or a hostile link** to run code in the Home Assistant session or reach its API | Pages are parsed into data (`micron.js`) and built with `textContent` only; no HTML, styles, colours, images or forms; only `/page/*.mu` Nomad links are followed, inside the viewer; the dashboard's CSP (`script-src 'self'`) stays; no browser storage. Tested with hostile content in Chromium (`tools/pages_browser_check.py`) and in unit tests | Implemented |
+| T85 | B13 → service | D | **Oversized, slow or malformed answers; many requests** | Address and path allow-lists (no `..`, no other request types); 30 s per fetch; 256 KiB answers; 2 fetches at once and 30 a minute in the service, 30 a minute in the core; at most 4 links, closed after 2 min idle; untrusted bytes decoded with replacement and stripped of control characters | Implemented |
+| T86 | B13 → daemon | D | **Strangers fill the page host's LXMF inbox or storage** (anyone who sees its announce can message its identity, F4) | Stamp cost 16, 1 KB per message, its own address never announced, no propagation; storage checked every 5 min, hosting stops above 64 MiB; backups exclude its cache | Implemented (residual: up to 64 MiB of unread messages) |
+| T87 | B9 | E | **The daemon runs a page as a script** (it executes any page file with the execute bit, F6) | Pages are the core's files, 0640, never executable; the daemon's user cannot write to `public/`; AppArmor forbids execution from `/data` | Implemented (container test) |
+| T88 | B12 | T/D | **The daemon becomes the shared instance** while Reticulum is down (it does not require one, F5), so that ito's node runs as its client | The core runs the service only while Reticulum is up and stops it when Reticulum stops; the service starts the daemon only while connected; the node now exits if another program holds the instance, so the core restarts in order | Implemented |
+| T89 | B12 | E | **The pages service misuses the node's RPC** (it holds the shared key, ADR 0023) | As T80: interface management off; pages off by default; separate user `mb-nomad` | Accepted (as T80) |
+| T90 | B9 | I | **Drafts or other services' data leak to the network** | Drafts are the core's alone (0700/0600); only `public/` is the daemon's `pages_path`; `mb-nomad` cannot read Reticulum's, messaging's or the core's folders or `options.json` (container test); the node address is shown in the dashboard only, never in the status API or logs | Implemented |
+| T91 | B13 | S | **A page or announce impersonates a known node by name** | Names are shown as untrusted text beside the address; navigation is by address; "reachable" only after a successful fetch | Accepted (inherent to announces) |
+| T92 | Supply chain | T | **A compromised `nomadnet`, `urwid` or `wcwidth` release** | Hash-pinned wheels from PyPI, binary-only, no dependencies resolved at build time; releases public for some weeks preferred; GPL program run separately under its own user | Implemented |

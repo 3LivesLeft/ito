@@ -1,0 +1,1691 @@
+{
+  "version": "0.1.0-draft",
+  "pages": [
+    {
+      "id": "water-safe-water",
+      "title": "Making water safe",
+      "category": "water",
+      "path": "pages/water/safe-water.mu",
+      "description": "Use a known safe supply first. Follow the water supplier\u2019s notice.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water",
+        "dwi"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 724,
+      "sha256": "003b13c439c153efaf0087f7871b8a710a90a361e154498ffed6046ddb0fa572",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-sources",
+      "title": "Finding emergency water",
+      "category": "water",
+      "path": "pages/water/sources.mu",
+      "description": "Use water from a confirmed safe source.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water",
+        "cdc-storage"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 714,
+      "sha256": "a360ea6cf108c177853feee73a180f1ab0d1346e2b73d06002b0770353d9601c",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-boiling",
+      "title": "Boiling water",
+      "category": "water",
+      "path": "pages/water/boiling.mu",
+      "description": "Boiling kills disease-causing germs; it does not remove chemical pollution.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water",
+        "dwi"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 641,
+      "sha256": "47c6c5befdcf9c8e234482452f39543c94ce2926c5ca905c267855bb2e3b837d",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-filtration",
+      "title": "Water filters and their limits",
+      "category": "water",
+      "path": "pages/water/filtration.mu",
+      "description": "A clear-looking drink can still be unsafe.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 674,
+      "sha256": "b238973d48b055b407bc82319cfee0c39df4f82f66da4da56829f1cb722b7151",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-disinfection",
+      "title": "Chemical disinfection",
+      "category": "water",
+      "path": "pages/water/disinfection.mu",
+      "description": "Use only a product labelled for drinking water and follow its instructions.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 745,
+      "sha256": "18dd16e291ca7c1cb141ec2af0e3af5a3d3f6e3b9cf2421966ff7825185e3f27",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-storage",
+      "title": "Storing drinking water",
+      "category": "water",
+      "path": "pages/water/storage.mu",
+      "description": "Store safe drinking water in clean, food-grade containers with tight lids.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-storage",
+        "lfb-kit"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 727,
+      "sha256": "33f416a33412cdd8ecca0758e3a1d5aedc3151f865c47e0c1cdad32fef4fc487",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-rainwater",
+      "title": "Collecting rainwater",
+      "category": "water",
+      "path": "pages/water/rainwater.mu",
+      "description": "Rainwater from a roof or water butt is not safe to drink untreated.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "cdc-water",
+        "gov-water-outage"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 640,
+      "sha256": "05ed1579bacd944d6cde5f24d21708864143d7091e8ae066337fa6f3e6cdda07",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-dehydration",
+      "title": "Recognising dehydration",
+      "category": "water",
+      "path": "pages/water/dehydration.mu",
+      "description": "Offer safe fluids early if the person is awake and able to swallow.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-dehydration"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 739,
+      "sha256": "2984c8e439359b6f2eddbc5330a617c00b6cda4696ed228e098666631e3ac391",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-kit",
+      "title": "Household emergency kit",
+      "category": "preparedness",
+      "path": "pages/preparedness/kit.mu",
+      "description": "Keep essential supplies together where everyone can find them.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready",
+        "lfb-kit"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 701,
+      "sha256": "00b6d8be7ccd42b4cdb3cd455c5bca32fb4f1b1ce8fa1614bcd9a69e899c1242",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-plan",
+      "title": "Household emergency plan",
+      "category": "preparedness",
+      "path": "pages/preparedness/plan.mu",
+      "description": "Agree how to contact each other and where to meet.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 653,
+      "sha256": "7975dd06d0b06f8f4b2cc4927b0215c49c95dae03fdd852bec7838510eb4bdb2",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-power-cut",
+      "title": "During a power cut",
+      "category": "preparedness",
+      "path": "pages/preparedness/power-cut.mu",
+      "description": "Check whether neighbours are affected and report the fault.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-power",
+        "gov-ready"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 749,
+      "sha256": "038fd4bbc4ae9ad501d0fb900bb8ef548c89e5ac78b7495a06a73c1fddd7add0",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-flood",
+      "title": "Preparing for flooding",
+      "category": "preparedness",
+      "path": "pages/preparedness/flood.mu",
+      "description": "If in immediate danger call 999. Never walk or drive through floodwater.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-flood",
+        "gov-ready",
+        "gov-flood-during"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 717,
+      "sha256": "a02fa71a52af5fa320ac1cd4234dc9dd4aa00b59aefb70fb88953453af6465bc",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-assess",
+      "title": "Assessing an emergency",
+      "category": "first-aid",
+      "path": "pages/first-aid/assess.mu",
+      "description": "Make the scene safe. Call 999 or 112 for life-threatening danger.",
+      "version": "0.1.1",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-firstaid",
+        "rcuk-adult"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1006,
+      "sha256": "cf3ad92ff1f05fefd07d0362b1e78dce86e90c326cf4769e735537ac2079c873",
+      "related_pages": [
+        "first-aid-adult-cpr"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-adult-cpr",
+      "title": "Adult CPR and defibrillator",
+      "category": "first-aid",
+      "path": "pages/first-aid/adult-cpr.mu",
+      "description": "Unresponsive and not breathing normally, or only gasping: call 999 and start CPR.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rcuk-adult"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 981,
+      "sha256": "7b84686e90c882c16ff8c8f393cdf08fbc002c05534b40b5757fe62ad5909b78",
+      "related_pages": [
+        "first-aid-child-cpr"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-child-cpr",
+      "title": "Child and baby CPR",
+      "category": "first-aid",
+      "path": "pages/first-aid/child-cpr.mu",
+      "description": "A child or baby who is unresponsive and not breathing normally needs immediate CPR.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rcuk-child",
+        "nhs-firstaid"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 963,
+      "sha256": "af37afc644892aded63330063f5fca304110957cf0443d2974f8b1667fc2a0b8",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-bleeding",
+      "title": "Severe bleeding",
+      "category": "first-aid",
+      "path": "pages/first-aid/bleeding.mu",
+      "description": "Press firmly on the wound immediately and call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "sja-bleeding",
+        "nhs-cuts"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 869,
+      "sha256": "86a10fcc90b13c2101abef411f00b2077779deb7bd39093914d143e1dd5761eb",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-burns",
+      "title": "Burns and scalds",
+      "category": "first-aid",
+      "path": "pages/first-aid/burns.mu",
+      "description": "Cool the burn under cool or lukewarm running water for 20 minutes.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-burns"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 950,
+      "sha256": "47dd3204e2545104030b3b294a4f49c3ee541d8143cb8bdfb54f5ddbd72ed78e",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-choking",
+      "title": "Choking: adults and children",
+      "category": "first-aid",
+      "path": "pages/first-aid/choking.mu",
+      "description": "Call 999 as soon as you recognise choking; use speaker if alone.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rcuk-faq",
+        "rcuk-child"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1007,
+      "sha256": "88d26ddc67784195a093d9dfa369938d7b1eb432c2f8ae8cdeeb1b05e19b5ab3",
+      "related_pages": [
+        "first-aid-choking-baby"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-choking-baby",
+      "title": "Choking: baby under one",
+      "category": "first-aid",
+      "path": "pages/first-aid/choking-baby.mu",
+      "description": "Call 999 on speaker and act immediately if the baby cannot cough, cry or breathe effectively.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rcuk-child",
+        "rcuk-faq"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 970,
+      "sha256": "15fe025c18ea203c5378acee0e206f9607cc02f242ee03fea66222c9370a493b",
+      "related_pages": [
+        "first-aid-child-cpr"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-hypothermia",
+      "title": "Hypothermia first aid",
+      "category": "first-aid",
+      "path": "pages/first-aid/hypothermia.mu",
+      "description": "Suspected hypothermia is a medical emergency: call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-hypothermia",
+        "rcuk-adult"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 752,
+      "sha256": "54e104af6de1060957bd4986d33b2838b9f4151393512da56ffde8c5912fa55d",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-heat",
+      "title": "Heat exhaustion and heatstroke",
+      "category": "first-aid",
+      "path": "pages/first-aid/heat.mu",
+      "description": "Move the person somewhere cool and start cooling immediately.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-heat",
+        "rcuk-adult"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 826,
+      "sha256": "83474648dd853fcc748e2c9ae3089ffe99fbddc1538a9b9e52ade91a66729773",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-fractures",
+      "title": "Suspected broken bone",
+      "category": "first-aid",
+      "path": "pages/first-aid/fractures.mu",
+      "description": "Keep the injured part still and supported. Do not straighten it.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "sja-fractures"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 844,
+      "sha256": "4fbfaa814277408863a3e516646b9966b75c0e350f6280c36572e38c46b9336a",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-wounds",
+      "title": "Cleaning a minor wound",
+      "category": "first-aid",
+      "path": "pages/first-aid/wounds.mu",
+      "description": "First stop bleeding with direct pressure. Severe or uncontrollable bleeding needs 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-cuts"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 756,
+      "sha256": "dc7cb694f698fa93594b19e167685f40131bc251e8dae5b8f2053be07d7e0873",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "first-aid-supplies",
+      "title": "First aid supplies",
+      "category": "first-aid",
+      "path": "pages/first-aid/supplies.mu",
+      "description": "Keep a first aid kit accessible, dry and easy to take with you.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "sja-kit"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 750,
+      "sha256": "d520207a6270f062270eb1aecf6391b759ad9789b46f13f21dc5125ecf79c6cd",
+      "related_pages": [],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-warm-home",
+      "title": "Staying warm without heating",
+      "category": "shelter",
+      "path": "pages/shelter/warm-home.mu",
+      "description": "Keep dry, wear layers and seek help before a home becomes dangerously cold.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "met-cold",
+        "nhs-co",
+        "nhs-hypothermia"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 912,
+      "sha256": "0ad9819c247d910ac9d95733b6e69909eb4b4d4f7833e6592d45572fcdcee95c",
+      "related_pages": [
+        "first-aid-hypothermia",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-prevent-cold",
+      "title": "Preventing hypothermia",
+      "category": "shelter",
+      "path": "pages/shelter/prevent-cold.mu",
+      "description": "Cold, wind and wet clothes can cause dangerous heat loss, even above freezing.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-rescue",
+        "mre-shelter",
+        "nhs-hypothermia"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 867,
+      "sha256": "6346dabfbbf05a0372e7379389ad65ab7f8ee44344c1d868f60d0aade6218602",
+      "related_pages": [
+        "first-aid-hypothermia",
+        "shelter-emergency"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-emergency",
+      "title": "Emergency outdoor shelter",
+      "category": "shelter",
+      "path": "pages/shelter/emergency.mu",
+      "description": "Get out of immediate danger, protect the group from wind and rain, and call for help early.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-shelter",
+        "mre-rescue",
+        "adventuresmart",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1014,
+      "sha256": "e4f8a4ef83345e524b487c82a5434ba967d3655955dbf7660b9cc3eaa1823aa3",
+      "related_pages": [
+        "shelter-prevent-cold",
+        "first-aid-hypothermia"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-outdoor-fire",
+      "title": "Lighting a fire outdoors",
+      "category": "shelter",
+      "path": "pages/shelter/outdoor-fire.mu",
+      "description": "Avoid lighting a fire when there is wildfire risk or local rules prohibit it.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-outdoor-fire",
+        "gov-wildfires",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 946,
+      "sha256": "32889e748b6b2c0b48276e89d98eed21181976212d0b315a4b26fb6805ddd62a",
+      "related_pages": [
+        "shelter-wildfire",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-house-fire",
+      "title": "Fire in your home",
+      "category": "shelter",
+      "path": "pages/shelter/house-fire.mu",
+      "description": "Warn others. If you can escape safely, get out, stay out and call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "lfb-escape",
+        "lfb-flats"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 884,
+      "sha256": "0be854d2d32e8711b7f24897575bc0d4041a609647e9960cb7295b38f6f865e7",
+      "related_pages": [
+        "shelter-alarms"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-carbon-monoxide",
+      "title": "Carbon monoxide poisoning",
+      "category": "shelter",
+      "path": "pages/shelter/carbon-monoxide.mu",
+      "description": "If you suspect carbon monoxide, get outside into fresh air immediately.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1056,
+      "sha256": "864314baa972cc8e1a0c8bf5fe5473d1f69f3116a7cdc81c15667e846b28c342",
+      "related_pages": [
+        "shelter-warm-home",
+        "shelter-camping"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-insulation",
+      "title": "Keeping heat in safely",
+      "category": "shelter",
+      "path": "pages/shelter/insulation.mu",
+      "description": "Reduce draughts and use dry layers, while keeping essential ventilation clear.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "met-home",
+        "met-cold",
+        "nhs-co",
+        "nhs-hypothermia"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 933,
+      "sha256": "51690fa92b9906d684ce0e8266eaf08cc431afa642308cb3e73ae1f72a5b40a7",
+      "related_pages": [
+        "shelter-warm-home",
+        "first-aid-hypothermia"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-heat-prevention",
+      "title": "Staying safe in extreme heat",
+      "category": "shelter",
+      "path": "pages/shelter/heat-prevention.mu",
+      "description": "Move to a cooler place, drink regularly and watch for signs of heat illness.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "met-heat",
+        "nhs-heat"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 920,
+      "sha256": "b188f702959eb31bc3a1af03ad2600541be9c1d4e3542e1e26994d7f70312956",
+      "related_pages": [
+        "first-aid-heat"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-alarms",
+      "title": "Smoke, heat and CO alarms",
+      "category": "shelter",
+      "path": "pages/shelter/alarms.mu",
+      "description": "Working alarms give early warning. Test them regularly and keep exits clear.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "lfb-alarms",
+        "nhs-co",
+        "lfb-escape"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 971,
+      "sha256": "df66eb4883caad23aaa06ce8fe86d3c23403e7a9a5dab42d2a47d6b4d47fde93",
+      "related_pages": [
+        "shelter-house-fire",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-camping",
+      "title": "Tent and camping fire safety",
+      "category": "shelter",
+      "path": "pages/shelter/camping.mu",
+      "description": "Keep stoves, heaters, barbecues and flames out of tents and enclosed shelters.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "wales-camping",
+        "gov-outdoor-fire",
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 924,
+      "sha256": "79c1ad624a5966c361daa39970c393eee92de4f4c97b6db5de49545d7b4b68ff",
+      "related_pages": [
+        "shelter-carbon-monoxide",
+        "shelter-outdoor-fire"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "shelter-wildfire",
+      "title": "Wildfire safety",
+      "category": "shelter",
+      "path": "pages/shelter/wildfire.mu",
+      "description": "If you see an uncontrolled outdoor fire, move away and call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-wildfires",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 820,
+      "sha256": "d6b960883159b6dd773fc792abecb7c83da0128b6a4c80c81a36bc712be02dba",
+      "related_pages": [
+        "shelter-outdoor-fire"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-emergency",
+      "title": "Getting emergency help",
+      "category": "communications",
+      "path": "pages/communications/emergency.mu",
+      "description": "For immediate danger call 999 or 112 and ask for the emergency service you need.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofcom-storm",
+        "ofcom-sms",
+        "mre-rescue"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1048,
+      "sha256": "b5b6471afc8572a272144d917574a1a2719581a4ce316b900c5a30e00fa00d90",
+      "related_pages": [
+        "communications-offline",
+        "communications-planning"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-reticulum",
+      "title": "Reticulum basics",
+      "category": "communications",
+      "path": "pages/communications/reticulum.mu",
+      "description": "Reticulum is a networking system that can operate over several kinds of connection.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-understanding",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1052,
+      "sha256": "7e04ef691c286ca3405f8b02a646fe54ad00d60b9f611e6fa21edc6beb109c06",
+      "related_pages": [
+        "communications-mesh",
+        "communications-offline"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-nomad",
+      "title": "Nomad Network basics",
+      "category": "communications",
+      "path": "pages/communications/nomad.mu",
+      "description": "Nomad Network lets a node host small pages that other reachable nodes can read.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nomad-guide",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 956,
+      "sha256": "d4e86a2e2055922750902d2d9bbf36f1b550145827e52549bf429992f2d97df2",
+      "related_pages": [
+        "communications-reticulum",
+        "communications-lora"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-lora",
+      "title": "LoRa basics",
+      "category": "communications",
+      "path": "pages/communications/lora.mu",
+      "description": "LoRa is a low-power radio method; compatible settings and software are needed at both ends.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-interfaces",
+        "ofcom-ir2030"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 984,
+      "sha256": "f581c61f4118f6ed2e3c5bfe918fe411ec1a29653a70f4237ad79721ffb91230",
+      "related_pages": [
+        "communications-mesh",
+        "communications-licensing"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-mesh",
+      "title": "How network relays work",
+      "category": "communications",
+      "path": "pages/communications/mesh.mu",
+      "description": "A relay can extend reach only if it is compatible, powered and able to hear both sides.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-networks",
+        "rns-understanding"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 914,
+      "sha256": "827f34d42df317a99ab37b2e2d017f1ca5cd05015b4067ad1c1307cf6775517f",
+      "related_pages": [
+        "communications-lora",
+        "communications-signal"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-offline",
+      "title": "Communicating without internet",
+      "category": "communications",
+      "path": "pages/communications/offline.mu",
+      "description": "Agree a primary and backup method with people before an outage.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-commsplan",
+        "ofcom-storm",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1032,
+      "sha256": "f827f7454f9debf2a9b29a488d213590d7bfe44fb217ef1032399200df94d6d1",
+      "related_pages": [
+        "communications-emergency",
+        "communications-planning"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-radio",
+      "title": "Using a radio to request help",
+      "category": "communications",
+      "path": "pages/communications/radio.mu",
+      "description": "Use an authorised radio and a channel where someone has agreed to listen.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofcom-pmr",
+        "ofcom-equipment",
+        "mre-rescue"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1004,
+      "sha256": "d229b1c4654b342a1c018e1e8bab734d08c75d7af7020afa497e378645d86beb",
+      "related_pages": [
+        "communications-emergency",
+        "communications-licensing"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-signal",
+      "title": "Understanding radio signal",
+      "category": "communications",
+      "path": "pages/communications/signal.mu",
+      "description": "A received signal reading is a clue, not a delivery guarantee.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-using",
+        "rns-interfaces",
+        "semtech-lora"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1034,
+      "sha256": "92ca0c072f4c4a9dbfab9a0e5fc04a3885a74116c7074c9a570e88cda5a908f1",
+      "related_pages": [
+        "communications-antenna",
+        "communications-mesh"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-antenna",
+      "title": "Positioning a radio antenna",
+      "category": "communications",
+      "path": "pages/communications/antenna.mu",
+      "description": "A clear, safely positioned antenna can improve a link; test both directions.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rns-interfaces",
+        "ofcom-ir2030",
+        "esfi-antenna"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1070,
+      "sha256": "099abca753d0c5c3c45df0c9063843508a1e7888fb3ea2e16ed08dbd324fd211",
+      "related_pages": [
+        "communications-signal",
+        "communications-licensing"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-power",
+      "title": "Conserving radio power",
+      "category": "communications",
+      "path": "pages/communications/power.mu",
+      "description": "Plan for the whole system: radio, host, network equipment and charging losses.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-commsplan",
+        "ofcom-storm",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1048,
+      "sha256": "63142b9302a12a0c0ea0711ed0f410e7286e3f3ed3eb0ef9dabe520e8d388921",
+      "related_pages": [
+        "communications-planning",
+        "communications-offline"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-planning",
+      "title": "Emergency communications plan",
+      "category": "communications",
+      "path": "pages/communications/planning.mu",
+      "description": "Write down who to contact, how to reach them and what to do if there is no reply.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-commsplan",
+        "ofcom-storm",
+        "rns-networks"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1000,
+      "sha256": "6dc1179f90c12ff8e34684a5a0902425ffcdf4ffe63a56fe82c901b2fd3bb4e3",
+      "related_pages": [
+        "communications-emergency",
+        "communications-offline"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "communications-licensing",
+      "title": "UK radio rules",
+      "category": "communications",
+      "path": "pages/communications/licensing.mu",
+      "description": "Before transmitting, check the conditions that apply to your exact equipment, frequency and use.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofcom-ir2030",
+        "ofcom-amateur",
+        "ofcom-pmr",
+        "ofcom-equipment"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1098,
+      "sha256": "272145868e3c7240fce29648f987240a85a218daae58205382ddfbdf21333089",
+      "related_pages": [
+        "communications-lora",
+        "communications-radio"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-prepare",
+      "title": "Preparing for a power cut",
+      "category": "power",
+      "path": "pages/power/prepare.mu",
+      "description": "Keep a torch, charged phone, power bank and written emergency numbers within reach.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofgem-cut",
+        "ofgem-psr",
+        "nhs-co",
+        "fsa-powercut"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1063,
+      "sha256": "db866cf7f55c244f5ddfac3da21d188daa249deb632a3ae80c5f885576f0d6f2",
+      "related_pages": [
+        "power-medical",
+        "power-generator",
+        "preparedness-power-cut"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-capacity",
+      "title": "Battery capacity and power",
+      "category": "power",
+      "path": "pages/power/capacity.mu",
+      "description": "Watt-hours describe stored energy; watts describe the rate at which a device uses it.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "esf-bank",
+        "esf-power"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1012,
+      "sha256": "74af5de97115723916d81d3e4611bd5650b771e5377bdffa02124851dbf8a08c",
+      "related_pages": [
+        "power-runtime",
+        "power-station"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-runtime",
+      "title": "Estimating battery runtime",
+      "category": "power",
+      "path": "pages/power/runtime.mu",
+      "description": "Estimate runtime using usable watt-hours divided by the device\u2019s average watts.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "esf-bank",
+        "esf-power"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1012,
+      "sha256": "1f147270a3e0d6c3ecd5ebaae0d2183124eb1de2808940e0335662a190280b1b",
+      "related_pages": [
+        "power-capacity",
+        "power-loads",
+        "power-medical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-station",
+      "title": "Using a portable power station",
+      "category": "power",
+      "path": "pages/power/station.mu",
+      "description": "Check the output is suitable before connecting an appliance.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "esf-bank",
+        "lfb-batteries",
+        "hseni-generator"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1076,
+      "sha256": "c16faca4f15ddb8f94356bbbe6254f331fb001addc9f2500e16bf5bf88ecee8c",
+      "related_pages": [
+        "power-capacity",
+        "power-solar-portable",
+        "power-electrical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-solar-portable",
+      "title": "Charging from portable solar",
+      "category": "power",
+      "path": "pages/power/solar-portable.mu",
+      "description": "Match the panel and connector to the power station\u2019s specified solar input.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ecoflow-solar",
+        "lfb-batteries"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1000,
+      "sha256": "03e6465be399f333ba25f9c812c2d020a4c19c2149c1cb70d6cf4cd39ef85843",
+      "related_pages": [
+        "power-station",
+        "power-capacity"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-solar-home",
+      "title": "Home solar during a power cut",
+      "category": "power",
+      "path": "pages/power/solar-home.mu",
+      "description": "Do not assume rooftop solar will power your home when the grid fails.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nationalgrid-solar",
+        "energy-solar",
+        "hseni-generator"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1030,
+      "sha256": "c8aa847c30f55d0b96a76baba4bdcd4de8beea3e11200e1c281c86eb301adbed",
+      "related_pages": [
+        "power-solar-portable",
+        "power-electrical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-loads",
+      "title": "Prioritising electrical loads",
+      "category": "power",
+      "path": "pages/power/loads.mu",
+      "description": "List essential loads and estimate both their energy use and peak power.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "esf-power",
+        "fsa-powercut",
+        "ofgem-psr"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1042,
+      "sha256": "523b8be318ae946a836d7fc8e096b8f7e62831ba8032c0ed59cb212ed9ca1c0e",
+      "related_pages": [
+        "power-capacity",
+        "power-runtime",
+        "power-medical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-battery-safety",
+      "title": "Charging and storing batteries",
+      "category": "power",
+      "path": "pages/power/battery-safety.mu",
+      "description": "Use the manufacturer\u2019s charger or an approved compatible replacement.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "lfb-batteries",
+        "bucks-batteries",
+        "gov-battery-recycle"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1002,
+      "sha256": "21d990395797771b570a95235bfa57208bed82c25d3485badeabc7def756e1b1",
+      "related_pages": [
+        "power-station",
+        "shelter-house-fire"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-generator",
+      "title": "Using a fuel generator safely",
+      "category": "power",
+      "path": "pages/power/generator.mu",
+      "description": "Never use a fuel generator indoors, in a garage or in a partially enclosed space.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-generator",
+        "hseni-generator",
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1035,
+      "sha256": "f54f83211ebfdf013e9b370f6308140fa539ddebba12f729c217e1296e742c7b",
+      "related_pages": [
+        "shelter-carbon-monoxide",
+        "power-electrical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-electrical",
+      "title": "Electrical danger during an outage",
+      "category": "power",
+      "path": "pages/power/electrical.mu",
+      "description": "Keep clear of fallen power lines: assume they are live.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "nationalgrid-safety",
+        "hseni-generator",
+        "lfb-batteries"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 993,
+      "sha256": "d25dffcdb68f000d9cf735abf0a97c3b1e9978fc6ba9e0624e8934f57f2cedcb",
+      "related_pages": [
+        "power-generator",
+        "power-solar-home"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "power-medical",
+      "title": "Power for medical equipment",
+      "category": "power",
+      "path": "pages/power/medical.mu",
+      "description": "If loss of power puts someone in immediate danger, call 999.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "ofgem-psr",
+        "gov-power",
+        "ofcom-storm"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1050,
+      "sha256": "39f397435ad5a313157f2f5b36d6a184e2966751f1de01cabff32a33fb46920d",
+      "related_pages": [
+        "power-prepare",
+        "power-runtime"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-storage",
+      "title": "Emergency food storage",
+      "category": "food",
+      "path": "pages/food/storage.mu",
+      "description": "Store foods your household can eat without refrigeration or cooking.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-food-poison",
+        "gov-ready"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 721,
+      "sha256": "c7a78c58055e814f8ee701aa5403f26d63571952d584726332168e048738274d",
+      "related_pages": [
+        "food-power-cut"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-power-cut",
+      "title": "Food safety during a power cut",
+      "category": "food",
+      "path": "pages/food/power-cut.mu",
+      "description": "Keep fridge and freezer doors closed; check temperature with a thermometer.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-powercut",
+        "fsa-food-poison",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 925,
+      "sha256": "878d351acc8b4dc840cbfee9605fdde85406c7e751288e7010ec36bd6c1ce271",
+      "related_pages": [
+        "food-storage",
+        "shelter-camping"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-cooking",
+      "title": "Cooking without mains power",
+      "category": "food",
+      "path": "pages/food/cooking.mu",
+      "description": "Use food that needs no cooking when safe cooking or water is unavailable.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-powercut",
+        "fsa-cooking",
+        "wales-camping",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 974,
+      "sha256": "d8e20cdba736f12e59188cab99f4ed2d09ae908333dc3d472b2fbd53b9ab9950",
+      "related_pages": [
+        "food-hygiene",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-stoves",
+      "title": "Camping stove safety",
+      "category": "food",
+      "path": "pages/food/stoves.mu",
+      "description": "Use a camping stove outdoors, away from people, tents and flammable materials.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "wales-camping",
+        "gov-outdoor-fire",
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 858,
+      "sha256": "2f31aa27eb39b580d0dd9641c529b48d63623f1ab5dfe068b44b5c512a984a7c",
+      "related_pages": [
+        "shelter-camping",
+        "shelter-carbon-monoxide"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-preservation",
+      "title": "Preserving food safely",
+      "category": "food",
+      "path": "pages/food/preservation.mu",
+      "description": "Use food storage methods and recipes from reliable, tested guidance.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-botulism",
+        "fsa-chilling",
+        "fsa-powercut"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 902,
+      "sha256": "d24ead7561b9dbded08dbd5c8ed35a424165b4e2e270340251c5adbdc7817dfd",
+      "related_pages": [
+        "food-storage",
+        "food-power-cut"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-planning",
+      "title": "Planning emergency meals",
+      "category": "food",
+      "path": "pages/food/planning.mu",
+      "description": "Choose familiar food that fits the household\u2019s needs and can be prepared safely.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready",
+        "fsa-powercut",
+        "fsa-food-poison"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 857,
+      "sha256": "d5b79e081f6b39fcef3b2ee2aea84a9473607015ff1b846941dc897fde2f1fdf",
+      "related_pages": [
+        "food-storage",
+        "food-power-cut"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "food-hygiene",
+      "title": "Preventing food contamination",
+      "category": "food",
+      "path": "pages/food/hygiene.mu",
+      "description": "Wash hands with soap and safe water before handling food and after using the toilet.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "fsa-cleaning",
+        "fsa-food-poison",
+        "fsa-powercut",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 868,
+      "sha256": "f5329f9303e885b799b384eeca9c8de4243cf2b3fef54458b2587aaf1f9845d2",
+      "related_pages": [
+        "water-safe-water",
+        "food-cooking"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-sanitation",
+      "title": "Emergency sanitation",
+      "category": "preparedness",
+      "path": "pages/preparedness/sanitation.mu",
+      "description": "If water or sewage services fail, follow the water company and local authority instructions.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-sanitation",
+        "gov-water-outage",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 990,
+      "sha256": "ddf297ac601436dfef2190e6939c0a58e2fe07d4d4a749ed0607bf411408ec8f",
+      "related_pages": [
+        "water-storage",
+        "food-hygiene"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-evacuation",
+      "title": "Emergency evacuation",
+      "category": "preparedness",
+      "path": "pages/preparedness/evacuation.mu",
+      "description": "Leave promptly when instructed or when staying places you in immediate danger.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-flood-during",
+        "met-weatherready",
+        "gov-flood"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 853,
+      "sha256": "b9e14024c8c8f00307bdf3727f197fcbc2bc61f59f61b53f27e295542d4af5cb",
+      "related_pages": [
+        "preparedness-kit",
+        "preparedness-flood"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "preparedness-storm",
+      "title": "Preparing for a severe storm",
+      "category": "preparedness",
+      "path": "pages/preparedness/storm.mu",
+      "description": "Check warnings, secure loose items before weather worsens and stay away from hazards.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "met-weatherready",
+        "nationalgrid-safety",
+        "nhs-co"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 922,
+      "sha256": "37e3dc0d14491afc48341fd16b10e07ebaae4db538d4b08a82d2e4702b1b5596",
+      "related_pages": [
+        "power-prepare",
+        "preparedness-evacuation"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-maps",
+      "title": "Reading a map",
+      "category": "navigation",
+      "path": "pages/navigation/maps.mu",
+      "description": "Use the map\u2019s key, scale and contours to understand the ground.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "os-map",
+        "mre-safety"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 891,
+      "sha256": "7c5df2c75f97d6a6353d37162dcbf2a6b658466f984c124806d748089791b1c4",
+      "related_pages": [
+        "navigation-compass",
+        "navigation-route"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-compass",
+      "title": "Using a compass",
+      "category": "navigation",
+      "path": "pages/navigation/compass.mu",
+      "description": "Practise compass use with a map before you need it in poor visibility.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "os-compass",
+        "os-map"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 991,
+      "sha256": "8543da264ed5f1b2dfb4d168024e9748aa772817d97f2698e259d1af43da28c9",
+      "related_pages": [
+        "navigation-maps",
+        "navigation-route"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-without-gps",
+      "title": "Navigating without GPS",
+      "category": "navigation",
+      "path": "pages/navigation/without-gps.mu",
+      "description": "Use a paper map and compass; confirm your location frequently.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "os-map",
+        "mre-safety"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 882,
+      "sha256": "00490f2d6113ee007ce5d626040961c4dc557eaf030c538c1fc5190630701e09",
+      "related_pages": [
+        "navigation-maps",
+        "navigation-lost"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-route",
+      "title": "Planning a safe walking route",
+      "category": "navigation",
+      "path": "pages/navigation/route.mu",
+      "description": "Choose a route suited to the least experienced person in the group.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-safety",
+        "mre-shelter"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 882,
+      "sha256": "8d564d8b6918d0bbf133b7de514055a08f5b40ef7eefe4d8b78d59741af0fb17",
+      "related_pages": [
+        "navigation-lost",
+        "shelter-emergency"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-signal",
+      "title": "Signalling for help outdoors",
+      "category": "navigation",
+      "path": "pages/navigation/signal.mu",
+      "description": "Call 999 or 112 first if possible; give your location and stay available.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-safety",
+        "adventuresmart"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 869,
+      "sha256": "0f35650bd63cecb3f9c5241c0452096b24deea50dad48d11daed855427eab55f",
+      "related_pages": [
+        "communications-emergency",
+        "navigation-lost"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "navigation-lost",
+      "title": "What to do when lost",
+      "category": "navigation",
+      "path": "pages/navigation/lost.mu",
+      "description": "Stop in a safe place, stay together and work out your options.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "mre-safety",
+        "adventuresmart"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 963,
+      "sha256": "661ac669a2d983bca4138be1db1eb2b685427d867ac5ce87de751db326c36b34",
+      "related_pages": [
+        "navigation-signal",
+        "shelter-emergency"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "self-sufficiency-growing",
+      "title": "Growing basic food crops",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/growing.mu",
+      "description": "Start with a few crops your household eats and a sunny, accessible growing space.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "rhs-containers",
+        "rhs-water",
+        "fsa-cleaning"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 847,
+      "sha256": "1adc316b22c29dc3b6500a9e7e8b99295606a1ceb0b56ab4da959136b76c1e37",
+      "related_pages": [
+        "food-planning",
+        "self-sufficiency-water"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "self-sufficiency-water",
+      "title": "Reducing water use",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/water.mu",
+      "description": "Protect drinking water first; use separate non-drinking water where appropriate.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-water-outage",
+        "rhs-water",
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 918,
+      "sha256": "17622202ee6fd9509a55aaacfab3d2385621e7277990f5cd4f636b8f723488d0",
+      "related_pages": [
+        "water-rainwater",
+        "preparedness-sanitation"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "self-sufficiency-supplies",
+      "title": "Maintaining essential supplies",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/supplies.mu",
+      "description": "Keep a short inventory of what the household actually uses.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready",
+        "sja-kit",
+        "lfb-batteries"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 906,
+      "sha256": "d813dbf23ec2ef0926343a35d31c025588396a58a990f9a5c126e0ed4901fa6b",
+      "related_pages": [
+        "preparedness-kit",
+        "power-medical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "self-sufficiency-maintenance",
+      "title": "Maintaining essential equipment",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/maintenance.mu",
+      "description": "Inspect and test equipment before an emergency, following its instructions.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-22",
+      "sources": [
+        "gov-ready",
+        "lfb-batteries",
+        "cdc-storage",
+        "hseni-generator"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 953,
+      "sha256": "7adffd9fbb79515869fcf1e33a05b7d2d8c687ce49d810ec8364529c60bc76dd",
+      "related_pages": [
+        "self-sufficiency-supplies",
+        "power-electrical"
+      ],
+      "page_type": "standard"
+    }
+  ]
+}

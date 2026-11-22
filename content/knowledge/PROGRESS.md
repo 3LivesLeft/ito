@@ -1,0 +1,73 @@
+# Progress checkpoint — 22 November 2026
+
+Status: CONTENT DRAFT COMPLETE; NOT PUBLICATION-READY. Branch `feature/ito-knowledge-library` was created from develop commit `3582c86`. Changes confined to content/knowledge. No application or concurrent worktree changed. A draft PR is suitable for integration review; all 78 guides need independent safety or subject-matter review before publication.
+
+## Completed batch 1
+
+- Water: 8 guide pages (safe water, sources, boiling, filters, chemical disinfection, storage, rainwater, dehydration).
+- Preparedness: 4 guide pages (kit, household plan, power cut, flooding).
+- Main index and two category indexes; 12 guides and 15 served files in total.
+- Source manifest, initial research and integration notes, restricted-subset validator, hashes and review flags.
+- Sources researched: CDC emergency water and storage; Drinking Water Inspectorate boil notices; NHS dehydration; UK Government Be Ready, power cuts and flood protection; London Fire Brigade emergency kit; official Nomad guide and Reticulum manual. See sources.json and TECHNICAL_NOTES.md for links and limitations.
+- Validation: `python3 scripts/validate.py --category water` and `python3 scripts/validate.py`: 0 errors, 0 size warnings. No real parser or radio test. This validator checks a deliberately limited subset; it does not verify medical or technical truth.
+- ALL 12 pages are safety-critical and require independent subject-matter review before release. Source-backed drafting is not independent review. Rainwater non-potable collection and flood instructions need additional targeted authoritative source verification.
+
+## Completed batch 2 — first aid and health
+
+- 12 guides: emergency assessment, adult CPR/AED, child and baby CPR, severe bleeding, burns, choking for adults and children, choking for babies, hypothermia, heat illness, fractures, wounds and supplies. First-aid index and direct emergency cross-links added.
+- Sources added: Resuscitation Council UK adult and paediatric 2025 guidance and FAQ; NHS burns, hypothermia, heat illness and cuts; NHS 111 Wales first aid; St John Ambulance bleeding, fractures and first-aid supplies. See sources.json. Source-based drafting is not independent review: all 12 new guides require clinical review before publication, with special attention to paediatric CPR and choking, burns and tourniquets.
+- Focused validation: `python3 scripts/validate.py --category first-aid`; 0 errors, 0 size warnings. No Nomad parser, connectivity or radio test.
+- Total so far: 24 guides, 28 served files; all 24 guides flagged for independent safety review.
+
+## Completed batch 3 — fire, warmth and shelter
+
+- 11 guides: staying warm without heating, preventing hypothermia, outdoor shelter, outdoor fires, house fire escape, carbon monoxide, insulation, extreme heat, alarms, camping fire safety and wildfire response. Added category index and direct related-page links, including links to the existing first-aid pages.
+- Researched the NHS, Met Office, London Fire Brigade, UK Government Fire Kills/Be Ready guidance, Mid and West Wales Fire and Rescue Service, Mountain Rescue England and Wales and AdventureSmartUK. References and source limitations are in sources.json. Mountain Rescue shelter guidance includes a disclosed commercial partnership; only its general safety advice was used.
+- All 11 new pages require independent safety review, especially emergency fire escape, outdoor fire and carbon monoxide instructions. Local building evacuation plans and radio/contact availability vary.
+- Focused validation: `python3 scripts/validate.py --category shelter`: 0 errors and 0 size warnings. No real Nomad rendering or radio test.
+- Total: 35 guides and 40 served files; all 35 guide entries remain flagged for independent safety review.
+
+## Completed batch 4 — emergency communications
+
+- 12 guides: emergency help, Reticulum, Nomad Network, LoRa, network relays, offline communications, radio help, signal, antennas, radio power, household communications plans and UK radio rules. Added category index and direct related links.
+- Researched official Reticulum and Nomad documentation, Ofcom IR 2030 and amateur/PMR446 guidance, Ofcom outage guidance, Semtech's LoRa FAQ, UK emergency planning guidance, and antenna safety guidance. See sources.json for specific URLs and limitations.
+- All 12 communications pages require independent safety/technical and relevant legal review before publication. UK radio conditions and emergency services capabilities can change. Emergency SMS requires prior registration and a mobile network; no unverified claim that a mesh contacts 999 directly.
+- Corrected the existing first-aid assessment page to call 999 immediately for an unresponsive person before checking breathing, as specified by RCUK's 2025 adult basic life support guidance. Page version bumped; remains subject to independent clinical review. Focused validation for communications and first aid: 0 errors, 0 size warnings. Actual Nomad and LoRa tests still outstanding.
+- Total: 47 guides, 53 served files; all 47 guide entries currently require independent review.
+
+## Completed batch 5 — electricity and emergency power
+
+- 11 guides: preparing for a power cut, battery capacity, runtime, power stations, portable solar, household solar, essential loads, battery safety, fuel generators, electrical hazards and medical equipment. Added a category index and related-page links.
+- Researched Ofgem, UK Government and NHS, London and Buckinghamshire fire services, HSE Northern Ireland, National Grid Electricity Distribution, Electrical Safety First, the Food Standards Agency, US Department of Energy and a power station manufacturer. Source limitations are recorded in sources.json; manufacturer-specific solar input figures are not generalised.
+- All 11 pages need independent electrical, fire-safety and where appropriate clinical review before publication. Special review: generator isolation and site-specific exhaust safety, standby-system earthing and protective devices, lithium batteries, and medical-device compatibility. Backup power must be designed for the installation and equipment; no home wiring instructions are included.
+- Focused validation: `python3 scripts/validate.py --category power`: 0 errors, 0 size warnings. No physical equipment, Nomad renderer or LoRa tests conducted.
+- Total: 58 guides, 65 served files; all 58 guide entries currently require independent review.
+
+## Completed batch 6 — food and preparedness
+
+- Seven food guides cover storage, power cuts, cooking, camping stoves, preservation, meal planning and contamination. Three preparedness guides cover sanitation, evacuation and storms. Total 68 guides; 76 served files.
+- Sources: Food Standards Agency food, chilling and botulism guidance; UK Government water, sanitation, flood and evacuation advice; Met Office and fire service guidance. Refer to sources.json. All 10 pages require independent food-safety or other appropriate safety review. National outage sanitation guidance is conditional: follow local service instructions.
+- Focused validation for food and preparedness: 0 errors and 0 size warnings. Actual Nomad and radio testing remain outstanding.
+
+## Completed batch 7 — navigation and self-sufficiency
+
+- Six navigation guides cover maps, compass, navigation without GPS, route planning, signalling and being lost. Four self-sufficiency guides cover growing, water saving, supplies and equipment maintenance. Total 78 guides and 88 served files: above the initial 50–75 target to cover all requested categories.
+- Sources: Ordnance Survey, Mountain Rescue England and Wales, AdventureSmartUK, RHS and existing UK Government safety sources. All 10 new guides require independent safety or subject-matter review. Compass bearing instructions need field assessment; no real-world test has been completed.
+- Focused navigation and self-sufficiency validation: 0 errors, 0 size warnings. Real Nomad and radio tests remain outstanding.
+
+## Final package checks
+
+- Final full validator: 78 guide entries and 88 Micron files, 0 errors and 0 target-size warnings. Seven automated failure-mode tests passed.
+- Real upstream NomadNet parser at `c9dbc11d9d7cd314a2ab3207ddf9a1d0d4becf8b` rendered all pages at 40 columns using a mock UI; all 365 parsed link targets matched. No running node, remote retrieval or radio tests were conducted.
+- Source records now include their relevant page IDs; authoritative water-butt and flood references added. Individual claims still require independent professional review. 78 pages flagged `requires_independent_review`.
+- Full statistics and throughput estimates are in VALIDATION_REPORT.md. No LoRa measurements were performed.
+
+## Decisions
+
+Use static Micron with `:/page/...` same-node targets, no external assets; preserve safety content regardless of size. Review status is explicit in the manifest. Page files have non-executable normal file permissions. Metadata stays out of transmitted pages except review date. Main and category indexes are not counted as guide entries. This is a draft, not a complete release.
+
+## Outstanding and next steps
+
+Independent safety, clinical, food, public-health, radio/legal, electrical and outdoor review of all 78 guides is required before publication. Confirm source applicability and country-specific details, particularly infant CPR and choking, water and food treatment, sanitation, generator isolation, UK radio conditions, and compass bearings. The validator only detects exact duplicate pages and cannot establish semantic accuracy or detect paraphrases. Secure authenticated content updates are a future integration requirement.
+
+After the Nomad implementation is ready, follow INTEGRATION.md to test local and remote serving, link navigation, selective hosting, offline caching, interrupted transfer, malformed requests, mirrors, LoRa and multi-hop. No radio hardware tests have been performed. Review the draft PR against current develop without touching concurrent work; do not merge until the requested independent review and integration tests are complete.

@@ -11,7 +11,7 @@ Assistant. Phase 0 (research and design) is complete. **Phase 1 (v0.1.0 foundati
 branch `feature/v0.1.0-foundation` (PR #2). **v0.2.0 (monitoring and observability) is authorised**
 on branch `feature/v0.2.0-observability` (draft PR #3), based on PR #2's reviewed head `192db5f`;
 ADR 0006 is accepted, and its option stays off by default permanently. ADR 0007 (integration sidebar panel) is accepted as the interim
-dedicated interface; Ingress (ADR 0013) is blocked. **v0.3 plan approved (19 Nov 2026):** v0.3.0 is the installation and distribution
+dedicated interface; Ingress is now approved by the maintainer (21 Nov 2026), superseding ADR 0013; see ADR 0026. **v0.3 plan approved (19 Nov 2026):** v0.3.0 is the installation and distribution
 release (app store + Home Assistant's Marketplace, ADR 0015); **M1 (install-ready repository) is authorised** on
 `feature/v0.3.0-install-ready`. Nothing is published before M2's approval. The LXMF engine stays out of production images until
 M4's gate; Home Assistant messaging and migration of existing installations are later milestones. LoRa, I2P and remote control
@@ -38,11 +38,8 @@ infrastructure or deploy to the maintainer's Home Assistant without explicit app
    do not add material that cannot be licensed under it.
 8. **Do not merge to `main`** and do not push to branches other than the one you were asked to
    use. Open pull requests only when asked.
-9. **Authorship (maintainer, 19 Nov 2026).** No AI co-author trailers in commits and no AI
-   attribution in pull request descriptions. Never falsify authorship: do not commit under a
-   person's name or e-mail unless that is the identity the session is configured and authenticated
-   with, and never rewrite existing history to change authorship. Keep commit authorship as
-   configured.
+9. **Authorship.** Follow [CONTRIBUTING.md](CONTRIBUTING.md#ai-assistance). Keep commit authorship
+   as configured and accurately credit contributions.
 10. **Do not post to upstream Home Assistant / Open Home Foundation projects** — their AI policy
     forbids autonomous agent contributions.
 11. **Never build or publish datasets, corpora or bulk copies of RNS/LXMF material.** Prefer RNS's
@@ -71,10 +68,10 @@ infrastructure or deploy to the maintainer's Home Assistant without explicit app
     statistics, automations); nothing essential may depend on it.
   - It never overrides security, privacy or resource principles. Do not duplicate monitoring
     logic to achieve it.
-  - The proposed delivery is Supervisor Ingress ([ADR 0013](docs/adr/0013-built-in-interface-ingress.md)).
-    It is **blocked by security review**: do not enable or implement Ingress, and never treat
-    read-only as a mitigation for session exposure. Read-only is a temporary restriction, not
-    the product's limit ([secure interface options](docs/research/secure-interface-options.md)).
+  - The dashboard is bundled in the app through Supervisor Ingress (ADR 0026, maintainer-approved
+    21 Nov 2026). Configuration lives there and the app adds its sidebar entry by default.
+    Keep the internal source-peer restriction, CSRF header, bounded server and self-only management
+    operations. The integration is optional for entities, automations and recorder history.
   - Do not publish or commit details of security findings under responsible disclosure.
 - **Consistent branding is a permanent product principle** ([vision](docs/vision.md) principle 3;
   [docs/branding.md](docs/branding.md)):
@@ -133,6 +130,10 @@ docs/adr/0024-messaging-in-home-assistant.md  M5: Messages tab, messaging key (m
                                    contact store and history in the engine's queue.db
 custom_components/meshbeacon/conversations.py  M5 admin-only websocket commands + live updates
 docs/adr/0025-rename-to-ito.md     user-facing name ito; meshbeacon identifiers kept; provisional art
+docs/adr/0027-nomad-network-pages.md  v0.6 Nomad Network pages: upstream nomadnet daemon (GPL-3.0,
+                                   separate program) for hosting, ito's pages service for browsing
+meshbeacon/core/meshbeacon/pages/  pages service (mb-nomad), content store, daemon configuration
+custom_components/meshbeacon/frontend/micron.js, ui/pages.js  safe micron reader, Pages tab
 project.yaml                       project identifiers (name, slug, repository, image) in one place
 tools/check_release.py             release-layout check (app store, Marketplace, versions)
 tools/verify_image.py              release-candidate image check (platforms, labels, SBOM, reproducible)

@@ -213,6 +213,15 @@ placement is **[Open] Q-42** for the maintainer.
 | Identity import from file | v0.2, then deferred | Unscheduled | Relevant to compatibility with existing identities (principle 8) |
 | TCP listener (inbound) | Later, if requested | Unchanged | Not needed to host services over outbound links **[Assumption]** |
 
+## v0.6.0 — Nomad Network pages and offline web services (implemented on a feature branch)
+
+Optional, off by default ([ADR 0027](adr/0027-nomad-network-pages.md)): a **Pages** tab to read
+Nomad Network pages (address, links, back and forward, bookmarks, heard nodes with last-heard
+times) and to publish the household's own pages through the unmodified Nomad Network daemon
+(name, hosting switch, create, edit, preview, publish, unpublish, delete, copy the address).
+Not in v0.6.0: dynamic pages, forms, files and media, colours, LoRa. Acceptance on the
+maintainer's Home Assistant OS installation is pending.
+
 ## v1.0.0 — Stable
 
 External security audit, compatibility matrix, full documentation, standalone Docker image, and a

@@ -30,8 +30,9 @@ function sameDay(a, b) {
 
 export class MessagesView {
   /** @param {{messaging: object}} o the messaging source (sources/messaging.js shape) */
-  constructor({ messaging }) {
+  constructor({ messaging, offText = MESSAGING_OFF_TEXT }) {
     this.messaging = messaging;
+    this.offText = offText;
     this.selected = null;
     this.adding = false;
     this.renaming = false;
@@ -196,7 +197,7 @@ export class MessagesView {
     const off = !summary || summary.state === "disabled";
     if (off) {
       this.element.dataset.open = "";
-      this.listPane.replaceChildren(h("h2", { text: "Messaging is off" }), h("p", { class: "small", text: MESSAGING_OFF_TEXT }), h("p", { class: "muted small", text: KEPT_WHILE_OFF }));
+      this.listPane.replaceChildren(h("h2", { text: "Messaging is off" }), h("p", { class: "small", text: this.offText }), h("p", { class: "muted small", text: KEPT_WHILE_OFF }));
       this.chatPane.hidden = true;
       return;
     }
@@ -300,7 +301,8 @@ export class MessagesView {
     }
     const history = m.history(c.id);
     const oldLog = this.chatPane.querySelector(".log");
-    const atBottom = !oldLog || oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 48;
+    const scrollTop = oldLog?.scrollTop ?? 0;
+    const atBottom = !oldLog || oldLog.scrollHeight - scrollTop - oldLog.clientHeight < 48;
     const log = h("div", { class: "log", role: "log", "aria-label": `Messages with ${c.name}`, "aria-live": "polite" });
     if (!history.complete && history.messages.length) {
       log.append(h("button", { type: "button", class: "btn-quiet older", text: history.loading ? "Loading…" : "Show earlier messages", onclick: () => m.loadOlder(c.id) }));
@@ -321,12 +323,18 @@ export class MessagesView {
     else if (!history.messages.length && !m.pendingFor(c.id).length) log.append(h("p", { class: "muted small chat-empty", text: c.strangers ? "No messages." : `No messages with ${c.name} yet. Say hello!` }));
     if (history.error) log.append(h("p", { class: "msg-error small", role: "alert", text: errorText(history.error) }));
     const parts = [this._chatHead(c), this.actionError ? h("p", { class: "msg-error small", role: "alert", text: this.actionError }) : null, log];
-    if (c.strangers) parts.push(h("p", { class: "muted small composer-note", text: STRANGERS_NOTE }));
-    else parts.push(this.composer);
-    this.chatPane.replaceChildren(...parts.filter(Boolean));
+    const content = parts.filter(Boolean);
+    if (!c.strangers && this.composer.parentNode === this.chatPane) {
+      // Moving even the same textarea out of the DOM blurs it and dismisses mobile keyboards.
+      while (this.chatPane.firstChild !== this.composer) this.chatPane.firstChild.remove();
+      this.composer.before(...content);
+    } else {
+      const footer = c.strangers ? h("p", { class: "muted small composer-note", text: STRANGERS_NOTE }) : this.composer;
+      this.chatPane.replaceChildren(...content, footer);
+    }
     this._updateComposer();
     if (atBottom || this._stickToBottom) log.scrollTop = log.scrollHeight;
-    else if (oldLog) log.scrollTop = oldLog.scrollTop;
+    else log.scrollTop = scrollTop;
     this._stickToBottom = false;
   }
 

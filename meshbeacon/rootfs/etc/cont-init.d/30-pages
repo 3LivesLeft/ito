@@ -1,0 +1,42 @@
+#!/bin/sh
+# Nomad Network pages' folders (v0.6.0, ADR 0027; ADR 0018). Runs as root after 20-messaging at
+# every start. When pages are off (the default) it does nothing at all: no folder or data is
+# created, and the pages service stays down. The core reads and validates the same option.
+#
+#   mb-nomad (9103)  the pages service and its Nomad Network daemon: /data/nomadnet
+#   mb-page  (9113)  a group of exactly the core and mb-nomad: the published pages and the socket
+set -u
+enabled="$(/usr/local/bin/python3 -I -c '
+import json
+try:
+    print("yes" if json.load(open("/data/options.json")).get("pages_enabled") is True else "no")
+except Exception:
+    print("no")
+' 2>/dev/null)"
+[ "$enabled" = "yes" ] || exit 0
+
+# The service's own data (daemon identity, configuration, heard nodes): its user only. Kept when
+# pages are switched off again.
+mkdir -p /data/nomadnet
+chown -R mb-nomad:mb-nomad /data/nomadnet
+chmod 0700 /data/nomadnet
+# The core's pages: drafts are the core's alone; published copies are readable by the group mb-page,
+# so the daemon can serve them but never change, add or run them (files 0640, never executable).
+mkdir -p /data/pages/drafts /data/pages/public
+chown -R meshbeacon:meshbeacon /data/pages
+chgrp mb-page /data/pages /data/pages/public
+find /data/pages/public -type f -exec chgrp mb-page {} + 2>/dev/null || true
+find /data/pages/public -type f -exec chmod 0640 {} + 2>/dev/null || true
+chmod 0750 /data/pages /data/pages/public
+chmod 0700 /data/pages/drafts
+# The service's socket: only its user can create it; only the group mb-page can reach it.
+mkdir -p /run/meshbeacon-pages
+chown mb-nomad:mb-page /run/meshbeacon-pages
+chmod 0750 /run/meshbeacon-pages
+# Its output FIFO, beside the others (root:meshbeacon, 0660; opened by root in the run script).
+mkdir -p /run/meshbeacon-io/pages
+[ -p /run/meshbeacon-io/pages/out ] || mkfifo /run/meshbeacon-io/pages/out
+chown -R root:meshbeacon /run/meshbeacon-io/pages
+chmod 0750 /run/meshbeacon-io/pages
+chmod 0660 /run/meshbeacon-io/pages/out
+exit 0

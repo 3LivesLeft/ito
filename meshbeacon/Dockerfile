@@ -4,8 +4,10 @@ FROM ghcr.io/home-assistant/base-python:3.13-alpine3.24@sha256:c7d34ae22a87275d4
 # One image for everyone (M4, D-M4-8): the Reticulum gateway and the optional LXMF messaging engine,
 # which runs, as its own user and s6 service, only when the user switches messaging on (off by
 # default). Nothing of it runs, and no messaging data is created, while it is off.
+# v0.6 (ADR 0027): Nomad Network pages the same way: the unmodified Nomad Network daemon and ito's
+# pages service, as their own user and s6 service, only when the user switches pages on.
 
-ARG BUILD_VERSION=0.4.1
+ARG BUILD_VERSION=0.6.1
 ARG BUILD_ARCH
 
 ENV \
@@ -43,24 +45,26 @@ ARG SOURCE_DATE_EPOCH
 # and their dependencies, from PyPI only.
 # An optional build secret `build_ca` lets builds run behind a TLS-intercepting proxy; it is never
 # stored in the image, and the hash pins protect package integrity either way.
-COPY requirements.txt requirements-messaging.txt /tmp/
+COPY requirements.txt requirements-messaging.txt requirements-pages.txt /tmp/
 RUN --mount=type=secret,id=build_ca,required=false \
     if [ -s /run/secrets/build_ca ]; then export PIP_CERT=/run/secrets/build_ca; fi; \
     pip install \
         --index-url https://pypi.org/simple \
         --require-hashes --no-deps --only-binary=:all: \
-        -r /tmp/requirements.txt -r /tmp/requirements-messaging.txt \
-    && rm -f /tmp/requirements.txt /tmp/requirements-messaging.txt
+        -r /tmp/requirements.txt -r /tmp/requirements-messaging.txt -r /tmp/requirements-pages.txt \
+    && rm -f /tmp/requirements.txt /tmp/requirements-messaging.txt /tmp/requirements-pages.txt
 
 # MeshBeacon core and its messaging engine, installed into site-packages so that they run under
 # `python3 -I`. Users (ADR 0018): the core 9100, Reticulum 9101, the messaging engine 9102; the
 # group mb-msg (9111) holds only the core and the engine (its socket and settings folder); the
 # group mb-rpc (9112) only Reticulum and the engine (the shared instance's RPC key, ADR 0023).
+# v0.6 (ADR 0027): the pages service and its Nomad Network daemon 9103 (mb-nomad, also in mb-rpc);
+# the group mb-page (9113) holds only the core and mb-nomad (published pages, the service's socket).
 COPY --exclude=**/__pycache__ core/meshbeacon /tmp/meshbeacon
 RUN set -eu; \
     site="$(python3 -I -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"; \
     mv /tmp/meshbeacon "${site}/meshbeacon"; \
-    python3 -I -m compileall -q "${site}/meshbeacon" "${site}/RNS" "${site}/LXMF"; \
+    python3 -I -m compileall -q "${site}/meshbeacon" "${site}/RNS" "${site}/LXMF" "${site}/nomadnet"; \
     addgroup -S -g 9100 meshbeacon; \
     adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9100 -G meshbeacon meshbeacon; \
     addgroup -S -g 9101 mb-rns; \
@@ -75,15 +79,23 @@ RUN set -eu; \
     addgroup mb-lxmf mb-msg; \
     addgroup -S -g 9112 mb-rpc; \
     addgroup mb-rns mb-rpc; \
-    addgroup mb-lxmf mb-rpc
+    addgroup mb-lxmf mb-rpc; \
+    addgroup -S -g 9103 mb-nomad; \
+    adduser -S -D -H -h /nonexistent -s /sbin/nologin -u 9103 -G mb-nomad mb-nomad; \
+    addgroup -S -g 9113 mb-page; \
+    addgroup meshbeacon mb-page; \
+    addgroup mb-nomad mb-page; \
+    addgroup mb-nomad mb-rpc
 
+COPY frontend /usr/share/meshbeacon/frontend
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES /usr/share/doc/meshbeacon/
 COPY rootfs /
 RUN chmod 0755 /etc/cont-init.d/10-meshbeacon /etc/services.d/meshbeacon/run /etc/services.d/meshbeacon/finish \
     /etc/services.d/discovery-relay/run /etc/services.d/discovery-relay/finish \
     /etc/services.d/reticulum/run /etc/services.d/reticulum/finish \
     /etc/services.d/rns-prepare/run /etc/services.d/rns-prepare/finish \
-    /etc/cont-init.d/20-messaging /etc/services.d/messaging/run /etc/services.d/messaging/finish
+    /etc/cont-init.d/20-messaging /etc/services.d/messaging/run /etc/services.d/messaging/finish \
+    /etc/cont-init.d/30-pages /etc/services.d/pages/run /etc/services.d/pages/finish
 
 LABEL \
     io.hass.version="${BUILD_VERSION}" \
@@ -92,4 +104,4 @@ LABEL \
     org.opencontainers.image.title="ito" \
     org.opencontainers.image.description="Private, decentralised connectivity for your home, powered by Reticulum" \
     org.opencontainers.image.source="https://github.com/3LivesLeft/ito" \
-    org.opencontainers.image.licenses="Apache-2.0 AND LicenseRef-Reticulum"
+    org.opencontainers.image.licenses="Apache-2.0 AND LicenseRef-Reticulum AND GPL-3.0-only"

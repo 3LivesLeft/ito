@@ -17,6 +17,7 @@ REPO = Path(__file__).resolve().parents[2]
 CORE = REPO / "meshbeacon" / "core" / "meshbeacon"
 MESSAGING = CORE / "messaging"
 INTEGRATION = REPO / "custom_components" / "meshbeacon"
+PAGES_MAIN = CORE / "pages" / "__main__.py"
 FORBIDDEN_IN_ENGINE = ("homeassistant", "custom_components", "http.server", "aiohttp", "socketserver", "flask")
 
 
@@ -61,6 +62,8 @@ def test_nothing_outside_the_engine_imports_it_or_lxmf():
                 continue
             names = imports(path)
             assert "LXMF" not in top(names), path
+            # The pages service (ADR 0027) reuses only the generic, peer-checked socket server.
+            names -= {"..messaging.server", "..messaging.server.Server"} if path == PAGES_MAIN else set()
             assert not any(".messaging" in n or n.startswith("meshbeacon.messaging") for n in names), path
 
 

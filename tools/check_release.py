@@ -83,7 +83,6 @@ FORBIDDEN_TRUE = (
     "stdin",
     "realtime",
     "journald",
-    "ingress",
     "privileged",
     "devices",
     "ports",
@@ -183,6 +182,9 @@ def check(tree: Tree, tag: str | None = None) -> list[str]:
         for key in FORBIDDEN_TRUE:
             if app.get(key):
                 add(f"config.yaml grants {key!r}, which the approved posture forbids")
+        for key, value in {"ingress": True, "ingress_port": 8097, "panel_admin": True}.items():
+            if app.get(key) != value:
+                add(f"config.yaml {key} must be {value!r} (ADR 0026)")
         if app.get("hassio_role", "default") != "default":
             add("config.yaml hassio_role must stay 'default'")
         if app.get("apparmor") is not True or f"{DOMAIN}/apparmor.txt" not in present:

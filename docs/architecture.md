@@ -368,7 +368,7 @@ delivery (the built-in interface, once a secure one exists) or a new feature (LX
 I2P, LoRa) adds a part without reworking the others.
 
 ```text
- delivery     meshbeacon-panel.js (integration panel, today) | future built-in interface (ADR 0013, blocked)
+ delivery     meshbeacon-panel.js (integration panel, today) | ingress.js (bundled app dashboard, ADR 0026)
                      │ chooses a source, supplies chrome (menu button, routing) and wording
  presentation ui/controller.js · ui/views.js · ui/components.js · ui/style.js · ui/dom.js · tokens.js
                      │ reads only the view-data contract (model.js NODE_KEYS / PEER_KEYS / HISTORY_KEYS)
@@ -451,3 +451,26 @@ How the design above was implemented, and decisions taken during implementation.
 | Health endpoint | `GET /health` on port 8099, `200 ok` while the main loop heartbeat is < 60 s old, `503` otherwise; request logging disabled. The heartbeat is kept fresh while waiting for bounded subprocesses (the prepare step, up to 180 s, and the stop grace period), so a slow start cannot cause a Supervisor restart (PR #2 review) | `health.py`, `supervisor.py` |
 | Build | Base image pinned by multi-arch digest; runtime wheels hash-pinned and binary-only from PyPI; optional BuildKit secret `build_ca` for builds behind TLS-intercepting proxies (never stored in the image) | `Dockerfile` |
 | AppArmor | Rewritten after the start-up failure on the Pi. Tested statically (every program the profile lets run must also be readable if it is a script) and **under real enforcement in CI** on an AppArmor-enabled runner; still to be confirmed on the Pi | `apparmor.txt`, `tests/apparmor/`, CI |
+
+## Nomad Network pages (0.6.0)
+
+See [ADR 0027](adr/0027-nomad-network-pages.md). One more optional service, off by default:
+
+```text
+ core (meshbeacon)            pages content store (/data/pages), /api/pages, supervision
+   │  JSON lines over /run/meshbeacon-pages/pages.sock (peer-checked, group mb-page)
+   ▼
+ pages service (mb-nomad)     python -m meshbeacon.pages: RNS shared-instance client
+   ├─ browse                  Link + request for /page/*.mu, plain text back to the core
+   ├─ discover                announce handler for nomadnetwork.node (500 nodes, nodes.json)
+   └─ host (while on)         child: unmodified `nomadnet --daemon`, pages_path = /data/pages/public
+```
+
+Storage: `/data/pages/` (core, group `mb-page`: `site.json`, `drafts/` 0700, `public/` 0750 with
+0640 files) and `/data/nomadnet/` (`mb-nomad` 0700: `rns/` client configuration, `nomadnet/`
+daemon configuration and storage including its identity, `nodes.json`, `files/`).
+
+## Bundled app dashboard (0.5.0)
+
+See [ADR 0026](adr/0026-app-dashboard-and-setup.md) for the accepted Ingress trust boundary,
+self-only configuration API, content-versioned frontend, optional integration and upgrade behaviour.

@@ -91,3 +91,11 @@ configuration:
     description: >-
       The LXMF address of a propagation node to hold messages for contacts who are offline. Leave
       empty unless you run or trust one.
+  pages_enabled:
+    name: Enable Nomad Network pages
+    description: >-
+      Off by default. On: after you save and restart the app, the Pages tab of the ito dashboard
+      lets you read pages published by other Nomad Network nodes and see which nodes have
+      announced themselves. Publishing your own pages is a separate switch in that tab, off until
+      you turn it on. Turning this off stops only pages; Reticulum and messaging keep running, and
+      your pages and the node address are kept for next time.

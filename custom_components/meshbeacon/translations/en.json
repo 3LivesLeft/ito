@@ -11,7 +11,7 @@
     },
     "abort": {
       "already_configured": "ito is already set up.",
-      "discovery_only": "ito is added automatically. In the ito app's Configuration tab, switch on \"Show ito's status in Home Assistant\" and restart the app.",
+      "discovery_only": "For the dashboard and messaging, install ito from Settings → Apps, start it, then choose Open Web UI. No integration setup is needed. This optional integration adds entities for automations. To use it, open ito → Settings, enable “Share status with the optional Home Assistant integration”, then Save and apply. Return to Devices & services and select the discovered ito entry. See https://github.com/3LivesLeft/ito/blob/main/docs/getting-started.md",
       "invalid_discovery": "The details sent by the app could not be used, so nothing was set up. If this was the ito app, restart it; if this repeats, please report it."
     }
   },

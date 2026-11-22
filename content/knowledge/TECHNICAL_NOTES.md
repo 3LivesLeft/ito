@@ -1,0 +1,17 @@
+# Technical findings — 22 November 2026
+
+Sources: Nomad Network's [built-in guide](https://github.com/markqvist/NomadNet/blob/master/nomadnet/ui/textui/Guide.py), [Reticulum overview](https://github.com/markqvist/Reticulum/blob/master/docs/markdown/understanding.md), [interface manual](https://reticulum.network/manual/interfaces.html) and [network manual](https://reticulum.network/manual/networks.html). These are research-time references, not runtime dependencies.
+
+Nomad serves static Micron files from its storage/pages directory, default `~/.nomadnetwork/storage/pages`, with index.mu as default; `/page/` maps to this tree. The guide permits nested directories and local targets of form `:/page/path.mu`. A Micron link uses backtick-open-bracket, a label, backtick, the target, then closing bracket: e.g. `` `[Water`:/page/water/index.mu] ``. A leading `>` is a heading. The guide's own description of address length contradicts its example; do not assume the byte count: use the actual announced destination hash from the implementation. Remote addresses combine the destination hash, colon and request path. The guide says default page cache lifetime is 12 hours, but actual client behaviour may differ.
+
+Reticulum has addressable destinations, announces and path discovery; it routes packets across configured interfaces. A link provides encrypted communication. Resource transfers provide reliability mechanisms but no guarantee that a page arrives in an outage; retransmissions and loss add airtime. RNode supplies a LoRa interface with configurable bandwidth, spreading factor, coding rate and power. Radio bandwidth in Hz is not application throughput in bits/s. Multi-hop transmission, discovery, link setup, packet headers, acknowledgements, retransmissions, duty-cycle limits and contention add delay and airtime; do not assume a fixed overhead or successful rerouting. Follow local radio rules. UK limits depend on frequency and licence conditions; no blanket value is specified here.
+
+Ito develop at 3582c86 is a Home Assistant app and separate integration; Nomad support was not present in the inspected checkout. The knowledge directory is independent of app code. Compatibility of relative links with the eventual Ito client must be tested. No actual Nomad parser, radio, server or multi-hop integration has been tested. The local validator accepts only the intentionally restricted heading/plain text/local link subset; it is not a complete Micron parser.
+
+## Transfer estimates
+
+Ideal payload-only seconds = UTF-8 bytes × 8 / assumed effective application bits per second. At 100/500/1,000/2,000 bit/s, 1,024 bytes takes 81.92/16.38/8.19/4.10 s and 2,048 bytes takes 163.84/32.77/16.38/8.19 s. These are illustrative effective application rates, not radio bitrate or measured speeds; no additional overhead is applied to an already effective rate. Setup, stalls and duty-cycle waiting can still add time. Multi-hop airtime may multiply without scaling elapsed time linearly.
+
+## Parser check
+
+On 22 November 2026 the actual NomadNet Micron parser, upstream commit `c9dbc11d9d7cd314a2ab3207ddf9a1d0d4becf8b`, was exercised against all 88 pages using a mock UI and urwid rendering at 40 columns. All 365 parsed link targets matched the static source. This verifies the chosen Micron syntax in that parser version, not serving, actual interaction, other clients, or radio delivery. Reproduce using `scripts/check_nomad_parser.py` with a compatible NomadNet checkout and its dependencies on PYTHONPATH.

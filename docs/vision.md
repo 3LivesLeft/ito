@@ -88,11 +88,9 @@ v0.3 decisions that could constrain these are reviewed in the
 2. **Works out of the box (permanent; maintainer, 18 Nov 2026).** Everything a first-time user
    needs comes with the standard app installation:
    - No terminal, no file copying, no third-party installer and no manual dashboard
-     configuration. **Amended (maintainer, 19 Nov 2026, decision D1):** ito's interface,
-     with its sidebar entry, arrives through Home Assistant's own app store and Marketplace in at
-     most two guided steps ([ADR 0015](adr/0015-distribution-and-updates.md)). A one-step install
-     remains the goal (Ingress after upstream hardening, or an integration shipped with Home
-     Assistant), but never at the cost of security.
+     configuration. **Amended (maintainer, 21 Nov 2026):** the dashboard, setup and messaging are
+     bundled in the app through Ingress. The sidebar entry is added by default and app updates
+     update the dashboard too ([ADR 0026](adr/0026-app-dashboard-and-setup.md)).
    - A first-time user can install, configure and start ito within **five minutes**,
      without touching a terminal or editing YAML.
    - The Home Assistant integration remains an **optional enhancement**, for entities, custom

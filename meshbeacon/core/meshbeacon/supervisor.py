@@ -31,11 +31,15 @@ from typing import IO, Any
 
 from . import __version__, fsutil, networks, procinfo
 from .api import ApiServer, Discovery, RelayLink, StatusStore, TlsError, container_hostname, make_tls, new_token
+from .app_control import AppControl
 from .connectivity import Connectivity, Snapshot, describe, evaluate, human_bytes
 from .engine_supervisor import DISABLED, EngineSupervisor
 from .health import HealthServer, Heartbeat
+from .ingress import Dashboard, IngressServer
 from .logfilter import RateLimiter, Redactor
 from .metrics import Collector
+from .pages_supervisor import DISABLED as PAGES_DISABLED
+from .pages_supervisor import PagesSupervisor
 from .paths import Paths
 from .policy import RestartPolicy, StartHistory, Timings
 from .prepare import FREE_SPACE_FLOOR, FREE_SPACE_WARN
@@ -194,6 +198,7 @@ class Supervisor:
         discovery_timing: dict[str, float] | None = None,
         engine: EngineSupervisor | None = None,
         engine_factory: Callable[[Messaging], EngineSupervisor] | None = None,
+        pages_factory: Callable[[Settings], PagesSupervisor] | None = None,
     ) -> None:
         self.paths = paths
         self.t = timings or Timings()
@@ -225,6 +230,12 @@ class Supervisor:
         self.api_port = api_port
         self.api_store: StatusStore | None = None
         self.api_server: ApiServer | None = None
+        self.dashboard = Dashboard(
+            AppControl(discovery_relay, supervisor_token, socket_mode=socket_mode),
+            self.forward_messaging,
+            pages=self.forward_pages,
+        )
+        self.ingress_server: IngressServer | None = None
         self._supervisor_token = supervisor_token
         self.supervisor_url = supervisor_url
         self.discovery_relay = discovery_relay
@@ -248,6 +259,16 @@ class Supervisor:
         self.engine_buf = LineBuffer()
         if engine is not None:
             self.attach_engine(engine)
+        # v0.6 (ADR 0027): Nomad Network pages, built in boot() only when the option is on.
+        self.pages: PagesSupervisor | None = None
+        self.pages_factory = pages_factory
+        self.pages_buf = LineBuffer()
+
+    def attach_pages(self, pages: PagesSupervisor) -> None:
+        self.pages = pages
+        pages.say = self.say  # through the core's redaction
+        if self.services is not None and self.services.pages_out is not None:
+            self.selector.register(self.services.pages_out, selectors.EVENT_READ, "pages")
 
     def attach_engine(self, engine: EngineSupervisor) -> None:
         self.engine = engine
@@ -732,10 +753,18 @@ class Supervisor:
             }
         return dict(DISABLED)
 
+    def pages_status(self) -> dict[str, Any]:
+        if self.pages is not None:
+            return self.pages.public()
+        if self.settings is not None and self.settings.pages_enabled:
+            return {"enabled": True, "state": "starting" if self.attention is not None else "error", "message": None}
+        return dict(PAGES_DISABLED)
+
     def build_snapshot(self) -> dict[str, Any]:
         document = self._node_snapshot()
         messaging = self.messaging_status()
         document["messaging"] = messaging
+        document["pages"] = self.pages_status()
         engine_memory = messaging.get("memory_bytes")
         resources = document["resources"]
         resources["messaging_memory_bytes"] = engine_memory
@@ -825,6 +854,13 @@ class Supervisor:
             return 503, {"ok": False, "error": "unavailable"}
         return engine.forward(request)
 
+    def forward_pages(self, request: Any) -> tuple[int, dict[str, Any]]:
+        """The dashboard's Pages requests (ingress thread). Never reaches Reticulum or messaging."""
+        pages = self.pages
+        if pages is None:
+            return 409, {"ok": False, "error": "disabled"}
+        return pages.handle(request)
+
     def monitor(self, fn: Callable[..., object], *args: Any, **kwargs: Any) -> None:
         """Run a metrics update. Monitoring is never allowed to interrupt supervision of Reticulum."""
         try:
@@ -883,6 +919,11 @@ class Supervisor:
                     for line in self.engine_buf.feed(os.read(key.fd, 65536)):
                         self.forward("messaging", line)
                 continue
+            if key.data == "pages":
+                with contextlib.suppress(BlockingIOError, OSError):
+                    for line in self.pages_buf.feed(os.read(key.fd, 65536)):
+                        self.forward("pages", line)
+                continue
             if self.child is None:
                 continue
             buf = self.child.out_buf if key.data == "out" else self.child.status_buf
@@ -893,9 +934,13 @@ class Supervisor:
             if data:
                 self._handle_lines(key.data, buf.feed(data))
         self.flush_suppressed()
+        if self.ingress_server is not None and self.due("dashboard", 5, first=True):
+            self.monitor(lambda: self.dashboard.publish(self.build_snapshot()))
         self.api_housekeeping()
         if self.engine is not None:
             self.engine.step(self.node_ready())
+        if self.pages is not None:
+            self.pages.step(self.node_ready())
         if self.attention is not None:
             if self.due("attention", self.t.attention_reminder):
                 for m in self.attention:
@@ -959,10 +1004,17 @@ class Supervisor:
             return False
         if self.settings.messaging.enabled and self.engine is None and self.engine_factory is not None:
             self.attach_engine(self.engine_factory(self.settings.messaging))
+        if self.settings.pages_enabled and self.pages is None and self.pages_factory is not None:
+            self.attach_pages(self.pages_factory(self.settings))
+        self.say(
+            "Nomad Network pages: on — they start once Reticulum is running."
+            if self.settings.pages_enabled
+            else "Nomad Network pages: off (open ito → Settings to switch them on)."
+        )
         self.say(
             "LXMF messaging: on — it starts once Reticulum is running."
             if self.settings.messaging.enabled
-            else "LXMF messaging: off (tick “Enable LXMF messaging” in the Configuration tab to use it)."
+            else "LXMF messaging: off (open ito → Settings to switch it on)."
         )
         if not self.settings.peers:
             self.snapshot = evaluate((), None)
@@ -976,7 +1028,18 @@ class Supervisor:
         signal.signal(signal.SIGINT, self._on_signal)
         self.health.start()
         try:
+            if self.require_services:
+                try:
+                    self.ingress_server = IngressServer(self.dashboard)
+                    self.ingress_server.start()
+                except OSError:
+                    self.say("ito could not open its dashboard. Restart the app to try again.")
             self.boot()
+            if self.ingress_server is not None:
+                self.monitor(lambda: self.dashboard.publish(self.build_snapshot()))
+                threading.Thread(
+                    target=self.dashboard.add_sidebar, args=(self.paths.meshbeacon / "sidebar.json",), daemon=True
+                ).start()
             while not self.stopping:
                 self.step()
         finally:
@@ -984,10 +1047,14 @@ class Supervisor:
             if self.engine is not None:
                 self.engine.stop()  # before Reticulum, so that it leaves cleanly
                 self.drain_engine_output()
+            if self.pages is not None:
+                self.pages.stop()  # before Reticulum, so that the daemon leaves cleanly
             self.stop_child()
             self.discovery_stop.set()
             if self.api_server is not None:
                 self.api_server.stop()
+            if self.ingress_server is not None:
+                self.ingress_server.stop()
             self.health.stop()
         return 0
 
@@ -1076,6 +1143,18 @@ def main() -> int:
                 messaging=messaging,
             )
 
+    pages_factory = None
+    if services is not None and services.has("pages"):
+        pages_services = services
+
+        def pages_factory(settings: Settings) -> PagesSupervisor:
+            return PagesSupervisor(
+                lambda: pages_services.start("pages"),
+                print,  # replaced by the supervisor's own output
+                time.monotonic,
+                log_level=settings.log_level,
+            )
+
     return Supervisor(
         Paths.from_env(),
         health_host=host,
@@ -1089,6 +1168,7 @@ def main() -> int:
         services=services,
         require_services=require_services,
         engine_factory=factory,
+        pages_factory=pages_factory,
     ).run()
 
 

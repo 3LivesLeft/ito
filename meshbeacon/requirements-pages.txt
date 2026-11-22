@@ -1,0 +1,15 @@
+# v0.6 Nomad Network pages (ADR 0027). Pinned by version AND hash; installed with
+# --require-hashes --no-deps --only-binary=:all:, beside requirements.txt and requirements-messaging.txt.
+# nomadnet is the unmodified Nomad Network program (GPL-3.0-only). ito runs it only as a separate
+# program (`nomadnet --daemon`), never imports it, and it runs only while the user hosts pages.
+# Its rns and lxmf dependencies are already pinned (nomadnet 1.5.0 needs rns>=1.6.0, lxmf>=1.3.0).
+# qrcode, which nomadnet also lists, is used only by its text interface and is not installed.
+nomadnet==1.5.0 \
+    --hash=sha256:deb9d34d8b514c26cf6f15b43d01b058f2cb04ff1892900d8d44b4a584400b6d
+# urwid (LGPL-2.1-only) and wcwidth (MIT): imported by nomadnet at start even in daemon mode.
+# Releases public for some weeks are preferred over the newest (supply chain).
+urwid==5.0.1 \
+    --hash=sha256:eb505055118375fe21e1054fbeee79e15d2cdf7f3881ebd3d288c9796dbed856
+wcwidth==0.9.4 \
+    --hash=sha256:17619066f95c10f44d7ae08ee456602456bc66cc9d5e91966ec73d799acebc5f \
+    --hash=sha256:d8905f1390d828d745fdd1904374c90386d902d3cfa9ee88e9875099f75a4e17
