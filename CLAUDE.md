@@ -38,11 +38,8 @@ infrastructure or deploy to the maintainer's Home Assistant without explicit app
    do not add material that cannot be licensed under it.
 8. **Do not merge to `main`** and do not push to branches other than the one you were asked to
    use. Open pull requests only when asked.
-9. **Authorship (maintainer, 19 Nov 2026).** No AI co-author trailers in commits and no AI
-   attribution in pull request descriptions. Never falsify authorship: do not commit under a
-   person's name or e-mail unless that is the identity the session is configured and authenticated
-   with, and never rewrite existing history to change authorship. Keep commit authorship as
-   configured.
+9. **Authorship.** Follow [CONTRIBUTING.md](CONTRIBUTING.md#ai-assistance). Keep commit authorship
+   as configured and accurately credit contributions.
 10. **Do not post to upstream Home Assistant / Open Home Foundation projects** — their AI policy
     forbids autonomous agent contributions.
 11. **Never build or publish datasets, corpora or bulk copies of RNS/LXMF material.** Prefer RNS's

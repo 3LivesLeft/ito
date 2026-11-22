@@ -5,8 +5,8 @@
 
 # Contributing to ito
 
-Thank you for your interest. ito is in **Phase 0 (research and design)**: the most useful
-contributions right now are reviews of, and corrections to, the documents in [`docs/`](docs/).
+ito is experimental. Bug reports, documentation improvements, tests and focused code changes
+are welcome.
 
 ## Before you start
 
@@ -59,12 +59,8 @@ Research and design documents distinguish **[Verified]**, **[Assumption]**,
 AI tools may be used to *assist* contributions. In keeping with the expectations of the Reticulum
 and Home Assistant communities:
 
-- **Authorship (maintainer decision, 19 Nov 2026).** Commits are made under the contributor's own
-  authenticated GitHub identity. Do not add AI co-author trailers to commits, and do not add AI
-  attribution to pull request descriptions. **Never falsify authorship:** a tool must not commit
-  under a person's identity without that person's own authentication, and existing history is not
-  rewritten (earlier commits made under an assistant's Git identity stay as they are). How the
-  project uses AI assistance is stated once, at project level, in the README.
+- **Authorship.** Use your own authorised identity and credit others accurately. Be transparent
+  about material AI assistance when describing your contribution.
 - **Own it.** You must have reviewed, understood and be able to explain and defend every line you
   submit, without the tool's help. Unreviewed AI output will be closed.
 - **No autonomous submissions.** Agents must not open issues or pull requests, or reply to review
@@ -81,14 +77,9 @@ and Home Assistant communities:
 - **Do not contribute to upstream Home Assistant / Open Home Foundation repositories with
   autonomous agents** — their AI policy forbids it.
 
-The Phase 0 documents themselves were drafted with an AI assistant at the maintainer's direction,
-committed under the assistant's own Git identity, and are subject to the maintainer's review.
-
 ## Licence of contributions
 
 ito is licensed under [Apache-2.0](LICENSE) ([ADR 0002](docs/adr/0002-licence.md)).
 Contributions are accepted under the same licence, with a DCO sign-off. Do not contribute
 material you cannot licence under Apache-2.0 — including anything copied from Reticulum-licensed,
 GPL or Creative Commons sources.
-
-Until Phase 1 is approved, contributions are limited to documentation review and discussion.

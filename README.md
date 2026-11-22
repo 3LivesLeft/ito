@@ -19,8 +19,7 @@ ito is a free, open-source, privacy-first, decentralised communications gateway 
 **Experimental.** The app includes a Reticulum node, LXMF messaging, from 0.5.0 its own
 Home Assistant Ingress dashboard and, from 0.6.0, Nomad Network pages: read pages other people
 publish over Reticulum and publish your own, also without the internet (optional, off by
-default; [how to](meshbeacon/DOCS.md#nomad-network-pages-optional-experimental)). No images or
-releases are published by this change.
+default; [how to](meshbeacon/DOCS.md#nomad-network-pages-optional-experimental)).
 
 ## Install and use
 
@@ -95,21 +94,16 @@ unrelated project with the same name.
 
 ## How this project is made
 
-ito is directed and maintained by a human maintainer, who is responsible for every change
-that is merged. The Phase 0 research and documents were drafted with an AI coding assistant
-(Claude, by Anthropic) and committed under its own Git identity so that this is visible in the
-history. They are subject to the maintainer's review before they are accepted. Later work is AI-assisted in
-the same way and reviewed by the maintainer; from 19 November 2026, commits carry no AI co-author
-lines and pull requests no AI attribution, and earlier history is left as it is. See
-[CONTRIBUTING.md](CONTRIBUTING.md#ai-assistance).
+ito is a human-led project. AI tools have assisted with code, research and documentation.
+Contributors are responsible for what they submit. The maintainer reviews and approves pull
+requests before they are merged. See [CONTRIBUTING.md](CONTRIBUTING.md#ai-assistance).
 
 ## Licence
 
 ito's own code and documentation are licensed under the
 [Apache License, Version 2.0](LICENSE) ([ADR 0002](docs/adr/0002-licence.md)).
 
-Its container images (none published yet) will also contain third-party components under their
-own licences. In particular, **Reticulum and LXMF are licensed under the Reticulum License, which
+The app image bundles third-party components under their own licences. In particular, **Reticulum and LXMF are licensed under the Reticulum License, which
 is not an OSI-approved open-source licence**: it forbids use in systems designed to harm people
 and use in creating AI training datasets. Those conditions apply to anyone using the image. See
 [NOTICE](NOTICE) and the [licensing research](docs/research/licensing.md).
