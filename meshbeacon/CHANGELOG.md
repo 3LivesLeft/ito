@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 — unreleased (develop)
+
+- Keep the message composer focused during live conversation updates so the on-screen keyboard stays open while you type.
+
 ## 0.5.0 — unreleased (develop)
 
 - The dashboard is bundled in the app and opens through Home Assistant Ingress. App updates now update the dashboard, logo and fonts together.
