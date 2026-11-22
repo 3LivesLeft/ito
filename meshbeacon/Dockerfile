@@ -7,7 +7,7 @@ FROM ghcr.io/home-assistant/base-python:3.13-alpine3.24@sha256:c7d34ae22a87275d4
 # v0.6 (ADR 0027): Nomad Network pages the same way: the unmodified Nomad Network daemon and ito's
 # pages service, as their own user and s6 service, only when the user switches pages on.
 
-ARG BUILD_VERSION=0.6.0
+ARG BUILD_VERSION=0.6.1
 ARG BUILD_ARCH
 
 ENV \
