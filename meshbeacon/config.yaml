@@ -6,7 +6,7 @@
 # M4 (D-M4-8): optional LXMF messaging, off by default; it needs no new permission either.
 # v0.6 (ADR 0027): optional Nomad Network pages, off by default; no new permission or port either.
 name: ito
-version: "0.6.1"
+version: "0.6.2"
 slug: meshbeacon
 description: Private, decentralised connectivity for your home — powered by Reticulum.
 url: https://github.com/3LivesLeft/ito
