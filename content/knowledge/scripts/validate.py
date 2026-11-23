@@ -57,9 +57,22 @@ for f in allfiles:
  if rel.endswith('/index.mu') and len(f.read_bytes())>1024: warnings.append(f'category index too large: {rel}')
  if rel=='index.mu' and len(f.read_bytes())>2048: warnings.append('main index too large')
  if rel!='index.mu' and not rel.endswith('/index.mu') and 'pages/'+rel not in paths: fail(f'unlisted page: {rel}')
+category_targets = {}
+for category in {e['category'] for e in entries}:
+ category_root = pages / category
+ index = category_root / 'index.mu'
+ targets = set()
+ if index.is_file():
+  targets = {target for _, target in link_re.findall(index.read_text())}
+  direct_targets = targets.copy()
+  for section in category_root.glob('*/index.mu'):
+   section_link = '/page/' + section.relative_to(pages).as_posix()
+   if section_link in direct_targets:
+    targets.update(target for _, target in link_re.findall(section.read_text()))
+ category_targets[category] = targets
 for e in entries:
- index=pages/e['category']/'index.mu'
- if not index.is_file() or (':/page/'+e['path'][6:]) not in index.read_text(): fail(f"not linked from category: {e['path']}")
+ if '/page/' + e['path'][6:] not in category_targets[e['category']]:
+  fail(f"not linked from category: {e['path']}")
 for cat in {e['category'] for e in entries}:
  if f':/page/{cat}/index.mu' not in (pages/'index.mu').read_text(): fail(f'category not linked from main index: {cat}')
 for x in errors: print('ERROR:',x)

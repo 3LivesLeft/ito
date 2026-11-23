@@ -1,12 +1,12 @@
->Using a compass
-Practise compass use with a map before you need it in poor visibility.
+>Taking a compass bearing
+Use a baseplate compass to transfer a direction from a map.
+1. Confirm start and target. Put the edge along their connecting line, with the travel arrow pointing from start to target. Leave the compass flat.
+2. Turn the dial until the internal north lines run parallel to the map's north-south grid lines and the north mark points north. Read the index at the travel arrow. This is a grid bearing.
+3. Use the current local grid-to-magnetic conversion and the sign shown on the map or reliable offline reference. If magnetic north is 2 degrees east of grid north, for example, subtract 2 from the grid bearing to set a magnetic bearing.
+4. Away from metal and electronics, rotate your body until the north needle sits in the orienting arrow. Check the route is safe before following the travel arrow. A result near 180 degrees off usually means the compass was reversed.
 
-Hold the compass level and keep it away from phones, metal and magnets. For a map bearing, place the compass edge from your known position towards the destination. Turn the housing so its orienting lines align with the map’s north-south grid lines and north points to the top of the map. Read the bearing at the index line.
-Account for the current difference between grid north and magnetic north, using the map’s diagram and date. Hold the compass level, turn your body until the magnetic needle aligns with the orienting arrow, and follow the direction-of-travel arrow. Pick safe visible features along the route.
-A bearing is not proof that a route is safe: check terrain and practise with an instructor.
-
+`[Following a bearing on foot`:/page/navigation/bearing.mu]
 `[Reading a map`:/page/navigation/maps.mu]
-`[Planning a safe walking route`:/page/navigation/route.mu]
 
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/navigation/index.mu]  `[Home`:/page/index.mu]

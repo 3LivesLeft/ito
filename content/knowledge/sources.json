@@ -14,7 +14,14 @@
         "water-filtration",
         "water-disinfection",
         "water-rainwater",
-        "self-sufficiency-water"
+        "water-private-supply",
+        "water-quick",
+        "water-dehydration",
+        "water-surface",
+        "water-settling",
+        "water-cold-source",
+        "water-ration",
+        "quick-prefilter"
       ]
     },
     {
@@ -25,9 +32,11 @@
       "accessed": "2026-11-22",
       "limitations": "US bleach concentrations and container advice; label directions vary.",
       "relevant_pages": [
-        "water-sources",
         "water-storage",
-        "self-sufficiency-maintenance"
+        "food-planning",
+        "self-sufficiency-water",
+        "self-sufficiency-supplies",
+        "water-ration"
       ]
     },
     {
@@ -39,7 +48,8 @@
       "limitations": "Follow water supplier local notices.",
       "relevant_pages": [
         "water-safe-water",
-        "water-boiling"
+        "water-boiling",
+        "water-quick"
       ]
     },
     {
@@ -63,12 +73,7 @@
       "relevant_pages": [
         "preparedness-kit",
         "preparedness-plan",
-        "preparedness-power-cut",
-        "preparedness-flood",
-        "food-storage",
-        "food-planning",
-        "self-sufficiency-supplies",
-        "self-sufficiency-maintenance"
+        "preparedness-power-cut"
       ]
     },
     {
@@ -103,7 +108,6 @@
       "accessed": "2026-11-22",
       "limitations": "Water estimate is for drinking; household needs vary.",
       "relevant_pages": [
-        "water-storage",
         "preparedness-kit"
       ]
     },
@@ -117,8 +121,7 @@
       "relevant_pages": [
         "first-aid-assess",
         "first-aid-adult-cpr",
-        "first-aid-hypothermia",
-        "first-aid-heat"
+        "first-aid-monitor"
       ]
     },
     {
@@ -131,7 +134,8 @@
       "relevant_pages": [
         "first-aid-child-cpr",
         "first-aid-choking",
-        "first-aid-choking-baby"
+        "first-aid-choking-baby",
+        "first-aid-assess"
       ]
     },
     {
@@ -154,7 +158,8 @@
       "accessed": "2026-11-22",
       "limitations": "Seek emergency help for severe bleeding.",
       "relevant_pages": [
-        "first-aid-bleeding"
+        "first-aid-bleeding",
+        "first-aid-bleed-quick"
       ]
     },
     {
@@ -176,8 +181,12 @@
       "accessed": "2026-11-22",
       "limitations": "UK emergency telephone numbers; not a substitute for training.",
       "relevant_pages": [
-        "first-aid-assess",
-        "first-aid-child-cpr"
+        "first-aid-child-cpr",
+        "first-aid-burns",
+        "first-aid-fractures",
+        "first-aid-shock",
+        "first-aid-infection",
+        "first-aid-evacuation"
       ]
     },
     {
@@ -191,7 +200,9 @@
         "first-aid-hypothermia",
         "shelter-warm-home",
         "shelter-prevent-cold",
-        "shelter-insulation"
+        "shelter-insulation",
+        "shelter-emergency",
+        "first-aid-cold-quick"
       ]
     },
     {
@@ -203,7 +214,8 @@
       "limitations": "Do not delay 999 for severe symptoms.",
       "relevant_pages": [
         "first-aid-heat",
-        "shelter-heat-prevention"
+        "shelter-heat-prevention",
+        "first-aid-heat-quick"
       ]
     },
     {
@@ -225,8 +237,8 @@
       "accessed": "2026-11-22",
       "limitations": "Minor wounds only; other injuries need professional care.",
       "relevant_pages": [
-        "first-aid-bleeding",
-        "first-aid-wounds"
+        "first-aid-wounds",
+        "first-aid-infection"
       ]
     },
     {
@@ -237,8 +249,7 @@
       "accessed": "2026-11-22",
       "limitations": "Kit contents depend on household needs.",
       "relevant_pages": [
-        "first-aid-supplies",
-        "self-sufficiency-supplies"
+        "first-aid-supplies"
       ]
     },
     {
@@ -280,7 +291,8 @@
       "accessed": "2026-11-22",
       "limitations": "Maintain ventilation needed for fuel-burning appliances.",
       "relevant_pages": [
-        "shelter-insulation"
+        "shelter-insulation",
+        "shelter-warm-home"
       ]
     },
     {
@@ -305,7 +317,14 @@
         "shelter-outdoor-fire",
         "shelter-camping",
         "shelter-wildfire",
-        "food-stoves"
+        "fire-site",
+        "fire-tinder",
+        "fire-fuel",
+        "fire-matches",
+        "fire-spark",
+        "fire-put-out",
+        "fire-setup",
+        "quick-fire-out"
       ]
     },
     {
@@ -375,7 +394,15 @@
         "shelter-outdoor-fire",
         "shelter-camping",
         "food-cooking",
-        "food-stoves"
+        "food-stoves",
+        "fire-site",
+        "fire-wet",
+        "shelter-tarp",
+        "shelter-lean-to",
+        "shelter-weather",
+        "shelter-unsafe-build",
+        "food-fuel-save",
+        "food-outdoor"
       ]
     },
     {
@@ -388,7 +415,15 @@
       "relevant_pages": [
         "shelter-prevent-cold",
         "shelter-emergency",
-        "navigation-route"
+        "shelter-site",
+        "shelter-tarp",
+        "shelter-lean-to",
+        "shelter-debris",
+        "shelter-ground",
+        "shelter-weather",
+        "shelter-unsafe-build",
+        "self-sufficiency-repairs",
+        "quick-tarp"
       ]
     },
     {
@@ -399,10 +434,9 @@
       "accessed": "2026-11-22",
       "limitations": "UK mountain-rescue arrangements; conditions vary.",
       "relevant_pages": [
-        "shelter-prevent-cold",
         "shelter-emergency",
         "communications-emergency",
-        "communications-radio"
+        "navigation-lost"
       ]
     },
     {
@@ -414,8 +448,8 @@
       "limitations": "Follow emergency operator directions; the situation determines whether movement is safe.",
       "relevant_pages": [
         "shelter-emergency",
-        "navigation-signal",
-        "navigation-lost"
+        "navigation-lost",
+        "navigation-route"
       ]
     },
     {
@@ -454,9 +488,7 @@
         "communications-reticulum",
         "communications-nomad",
         "communications-mesh",
-        "communications-offline",
-        "communications-power",
-        "communications-planning"
+        "communications-offline"
       ]
     },
     {
@@ -564,7 +596,6 @@
       "limitations": "Prepare contacts and backup communications for the household.",
       "relevant_pages": [
         "communications-offline",
-        "communications-power",
         "communications-planning"
       ]
     },
@@ -600,7 +631,8 @@
       "relevant_pages": [
         "power-prepare",
         "power-loads",
-        "power-medical"
+        "power-medical",
+        "self-sufficiency-outage"
       ]
     },
     {
@@ -623,11 +655,10 @@
       "limitations": "Use the device manufacturer\u2019s instructions and compatible equipment.",
       "relevant_pages": [
         "power-station",
-        "power-solar-portable",
         "power-battery-safety",
         "power-electrical",
-        "self-sufficiency-supplies",
-        "self-sufficiency-maintenance"
+        "self-sufficiency-maintenance",
+        "communications-power"
       ]
     },
     {
@@ -651,7 +682,11 @@
       "relevant_pages": [
         "power-capacity",
         "power-runtime",
-        "power-station"
+        "power-station",
+        "communications-power",
+        "power-solar-portable",
+        "self-sufficiency-maintenance",
+        "quick-solar"
       ]
     },
     {
@@ -664,7 +699,8 @@
       "relevant_pages": [
         "power-capacity",
         "power-runtime",
-        "power-loads"
+        "power-loads",
+        "power-station"
       ]
     },
     {
@@ -686,11 +722,9 @@
       "accessed": "2026-11-22",
       "limitations": "Electrical connection and ventilation requirements depend on installation.",
       "relevant_pages": [
-        "power-station",
         "power-solar-home",
         "power-generator",
-        "power-electrical",
-        "self-sufficiency-maintenance"
+        "power-electrical"
       ]
     },
     {
@@ -700,9 +734,7 @@
       "url": "https://www.gov.uk/government/publications/public-health-advice-from-uk-cmos-during-a-national-power-outage/keeping-warm-or-cool-in-extreme-weather-scripts-for-broadcast-media",
       "accessed": "2026-11-22",
       "limitations": "Generator distance is a minimum precaution; site and manufacturer guidance also apply.",
-      "relevant_pages": [
-        "power-generator"
-      ]
+      "relevant_pages": []
     },
     {
       "id": "nationalgrid-safety",
@@ -724,7 +756,8 @@
       "accessed": "2026-11-22",
       "limitations": "Illustrative manufacturer guidance; input limits vary by product.",
       "relevant_pages": [
-        "power-solar-portable"
+        "power-solar-portable",
+        "quick-solar"
       ]
     },
     {
@@ -738,10 +771,9 @@
         "power-prepare",
         "power-loads",
         "food-power-cut",
-        "food-cooking",
-        "food-preservation",
         "food-planning",
-        "food-hygiene"
+        "food-storage",
+        "food-spoilage"
       ]
     },
     {
@@ -752,7 +784,8 @@
       "accessed": "2026-11-22",
       "limitations": "General technology explanation; UK installations and requirements differ.",
       "relevant_pages": [
-        "power-solar-home"
+        "power-solar-home",
+        "power-solar-portable"
       ]
     },
     {
@@ -774,10 +807,7 @@
       "accessed": "2026-11-22",
       "limitations": "Use-by dates concern safety, not just quality.",
       "relevant_pages": [
-        "food-storage",
-        "food-power-cut",
-        "food-planning",
-        "food-hygiene"
+        "food-power-cut"
       ]
     },
     {
@@ -788,7 +818,9 @@
       "accessed": "2026-11-22",
       "limitations": "Household recommendations; follow current local notices.",
       "relevant_pages": [
-        "food-preservation"
+        "food-preservation",
+        "food-storage",
+        "self-sufficiency-supplies"
       ]
     },
     {
@@ -799,7 +831,12 @@
       "accessed": "2026-11-22",
       "limitations": "Specific foods and vulnerable people may need additional precautions.",
       "relevant_pages": [
-        "food-cooking"
+        "food-cooking",
+        "food-planning",
+        "food-hygiene",
+        "fire-control",
+        "food-fuel-save",
+        "food-outdoor"
       ]
     },
     {
@@ -811,7 +848,8 @@
       "limitations": "Use safe water and appropriate cleaning products.",
       "relevant_pages": [
         "food-hygiene",
-        "self-sufficiency-growing"
+        "food-cooking",
+        "food-outdoor"
       ]
     },
     {
@@ -822,7 +860,9 @@
       "accessed": "2026-11-22",
       "limitations": "Home preservation requires validated methods.",
       "relevant_pages": [
-        "food-preservation"
+        "food-preservation",
+        "food-storage",
+        "food-spoilage"
       ]
     },
     {
@@ -833,9 +873,9 @@
       "accessed": "2026-11-22",
       "limitations": "Rainwater is not a potable supply.",
       "relevant_pages": [
-        "water-rainwater",
         "preparedness-sanitation",
-        "self-sufficiency-water"
+        "self-sufficiency-water",
+        "water-ration"
       ]
     },
     {
@@ -846,7 +886,12 @@
       "accessed": "2026-11-22",
       "limitations": "Guidance is for national power outages; follow local waste instructions.",
       "relevant_pages": [
-        "preparedness-sanitation"
+        "preparedness-sanitation",
+        "sanitation-toilet",
+        "sanitation-disposal",
+        "sanitation-waste",
+        "self-sufficiency-outage",
+        "quick-toilet"
       ]
     },
     {
@@ -858,7 +903,9 @@
       "limitations": "Follow local evacuation and emergency service instructions.",
       "relevant_pages": [
         "preparedness-flood",
-        "preparedness-evacuation"
+        "preparedness-evacuation",
+        "water-storage",
+        "preparedness-flood-quick"
       ]
     },
     {
@@ -883,7 +930,14 @@
       "relevant_pages": [
         "navigation-maps",
         "navigation-compass",
-        "navigation-without-gps"
+        "navigation-without-gps",
+        "navigation-route",
+        "navigation-grid",
+        "navigation-bearing",
+        "navigation-terrain",
+        "communications-location",
+        "quick-grid",
+        "quick-rescue-call"
       ]
     },
     {
@@ -894,7 +948,9 @@
       "accessed": "2026-11-22",
       "limitations": "Magnetic declination varies by location and date.",
       "relevant_pages": [
-        "navigation-compass"
+        "navigation-compass",
+        "navigation-without-gps",
+        "navigation-bearing"
       ]
     },
     {
@@ -905,7 +961,8 @@
       "accessed": "2026-11-22",
       "limitations": "Crop selection and timings vary with growing conditions.",
       "relevant_pages": [
-        "self-sufficiency-growing"
+        "self-sufficiency-growing",
+        "self-sufficiency-maintenance"
       ]
     },
     {
@@ -917,7 +974,7 @@
       "limitations": "Water needs vary by crop and conditions.",
       "relevant_pages": [
         "self-sufficiency-growing",
-        "self-sufficiency-water"
+        "self-sufficiency-rain-system"
       ]
     },
     {
@@ -928,11 +985,11 @@
       "accessed": "2026-11-22",
       "limitations": "Emergency procedure is for England and Wales; follow the call handler.",
       "relevant_pages": [
-        "navigation-maps",
         "navigation-without-gps",
         "navigation-route",
-        "navigation-signal",
-        "navigation-lost"
+        "navigation-lost",
+        "shelter-site",
+        "preparedness-priorities"
       ]
     },
     {
@@ -944,9 +1001,424 @@
       "limitations": "Flood water may contain sewage and chemicals.",
       "relevant_pages": [
         "food-power-cut",
-        "food-cooking",
+        "preparedness-sanitation",
+        "food-spoilage",
+        "sanitation-laundry"
+      ]
+    },
+    {
+      "id": "dwi-private-protection",
+      "organisation": "Drinking Water Inspectorate",
+      "title": "Protecting your private water supply",
+      "url": "https://www.dwi.gov.uk/private-water-supplies/customers-receiving-pws/protecting-your-private-water-supply/",
+      "accessed": "2026-11-23",
+      "limitations": "Contact the local authority for site-specific advice and testing.",
+      "relevant_pages": [
+        "water-private-supply",
+        "water-rainwater",
+        "self-sufficiency-rain-system"
+      ]
+    },
+    {
+      "id": "dwi-private-notices",
+      "organisation": "Drinking Water Inspectorate",
+      "title": "Serving Notices: templates and examples",
+      "url": "https://www.dwi.gov.uk/private-water-supplies/serving-notices/",
+      "accessed": "2026-11-23",
+      "limitations": "Examples of restrictions for private supplies in England and Wales. The actual notice controls.",
+      "relevant_pages": [
+        "water-safe-water",
+        "water-quick"
+      ]
+    },
+    {
+      "id": "cdc-flood-well",
+      "organisation": "CDC",
+      "title": "How to Disinfect Wells After an Emergency",
+      "url": "https://www.cdc.gov/water-emergency/about/how-to-disinfect-wells-after-an-emergency.html",
+      "accessed": "2026-11-23",
+      "limitations": "US guidance. Use local testing and remediation advice.",
+      "relevant_pages": [
+        "water-private-supply"
+      ]
+    },
+    {
+      "id": "gov-after-flood",
+      "organisation": "Environment Agency",
+      "title": "What to do after a flood",
+      "url": "https://www.gov.uk/after-flood",
+      "accessed": "2026-11-23",
+      "limitations": "England guidance. The page links to advice from the other UK nations.",
+      "relevant_pages": [
+        "preparedness-flood",
+        "preparedness-flood-quick"
+      ]
+    },
+    {
+      "id": "fss-powercut",
+      "organisation": "Food Standards Scotland",
+      "title": "Food safety during a power cut",
+      "url": "https://www.foodstandards.gov.scot/consumer-advice/food-safety/food-safety-in-the-kitchen/power-cuts",
+      "accessed": "2026-11-23",
+      "limitations": "Scotland guidance. Appliance hold times are estimates.",
+      "relevant_pages": [
+        "food-power-cut"
+      ]
+    },
+    {
+      "id": "cdc-co-outage",
+      "organisation": "CDC",
+      "title": "Avoiding Carbon Monoxide Poisoning",
+      "url": "https://www.cdc.gov/natural-disasters/psa-toolkit/avoiding-carbon-monoxide-poisoning.html",
+      "accessed": "2026-11-23",
+      "limitations": "US guidance. Twenty feet is approximately 6.1 metres.",
+      "relevant_pages": [
+        "power-generator"
+      ]
+    },
+    {
+      "id": "rnli-cold-water",
+      "organisation": "RNLI",
+      "title": "Know the risks in and beside the water",
+      "url": "https://rnli.org/water-safety/know-the-risks",
+      "accessed": "2026-11-23",
+      "limitations": "Outlines cold water shock and UK coastal emergency contacts.",
+      "relevant_pages": [
+        "navigation-cold-water"
+      ]
+    },
+    {
+      "id": "rnli-float",
+      "organisation": "RNLI",
+      "title": "Float to Live",
+      "url": "https://rnli.org/water-safety/float",
+      "accessed": "2026-11-23",
+      "limitations": "Advice for floating when in difficulty in water.",
+      "relevant_pages": [
+        "navigation-cold-water"
+      ]
+    },
+    {
+      "id": "kent-water-rescue",
+      "organisation": "Kent Fire and Rescue Service",
+      "title": "Make the right call",
+      "url": "https://www.kent.fire-uk.org/maketherightcall",
+      "accessed": "2026-11-23",
+      "limitations": "Inland dispatch advice for Kent.",
+      "relevant_pages": [
+        "navigation-cold-water"
+      ]
+    },
+    {
+      "id": "scotland-water-rescue",
+      "organisation": "Scottish Fire and Rescue Service",
+      "title": "Helping someone in the water",
+      "url": "https://www.firescotland.gov.uk/outdoors/water-safety/helping-someone-in-the-water/",
+      "accessed": "2026-11-23",
+      "limitations": "Scottish inland dispatch advice.",
+      "relevant_pages": [
+        "navigation-cold-water"
+      ]
+    },
+    {
+      "id": "fm-survival",
+      "organisation": "US Army",
+      "title": "FM 3-05.70 Survival",
+      "url": "https://irp.fas.org/doddir/army/fm3-05-70.pdf",
+      "accessed": "2026-11-23",
+      "limitations": "Historical military reference hosted by FAS. Chapters 2, 5\u20138, 15, 18\u201319 were used selectively. Modern sources take precedence.",
+      "relevant_pages": [
+        "water-sources",
+        "shelter-prevent-cold",
+        "navigation-maps",
+        "navigation-compass",
+        "navigation-signal",
+        "water-surface",
+        "water-cold-source",
+        "fire-tinder",
+        "fire-fuel",
+        "fire-matches",
+        "fire-spark",
+        "fire-wet",
+        "fire-control",
+        "shelter-site",
+        "shelter-tarp",
+        "shelter-lean-to",
+        "shelter-debris",
+        "shelter-ground",
+        "shelter-weather",
+        "shelter-unsafe-build",
+        "navigation-bearing",
+        "navigation-terrain",
+        "food-fuel-save",
+        "communications-visual",
+        "communications-morse",
+        "self-sufficiency-repairs",
+        "self-sufficiency-outage",
+        "fire-setup",
+        "preparedness-priorities",
+        "quick-tarp"
+      ]
+    },
+    {
+      "id": "fm-sanitation",
+      "organisation": "US Army",
+      "title": "FM 21-10 Field Hygiene and Sanitation",
+      "url": "https://www.emergencyactionplanning.com/wp-content/uploads/2018/05/fm21-10.pdf",
+      "accessed": "2026-11-23",
+      "limitations": "Historical military text. Civilian waste handling and local disposal rules take precedence.",
+      "relevant_pages": [
+        "sanitation-disposal",
+        "sanitation-hands",
+        "sanitation-bathing",
+        "sanitation-laundry",
+        "sanitation-camp",
+        "sanitation-waste"
+      ]
+    },
+    {
+      "id": "hudson-jsp",
+      "organisation": "John Hudson",
+      "title": "UK Military Survival Manual JSP 911",
+      "url": "https://www.johnhudsonsurvival.com/field-notes/2016/12/4/uk-military-survival-manual-jsp-911",
+      "accessed": "2026-11-23",
+      "limitations": "Public account of the manual, not a source for its unpublished procedures.",
+      "relevant_pages": [
+        "self-sufficiency-outage",
+        "preparedness-priorities"
+      ]
+    },
+    {
+      "id": "cdc-hike",
+      "organisation": "CDC",
+      "title": "Water treatment options when hiking camping or travelling",
+      "url": "https://www.cdc.gov/drinking-water/prevention/water-treatment-hiking-camping-traveling.html",
+      "accessed": "2026-11-23",
+      "limitations": "Follow product specifications and local advisories.",
+      "relevant_pages": [
+        "water-sources",
+        "water-boiling",
+        "water-filtration",
+        "water-disinfection",
+        "water-rainwater",
+        "water-surface",
+        "water-settling",
+        "water-cold-source",
+        "quick-prefilter"
+      ]
+    },
+    {
+      "id": "lnt-fire",
+      "organisation": "Leave No Trace",
+      "title": "Minimize Campfire Impacts",
+      "url": "https://lnt.org/why/7-principles/minimize-campfire-impacts/",
+      "accessed": "2026-11-23",
+      "limitations": "General outdoor practice. Local restrictions can prohibit all fires.",
+      "relevant_pages": [
+        "fire-site",
+        "fire-tinder",
+        "fire-fuel",
+        "fire-matches",
+        "fire-spark",
+        "fire-wet",
+        "fire-control",
+        "fire-put-out",
+        "fire-setup",
+        "quick-fire-out"
+      ]
+    },
+    {
+      "id": "lnt-waste",
+      "organisation": "Leave No Trace",
+      "title": "Dispose of Waste Properly",
+      "url": "https://lnt.org/why/7-principles/dispose-of-waste-properly/",
+      "accessed": "2026-11-23",
+      "limitations": "Land manager and local disposal rules take precedence.",
+      "relevant_pages": [
+        "shelter-debris",
+        "sanitation-disposal",
+        "sanitation-camp",
+        "sanitation-waste"
+      ]
+    },
+    {
+      "id": "wash-toilet",
+      "organisation": "Washington State Department of Health",
+      "title": "Toilet Use During an Emergency",
+      "url": "https://doh.wa.gov/community-and-environment/wastewater-management/toilet-use-during-emergencies",
+      "accessed": "2026-11-23",
+      "limitations": "Equipment example. Follow local waste instructions.",
+      "relevant_pages": [
+        "sanitation-toilet",
+        "sanitation-disposal",
+        "quick-toilet"
+      ]
+    },
+    {
+      "id": "cdc-hygiene",
+      "organisation": "CDC",
+      "title": "Guidelines for Personal Hygiene During an Emergency",
+      "url": "https://www.cdc.gov/water-emergency/safety/guidelines-for-personal-hygiene-during-an-emergency.html",
+      "accessed": "2026-11-23",
+      "limitations": "Use safe water and follow local advisories.",
+      "relevant_pages": [
+        "first-aid-wounds",
         "food-hygiene",
-        "preparedness-sanitation"
+        "sanitation-toilet",
+        "sanitation-hands",
+        "sanitation-bathing",
+        "sanitation-laundry",
+        "sanitation-camp",
+        "quick-toilet"
+      ]
+    },
+    {
+      "id": "rcuk-first",
+      "organisation": "Resuscitation Council UK",
+      "title": "2025 First Aid Guidelines",
+      "url": "https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/first-aid-guidelines",
+      "accessed": "2026-11-23",
+      "limitations": "Lay first aid with dispatch or clinical support when available.",
+      "relevant_pages": [
+        "first-aid-assess",
+        "first-aid-bleeding",
+        "first-aid-hypothermia",
+        "first-aid-heat",
+        "first-aid-fractures",
+        "shelter-prevent-cold",
+        "shelter-ground",
+        "first-aid-shock",
+        "first-aid-evacuation",
+        "first-aid-monitor",
+        "first-aid-bleed-quick",
+        "first-aid-heat-quick"
+      ]
+    },
+    {
+      "id": "mre-call",
+      "organisation": "Mountain Rescue England and Wales",
+      "title": "In case of emergency",
+      "url": "https://www.mountain.rescue.org.uk/how-to-call-out-mr/",
+      "accessed": "2026-11-23",
+      "limitations": "UK hill rescue call routing.",
+      "relevant_pages": [
+        "communications-radio",
+        "communications-planning",
+        "navigation-signal",
+        "navigation-grid",
+        "first-aid-evacuation",
+        "first-aid-monitor",
+        "communications-location",
+        "communications-distress-quick",
+        "quick-grid",
+        "quick-rescue-call"
+      ]
+    },
+    {
+      "id": "mre-whistle",
+      "organisation": "Mountain Rescue England and Wales",
+      "title": "If you have an accident",
+      "url": "https://dsrt-tavistock.org.uk/wp-content/uploads/2022/02/mrewstaysafeleaflet2019.pdf",
+      "accessed": "2026-11-23",
+      "limitations": "UK hill distress convention. Practices vary elsewhere.",
+      "relevant_pages": [
+        "navigation-signal",
+        "communications-visual",
+        "communications-distress-quick"
+      ]
+    },
+    {
+      "id": "rhs-seeds",
+      "organisation": "RHS",
+      "title": "Seed collecting and storing",
+      "url": "https://www.rhs.org.uk/propagation/seed-collecting-storing",
+      "accessed": "2026-11-23",
+      "limitations": "Check crop-specific pollination and drying needs.",
+      "relevant_pages": [
+        "self-sufficiency-seeds"
+      ]
+    },
+    {
+      "id": "cdc-rain",
+      "organisation": "CDC",
+      "title": "Collecting Rainwater and Your Health",
+      "url": "https://www.cdc.gov/drinking-water/about/collecting-rainwater-and-your-health-an-overview.html",
+      "accessed": "2026-11-23",
+      "limitations": "Drinking use requires assessment of microbial and chemical hazards.",
+      "relevant_pages": [
+        "water-rainwater",
+        "self-sufficiency-water",
+        "self-sufficiency-rain-system"
+      ]
+    },
+    {
+      "id": "itu-morse",
+      "organisation": "ITU",
+      "title": "International Morse code M.1677",
+      "url": "https://www.itu.int/rec/R-REC-M.1677/en",
+      "accessed": "2026-11-23",
+      "limitations": "Timing and signal standard, not evidence that a channel is monitored.",
+      "relevant_pages": [
+        "communications-morse"
+      ]
+    },
+    {
+      "id": "wt-forage",
+      "organisation": "Woodland Trust",
+      "title": "Responsible foraging guidelines",
+      "url": "https://www.woodlandtrust.org.uk/visiting-woods/things-to-do/foraging/foraging-guidelines",
+      "accessed": "2026-11-23",
+      "limitations": "Permission and protected species vary by site.",
+      "relevant_pages": [
+        "food-foraging"
+      ]
+    },
+    {
+      "id": "cdc-canning",
+      "organisation": "CDC",
+      "title": "Home-Canned Foods and Botulism",
+      "url": "https://www.cdc.gov/botulism/prevention/home-canned-foods.html",
+      "accessed": "2026-11-23",
+      "limitations": "Use tested recipes and applicable processing instructions.",
+      "relevant_pages": [
+        "food-preservation",
+        "food-spoilage"
+      ]
+    },
+    {
+      "id": "scouts-tarp",
+      "organisation": "The Scouts",
+      "title": "Survive the rain test",
+      "url": "https://www.scouts.org.uk/activities/survive-the-rain-test/",
+      "accessed": "2026-11-23",
+      "limitations": "UK instructional activity for practising simple shelters.",
+      "relevant_pages": [
+        "shelter-tarp",
+        "shelter-lean-to",
+        "shelter-weather",
+        "quick-tarp"
+      ]
+    },
+    {
+      "id": "fe-fire",
+      "organisation": "Forestry England",
+      "title": "Fire safety in the New Forest",
+      "url": "https://www.forestryengland.uk/fire-safety-the-new-forest",
+      "accessed": "2026-11-23",
+      "limitations": "Example of a local no-fires and no-barbecues rule.",
+      "relevant_pages": [
+        "fire-site"
+      ]
+    },
+    {
+      "id": "nhs-poison",
+      "organisation": "NHS",
+      "title": "Poisoning",
+      "url": "https://www.nhs.uk/conditions/poisoning/",
+      "accessed": "2026-11-23",
+      "limitations": "UK clinical contact guidance.",
+      "relevant_pages": [
+        "food-foraging"
       ]
     }
   ]

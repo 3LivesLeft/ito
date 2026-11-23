@@ -1,12 +1,12 @@
 >Preventing hypothermia
-Cold, wind and wet clothes can cause dangerous heat loss, even above freezing.
+Intervene while people can still walk, talk and change clothing normally.
+1. Before an exposed stop, add a dry insulating layer and a shell against wind and rain. Use a hat and dry gloves. Avoid sweating into the layers by venting when moving.
+2. At a stop, get out of the wind, insulate from the ground and put wet gear somewhere it cannot soak the dry layers. Pack dry reserves separately from the wet kit.
+3. Pair people up and check speech, coordination and alertness. Shivering with clumsiness or confusion is a reason to stop travel and reassess. Do not leave a cold person alone.
+4. If hypothermia is suspected, handle gently, insulate and seek emergency help as early as you can. Follow the first-aid guide while waiting. Avoid stoves, heaters and flames in enclosed shelter.
 
-Wear warm layers with windproof and waterproof outer clothing. Carry a hat, gloves, spare dry layers and an emergency shelter. Eat and drink regularly. Take extra care with children, older people and anyone who is ill or exhausted.
-If someone is getting cold, stop, find shelter from wind and rain, replace wet clothing with dry layers and insulate them from the ground. Do not let tiredness or worsening weather leave you far from safety.
-Shivering, slurred speech, confusion or drowsiness may indicate hypothermia. Call 999 and use the hypothermia first aid page.
-
+`[Insulating yourself from the ground`:/page/shelter/ground.mu]
 `[Hypothermia first aid`:/page/first-aid/hypothermia.mu]
-`[Emergency outdoor shelter`:/page/shelter/emergency.mu]
 
-Reviewed: 2026-11-22
-`[Shelter`:/page/shelter/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/shelter/index.mu]  `[Home`:/page/index.mu]

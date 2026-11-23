@@ -1,11 +1,12 @@
->Growing basic food crops
-Start with a few crops your household eats and a sunny, accessible growing space.
+>Starting a small reliable food garden
+Start at a scale you can water and maintain.
+1. Choose a sunny accessible spot with safe soil or containers and clean compost. Check drainage and shelter before buying plants. Avoid growing edible crops directly in soil with suspected contamination.
+2. Pick a few crops suited to the season and space, using packet spacing and depth. Sow small staggered batches for a more continuous harvest.
+3. Water the root zone and check containers often in dry weather. Mulch where appropriate. Change the watering schedule based on soil moisture rather than the calendar alone.
+4. Record sowing, germination and harvest. If a crop fails, check moisture, temperature, spacing and pest damage before resowing. Keep a food reserve while crops establish.
 
-Lettuce, chard, herbs and beans can be grown in suitable beds or containers; follow the seed packet for sowing times, spacing and care. Use containers with drainage and appropriate peat-free compost. Containers dry out more quickly than garden soil, so check them regularly and water when needed.
-Keep food-growing areas clear of floodwater and other contamination. Wash harvested produce with safe water. Allow for weather, pests and growing time: a small garden supplements stored food and is not a reliable immediate emergency supply.
+`[Saving seed for the next growing season`:/page/self-sufficiency/seeds.mu]
+`[Running separate potable and utility supplies`:/page/self-sufficiency/water.mu]
 
-`[Planning emergency meals`:/page/food/planning.mu]
-`[Reducing water use`:/page/self-sufficiency/water.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/self-sufficiency/index.mu]  `[Home`:/page/index.mu]

@@ -6,5 +6,8 @@
 `[Emergency sanitation`:/page/preparedness/sanitation.mu]
 `[Emergency evacuation`:/page/preparedness/evacuation.mu]
 `[Preparing for a severe storm`:/page/preparedness/storm.mu]
+`[Flood quick card`:/page/preparedness/flood-quick.mu]
+`[Making decisions when stranded`:/page/preparedness/priorities.mu]
+`[Field sanitation`:/page/sanitation/index.mu]
 
 `[Home`:/page/index.mu]

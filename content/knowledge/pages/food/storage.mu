@@ -1,10 +1,12 @@
->Emergency food storage
-Store foods your household can eat without refrigeration or cooking.
+>Storing food without refrigeration
+Make the main reserve out of foods labelled for ambient storage.
+1. Sort unopened shelf-stable foods from products that say to refrigerate. Dry grains, canned foods and shelf-stable meals belong in a cool dry cupboard, away from fuel, floodwater and pests.
+2. Group items by type and put those expiring first at the front. Keep packaging directions and allergen information. After opening, follow the label on storage and time limits.
+3. If you cannot chill leftovers safely, open or cook only what can be eaten promptly. A cool room, cellar or shaded box is no guarantee of a safe fridge temperature.
+4. Seal dry foods against moisture and pests. Check the shelf periodically for insects, leaks and damage. Discard compromised stock without tasting it.
 
-Keep a supply of sealed tins, packets and ready-to-eat food in a cool, dry place. Include a manual tin opener, safe drinking water, baby food and any special dietary or pet needs. Rotate supplies: use older stock first and replace it.
-Follow storage and use-by instructions. A use-by date is about safety: do not eat the food after that date even if it looks or smells fine. A best-before date concerns quality. Discard leaking, swollen or damaged containers. Do not taste suspect food.
+`[Planning meals from a limited reserve`:/page/food/planning.mu]
+`[Deciding when food must be discarded`:/page/food/spoilage.mu]
 
-`[Food safety during a power cut`:/page/food/power-cut.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/food/index.mu]  `[Home`:/page/index.mu]

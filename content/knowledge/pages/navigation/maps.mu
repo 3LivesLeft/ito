@@ -1,12 +1,12 @@
 >Reading a map
-Use the map’s key, scale and contours to understand the ground.
+Identify scale, north and recognisable features before moving.
+1. Read the legend and contour interval. At 1:25,000, one centimetre on paper is 250 metres on the ground. Measure a winding route in short segments rather than straight between endpoints.
+2. Orient the sheet to terrain or a compass. Find a reliable starting feature such as a junction, bridge or distinct ridge. Confirm it with another feature, including its direction or height.
+3. Trace the route and mark decision points, escape routes, steep slopes and obstacles. Look for the next expected feature before you leave the current one.
+4. If the map and landscape disagree, stop. Recheck scale, alignment and your last known point. Maps may omit fences, flood damage or recent path changes. Never assume a mapped path is currently passable.
 
-Find the map scale and legend: symbols, paths and access rights vary by map. Orient the map so that north on the page matches the ground, using a compass and identifiable features. Locate yourself using several features, such as a path junction, stream and hill shape; do not rely on a single landmark.
-Contour lines join places of equal height. Closely spaced lines indicate steep ground; wide spacing suggests gentler slopes. Read the contour interval in the key and plan around cliffs, streams and difficult terrain.
-Carry a suitable paper map and compass and practise before venturing into unfamiliar country.
+`[Reading a UK grid reference`:/page/navigation/grid.mu]
+`[Reading terrain from contours`:/page/navigation/terrain.mu]
 
-`[Using a compass`:/page/navigation/compass.mu]
-`[Planning a safe walking route`:/page/navigation/route.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/navigation/index.mu]  `[Home`:/page/index.mu]

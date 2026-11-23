@@ -1,12 +1,12 @@
 >Signalling for help outdoors
-Call 999 or 112 first if possible; give your location and stay available.
+Choose a signal rescuers can detect from your safe position.
+1. Where voice carries poorly, use a whistle. At night use a torch with a spare battery. In the UK hills, use six blasts or flashes, wait one minute, and repeat. Other regions may use different patterns.
+2. Leave gaps to listen and look for replies. Continue signalling after a reply if it is safe, so a team can find the source. Do not follow an answering sound towards a hazardous slope or river.
+3. During daylight, place a bright item against contrasting ground near your position. Keep it secured against wind.
+4. If there are several people, assign someone to signal while others care for the casualty and preserve a charged phone or radio for contact. Avoid smoke signals where fire could spread.
 
-In the hills or mountains ask for Police and then Mountain Rescue. At the coast ask for Coastguard. If you have already called, follow the rescue team’s instructions and stay in the agreed safe place.
-The mountain distress signal is six long whistle blasts or torch flashes in one minute, followed by one minute’s pause; repeat until someone reaches you. Continue after hearing a reply, as rescuers may use the sound to locate you.
-Move away from immediate danger, shelter from the weather and keep warm. Do not risk cliffs, rivers or fire to attract attention.
+`[Making a visible rescue signal`:/page/communications/visual.mu]
+`[Morse timing and the SOS signal`:/page/communications/morse.mu]
 
-`[Getting emergency help`:/page/communications/emergency.mu]
-`[What to do when lost`:/page/navigation/lost.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/navigation/index.mu]  `[Home`:/page/index.mu]

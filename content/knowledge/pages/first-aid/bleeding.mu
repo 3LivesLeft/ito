@@ -1,10 +1,12 @@
->Severe bleeding
-Press firmly on the wound immediately and call 999.
+>Controlling severe bleeding
+Apply direct pressure immediately and get help.
+1. Use gloves if ready, but do not delay. Press hard directly on the wound with a dressing, clean cloth or hand if needed. Tell a helper to call emergency services and fetch a first-aid kit.
+2. If an object is embedded, leave it in place. Press to either side of the object without pushing it deeper. Keep pressure continuous.
+3. For life-threatening limb bleeding that direct pressure fails to stop, a commercial tourniquet may be needed. Use one if trained or guided by emergency dispatch. Note the application time and do not release it yourself.
+4. Keep the person warm and watch breathing and response. If they are unresponsive and breathing abnormally, begin CPR. Hand over what happened, when it happened and what you did.
 
-1. Wear gloves if available. Apply firm, continuous direct pressure with a sterile dressing or clean cloth. If nothing is available, use your hand or ask the person to press.
-2. If an object is embedded, leave it in place and press firmly on either side; do not press on the object. Cover around it.
-3. Have the person lie down if possible and keep them warm. Keep pressing and follow the call handler’s instructions. Watch for worsening response or breathing.
-If the dressing becomes soaked, apply another on top and keep pressure on. Do not delay pressure while looking for supplies. A tourniquet may be needed for catastrophic limb bleeding when direct pressure fails; follow emergency service instructions.
+`[Recognising circulatory shock`:/page/first-aid/shock.mu]
+`[Severe bleeding quick card`:/page/first-aid/bleed-quick.mu]
 
-Reviewed: 2026-11-22
-`[First aid`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]

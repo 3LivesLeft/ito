@@ -1,12 +1,12 @@
->Preventing food contamination
-Wash hands with soap and safe water before handling food and after using the toilet.
+>Keeping food preparation clean
+Set up separate dirty and clean areas before opening food.
+1. Wash hands with soap and safe water. Clean the work surface and set one board or tray aside for ready-to-eat food. Keep raw meat and its packaging on a separate tray.
+2. Handle clean ingredients first. After touching raw food, wash hands and wash utensils before they touch anything cooked. Do not rinse raw poultry, which can spread contaminated droplets.
+3. Cook with verified safe water and use a clean probe if needed. Serve onto a clean plate rather than the one that held raw ingredients.
+4. Remove food waste, clean utensils and dry them safely. If the site cannot support safe water and separation, choose a meal requiring less handling.
 
-Keep raw meat, fish and poultry separate from ready-to-eat foods. Use separate utensils or wash boards and equipment thoroughly in hot soapy water between tasks. Clean surfaces and containers; use safe water for food and cleaning.
-Cook food thoroughly and keep chilled food cold. Do not prepare food for others if you have vomiting or diarrhoea. Do not eat food touched by floodwater or use water suspected of chemical contamination.
-If safe water is unavailable, use hand sanitiser when handwashing is not possible and obtain a safe water supply as soon as possible.
+`[Preparing a meal outdoors`:/page/food/outdoor.mu]
+`[Handwashing with a small water supply`:/page/sanitation/hands.mu]
 
-`[Making water safe`:/page/water/safe-water.mu]
-`[Cooking without mains power`:/page/food/cooking.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/food/index.mu]  `[Home`:/page/index.mu]

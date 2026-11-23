@@ -272,7 +272,27 @@ def test_bundled_library_is_discoverable_from_nomad_homepage(world: World, monke
     guide_path = "/page/ito-guide--water-boiling.mu"
     assert f":{guide_path}]" in category["content"]
     assert fetch(guide_path, "guide")["content"].startswith(">Boiling water")
+    quick_path = "/page/ito-guide--water-quick.mu"
+    assert f":{quick_path}]" in category["content"]
+    quick = fetch(quick_path, "quick")
+    assert quick["result"] == "ok"
+    assert quick["content"].startswith(">Unsafe water quick card")
+    assert len(quick["content"].encode("utf-8")) <= 1024
+    assert ":/page/ito-guide--water-safe-water.mu]" in quick["content"]
+    assert "Independent review pending." in quick["content"]
+    shelter_path = "/page/ito-guide--shelter-index.mu"
+    assert f":{shelter_path}]" in library["content"]
+    shelter = fetch(shelter_path, "shelter")
+    assert shelter["result"] == "ok"
+    section_path = "/page/ito-guide--shelter-outdoors-index.mu"
+    assert f":{section_path}]" in shelter["content"]
+    section = fetch(section_path, "outdoors")
+    assert section["result"] == "ok"
+    tarp_path = "/page/ito-guide--shelter-tarp.mu"
+    assert f":{tarp_path}]" in section["content"]
+    assert fetch(tarp_path, "tarp")["content"].startswith(">Pitching an A-frame tarp")
     assert world.store.handle({"op": "share_knowledge", "enabled": False})["ok"]
     assert library_path not in fetch("/page/index.mu", "sharing-off")["content"]
     assert fetch(guide_path, "guide-off")["result"] != "ok"
+    assert fetch(quick_path, "quick-off")["result"] != "ok"
     assert daemon.p.poll() is None

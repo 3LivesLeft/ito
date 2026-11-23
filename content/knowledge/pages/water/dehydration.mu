@@ -1,9 +1,12 @@
->Recognising dehydration
-Offer safe fluids early if the person is awake and able to swallow.
+>Recognising and managing dehydration
+Start replacing fluid early while the person can drink safely.
+1. Look for thirst, dry mouth, darker or reduced urine, headache and dizziness. Babies may have fewer wet nappies or no tears. Do not use urine colour by itself to diagnose severity.
+2. Rest in a cool place and offer frequent small sips of safe water. For vomiting or diarrhoea, commercial oral rehydration salts can help replace water and salts. Use the exact safe-water volume printed on the packet.
+3. Reassess alertness, urination and ability to keep fluids down. Persistent dizziness when standing, rapid breathing, markedly reduced urine or inability to keep fluids down warrants urgent advice.
+4. Seek emergency help if the person becomes confused, difficult to wake or breathes abnormally. Do not give a drink to anyone who cannot swallow safely.
 
-Signs include thirst, dry mouth, dark urine, passing less urine, tiredness and dizziness. Give small frequent sips if feeling sick. For vomiting or diarrhoea, a pharmacist can advise on oral rehydration solution.
-Call 999 for dehydration with confusion, difficulty waking, breathing difficulty, or pale, blue, grey or blotchy skin. Contact NHS 111 urgently for persistent dizziness on standing, unusual tiredness, fast breathing or heart rate, or much less urine.
-Babies, children and older adults are more vulnerable. Ask 111 for advice about a child under five.
+`[Recognising and treating heat illness`:/page/first-aid/heat.mu]
+`[Managing a limited water supply`:/page/water/ration.mu]
 
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/water/index.mu]  `[Home`:/page/index.mu]

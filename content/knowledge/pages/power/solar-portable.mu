@@ -1,12 +1,12 @@
 >Charging from portable solar
-Match the panel and connector to the power station’s specified solar input.
-
-Before connecting, check the unit’s permitted input voltage, current, polarity and connector. The panel or connected array’s open-circuit voltage must remain below the station’s maximum, including in cold conditions; series wiring raises voltage. Follow both manufacturers’ instructions. Do not improvise wiring or exceed stated limits.
-Actual output depends on sun, cloud, shade, angle and temperature; a panel’s rated watts are not a guarantee of continuous charging. Place the panel securely where it cannot overheat or obstruct people, and keep the power station and non-weatherproof connections dry and out of direct heat.
-Plan for poor sunlight and test the whole system beforehand.
+Match the array and cable to the station's labelled input limits.
+1. Read the station's solar voltage, current, permitted wattage, polarity and connector requirements. Use approved equipment. The array's cold-weather open-circuit voltage must stay within the input limit. Ask the manufacturer if any figure is uncertain.
+2. Set the panel on firm ground with a clear view of the sun. Secure it from wind and protect the station from rain. Follow the required connection and disconnection order.
+3. Read actual input watts after connection. If low, check shade, angle and connectors. Estimate energy from measured power and expected generating hours, allowing for clouds and losses.
+4. Disconnect using the instructions if leads are damaged or conditions are unsafe. Never improvise a mains connection or depend on nameplate solar output alone.
 
 `[Using a portable power station`:/page/power/station.mu]
-`[Battery capacity and power`:/page/power/capacity.mu]
+`[Estimating battery runtime`:/page/power/runtime.mu]
 
-Reviewed: 2026-11-22
-`[Power`:/page/power/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/power/index.mu]  `[Home`:/page/index.mu]

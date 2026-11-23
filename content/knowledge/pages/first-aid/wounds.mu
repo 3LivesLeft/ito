@@ -1,8 +1,12 @@
->Cleaning a minor wound
-First stop bleeding with direct pressure. Severe or uncontrollable bleeding needs 999.
+>Cleaning and dressing a minor wound
+Only clean a minor wound after bleeding is controlled.
+1. Wash your hands and use gloves if available. Stop bleeding with pressure. A deep wound, severe bleeding or embedded object needs medical care rather than field cleaning.
+2. Rinse with clean tap water, bottled water or sterile saline. Clean the surrounding skin with soap and water, keeping soap and harsh disinfectant out of the wound. Do not dig out debris.
+3. Pat the surrounding skin dry, cover with a sterile dressing or plaster, and replace it if wet or dirty. Keep the dressing clean and check the site when changing it.
+4. Seek advice for bites, deep or persistently dirty wounds, or an uncertain tetanus vaccination history. Watch for increasing pain, redness, warmth, swelling or pus.
 
-Wash hands and use gloves if available. Once bleeding has stopped, rinse a minor wound with safe tap or bottled water. Clean the surrounding skin with soap and water, wiping away from the wound. Cover with a sterile dressing or plaster; change it when wet or dirty.
-Do not remove an embedded object. Get urgent medical advice for bites, a wound still dirty after cleaning, spreading redness, swelling, increasing pain or pus. A tetanus injection may be needed. Deep or large wounds, loss of feeling or movement, or an embedded object need urgent assessment.
+`[Spotting a worsening wound`:/page/first-aid/infection.mu]
+`[Controlling severe bleeding`:/page/first-aid/bleeding.mu]
 
-Reviewed: 2026-11-22
-`[First aid`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]

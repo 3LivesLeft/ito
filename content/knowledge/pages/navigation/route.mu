@@ -1,12 +1,12 @@
 >Planning a safe walking route
-Choose a route suited to the least experienced person in the group.
+Write an offline route card before committing to exposed terrain.
+1. Mark start, destination, distinct checkpoints, turning points and safer alternatives on a paper map. For each leg note distance, ascent, terrain, likely time and the feature that marks the end.
+2. Check weather, tide if relevant, daylight and group capacity. Choose a conservative turnaround time that leaves time to return safely. Add margins for poor footing and navigation stops.
+3. Share the route, change options and overdue action with someone who can raise help. Carry a copy accessible in rain.
+4. At each checkpoint compare actual time, weather and the slowest person's condition with the plan. Turn back or use the escape option before reaching a hazard. Update the contact if the route changes and a connection is available.
 
-Check the forecast, daylight, distance, terrain, access and escape routes before leaving. Carry a paper map and compass, waterproofs, warm layers, food, water, torch, whistle, charged phone and emergency shelter. Know how to use them.
-Tell a trusted person your route, expected return time and what to do if you are overdue. Allow extra time for bad weather or difficult terrain. Turn back or change plans if conditions exceed the group’s abilities.
-In an emergency in the hills, call 999 or 112, ask for Police and then Mountain Rescue. Give your location and follow their directions.
+`[Reading terrain from contours`:/page/navigation/terrain.mu]
+`[Following a bearing on foot`:/page/navigation/bearing.mu]
 
-`[What to do when lost`:/page/navigation/lost.mu]
-`[Emergency outdoor shelter`:/page/shelter/emergency.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/navigation/index.mu]  `[Home`:/page/index.mu]
