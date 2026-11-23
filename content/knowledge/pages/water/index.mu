@@ -7,5 +7,7 @@
 `[Storing drinking water`:/page/water/storage.mu]
 `[Collecting rainwater`:/page/water/rainwater.mu]
 `[Recognising dehydration`:/page/water/dehydration.mu]
+`[Wells and boreholes after flooding`:/page/water/private-supply.mu]
+`[Unsafe water quick card`:/page/water/quick.mu]
 
 `[Home`:/page/index.mu]

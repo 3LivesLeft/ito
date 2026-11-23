@@ -6,18 +6,23 @@
       "title": "Making water safe",
       "category": "water",
       "path": "pages/water/safe-water.mu",
-      "description": "Use a known safe supply first. Follow the water supplier\u2019s notice.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Identify the hazard and follow the supplier notice before treating water.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "cdc-water",
-        "dwi"
+        "dwi",
+        "dwi-private-notices"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 724,
-      "sha256": "003b13c439c153efaf0087f7871b8a710a90a361e154498ffed6046ddb0fa572",
-      "related_pages": [],
+      "size_bytes": 1450,
+      "sha256": "4d9e635d78d07c0c8c757044d9bf41a683d687e4c141a87547c358cd6573449f",
+      "related_pages": [
+        "water-boiling",
+        "water-filtration",
+        "water-private-supply"
+      ],
       "page_type": "standard"
     },
     {
@@ -99,18 +104,20 @@
       "title": "Storing drinking water",
       "category": "water",
       "path": "pages/water/storage.mu",
-      "description": "Store safe drinking water in clean, food-grade containers with tight lids.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Build a reserve before you need it and keep it separate from utility water.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "cdc-storage",
-        "lfb-kit"
+        "gov-flood-during"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 727,
-      "sha256": "33f416a33412cdd8ecca0758e3a1d5aedc3151f865c47e0c1cdad32fef4fc487",
-      "related_pages": [],
+      "size_bytes": 1139,
+      "sha256": "be09ca42d89edabaf0f50207a06213bb2c1a9ca780687480a6a6a145499a2f76",
+      "related_pages": [
+        "water-safe-water"
+      ],
       "page_type": "standard"
     },
     {
@@ -211,19 +218,22 @@
       "title": "Preparing for flooding",
       "category": "preparedness",
       "path": "pages/preparedness/flood.mu",
-      "description": "If in immediate danger call 999. Never walk or drive through floodwater.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Move people to safety early and keep your route clear of floodwater.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "gov-flood",
-        "gov-ready",
-        "gov-flood-during"
+        "gov-flood-during",
+        "gov-after-flood"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 717,
-      "sha256": "a02fa71a52af5fa320ac1cd4234dc9dd4aa00b59aefb70fb88953453af6465bc",
-      "related_pages": [],
+      "size_bytes": 1351,
+      "sha256": "83a75c56b1789fbdc5cf0a47106a934275b208fb9879974abba4473c91f4d581",
+      "related_pages": [
+        "preparedness-evacuation",
+        "water-private-supply"
+      ],
       "page_type": "standard"
     },
     {
@@ -508,22 +518,24 @@
       "title": "Emergency outdoor shelter",
       "category": "shelter",
       "path": "pages/shelter/emergency.mu",
-      "description": "Get out of immediate danger, protect the group from wind and rain, and call for help early.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Get away from immediate hazards, take shelter and call for help early.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "mre-shelter",
         "mre-rescue",
         "adventuresmart",
-        "wales-camping"
+        "wales-camping",
+        "nhs-hypothermia"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 1014,
-      "sha256": "e4f8a4ef83345e524b487c82a5434ba967d3655955dbf7660b9cc3eaa1823aa3",
+      "size_bytes": 1312,
+      "sha256": "2ece6e0a31dfce888f1f13adb165d756db8b4742c065a6af6c2f56821f21a630",
       "related_pages": [
         "shelter-prevent-cold",
-        "first-aid-hypothermia"
+        "first-aid-hypothermia",
+        "navigation-lost"
       ],
       "page_type": "standard"
     },
@@ -1168,18 +1180,18 @@
       "title": "Using a fuel generator safely",
       "category": "power",
       "path": "pages/power/generator.mu",
-      "description": "Never use a fuel generator indoors, in a garage or in a partially enclosed space.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Operate outdoors in open air. Carbon monoxide can kill without warning.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "gov-generator",
+        "cdc-co-outage",
         "hseni-generator",
         "nhs-co"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 1035,
-      "sha256": "f54f83211ebfdf013e9b370f6308140fa539ddebba12f729c217e1296e742c7b",
+      "size_bytes": 1114,
+      "sha256": "4aa4b360025e50e4671fef7ecbed86cda681caae0501aeee5e6ed91428a206ef",
       "related_pages": [
         "shelter-carbon-monoxide",
         "power-electrical"
@@ -1258,18 +1270,19 @@
       "title": "Food safety during a power cut",
       "category": "food",
       "path": "pages/food/power-cut.mu",
-      "description": "Keep fridge and freezer doors closed; check temperature with a thermometer.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Keep the doors shut and note when the power went off.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "fsa-powercut",
+        "fss-powercut",
         "fsa-food-poison",
         "gov-flood-health"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 925,
-      "sha256": "878d351acc8b4dc840cbfee9605fdde85406c7e751288e7010ec36bd6c1ce271",
+      "size_bytes": 1256,
+      "sha256": "924757ebe525155b586c1d65fc54baeb1b2368f91ef0e88e97ecef414568028c",
       "related_pages": [
         "food-storage",
         "shelter-camping"
@@ -1577,17 +1590,18 @@
       "title": "What to do when lost",
       "category": "navigation",
       "path": "pages/navigation/lost.mu",
-      "description": "Stop in a safe place, stay together and work out your options.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Stop somewhere safe and keep the group together.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "mre-safety",
-        "adventuresmart"
+        "adventuresmart",
+        "mre-rescue"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 963,
-      "sha256": "661ac669a2d983bca4138be1db1eb2b685427d867ac5ce87de751db326c36b34",
+      "size_bytes": 1197,
+      "sha256": "2e88381049f3bc1e8b8d3ff8ad6a8e4b7a3afe336034cd1613f35f72ee12ee2c",
       "related_pages": [
         "navigation-signal",
         "shelter-emergency"
@@ -1684,6 +1698,116 @@
       "related_pages": [
         "self-sufficiency-supplies",
         "power-electrical"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-private-supply",
+      "title": "Wells and boreholes after flooding",
+      "category": "water",
+      "path": "pages/water/private-supply.mu",
+      "description": "Switch to confirmed safe water if a private supply is flooded or treatment fails.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "dwi-private-protection",
+        "cdc-flood-well",
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 1133,
+      "sha256": "fcb920e89f5fdbf38310ada457bd0e87b6e9c37c6b6522e2fe2a522f97ec9ac8",
+      "related_pages": [
+        "water-safe-water",
+        "water-storage"
+      ],
+      "page_type": "standard"
+    },
+    {
+      "id": "water-quick",
+      "title": "Unsafe water quick card",
+      "category": "water",
+      "path": "pages/water/quick.mu",
+      "description": "Use confirmed safe water for drinking, food and teeth.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-water",
+        "dwi",
+        "dwi-private-notices"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 549,
+      "sha256": "d0237b37d4ed8d1c8f0fc7d3dd8f2162ccf89a77baf35488a78b9c1475f8b99e",
+      "related_pages": [
+        "water-safe-water"
+      ],
+      "page_type": "quick"
+    },
+    {
+      "id": "preparedness-flood-quick",
+      "title": "Flood quick card",
+      "category": "preparedness",
+      "path": "pages/preparedness/flood-quick.mu",
+      "description": "Get to higher ground by a dry route.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "gov-flood-during",
+        "gov-after-flood"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 498,
+      "sha256": "58b248425283c801a9b32da34b34235c4c34cea56bf749cb863be038544a10fb",
+      "related_pages": [
+        "preparedness-flood"
+      ],
+      "page_type": "quick"
+    },
+    {
+      "id": "first-aid-cold-quick",
+      "title": "Hypothermia quick card",
+      "category": "first-aid",
+      "path": "pages/first-aid/cold-quick.mu",
+      "description": "Suspect hypothermia? Call emergency services (UK: 999).",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "nhs-hypothermia"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 578,
+      "sha256": "c364e8b2267f2a54d1bc0d15d71cbc6fc9bef25b21a01d8af0ef31032df9720e",
+      "related_pages": [
+        "first-aid-hypothermia"
+      ],
+      "page_type": "quick"
+    },
+    {
+      "id": "navigation-cold-water",
+      "title": "Falling into cold water",
+      "category": "navigation",
+      "path": "pages/navigation/cold-water.mu",
+      "description": "Float first and let your breathing settle before trying to swim.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "rnli-cold-water",
+        "rnli-float",
+        "kent-water-rescue",
+        "scotland-water-rescue"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "size_bytes": 968,
+      "sha256": "258a3b4191ce105bf89627335615404567fcd2dc54cbe332dfc1be2c4e90fe38",
+      "related_pages": [
+        "navigation-signal",
+        "first-aid-hypothermia"
       ],
       "page_type": "standard"
     }

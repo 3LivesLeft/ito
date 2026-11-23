@@ -14,7 +14,9 @@
         "water-filtration",
         "water-disinfection",
         "water-rainwater",
-        "self-sufficiency-water"
+        "self-sufficiency-water",
+        "water-private-supply",
+        "water-quick"
       ]
     },
     {
@@ -39,7 +41,8 @@
       "limitations": "Follow water supplier local notices.",
       "relevant_pages": [
         "water-safe-water",
-        "water-boiling"
+        "water-boiling",
+        "water-quick"
       ]
     },
     {
@@ -64,7 +67,6 @@
         "preparedness-kit",
         "preparedness-plan",
         "preparedness-power-cut",
-        "preparedness-flood",
         "food-storage",
         "food-planning",
         "self-sufficiency-supplies",
@@ -103,7 +105,6 @@
       "accessed": "2026-11-22",
       "limitations": "Water estimate is for drinking; household needs vary.",
       "relevant_pages": [
-        "water-storage",
         "preparedness-kit"
       ]
     },
@@ -191,7 +192,9 @@
         "first-aid-hypothermia",
         "shelter-warm-home",
         "shelter-prevent-cold",
-        "shelter-insulation"
+        "shelter-insulation",
+        "shelter-emergency",
+        "first-aid-cold-quick"
       ]
     },
     {
@@ -402,7 +405,8 @@
         "shelter-prevent-cold",
         "shelter-emergency",
         "communications-emergency",
-        "communications-radio"
+        "communications-radio",
+        "navigation-lost"
       ]
     },
     {
@@ -700,9 +704,7 @@
       "url": "https://www.gov.uk/government/publications/public-health-advice-from-uk-cmos-during-a-national-power-outage/keeping-warm-or-cool-in-extreme-weather-scripts-for-broadcast-media",
       "accessed": "2026-11-22",
       "limitations": "Generator distance is a minimum precaution; site and manufacturer guidance also apply.",
-      "relevant_pages": [
-        "power-generator"
-      ]
+      "relevant_pages": []
     },
     {
       "id": "nationalgrid-safety",
@@ -858,7 +860,9 @@
       "limitations": "Follow local evacuation and emergency service instructions.",
       "relevant_pages": [
         "preparedness-flood",
-        "preparedness-evacuation"
+        "preparedness-evacuation",
+        "water-storage",
+        "preparedness-flood-quick"
       ]
     },
     {
@@ -947,6 +951,118 @@
         "food-cooking",
         "food-hygiene",
         "preparedness-sanitation"
+      ]
+    },
+    {
+      "id": "dwi-private-protection",
+      "organisation": "Drinking Water Inspectorate",
+      "title": "Protecting your private water supply",
+      "url": "https://www.dwi.gov.uk/private-water-supplies/customers-receiving-pws/protecting-your-private-water-supply/",
+      "accessed": "2026-11-23",
+      "limitations": "Contact the local authority for site-specific advice and testing.",
+      "relevant_pages": [
+        "water-private-supply"
+      ]
+    },
+    {
+      "id": "dwi-private-notices",
+      "organisation": "Drinking Water Inspectorate",
+      "title": "Serving Notices: templates and examples",
+      "url": "https://www.dwi.gov.uk/private-water-supplies/serving-notices/",
+      "accessed": "2026-11-23",
+      "limitations": "Examples of restrictions for private supplies in England and Wales. The actual notice controls.",
+      "relevant_pages": [
+        "water-safe-water",
+        "water-quick"
+      ]
+    },
+    {
+      "id": "cdc-flood-well",
+      "organisation": "CDC",
+      "title": "How to Disinfect Wells After an Emergency",
+      "url": "https://www.cdc.gov/water-emergency/about/how-to-disinfect-wells-after-an-emergency.html",
+      "accessed": "2026-11-23",
+      "limitations": "US guidance. Use local testing and remediation advice.",
+      "relevant_pages": [
+        "water-private-supply"
+      ]
+    },
+    {
+      "id": "gov-after-flood",
+      "organisation": "Environment Agency",
+      "title": "What to do after a flood",
+      "url": "https://www.gov.uk/after-flood",
+      "accessed": "2026-11-23",
+      "limitations": "England guidance. The page links to advice from the other UK nations.",
+      "relevant_pages": [
+        "preparedness-flood",
+        "preparedness-flood-quick"
+      ]
+    },
+    {
+      "id": "fss-powercut",
+      "organisation": "Food Standards Scotland",
+      "title": "Food safety during a power cut",
+      "url": "https://www.foodstandards.gov.scot/consumer-advice/food-safety/food-safety-in-the-kitchen/power-cuts",
+      "accessed": "2026-11-23",
+      "limitations": "Scotland guidance. Appliance hold times are estimates.",
+      "relevant_pages": [
+        "food-power-cut"
+      ]
+    },
+    {
+      "id": "cdc-co-outage",
+      "organisation": "CDC",
+      "title": "Avoiding Carbon Monoxide Poisoning",
+      "url": "https://www.cdc.gov/natural-disasters/psa-toolkit/avoiding-carbon-monoxide-poisoning.html",
+      "accessed": "2026-11-23",
+      "limitations": "US guidance. Twenty feet is approximately 6.1 metres.",
+      "relevant_pages": [
+        "power-generator"
+      ]
+    },
+    {
+      "id": "rnli-cold-water",
+      "organisation": "RNLI",
+      "title": "Know the risks in and beside the water",
+      "url": "https://rnli.org/water-safety/know-the-risks",
+      "accessed": "2026-11-23",
+      "limitations": "Outlines cold water shock and UK coastal emergency contacts.",
+      "relevant_pages": [
+        "navigation-cold-water"
+      ]
+    },
+    {
+      "id": "rnli-float",
+      "organisation": "RNLI",
+      "title": "Float to Live",
+      "url": "https://rnli.org/water-safety/float",
+      "accessed": "2026-11-23",
+      "limitations": "Advice for floating when in difficulty in water.",
+      "relevant_pages": [
+        "navigation-cold-water"
+      ]
+    },
+    {
+      "id": "kent-water-rescue",
+      "organisation": "Kent Fire and Rescue Service",
+      "title": "Make the right call",
+      "url": "https://www.kent.fire-uk.org/maketherightcall",
+      "accessed": "2026-11-23",
+      "limitations": "Inland dispatch advice for Kent.",
+      "relevant_pages": [
+        "navigation-cold-water"
+      ]
+    },
+    {
+      "id": "scotland-water-rescue",
+      "organisation": "Scottish Fire and Rescue Service",
+      "title": "Helping someone in the water",
+      "url": "https://www.firescotland.gov.uk/outdoors/water-safety/helping-someone-in-the-water/",
+      "accessed": "2026-11-23",
+      "limitations": "Scottish inland dispatch advice.",
+      "relevant_pages": [
+        "navigation-cold-water"
       ]
     }
   ]

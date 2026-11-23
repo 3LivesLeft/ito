@@ -12,5 +12,6 @@ In a life-threatening emergency call 999 or 112.
 `[Suspected broken bone`:/page/first-aid/fractures.mu]
 `[Cleaning a minor wound`:/page/first-aid/wounds.mu]
 `[First aid supplies`:/page/first-aid/supplies.mu]
+`[Hypothermia quick card`:/page/first-aid/cold-quick.mu]
 
 `[Home`:/page/index.mu]

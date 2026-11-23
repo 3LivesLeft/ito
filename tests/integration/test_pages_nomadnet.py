@@ -272,7 +272,16 @@ def test_bundled_library_is_discoverable_from_nomad_homepage(world: World, monke
     guide_path = "/page/ito-guide--water-boiling.mu"
     assert f":{guide_path}]" in category["content"]
     assert fetch(guide_path, "guide")["content"].startswith(">Boiling water")
+    quick_path = "/page/ito-guide--water-quick.mu"
+    assert f":{quick_path}]" in category["content"]
+    quick = fetch(quick_path, "quick")
+    assert quick["result"] == "ok"
+    assert quick["content"].startswith(">Unsafe water quick card")
+    assert len(quick["content"].encode("utf-8")) <= 1024
+    assert ":/page/ito-guide--water-safe-water.mu]" in quick["content"]
+    assert "Independent review pending." in quick["content"]
     assert world.store.handle({"op": "share_knowledge", "enabled": False})["ok"]
     assert library_path not in fetch("/page/index.mu", "sharing-off")["content"]
     assert fetch(guide_path, "guide-off")["result"] != "ok"
+    assert fetch(quick_path, "quick-off")["result"] != "ok"
     assert daemon.p.poll() is None

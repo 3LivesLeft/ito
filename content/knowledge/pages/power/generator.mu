@@ -1,12 +1,13 @@
 >Using a fuel generator safely
-Never use a fuel generator indoors, in a garage or in a partially enclosed space.
+Operate outdoors in open air. Carbon monoxide can kill without warning.
 
-Run it outdoors at least 6 metres from doors and windows, with the exhaust pointing away. Greater separation or another position may be needed to keep fumes away from buildings and people. A running generator produces deadly, odourless carbon monoxide; an open garage door or fan does not make indoor use safe. Fit working CO alarms in the home.
-Keep the generator dry and follow its operating instructions. Stop it and let it cool before refuelling; store fuel safely away from heat. Use equipment and leads rated for the load.
-Never plug its output into a wall socket or improvise a connection to household wiring. A qualified electrician must design and install a suitable changeover and isolation arrangement.
+1. Choose a dry outdoor site at least 6.1 metres (20 feet) from doors, windows and air vents. Point the exhaust away from buildings. Check where fumes could travel, including towards neighbours. Never run it in a garage, shed, carport or other enclosed or partly enclosed space.
+2. Keep working carbon monoxide alarms in the home. If poisoning is suspected, get everyone into fresh air and seek urgent medical help. Stay outside until advised it is safe to return.
+3. Follow the manufacturer's instructions for weather protection, loads and suitable leads. Stop the generator and let it cool before refuelling.
+4. Never plug the generator into a wall socket to power the house. A qualified electrician must design and install any connection to fixed wiring with the correct changeover and isolation.
 
 `[Carbon monoxide poisoning`:/page/shelter/carbon-monoxide.mu]
 `[Electrical danger during an outage`:/page/power/electrical.mu]
 
-Reviewed: 2026-11-22
-`[Power`:/page/power/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/power/index.mu]  `[Home`:/page/index.mu]
