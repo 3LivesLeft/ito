@@ -1,12 +1,12 @@
 >Maintaining essential equipment
-Inspect and test equipment before an emergency, following its instructions.
+Test the equipment in the state it will be used, including spares.
+1. Make a list of essential gear and the task each item supports. Check handles, hinges, seals and connectors under good light. Tag faults before equipment goes back into storage.
+2. Clean soil and moisture from hand tools, dry them and follow the maker's guidance on lubricating or protecting metal. Replace split handles, cracked blades and unsafe parts.
+3. Test torches and radios with the intended batteries and cables. Keep instructions where you store the device. Check expiry and packaging on sterile supplies.
+4. Quarantine faults you cannot verify. Do not repair mains wiring, gas equipment or damaged battery packs yourself. Record what is out of service and its backup.
 
-Check torches, radios, chargers, water containers and first aid supplies regularly. Replace damaged leads, flat batteries and expired sterile items. Keep equipment dry and store instructions and necessary connectors together.
-Test communication links with the people who will use them. Check the condition of water storage and refill or rotate it as advised. For electrical wiring, gas appliances, generators, solar backup and damaged batteries, use qualified assistance where needed; do not improvise repairs or bypass safety devices.
-After maintenance, return equipment to its agreed place and record any faults.
+`[Temporary repairs to fabric and gear`:/page/self-sufficiency/repairs.mu]
+`[Charging and storing batteries`:/page/power/battery-safety.mu]
 
-`[Maintaining essential supplies`:/page/self-sufficiency/supplies.mu]
-`[Electrical danger during an outage`:/page/power/electrical.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/self-sufficiency/index.mu]  `[Home`:/page/index.mu]

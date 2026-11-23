@@ -1,12 +1,12 @@
->Maintaining essential supplies
-Keep a short inventory of what the household actually uses.
+>Maintaining a working stock of supplies
+Record how much you can use before the next safe resupply.
+1. List usable servings, litres, essential hygiene items and equipment consumables. Keep food labels and note use-by dates, opening dates and any damaged packaging.
+2. Put supplies in rotation. Place earlier safe dates at the front, and use regular meals to turn stock over. Keep one ready-to-use buffer separate from items that need fuel or water.
+3. Set a refill point for each essential item from the household's normal use and realistic resupply time. Record what was taken during an interruption.
+4. Check after rain, heat, pests or power loss. Separate suspect food or water at once. Recount actual usable stocks before deciding what can be shared or used.
 
-Include drinking water, food, medicines, first aid items, batteries, lighting, hygiene supplies and any pet, infant or medical equipment. Write down quantities and expiry dates. Check at least every six months, replace used or expired supplies and rotate food and stored water.
-Keep copies of important phone numbers and equipment instructions where they can be found without internet. Test torches, radios and backup power according to their manufacturer’s instructions. Ask the relevant provider about backup arrangements for medical equipment.
-Store fuel and batteries safely and keep escape routes clear.
+`[Storing food without refrigeration`:/page/food/storage.mu]
+`[Managing a prolonged infrastructure outage`:/page/self-sufficiency/outage.mu]
 
-`[Household emergency kit`:/page/preparedness/kit.mu]
-`[Power for medical equipment`:/page/power/medical.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/self-sufficiency/index.mu]  `[Home`:/page/index.mu]

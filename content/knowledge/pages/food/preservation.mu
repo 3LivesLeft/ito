@@ -1,12 +1,12 @@
->Preserving food safely
-Use food storage methods and recipes from reliable, tested guidance.
+>Choosing a safe preservation method
+Pick a tested method you can complete with the equipment and controls you have.
+1. For short interruptions, prefer bought shelf-stable items. Refrigeration and freezing depend on continuously verified cold temperatures.
+2. Use tested crop-specific recipes for drying, pickling or canning. Read the equipment, acidity, processing and storage requirements before starting. A substitute ingredient or container size can change safety.
+3. Low-acid foods require tested pressure-canning procedures and equipment. A water bath, ordinary pressure cooker or a good-looking seal is not evidence that low-acid food is safe. Avoid makeshift garlic or herb oil preservation.
+4. Label batches with process and date. If a seal fails, the method was uncertain or the jar leaks or bulges, do not open it to taste or sniff. Follow disposal guidance.
 
-Freezing can preserve food only while it stays frozen. Follow packaging instructions and check dates; mark and rotate stored food. During a power cut, keep freezer doors closed and check its condition when power returns.
-Home bottling, canning and foods stored in oil can create conditions for botulism. Do not improvise pressure, acidity, time or temperature, or assume that boiling a sealed jar makes food safe. Garlic or herbs in oil and low-acid vegetables need particular care. If you cannot follow a tested method, use another food source.
-Never taste food from a swollen, leaking or otherwise suspect container.
+`[Storing food without refrigeration`:/page/food/storage.mu]
+`[Deciding when food must be discarded`:/page/food/spoilage.mu]
 
-`[Emergency food storage`:/page/food/storage.mu]
-`[Food safety during a power cut`:/page/food/power-cut.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/food/index.mu]  `[Home`:/page/index.mu]

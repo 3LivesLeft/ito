@@ -1,12 +1,12 @@
->Reducing water use
-Protect drinking water first; use separate non-drinking water where appropriate.
+>Running separate potable and utility supplies
+Use two sets of containers and track both reserves.
+1. Draw a simple flow diagram from each supply to its uses. Reserve potable water for drinking, food and essential hygiene. Mark non-potable outlets, hoses and buckets so they are hard to confuse.
+2. Give each supply a dedicated scoop or tap. Store clean containers capped and off contaminated surfaces. Never make a temporary cross-connection with drinking-water plumbing.
+3. Measure use for a day and adjust the reserve. Schedule high-volume non-essential jobs around known resupply. Use utility water for permitted tasks only.
+4. If a cross-contact occurs, stop using the affected potable reserve until it can be replaced or assessed. Protect the remaining safe supply from the suspect equipment.
 
-Reserve safe water for drinking, food preparation, handwashing and necessary medical needs. Fix leaks when safe and practical. Use a bowl for washing and turn taps off while soaping. Follow your supplier’s instructions during an outage.
-Collect rainwater in a covered, labelled butt for watering plants or flushing only when the sewer system is working and local advice permits. Do not drink water-butt water. Water plants at the roots and check containers regularly; use mulch where suitable to reduce drying.
-Do not connect a water butt to drinking-water plumbing without suitable approved backflow protection.
+`[Managing a limited water supply`:/page/water/ration.mu]
+`[Setting up a non-potable rainwater store`:/page/self-sufficiency/rain-system.mu]
 
-`[Collecting rainwater`:/page/water/rainwater.mu]
-`[Emergency sanitation`:/page/preparedness/sanitation.mu]
-
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/self-sufficiency/index.mu]  `[Home`:/page/index.mu]

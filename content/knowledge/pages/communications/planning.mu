@@ -1,12 +1,12 @@
->Emergency communications plan
-Write down who to contact, how to reach them and what to do if there is no reply.
+>Practising an emergency communications plan
+Agree who listens, when they listen and what they do after silence.
+1. Write the primary contact route and two alternatives on a card. Include contact names, devices and the agreed channel or address. Confirm that all participants can use the equipment lawfully.
+2. Agree check-in times, locations and how long to wait before taking action. Choose a safe meeting point and nominate who will contact emergency services if a person is overdue.
+3. Practise from the actual locations. Check that messages can be received and read back. Simulate loss of mobile data without transmitting a false distress call.
+4. Record dead spots and revise the fallback route. Leave a copy with someone outside the group. When the plan changes, tell everyone affected.
 
-Choose a primary and backup contact method and meeting place. Record telephone numbers, radio channels and settings, Reticulum destination addresses and local contacts on paper. Agree check-in times, who will listen, and who can call 999 if a radio request is received.
-Test each route both ways, including with the internet disconnected. Check battery capacity, charging leads and whether any relay needs mains power. Share plans with household members and account for accessibility and medical equipment.
-Update the plan when people, addresses or equipment change. Do not assume a mesh, a mobile mast, a cached page or an emergency contact will be available.
+`[Passing an emergency message by radio`:/page/communications/radio.mu]
+`[Making radio batteries last`:/page/communications/power.mu]
 
-`[Getting emergency help`:/page/communications/emergency.mu]
-`[Communicating without internet`:/page/communications/offline.mu]
-
-Reviewed: 2026-11-22
-`[Communications`:/page/communications/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/communications/index.mu]  `[Home`:/page/index.mu]

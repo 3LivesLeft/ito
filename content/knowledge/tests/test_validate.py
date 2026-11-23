@@ -23,4 +23,9 @@ class ValidatorTests(unittest.TestCase):
   p=self.root/'pages/water/boiling.mu';p.write_text(p.read_text()+'altered\n');self.run_check('size/hash mismatch')
  def test_external_url(self):
   p=self.root/'pages/index.mu';p.write_text(p.read_text()+'https://example.org/test\n');self.run_check('external dependency')
+ def test_unlinked_category_section(self):
+  index = self.root / 'pages/shelter/index.mu'
+  index.write_text(''.join(line for line in index.read_text().splitlines(keepends=True)
+                           if ':/page/shelter/outdoors/index.mu]' not in line))
+  self.run_check('not linked from category: pages/shelter/tarp.mu')
 if __name__=='__main__':unittest.main()

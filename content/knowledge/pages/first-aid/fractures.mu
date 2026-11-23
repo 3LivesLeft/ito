@@ -1,9 +1,12 @@
->Suspected broken bone
-Keep the injured part still and supported. Do not straighten it.
+>Supporting a suspected fracture
+Support the injured part in the position found and avoid further movement.
+1. Control serious bleeding first. For an open fracture cover the wound with a clean dressing and press to control bleeding around it, avoiding pressure on exposed bone.
+2. Ask the person to keep still. Support the injury with hands or padding such as folded clothes. Do not straighten a deformed limb or push bone back in.
+3. Note any numbness, tingling, unusual coldness or colour change below the injury and report it. Remove constricting jewellery if easily done without moving the injured part.
+4. Get medical help. Avoid moving someone with a suspected spine, pelvis or upper-leg injury unless danger, airway care or resuscitation requires it. Keep them warm and reassess while waiting.
 
-Call 999 for an open fracture, suspected broken long bone, back, neck or pelvis, or a serious incident. Move the person only if necessary for immediate safety.
-Support the injured area above and below the injury in the position found; use soft padding. Remove rings or watches from an injured limb before swelling if this can be done without moving it. For an open wound cover with a clean dressing and press around, not on, protruding bone.
-Check fingers or toes for numbness or unusual colour or coldness and tell the call handler. Other suspected fractures need urgent assessment at A&E or an urgent treatment centre. Keep the person warm and watch their breathing.
+`[Deciding whether to move a casualty`:/page/first-aid/evacuation.mu]
+`[Monitoring someone awaiting care`:/page/first-aid/monitor.mu]
 
-Reviewed: 2026-11-22
-`[First aid`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]

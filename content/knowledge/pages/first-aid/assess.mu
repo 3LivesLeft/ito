@@ -1,12 +1,12 @@
 >Assessing an emergency
-Make the scene safe. Call 999 or 112 for life-threatening danger.
+Treat threats to life before making a detailed assessment.
+1. Stop and look for traffic, electricity, fire, unstable ground or moving water. Do not approach through danger. Ask a helper to make the area safe if they can.
+2. Check responsiveness by speaking loudly and gently touching the shoulders. Look for life-threatening bleeding and put direct pressure on it or ask a helper to do so.
+3. If unresponsive, call emergency services immediately (UK: 999 or 112), preferably on speaker. Open the airway and check breathing while the call connects. Gasping or slow irregular breaths are abnormal. Start CPR if breathing is abnormal or absent and fetch an AED if available.
+4. If breathing normally, maintain the airway and follow dispatch advice. Keep checking breathing and response. If trauma is suspected, minimise movement unless necessary for safety, breathing or immediate care.
 
-Do not put yourself in danger. Check for hazards such as traffic, electricity, fire or fumes. Ask a bystander to call for an ambulance and give your location.
-Check response: speak loudly and gently shake the shoulders. If unresponsive, call 999 immediately on speaker and open the airway by tilting the head back and lifting the chin. Look, listen and feel for normal breathing for no more than 10 seconds. Occasional gasps are not normal breathing.
-Not breathing normally: start CPR immediately. If breathing normally but unresponsive, place in the recovery position and keep checking breathing; if spinal injury is suspected, avoid unnecessary movement and follow the call handler’s advice. Control severe bleeding with firm pressure.
+`[Adult CPR and defibrillator`:/page/first-aid/adult-cpr.mu]
+`[Controlling severe bleeding`:/page/first-aid/bleeding.mu]
 
-
-`[Adult CPR`:/page/first-aid/adult-cpr.mu]  `[Child CPR`:/page/first-aid/child-cpr.mu]
-
-Reviewed: 2026-11-22
-`[First aid`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]

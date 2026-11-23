@@ -30,74 +30,90 @@
       "title": "Finding emergency water",
       "category": "water",
       "path": "pages/water/sources.mu",
-      "description": "Use water from a confirmed safe source.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Work from known potable supplies towards sources that need treatment.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "cdc-water",
-        "cdc-storage"
+        "cdc-hike",
+        "fm-survival"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 714,
-      "sha256": "a360ea6cf108c177853feee73a180f1ab0d1346e2b73d06002b0770353d9601c",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "water-surface",
+        "water-safe-water"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1171,
+      "sha256": "885a023c8dd574ddfc9a37b34f560aba501814408ab3033d35344e57345eb86a"
     },
     {
       "id": "water-boiling",
       "title": "Boiling water",
       "category": "water",
       "path": "pages/water/boiling.mu",
-      "description": "Boiling kills disease-causing germs; it does not remove chemical pollution.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Use heat to deal with germs when local notices permit boiling.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "cdc-water",
+        "cdc-hike",
         "dwi"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 641,
-      "sha256": "47c6c5befdcf9c8e234482452f39543c94ce2926c5ca905c267855bb2e3b837d",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "water-settling",
+        "water-storage"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1130,
+      "sha256": "0c990a56889f22a8e6d449e5a3f6c04d6e50616348cd5c2ebdcbdf02fc099c75"
     },
     {
       "id": "water-filtration",
       "title": "Water filters and their limits",
       "category": "water",
       "path": "pages/water/filtration.mu",
-      "description": "A clear-looking drink can still be unsafe.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Read the device rating before relying on a portable filter.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "cdc-water"
+        "cdc-water",
+        "cdc-hike"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 674,
-      "sha256": "b238973d48b055b407bc82319cfee0c39df4f82f66da4da56829f1cb722b7151",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "water-settling",
+        "water-disinfection"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1165,
+      "sha256": "eed42f3b3c47924969ec26cae9aa30fe974c9ce9588b035bbe26554fcb7fdc89"
     },
     {
       "id": "water-disinfection",
       "title": "Chemical disinfection",
       "category": "water",
       "path": "pages/water/disinfection.mu",
-      "description": "Use only a product labelled for drinking water and follow its instructions.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Use a product labelled for treating drinking water and keep the instructions with it.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "cdc-water"
+        "cdc-water",
+        "cdc-hike"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 745,
-      "sha256": "18dd16e291ca7c1cb141ec2af0e3af5a3d3f6e3b9cf2421966ff7825185e3f27",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "water-settling",
+        "water-filtration"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1142,
+      "sha256": "4fc9c0fb568ad904ddea12843cfee459365da4ae0e2d50e2ae7e0b4c2392718c"
     },
     {
       "id": "water-storage",
@@ -125,37 +141,46 @@
       "title": "Collecting rainwater",
       "category": "water",
       "path": "pages/water/rainwater.mu",
-      "description": "Rainwater from a roof or water butt is not safe to drink untreated.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Treat collected rain as a separate supply with contamination risks.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "cdc-water",
-        "gov-water-outage"
+        "cdc-hike",
+        "cdc-rain",
+        "dwi-private-protection"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 640,
-      "sha256": "05ed1579bacd944d6cde5f24d21708864143d7091e8ae066337fa6f3e6cdda07",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "water-safe-water",
+        "self-sufficiency-rain-system"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1084,
+      "sha256": "455a159de5848c095f237ac188a9ac7fd1e802aa3b82e5949d6c501e7298a58b"
     },
     {
       "id": "water-dehydration",
-      "title": "Recognising dehydration",
+      "title": "Recognising and managing dehydration",
       "category": "water",
       "path": "pages/water/dehydration.mu",
-      "description": "Offer safe fluids early if the person is awake and able to swallow.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Start replacing fluid early while the person can drink safely.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "nhs-dehydration"
+        "nhs-dehydration",
+        "cdc-water"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 739,
-      "sha256": "2984c8e439359b6f2eddbc5330a617c00b6cda4696ed228e098666631e3ac391",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "first-aid-heat",
+        "water-ration"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1062,
+      "sha256": "efceae367538165218490677a85133671e21a6a574fb4af417909ee822be8940"
     },
     {
       "id": "preparedness-kit",
@@ -241,21 +266,23 @@
       "title": "Assessing an emergency",
       "category": "first-aid",
       "path": "pages/first-aid/assess.mu",
-      "description": "Make the scene safe. Call 999 or 112 for life-threatening danger.",
-      "version": "0.1.1",
-      "last_reviewed": "2026-11-22",
+      "description": "Treat threats to life before making a detailed assessment.",
+      "version": "0.3.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "nhs-firstaid",
-        "rcuk-adult"
+        "rcuk-first",
+        "rcuk-adult",
+        "rcuk-child"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 1006,
-      "sha256": "cf3ad92ff1f05fefd07d0362b1e78dce86e90c326cf4769e735537ac2079c873",
       "related_pages": [
-        "first-aid-adult-cpr"
+        "first-aid-adult-cpr",
+        "first-aid-bleeding"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1115,
+      "sha256": "d15aaa7630a742fa67c0f8f92fd1b098861928036e648ba19017d2bd8b9cf687"
     },
     {
       "id": "first-aid-adult-cpr",
@@ -298,40 +325,47 @@
     },
     {
       "id": "first-aid-bleeding",
-      "title": "Severe bleeding",
+      "title": "Controlling severe bleeding",
       "category": "first-aid",
       "path": "pages/first-aid/bleeding.mu",
-      "description": "Press firmly on the wound immediately and call 999.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Apply direct pressure immediately and get help.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "sja-bleeding",
-        "nhs-cuts"
+        "rcuk-first",
+        "sja-bleeding"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 869,
-      "sha256": "86a10fcc90b13c2101abef411f00b2077779deb7bd39093914d143e1dd5761eb",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "first-aid-shock",
+        "first-aid-bleed-quick"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1014,
+      "sha256": "1a149b39b2d6853cb7a985a69030913fe3d2d7010783aa9c47d5e4addd5aed77"
     },
     {
       "id": "first-aid-burns",
-      "title": "Burns and scalds",
+      "title": "Cooling and covering burns",
       "category": "first-aid",
       "path": "pages/first-aid/burns.mu",
-      "description": "Cool the burn under cool or lukewarm running water for 20 minutes.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Stop the burning and cool the affected skin as soon as possible.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "nhs-burns"
+        "nhs-burns",
+        "nhs-firstaid"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 950,
-      "sha256": "47dd3204e2545104030b3b294a4f49c3ee541d8143cb8bdfb54f5ddbd72ed78e",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "first-aid-monitor",
+        "first-aid-shock"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1098,
+      "sha256": "ac5d82baeafefc4f2b27d231bffe4889caf83a5fb99621ee04e0f6c2bd7f6021"
     },
     {
       "id": "first-aid-choking",
@@ -380,74 +414,89 @@
       "title": "Hypothermia first aid",
       "category": "first-aid",
       "path": "pages/first-aid/hypothermia.mu",
-      "description": "Suspected hypothermia is a medical emergency: call 999.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Treat confusion, drowsiness or slurred speech after cold exposure as urgent.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "nhs-hypothermia",
-        "rcuk-adult"
+        "rcuk-first"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 752,
-      "sha256": "54e104af6de1060957bd4986d33b2838b9f4151393512da56ffde8c5912fa55d",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "first-aid-cold-quick",
+        "shelter-ground"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1006,
+      "sha256": "76abd8c09f732250a03bfbb6454878942fd4c5bfca6fd2d33e19c9302307c5f2"
     },
     {
       "id": "first-aid-heat",
-      "title": "Heat exhaustion and heatstroke",
+      "title": "Recognising and treating heat illness",
       "category": "first-aid",
       "path": "pages/first-aid/heat.mu",
-      "description": "Move the person somewhere cool and start cooling immediately.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Confusion, collapse or seizures in the heat can mean heatstroke.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "nhs-heat",
-        "rcuk-adult"
+        "rcuk-first"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 826,
-      "sha256": "83474648dd853fcc748e2c9ae3089ffe99fbddc1538a9b9e52ade91a66729773",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "first-aid-heat-quick",
+        "water-dehydration"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1018,
+      "sha256": "3909ca72bde1832cff53d67d4a122160aff6b388315e8270da67ad6e9bf323eb"
     },
     {
       "id": "first-aid-fractures",
-      "title": "Suspected broken bone",
+      "title": "Supporting a suspected fracture",
       "category": "first-aid",
       "path": "pages/first-aid/fractures.mu",
-      "description": "Keep the injured part still and supported. Do not straighten it.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Support the injured part in the position found and avoid further movement.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "sja-fractures"
+        "sja-fractures",
+        "rcuk-first",
+        "nhs-firstaid"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 844,
-      "sha256": "4fbfaa814277408863a3e516646b9966b75c0e350f6280c36572e38c46b9336a",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "first-aid-evacuation",
+        "first-aid-monitor"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1021,
+      "sha256": "faefc6524050bfbf12dd7e4ae8e43a9b9c0334cbe067e3018a2033f37ff742ae"
     },
     {
       "id": "first-aid-wounds",
-      "title": "Cleaning a minor wound",
+      "title": "Cleaning and dressing a minor wound",
       "category": "first-aid",
       "path": "pages/first-aid/wounds.mu",
-      "description": "First stop bleeding with direct pressure. Severe or uncontrollable bleeding needs 999.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Only clean a minor wound after bleeding is controlled.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "nhs-cuts"
+        "nhs-cuts",
+        "cdc-hygiene"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 756,
-      "sha256": "dc7cb694f698fa93594b19e167685f40131bc251e8dae5b8f2053be07d7e0873",
-      "related_pages": [],
-      "page_type": "standard"
+      "related_pages": [
+        "first-aid-infection",
+        "first-aid-bleeding"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 995,
+      "sha256": "0da337fef7b460ea62493c4037f1e227e78cdc3fd5c9415ffef8816ba9cf29e8"
     },
     {
       "id": "first-aid-supplies",
@@ -469,49 +518,51 @@
     },
     {
       "id": "shelter-warm-home",
-      "title": "Staying warm without heating",
+      "title": "Staying warm through a long heating outage",
       "category": "shelter",
       "path": "pages/shelter/warm-home.mu",
-      "description": "Keep dry, wear layers and seek help before a home becomes dangerously cold.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Choose a dry occupied room and reduce avoidable heat loss.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
+        "met-home",
         "met-cold",
-        "nhs-co",
-        "nhs-hypothermia"
+        "nhs-hypothermia",
+        "nhs-co"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 912,
-      "sha256": "0ad9819c247d910ac9d95733b6e69909eb4b4d4f7833e6592d45572fcdcee95c",
       "related_pages": [
-        "first-aid-hypothermia",
-        "shelter-carbon-monoxide"
+        "shelter-insulation",
+        "first-aid-hypothermia"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 995,
+      "sha256": "9bca205797527b9ccc23ff5f8612035abd2063d0f8486bad5bf1381ca4feb13b"
     },
     {
       "id": "shelter-prevent-cold",
       "title": "Preventing hypothermia",
       "category": "shelter",
       "path": "pages/shelter/prevent-cold.mu",
-      "description": "Cold, wind and wet clothes can cause dangerous heat loss, even above freezing.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Intervene while people can still walk, talk and change clothing normally.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "mre-rescue",
+        "fm-survival",
         "mre-shelter",
+        "rcuk-first",
         "nhs-hypothermia"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 867,
-      "sha256": "6346dabfbbf05a0372e7379389ad65ab7f8ee44344c1d868f60d0aade6218602",
       "related_pages": [
-        "first-aid-hypothermia",
-        "shelter-emergency"
+        "shelter-ground",
+        "first-aid-hypothermia"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1013,
+      "sha256": "929d708f273cc09f312ed6df5c798aa0b8ed662582b7e75e4f95ef36b10f24f7"
     },
     {
       "id": "shelter-emergency",
@@ -852,26 +903,26 @@
     },
     {
       "id": "communications-radio",
-      "title": "Using a radio to request help",
+      "title": "Passing an emergency message by radio",
       "category": "communications",
       "path": "pages/communications/radio.mu",
-      "description": "Use an authorised radio and a channel where someone has agreed to listen.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Write the message before transmitting and verify that someone received it.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "ofcom-pmr",
         "ofcom-equipment",
-        "mre-rescue"
+        "mre-call"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 1004,
-      "sha256": "d229b1c4654b342a1c018e1e8bab734d08c75d7af7020afa497e378645d86beb",
       "related_pages": [
-        "communications-emergency",
-        "communications-licensing"
+        "communications-location",
+        "communications-planning"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1031,
+      "sha256": "14109f6836873a8451be62e36b95525b6bb8dc69c255495174bfb99da25599a6"
     },
     {
       "id": "communications-signal",
@@ -921,49 +972,49 @@
     },
     {
       "id": "communications-power",
-      "title": "Conserving radio power",
+      "title": "Making radio batteries last",
       "category": "communications",
       "path": "pages/communications/power.mu",
-      "description": "Plan for the whole system: radio, host, network equipment and charging losses.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Schedule transmissions while keeping an agreed way to receive replies.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "gov-commsplan",
         "ofcom-storm",
-        "rns-networks"
+        "esf-bank",
+        "lfb-batteries"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 1048,
-      "sha256": "63142b9302a12a0c0ea0711ed0f410e7286e3f3ed3eb0ef9dabe520e8d388921",
       "related_pages": [
         "communications-planning",
-        "communications-offline"
+        "power-runtime"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 990,
+      "sha256": "1767dcb07f1fb8b0f6d93f46e6acadbd5281fee220c34bc7efb1d63725f7919c"
     },
     {
       "id": "communications-planning",
-      "title": "Emergency communications plan",
+      "title": "Practising an emergency communications plan",
       "category": "communications",
       "path": "pages/communications/planning.mu",
-      "description": "Write down who to contact, how to reach them and what to do if there is no reply.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Agree who listens, when they listen and what they do after silence.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "gov-commsplan",
         "ofcom-storm",
-        "rns-networks"
+        "gov-commsplan",
+        "mre-call"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 1000,
-      "sha256": "6dc1179f90c12ff8e34684a5a0902425ffcdf4ffe63a56fe82c901b2fd3bb4e3",
       "related_pages": [
-        "communications-emergency",
-        "communications-offline"
+        "communications-radio",
+        "communications-power"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1019,
+      "sha256": "1c77879773cb7d4c474805a463ecc925bdc4cacd51c330f5d230637b1839313c"
     },
     {
       "id": "communications-licensing",
@@ -1064,46 +1115,46 @@
       "title": "Using a portable power station",
       "category": "power",
       "path": "pages/power/station.mu",
-      "description": "Check the output is suitable before connecting an appliance.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Test a portable station with its intended loads before depending on it.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "esf-bank",
-        "lfb-batteries",
-        "hseni-generator"
+        "esf-power",
+        "lfb-batteries"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 1076,
-      "sha256": "c16faca4f15ddb8f94356bbbe6254f331fb001addc9f2500e16bf5bf88ecee8c",
       "related_pages": [
-        "power-capacity",
-        "power-solar-portable",
-        "power-electrical"
+        "power-runtime",
+        "power-solar-portable"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1011,
+      "sha256": "242f0f997957cc0d742dcc0740f26c4d957e7faf0220f7af2d23614a16ba2401"
     },
     {
       "id": "power-solar-portable",
       "title": "Charging from portable solar",
       "category": "power",
       "path": "pages/power/solar-portable.mu",
-      "description": "Match the panel and connector to the power station\u2019s specified solar input.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Match the array and cable to the station's labelled input limits.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "ecoflow-solar",
-        "lfb-batteries"
+        "energy-solar",
+        "esf-bank"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 1000,
-      "sha256": "03e6465be399f333ba25f9c812c2d020a4c19c2149c1cb70d6cf4cd39ef85843",
       "related_pages": [
         "power-station",
-        "power-capacity"
+        "power-runtime"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1067,
+      "sha256": "73b517e9e292894eff32b03c8be35bc4df8c2b49df53abc224d4bcf88423793d"
     },
     {
       "id": "power-solar-home",
@@ -1246,24 +1297,26 @@
     },
     {
       "id": "food-storage",
-      "title": "Emergency food storage",
+      "title": "Storing food without refrigeration",
       "category": "food",
       "path": "pages/food/storage.mu",
-      "description": "Store foods your household can eat without refrigeration or cooking.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Make the main reserve out of foods labelled for ambient storage.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "fsa-food-poison",
-        "gov-ready"
+        "fsa-chilling",
+        "fsa-powercut",
+        "fsa-botulism"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 721,
-      "sha256": "c7a78c58055e814f8ee701aa5403f26d63571952d584726332168e048738274d",
       "related_pages": [
-        "food-power-cut"
+        "food-planning",
+        "food-spoilage"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1000,
+      "sha256": "53740f68811ed2821448c47134783bd6dd9e865a13eeacc5b825369ad7d23fef"
     },
     {
       "id": "food-power-cut",
@@ -1294,117 +1347,114 @@
       "title": "Cooking without mains power",
       "category": "food",
       "path": "pages/food/cooking.mu",
-      "description": "Use food that needs no cooking when safe cooking or water is unavailable.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Choose a cooking method based on available safe water, fuel and ventilation.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "fsa-powercut",
         "fsa-cooking",
-        "wales-camping",
-        "gov-flood-health"
+        "fsa-cleaning",
+        "wales-camping"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 974,
-      "sha256": "d8e20cdba736f12e59188cab99f4ed2d09ae908333dc3d472b2fbd53b9ab9950",
       "related_pages": [
-        "food-hygiene",
-        "shelter-carbon-monoxide"
+        "food-stoves",
+        "food-outdoor"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1051,
+      "sha256": "958c0c605bc813bcf799265fed2e08cc044ea50fc7eaa6b2d32e7a17bed280b0"
     },
     {
       "id": "food-stoves",
-      "title": "Camping stove safety",
+      "title": "Using a camping stove safely",
       "category": "food",
       "path": "pages/food/stoves.mu",
-      "description": "Use a camping stove outdoors, away from people, tents and flammable materials.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Check the fuel connection and outdoor site before lighting.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "wales-camping",
-        "gov-outdoor-fire",
         "nhs-co"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 858,
-      "sha256": "2f31aa27eb39b580d0dd9641c529b48d63623f1ab5dfe068b44b5c512a984a7c",
       "related_pages": [
-        "shelter-camping",
-        "shelter-carbon-monoxide"
+        "food-cooking",
+        "food-fuel-save"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1006,
+      "sha256": "4fa5dcec2efc79cc7a2d59861ca241f59b413c9386353d0f8f35c445c88fabf8"
     },
     {
       "id": "food-preservation",
-      "title": "Preserving food safely",
+      "title": "Choosing a safe preservation method",
       "category": "food",
       "path": "pages/food/preservation.mu",
-      "description": "Use food storage methods and recipes from reliable, tested guidance.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Pick a tested method you can complete with the equipment and controls you have.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "fsa-botulism",
-        "fsa-chilling",
-        "fsa-powercut"
+        "cdc-canning",
+        "fsa-chilling"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 902,
-      "sha256": "d24ead7561b9dbded08dbd5c8ed35a424165b4e2e270340251c5adbdc7817dfd",
       "related_pages": [
         "food-storage",
-        "food-power-cut"
+        "food-spoilage"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1076,
+      "sha256": "2322984dcc6f63aa6b305100f49fb835f06d8eaf5abf4e1932bd4a20c2bce7e6"
     },
     {
       "id": "food-planning",
-      "title": "Planning emergency meals",
+      "title": "Planning meals from a limited reserve",
       "category": "food",
       "path": "pages/food/planning.mu",
-      "description": "Choose familiar food that fits the household\u2019s needs and can be prepared safely.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Build a use order from what is safe, what needs fuel and who needs it.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "gov-ready",
         "fsa-powercut",
-        "fsa-food-poison"
+        "fsa-cooking",
+        "cdc-storage"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 857,
-      "sha256": "d5b79e081f6b39fcef3b2ee2aea84a9473607015ff1b846941dc897fde2f1fdf",
       "related_pages": [
-        "food-storage",
-        "food-power-cut"
+        "food-fuel-save",
+        "food-storage"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 956,
+      "sha256": "c8f11f171fc53a312099da5c48a09854e53797ebe5654c92748fae710d5151fb"
     },
     {
       "id": "food-hygiene",
-      "title": "Preventing food contamination",
+      "title": "Keeping food preparation clean",
       "category": "food",
       "path": "pages/food/hygiene.mu",
-      "description": "Wash hands with soap and safe water before handling food and after using the toilet.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Set up separate dirty and clean areas before opening food.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "fsa-cleaning",
-        "fsa-food-poison",
-        "fsa-powercut",
-        "gov-flood-health"
+        "fsa-cooking",
+        "cdc-hygiene"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 868,
-      "sha256": "f5329f9303e885b799b384eeca9c8de4243cf2b3fef54458b2587aaf1f9845d2",
       "related_pages": [
-        "water-safe-water",
-        "food-cooking"
+        "food-outdoor",
+        "sanitation-hands"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 941,
+      "sha256": "37f1d35c90c9f67bf1c7101895eb698674f443c6f529f975294dca4a22e39576"
     },
     {
       "id": "preparedness-sanitation",
@@ -1480,110 +1530,114 @@
       "title": "Reading a map",
       "category": "navigation",
       "path": "pages/navigation/maps.mu",
-      "description": "Use the map\u2019s key, scale and contours to understand the ground.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Identify scale, north and recognisable features before moving.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "os-map",
-        "mre-safety"
+        "fm-survival"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 891,
-      "sha256": "7c5df2c75f97d6a6353d37162dcbf2a6b658466f984c124806d748089791b1c4",
       "related_pages": [
-        "navigation-compass",
-        "navigation-route"
+        "navigation-grid",
+        "navigation-terrain"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1027,
+      "sha256": "85fafaa7176ab4696c1d701d9305e6e4d52b383a95ba525ceaeb5eb9a1f25436"
     },
     {
       "id": "navigation-compass",
-      "title": "Using a compass",
+      "title": "Taking a compass bearing",
       "category": "navigation",
       "path": "pages/navigation/compass.mu",
-      "description": "Practise compass use with a map before you need it in poor visibility.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Use a baseplate compass to transfer a direction from a map.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "os-compass",
-        "os-map"
+        "os-map",
+        "fm-survival"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 991,
-      "sha256": "8543da264ed5f1b2dfb4d168024e9748aa772817d97f2698e259d1af43da28c9",
       "related_pages": [
-        "navigation-maps",
-        "navigation-route"
+        "navigation-bearing",
+        "navigation-maps"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1086,
+      "sha256": "2d157ab7069f3d2fa298f6f808feadd3e7e37d41cb20a75f89ae10ba7e62ad42"
     },
     {
       "id": "navigation-without-gps",
       "title": "Navigating without GPS",
       "category": "navigation",
       "path": "pages/navigation/without-gps.mu",
-      "description": "Use a paper map and compass; confirm your location frequently.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Use a paper map, compass and frequent position checks.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "os-map",
+        "os-compass",
         "mre-safety"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 882,
-      "sha256": "00490f2d6113ee007ce5d626040961c4dc557eaf030c538c1fc5190630701e09",
       "related_pages": [
-        "navigation-maps",
-        "navigation-lost"
+        "navigation-lost",
+        "navigation-bearing"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1069,
+      "sha256": "df1e8a6ade7b63d1276c2a9c733021d2d55d47886a84686329fb52c6a82c1c77"
     },
     {
       "id": "navigation-route",
       "title": "Planning a safe walking route",
       "category": "navigation",
       "path": "pages/navigation/route.mu",
-      "description": "Choose a route suited to the least experienced person in the group.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Write an offline route card before committing to exposed terrain.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
+        "os-map",
         "mre-safety",
-        "mre-shelter"
+        "adventuresmart"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 882,
-      "sha256": "8d564d8b6918d0bbf133b7de514055a08f5b40ef7eefe4d8b78d59741af0fb17",
       "related_pages": [
-        "navigation-lost",
-        "shelter-emergency"
+        "navigation-terrain",
+        "navigation-bearing"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1045,
+      "sha256": "cd16363f2de93dc0ede3161d5b689c4709f7d406e9e10f69d8d0e78d033947bc"
     },
     {
       "id": "navigation-signal",
       "title": "Signalling for help outdoors",
       "category": "navigation",
       "path": "pages/navigation/signal.mu",
-      "description": "Call 999 or 112 first if possible; give your location and stay available.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Choose a signal rescuers can detect from your safe position.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "mre-safety",
-        "adventuresmart"
+        "fm-survival",
+        "mre-whistle",
+        "mre-call"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 869,
-      "sha256": "0f35650bd63cecb3f9c5241c0452096b24deea50dad48d11daed855427eab55f",
       "related_pages": [
-        "communications-emergency",
-        "navigation-lost"
+        "communications-visual",
+        "communications-morse"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1014,
+      "sha256": "52573f3edd0b155ea77a8d470a4bb2297a4e6c21f4e4ec8619c7f382e8647787"
     },
     {
       "id": "navigation-lost",
@@ -1610,96 +1664,93 @@
     },
     {
       "id": "self-sufficiency-growing",
-      "title": "Growing basic food crops",
+      "title": "Starting a small reliable food garden",
       "category": "self-sufficiency",
       "path": "pages/self-sufficiency/growing.mu",
-      "description": "Start with a few crops your household eats and a sunny, accessible growing space.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Start at a scale you can water and maintain.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
         "rhs-containers",
-        "rhs-water",
-        "fsa-cleaning"
+        "rhs-water"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 847,
-      "sha256": "1adc316b22c29dc3b6500a9e7e8b99295606a1ceb0b56ab4da959136b76c1e37",
       "related_pages": [
-        "food-planning",
+        "self-sufficiency-seeds",
         "self-sufficiency-water"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1031,
+      "sha256": "a2abec67669190a64adb4a9a2292b8db3e93a93406118de89b73921eb678c04e"
     },
     {
       "id": "self-sufficiency-water",
-      "title": "Reducing water use",
+      "title": "Running separate potable and utility supplies",
       "category": "self-sufficiency",
       "path": "pages/self-sufficiency/water.mu",
-      "description": "Protect drinking water first; use separate non-drinking water where appropriate.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Use two sets of containers and track both reserves.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "gov-water-outage",
-        "rhs-water",
-        "cdc-water"
+        "cdc-storage",
+        "cdc-rain",
+        "gov-water-outage"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 918,
-      "sha256": "17622202ee6fd9509a55aaacfab3d2385621e7277990f5cd4f636b8f723488d0",
       "related_pages": [
-        "water-rainwater",
-        "preparedness-sanitation"
+        "water-ration",
+        "self-sufficiency-rain-system"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1033,
+      "sha256": "6a0dcd9f412327555c2dc974671882716baed1bdfe67f661f15f76d706b70dab"
     },
     {
       "id": "self-sufficiency-supplies",
-      "title": "Maintaining essential supplies",
+      "title": "Maintaining a working stock of supplies",
       "category": "self-sufficiency",
       "path": "pages/self-sufficiency/supplies.mu",
-      "description": "Keep a short inventory of what the household actually uses.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Record how much you can use before the next safe resupply.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "gov-ready",
-        "sja-kit",
-        "lfb-batteries"
+        "cdc-storage",
+        "fsa-chilling"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 906,
-      "sha256": "d813dbf23ec2ef0926343a35d31c025588396a58a990f9a5c126e0ed4901fa6b",
       "related_pages": [
-        "preparedness-kit",
-        "power-medical"
+        "food-storage",
+        "self-sufficiency-outage"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 997,
+      "sha256": "c09d89c247a939cef39e27f109b8cca2dda8f859a07b9a0f06c297f3f583b51d"
     },
     {
       "id": "self-sufficiency-maintenance",
       "title": "Maintaining essential equipment",
       "category": "self-sufficiency",
       "path": "pages/self-sufficiency/maintenance.mu",
-      "description": "Inspect and test equipment before an emergency, following its instructions.",
-      "version": "0.1.0",
-      "last_reviewed": "2026-11-22",
+      "description": "Test the equipment in the state it will be used, including spares.",
+      "version": "0.2.0",
+      "last_reviewed": "2026-11-23",
       "sources": [
-        "gov-ready",
+        "rhs-containers",
         "lfb-batteries",
-        "cdc-storage",
-        "hseni-generator"
+        "esf-bank"
       ],
       "safety_critical": true,
       "review_status": "requires_independent_review",
-      "size_bytes": 953,
-      "sha256": "7adffd9fbb79515869fcf1e33a05b7d2d8c687ce49d810ec8364529c60bc76dd",
       "related_pages": [
-        "self-sufficiency-supplies",
-        "power-electrical"
+        "self-sufficiency-repairs",
+        "power-battery-safety"
       ],
-      "page_type": "standard"
+      "page_type": "detailed",
+      "size_bytes": 1014,
+      "sha256": "b04fbab654cf7f793c53fa686f08830470cfb55884e9f5c958f9e976d450925b"
     },
     {
       "id": "water-private-supply",
@@ -1810,6 +1861,1268 @@
         "first-aid-hypothermia"
       ],
       "page_type": "standard"
+    },
+    {
+      "id": "water-surface",
+      "title": "Collecting water from streams and lakes",
+      "category": "water",
+      "path": "pages/water/surface.mu",
+      "description": "Carry a raw-water scoop, a marked raw container and a separate clean bottle.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-hike",
+        "cdc-water",
+        "fm-survival"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "water-settling",
+        "water-filtration"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1092,
+      "sha256": "2e187241054cbc0c5f96f283dd611f60723486823d9bdfe2131687be1d49fb43"
+    },
+    {
+      "id": "water-settling",
+      "title": "Settling and straining raw water",
+      "category": "water",
+      "path": "pages/water/settling.mu",
+      "description": "Remove suspended dirt before treating water for germs.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-water",
+        "cdc-hike"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "water-boiling",
+        "water-filtration"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1096,
+      "sha256": "34cb40f244104c32a7ed0024ba0be7a473e9ea1ff62aeceb5a5bd03231c2b7e2"
+    },
+    {
+      "id": "water-cold-source",
+      "title": "Water collection in freezing conditions",
+      "category": "water",
+      "path": "pages/water/cold-source.mu",
+      "description": "Plan for frozen bottles, extra fuel and longer treatment times.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "cdc-hike",
+        "cdc-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "water-boiling",
+        "water-storage"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1085,
+      "sha256": "e3c16d7efcb4387b340b5c1bfb9cded5fd82cc1d98de2515645bcce6ade52fb4"
+    },
+    {
+      "id": "water-ration",
+      "title": "Managing a limited water supply",
+      "category": "water",
+      "path": "pages/water/ration.mu",
+      "description": "Track safe water and reduce avoidable uses before the reserve runs low.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-storage",
+        "cdc-water",
+        "gov-water-outage"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "water-storage",
+        "self-sufficiency-water"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1081,
+      "sha256": "1ff6eda4a3040674e2a08fefb5615e7d61ce4008cb10150de1d5c778832ad86e"
+    },
+    {
+      "id": "fire-site",
+      "title": "Choosing a safe fire site",
+      "category": "fire",
+      "path": "pages/fire/site.mu",
+      "description": "Use a fire only where you have permission, conditions are suitable and you can extinguish it.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "lnt-fire",
+        "gov-outdoor-fire",
+        "wales-camping",
+        "fe-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-put-out",
+        "shelter-outdoor-fire"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1002,
+      "sha256": "92b9cba0f366ee3f056288a6cd3a0b99fe959c07803a459612b892927efd4ac4"
+    },
+    {
+      "id": "fire-tinder",
+      "title": "Preparing tinder and kindling",
+      "category": "fire",
+      "path": "pages/fire/tinder.mu",
+      "description": "Prepare all fuel sizes before striking a match at a permitted site.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "lnt-fire",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-fuel",
+        "fire-matches"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1012,
+      "sha256": "407271185f8bc18e49e2f108e774b04cb3dbdebadbfe8b87e2012d529abb050a"
+    },
+    {
+      "id": "fire-fuel",
+      "title": "Selecting and sorting firewood",
+      "category": "fire",
+      "path": "pages/fire/fuel.mu",
+      "description": "Use approved supplied fuel first. Gather small dead fallen wood only where permitted.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "lnt-fire",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-tinder",
+        "fire-control"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 984,
+      "sha256": "d97fba0fd9f2ac1f4e981833c019a2ecd071bc4f63e539583509c8ad6cfda220"
+    },
+    {
+      "id": "fire-matches",
+      "title": "Lighting with matches or a lighter",
+      "category": "fire",
+      "path": "pages/fire/matches.mu",
+      "description": "Light only a small prepared fire at a permitted site.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "lnt-fire",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-site",
+        "fire-put-out"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 945,
+      "sha256": "f9d40974529ac478df051672a29b47c4cc9d3d017e9d75b6e1a260535ae30dc6"
+    },
+    {
+      "id": "fire-spark",
+      "title": "Using a ferrocerium rod",
+      "category": "fire",
+      "path": "pages/fire/spark.mu",
+      "description": "Practise spark ignition at a permitted fire site with water ready.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "lnt-fire",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-site",
+        "fire-tinder"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 930,
+      "sha256": "e3a89983abfe72cdd13a49f74da8075120e79e9ea4b1de8633decbd670f53a0d"
+    },
+    {
+      "id": "fire-wet",
+      "title": "Cooking heat in wet weather",
+      "category": "fire",
+      "path": "pages/fire/wet.mu",
+      "description": "Choose a cold meal first if you cannot maintain safe heat outdoors.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "lnt-fire",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-tinder",
+        "food-stoves"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 884,
+      "sha256": "39e0acf0a4a129a43a48883f6f97c38a89f2ce71346cdaaf7b077172c7612a12"
+    },
+    {
+      "id": "fire-control",
+      "title": "Maintaining a small cooking fire",
+      "category": "fire",
+      "path": "pages/fire/control.mu",
+      "description": "Maintain controllable heat for a pot rather than building a large flame.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "lnt-fire",
+        "fsa-cooking"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-put-out",
+        "food-cooking"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 907,
+      "sha256": "dd452577abdd6b72a03309539d42a2403ff1a77e81eb311d8fa687a71280ba17"
+    },
+    {
+      "id": "fire-put-out",
+      "title": "Extinguishing a campfire",
+      "category": "fire",
+      "path": "pages/fire/put-out.mu",
+      "description": "Leave enough water and time to cool every ember.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "lnt-fire",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-site",
+        "shelter-wildfire"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 964,
+      "sha256": "10a3b933730a6865308f7cecc47773d8989b2ad9ad3d80b5f48dd0b80c377eeb"
+    },
+    {
+      "id": "shelter-site",
+      "title": "Finding a safe shelter site",
+      "category": "shelter",
+      "path": "pages/shelter/site.mu",
+      "description": "Check hazards above, below and uphill before unloading.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-shelter",
+        "mre-safety"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "shelter-tarp",
+        "shelter-emergency"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1086,
+      "sha256": "b5b3fdcf7adf85551d7d08c18d532e4d6784876c8cfbab07602499b771b9ec79"
+    },
+    {
+      "id": "shelter-tarp",
+      "title": "Pitching an A-frame tarp",
+      "category": "shelter",
+      "path": "pages/shelter/tarp.mu",
+      "description": "Use an A-frame for rain protection when you have secure supports and enough room.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-shelter",
+        "scouts-tarp",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "shelter-site",
+        "shelter-ground"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1070,
+      "sha256": "399ed96f5daf4f3ab50cd9d771a29224f719d4be7f8db2fedee71453a74ae0d7"
+    },
+    {
+      "id": "shelter-lean-to",
+      "title": "Pitching a tarp lean-to",
+      "category": "shelter",
+      "path": "pages/shelter/lean-to.mu",
+      "description": "Use a sloping tarp for short-term shelter where wind direction is steady.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-shelter",
+        "scouts-tarp",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "shelter-site",
+        "shelter-tarp"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 979,
+      "sha256": "59eaa705f01216f4473c12ff45d356c47403dcef70e691c8e1f723d4ae12e3b9"
+    },
+    {
+      "id": "shelter-debris",
+      "title": "Low shelter with natural insulation",
+      "category": "shelter",
+      "path": "pages/shelter/debris.mu",
+      "description": "Use dry loose debris as supplementary insulation where collection is allowed.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-shelter",
+        "lnt-waste"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "shelter-site",
+        "shelter-ground"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1116,
+      "sha256": "00c3fb5f62abb60fc19eab33fb7b655e5d4d4c7be731f2807363fa68f0f7e932"
+    },
+    {
+      "id": "shelter-ground",
+      "title": "Insulating yourself from the ground",
+      "category": "shelter",
+      "path": "pages/shelter/ground.mu",
+      "description": "Build the layer beneath you before adding more blankets above.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-shelter",
+        "rcuk-first"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "shelter-prevent-cold",
+        "shelter-tarp"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1003,
+      "sha256": "50916c1918e9e03c7279bf5697b7e451aaf34163340f1cdd2f5fdc6e88eb4e58"
+    },
+    {
+      "id": "shelter-weather",
+      "title": "Managing wind and rain in shelter",
+      "category": "shelter",
+      "path": "pages/shelter/weather.mu",
+      "description": "Recheck the pitch once wind and rain start.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-shelter",
+        "scouts-tarp",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "shelter-site",
+        "shelter-ground"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 968,
+      "sha256": "b5dca562241a551c99725b057a8a773aff6237d500410f896fd265110cf48b10"
+    },
+    {
+      "id": "shelter-unsafe-build",
+      "title": "Shelter construction hazards",
+      "category": "shelter",
+      "path": "pages/shelter/unsafe-build.mu",
+      "description": "Reject any build with uncertain structure, ventilation or escape.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-shelter",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "shelter-site",
+        "shelter-weather"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1019,
+      "sha256": "8204c673b62c7cfc6507384dc26c9a5cdc41340da8b7fc13d79f4d9f1910b446"
+    },
+    {
+      "id": "navigation-grid",
+      "title": "Reading a UK grid reference",
+      "category": "navigation",
+      "path": "pages/navigation/grid.mu",
+      "description": "Use the British National Grid letters plus eastings then northings.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "os-map",
+        "mre-call"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-maps",
+        "communications-location"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 993,
+      "sha256": "94f350eaf741ddaabf3661ea7b78b6826a653c8b439e4fe1e18e471174c8f158"
+    },
+    {
+      "id": "navigation-bearing",
+      "title": "Following a bearing on foot",
+      "category": "navigation",
+      "path": "pages/navigation/bearing.mu",
+      "description": "Break a bearing into short safe legs between identifiable points.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "os-map",
+        "os-compass",
+        "fm-survival"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-compass",
+        "navigation-route"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1029,
+      "sha256": "b104bc19ed4d0a6d5bf287843b8d67a3e3e3a70ea758fdfc234c16e9da6ce188"
+    },
+    {
+      "id": "navigation-terrain",
+      "title": "Reading terrain from contours",
+      "category": "navigation",
+      "path": "pages/navigation/terrain.mu",
+      "description": "Read the pattern of contours, then verify it on the ground.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "os-map",
+        "fm-survival"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-maps",
+        "navigation-without-gps"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1054,
+      "sha256": "cdda9eecd71a478c9bf50850b10318a0147e788d8afd2fb8b0f6dee563210151"
+    },
+    {
+      "id": "food-fuel-save",
+      "title": "Cooking with limited fuel",
+      "category": "food",
+      "path": "pages/food/fuel-save.mu",
+      "description": "Choose meals that stay safe if the fuel supply runs out.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fsa-cooking",
+        "wales-camping",
+        "fm-survival"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "food-planning",
+        "food-stoves"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1030,
+      "sha256": "ff917622aa524de18368bf249e01b7c7e5a2b065c67af1422b68175ccb08b9f6"
+    },
+    {
+      "id": "food-spoilage",
+      "title": "Deciding when food must be discarded",
+      "category": "food",
+      "path": "pages/food/spoilage.mu",
+      "description": "Use storage history and packaging condition to decide what to keep.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fsa-botulism",
+        "fsa-powercut",
+        "cdc-canning",
+        "gov-flood-health"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "food-preservation",
+        "food-power-cut"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 977,
+      "sha256": "2500e3f07a288d8984de300bae1b7d3fae3393d19cdad7e035baea37c7b17a49"
+    },
+    {
+      "id": "food-foraging",
+      "title": "Avoiding poisoning when foraging",
+      "category": "food",
+      "path": "pages/food/foraging.mu",
+      "description": "Use known safe food when identification, permission or site history is uncertain.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "wt-forage",
+        "nhs-poison"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "food-planning",
+        "food-spoilage"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1029,
+      "sha256": "bf6c7482fdb92f9dcfa59e5acac08cb59bfbb06f51e3ea13086570c4ba2fcbaf"
+    },
+    {
+      "id": "food-outdoor",
+      "title": "Preparing a meal outdoors",
+      "category": "food",
+      "path": "pages/food/outdoor.mu",
+      "description": "Use a stable setup and choose a meal you can cook and serve in one session.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fsa-cooking",
+        "fsa-cleaning",
+        "wales-camping"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "food-hygiene",
+        "food-cooking"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 951,
+      "sha256": "553ed9f640f75d9ff89aa6055f476d089663bfcb681528ae068d41cc063f9743"
+    },
+    {
+      "id": "sanitation-toilet",
+      "title": "Setting up an emergency toilet",
+      "category": "sanitation",
+      "path": "pages/sanitation/toilet.mu",
+      "description": "Switch to containment if the sewer or septic system cannot safely take flushes.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "wash-toilet",
+        "gov-sanitation",
+        "cdc-hygiene"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "sanitation-disposal",
+        "sanitation-hands"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1115,
+      "sha256": "d155da9412e43816e0601221e7f877868280d0ddc73804b77333b3cfc6263d26"
+    },
+    {
+      "id": "sanitation-disposal",
+      "title": "Containing and disposing of human waste",
+      "category": "sanitation",
+      "path": "pages/sanitation/disposal.mu",
+      "description": "Set up a route for waste before relying on a temporary toilet.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "wash-toilet",
+        "fm-sanitation",
+        "lnt-waste",
+        "gov-sanitation"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "sanitation-toilet",
+        "sanitation-camp"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1038,
+      "sha256": "0aed433903360ce448ca4b0627fa4dc75bbee11728c86df553988785141004f6"
+    },
+    {
+      "id": "sanitation-hands",
+      "title": "Handwashing with a small water supply",
+      "category": "sanitation",
+      "path": "pages/sanitation/hands.mu",
+      "description": "Provide flowing safe water from a tap container or a helper pouring a jug.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-hygiene",
+        "fm-sanitation"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "sanitation-bathing",
+        "food-hygiene"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1006,
+      "sha256": "c4b13f90d049c32d2fbc9aadc8bd0bbd4cad41cf1ae5660d94706e8b96866b87"
+    },
+    {
+      "id": "sanitation-bathing",
+      "title": "Personal hygiene without running water",
+      "category": "sanitation",
+      "path": "pages/sanitation/bathing.mu",
+      "description": "Use small batches of safe water and keep used water out of the clean container.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-hygiene",
+        "fm-sanitation"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "sanitation-hands",
+        "sanitation-laundry"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 983,
+      "sha256": "f12c8a4e9a6ac46fae3b24486c05a179ca055a264ecc00c15fe620833ee8fa8d"
+    },
+    {
+      "id": "sanitation-laundry",
+      "title": "Handling contaminated clothing and equipment",
+      "category": "sanitation",
+      "path": "pages/sanitation/laundry.mu",
+      "description": "Separate soiled items at the point of use and handle them as little as possible.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-hygiene",
+        "gov-flood-health",
+        "fm-sanitation"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "sanitation-bathing",
+        "sanitation-camp"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1069,
+      "sha256": "c645c1849049ede56568947b800ac09cfe6c09a042b9fd65f6857e38a29bf13e"
+    },
+    {
+      "id": "sanitation-camp",
+      "title": "Keeping a temporary camp sanitary",
+      "category": "sanitation",
+      "path": "pages/sanitation/camp.mu",
+      "description": "Separate the clean water and cooking area from toilets, waste and laundry.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-sanitation",
+        "lnt-waste",
+        "cdc-hygiene"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "sanitation-disposal",
+        "sanitation-hands"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1031,
+      "sha256": "4ae093a70fb2b66b1c4d8bf6b8b4cde43f5b1188d198c5a6526ace6e9b997fcf"
+    },
+    {
+      "id": "sanitation-waste",
+      "title": "Managing solid waste and wash water",
+      "category": "sanitation",
+      "path": "pages/sanitation/waste.mu",
+      "description": "Plan how to remove waste before it attracts animals or reaches water.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "lnt-waste",
+        "fm-sanitation",
+        "gov-sanitation"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "sanitation-camp",
+        "sanitation-disposal"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1037,
+      "sha256": "20866a28bd10343381764b528e0b8600b2ed8c2c199d9219e15fbb94a9551a68"
+    },
+    {
+      "id": "first-aid-shock",
+      "title": "Recognising circulatory shock",
+      "category": "first-aid",
+      "path": "pages/first-aid/shock.mu",
+      "description": "Treat shock as life-threatening, especially after serious bleeding or injury.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "nhs-firstaid",
+        "rcuk-first"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "first-aid-bleeding",
+        "first-aid-monitor"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 955,
+      "sha256": "b3d168aa1a3a547bb3b9862cf22c1c34f814f615409ea728fc38327f1b9870f5"
+    },
+    {
+      "id": "first-aid-infection",
+      "title": "Spotting a worsening wound",
+      "category": "first-aid",
+      "path": "pages/first-aid/infection.mu",
+      "description": "Check wounds again during a prolonged wait for care.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "nhs-cuts",
+        "nhs-firstaid"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "first-aid-wounds",
+        "first-aid-monitor"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 955,
+      "sha256": "e039bdbcee20b81e9c01cd7278822f8bd19628516bb627d74adf04800eb8e44b"
+    },
+    {
+      "id": "first-aid-evacuation",
+      "title": "Deciding whether to move a casualty",
+      "category": "first-aid",
+      "path": "pages/first-aid/evacuation.mu",
+      "description": "Weigh immediate danger against the risk of moving an injured person.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "rcuk-first",
+        "mre-call",
+        "nhs-firstaid"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "first-aid-monitor",
+        "communications-location"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1103,
+      "sha256": "cdb9e3f1ea6c71857aec53fdbe58b4aac856e3dccaedfd696a02748baa22a33f"
+    },
+    {
+      "id": "first-aid-monitor",
+      "title": "Monitoring someone awaiting care",
+      "category": "first-aid",
+      "path": "pages/first-aid/monitor.mu",
+      "description": "Record changes and restart the emergency assessment whenever the person deteriorates.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "rcuk-first",
+        "rcuk-adult",
+        "mre-call"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "first-aid-assess",
+        "first-aid-evacuation"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1007,
+      "sha256": "9986f591052b073f0e03298a296946a22c5928abe42603b250190e01256b4a45"
+    },
+    {
+      "id": "first-aid-bleed-quick",
+      "title": "Severe bleeding quick card",
+      "category": "first-aid",
+      "path": "pages/first-aid/bleed-quick.mu",
+      "description": "Press firmly and continuously. Call emergency services (UK: 999).",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "rcuk-first",
+        "sja-bleeding"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "first-aid-bleeding"
+      ],
+      "page_type": "quick",
+      "size_bytes": 515,
+      "sha256": "79900cc2c74ae7708ac682a6aee2cc7092562528a0e69edbdd27f46232b059c6"
+    },
+    {
+      "id": "first-aid-heat-quick",
+      "title": "Heat illness quick card",
+      "category": "first-aid",
+      "path": "pages/first-aid/heat-quick.mu",
+      "description": "Move to shade, remove excess clothes, cool with water and fan.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "nhs-heat",
+        "rcuk-first"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "first-aid-heat"
+      ],
+      "page_type": "quick",
+      "size_bytes": 476,
+      "sha256": "153548576f33ef5fed024d6e86c589960c87a0e806ac2e8b8599e8920ddb25c9"
+    },
+    {
+      "id": "communications-visual",
+      "title": "Making a visible rescue signal",
+      "category": "communications",
+      "path": "pages/communications/visual.mu",
+      "description": "Use contrast by day and a controlled light signal at night.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-whistle"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-signal",
+        "communications-location"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 977,
+      "sha256": "68f68770a8e2621470e94218ff9608b6523fb3a34482b65ab2f4275d67d69fe3"
+    },
+    {
+      "id": "communications-morse",
+      "title": "Morse timing and the SOS signal",
+      "category": "communications",
+      "path": "pages/communications/morse.mu",
+      "description": "Use distinct short and long pulses that can be recognised at a distance.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "itu-morse",
+        "fm-survival"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-signal",
+        "communications-visual"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1014,
+      "sha256": "ce70c6fa50820ded6f23346f5c115f08709545c0298c332bb8d68e755738fe79"
+    },
+    {
+      "id": "communications-location",
+      "title": "Communicating your location",
+      "category": "communications",
+      "path": "pages/communications/location.mu",
+      "description": "Write a position that can be read back without your map or phone.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "mre-call",
+        "os-map"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-grid",
+        "communications-radio"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 984,
+      "sha256": "14de25f6552e3772548a7ca6029e815acc09fe53768576478ba9015fc2e5727f"
+    },
+    {
+      "id": "communications-distress-quick",
+      "title": "Distress signalling quick card",
+      "category": "communications",
+      "path": "pages/communications/distress-quick.mu",
+      "description": "Stay somewhere safe and tell rescuers your location when possible.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "mre-whistle",
+        "mre-call"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-signal"
+      ],
+      "page_type": "quick",
+      "size_bytes": 510,
+      "sha256": "2a26011cc4af374d488064541346cca9eb7af704b3944806525e3791459af3c9"
+    },
+    {
+      "id": "self-sufficiency-rain-system",
+      "title": "Setting up a non-potable rainwater store",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/rain-system.mu",
+      "description": "Use a covered water butt for suitable non-drinking jobs.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-rain",
+        "dwi-private-protection",
+        "rhs-water"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "water-rainwater",
+        "self-sufficiency-water"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1037,
+      "sha256": "df3adcd5626415066df27e480322420514bedf473dc447b715a98676add8f0e5"
+    },
+    {
+      "id": "self-sufficiency-seeds",
+      "title": "Saving seed for the next growing season",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/seeds.mu",
+      "description": "Start with a healthy familiar crop and a variety likely to breed true.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "rhs-seeds"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "self-sufficiency-growing"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 900,
+      "sha256": "b7e0ccca727f4c08a80804ad0aa535010ab444394c90294a556b1d09ebacf9dd"
+    },
+    {
+      "id": "self-sufficiency-repairs",
+      "title": "Temporary repairs to fabric and gear",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/repairs.mu",
+      "description": "Repair low-consequence damage first, such as a torn bag or tarp.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "mre-shelter"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "self-sufficiency-maintenance",
+        "shelter-tarp"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 990,
+      "sha256": "7adc44f7c5c3df1e45ab891db5dcdab4ed1153bb8a288162cb679107c438ed9a"
+    },
+    {
+      "id": "self-sufficiency-outage",
+      "title": "Managing a prolonged infrastructure outage",
+      "category": "self-sufficiency",
+      "path": "pages/self-sufficiency/outage.mu",
+      "description": "Reassess people, shelter, safe water and communications before each new work period.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "hudson-jsp",
+        "gov-sanitation",
+        "ofgem-psr"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "self-sufficiency-supplies",
+        "communications-planning"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1121,
+      "sha256": "6345619d8a2f9ac6ad7a12416e1c44fe951ae4973347a0b518573996a3802d4c"
+    },
+    {
+      "id": "fire-setup",
+      "title": "Preparing a small outdoor fire",
+      "category": "fire",
+      "path": "pages/fire/setup.mu",
+      "description": "Plan the entire burn, including putting it out, before lighting.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "lnt-fire",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-site",
+        "fire-tinder",
+        "fire-put-out"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1117,
+      "sha256": "ee46c49270ff116802babcc1b044bc6c1750538d80e2da936ca82404a0d11f72"
+    },
+    {
+      "id": "preparedness-priorities",
+      "title": "Making decisions when stranded",
+      "category": "preparedness",
+      "path": "pages/preparedness/priorities.mu",
+      "description": "Pause, get everyone safe, and choose the next action from what you can verify.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "hudson-jsp",
+        "mre-safety"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-lost",
+        "shelter-emergency"
+      ],
+      "page_type": "detailed",
+      "size_bytes": 1083,
+      "sha256": "0409758558c4619f69e9f77fdeea4ed53b77c0821c57b6885af83759cff9824a"
+    },
+    {
+      "id": "quick-prefilter",
+      "title": "Settling raw water quick card",
+      "category": "quick",
+      "path": "pages/quick/prefilter.mu",
+      "description": "Settle muddy water in a marked raw container.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "cdc-water",
+        "cdc-hike"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "water-settling"
+      ],
+      "page_type": "quick",
+      "size_bytes": 533,
+      "sha256": "6af282e5462ac57c6f8c36fea544683e507691b9948139c74c7344006219cebd"
+    },
+    {
+      "id": "quick-fire-out",
+      "title": "Campfire extinguishing quick card",
+      "category": "quick",
+      "path": "pages/quick/fire-out.mu",
+      "description": "Stop adding fuel early. Keep enough water to put it out.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "lnt-fire",
+        "gov-outdoor-fire"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "fire-put-out"
+      ],
+      "page_type": "quick",
+      "size_bytes": 513,
+      "sha256": "72e22e9947974fb81de70ca852f9e51c6cc3f9c652f57932752e89b54f6b8e99"
+    },
+    {
+      "id": "quick-tarp",
+      "title": "Tarp shelter quick card",
+      "category": "quick",
+      "path": "pages/quick/tarp.mu",
+      "description": "Choose safe drained ground clear of falling branches, flood routes and rockfall.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "fm-survival",
+        "scouts-tarp",
+        "mre-shelter"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "shelter-tarp"
+      ],
+      "page_type": "quick",
+      "size_bytes": 492,
+      "sha256": "db20880f23c71fc5dd4c46fbd45d63d4e80d6a1638350484a71fb326eee77be5"
+    },
+    {
+      "id": "quick-grid",
+      "title": "UK grid reference quick card",
+      "category": "quick",
+      "path": "pages/quick/grid.mu",
+      "description": "British National Grid: use the square letters, then read right and up.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "os-map",
+        "mre-call"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "navigation-grid"
+      ],
+      "page_type": "quick",
+      "size_bytes": 473,
+      "sha256": "48cc4d35ebaab66573ec0d1229bf4c0bf9142182a775b537c044ac74ba057e7a"
+    },
+    {
+      "id": "quick-toilet",
+      "title": "Emergency toilet quick card",
+      "category": "quick",
+      "path": "pages/quick/toilet.mu",
+      "description": "If told not to flush, contain the waste.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "wash-toilet",
+        "gov-sanitation",
+        "cdc-hygiene"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "sanitation-toilet"
+      ],
+      "page_type": "quick",
+      "size_bytes": 472,
+      "sha256": "9da8b0870a4bba920539dbcf585c5ef53cb972be9ae593eec1d9aa6ae444fdbf"
+    },
+    {
+      "id": "quick-rescue-call",
+      "title": "Rescue message quick card",
+      "category": "quick",
+      "path": "pages/quick/rescue-call.mu",
+      "description": "Send location and format, incident, number of people, dangers and needed help.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "mre-call",
+        "os-map"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "communications-location"
+      ],
+      "page_type": "quick",
+      "size_bytes": 476,
+      "sha256": "71070c21f8ec87139c32245dc4f060b652a69d294aadd527ddbd3e46be2fbb63"
+    },
+    {
+      "id": "quick-solar",
+      "title": "Portable solar input quick card",
+      "category": "quick",
+      "path": "pages/quick/solar.mu",
+      "description": "Confirm input voltage, current, power, polarity and connectors before connecting.",
+      "version": "0.1.0",
+      "last_reviewed": "2026-11-23",
+      "sources": [
+        "ecoflow-solar",
+        "esf-bank"
+      ],
+      "safety_critical": true,
+      "review_status": "requires_independent_review",
+      "related_pages": [
+        "power-solar-portable"
+      ],
+      "page_type": "quick",
+      "size_bytes": 525,
+      "sha256": "cd3bcbd68ca79ae688d02c696d1e8d1632871d096624eb97145ae56fddeae7ef"
     }
   ]
 }

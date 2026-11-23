@@ -1,12 +1,12 @@
 >Navigating without GPS
-Use a paper map and compass; confirm your location frequently.
+Use a paper map, compass and frequent position checks.
+1. Start at a confirmed point and orient the map. Choose a route with features easy to identify in the expected visibility. Use a track or wall as a handrail when it leads safely towards the target.
+2. Write the bearing and expected distance for each leg. Know which obvious feature will tell you that you have gone too far. Confirm at every junction rather than waiting until you are lost.
+3. Calibrate how many double steps you take over a known distance on safe ground. Use this only for rough range in poor visibility; slopes and rough surfaces change stride.
+4. If no two features fit your estimate, stop. Return to the last known point only by a recognised safe route or shelter and signal for help. Avoid relying on moss, guessed sun direction or the slope of a stream to fix position.
 
-Before leaving, mark the route, known landmarks, escape routes and likely junctions. Orient the map and compare multiple features with the ground. Track your direction, distance and time; check at each junction rather than waiting until you are lost.
-Do not navigate by the sun, moss, a single landmark or a guessed path when a mistake could be dangerous. Weather, darkness and unmarked hazards can make a route unsafe. Turn back early if conditions or your abilities make progress uncertain.
-If lost, stop in a safe place, shelter and reassess. Seek help early if you cannot safely locate or leave your position.
-
-`[Reading a map`:/page/navigation/maps.mu]
 `[What to do when lost`:/page/navigation/lost.mu]
+`[Following a bearing on foot`:/page/navigation/bearing.mu]
 
-Reviewed: 2026-11-22
+Reviewed: 2026-11-23
 `[Category`:/page/navigation/index.mu]  `[Home`:/page/index.mu]

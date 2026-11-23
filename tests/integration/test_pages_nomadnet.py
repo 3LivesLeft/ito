@@ -280,6 +280,17 @@ def test_bundled_library_is_discoverable_from_nomad_homepage(world: World, monke
     assert len(quick["content"].encode("utf-8")) <= 1024
     assert ":/page/ito-guide--water-safe-water.mu]" in quick["content"]
     assert "Independent review pending." in quick["content"]
+    shelter_path = "/page/ito-guide--shelter-index.mu"
+    assert f":{shelter_path}]" in library["content"]
+    shelter = fetch(shelter_path, "shelter")
+    assert shelter["result"] == "ok"
+    section_path = "/page/ito-guide--shelter-outdoors-index.mu"
+    assert f":{section_path}]" in shelter["content"]
+    section = fetch(section_path, "outdoors")
+    assert section["result"] == "ok"
+    tarp_path = "/page/ito-guide--shelter-tarp.mu"
+    assert f":{tarp_path}]" in section["content"]
+    assert fetch(tarp_path, "tarp")["content"].startswith(">Pitching an A-frame tarp")
     assert world.store.handle({"op": "share_knowledge", "enabled": False})["ok"]
     assert library_path not in fetch("/page/index.mu", "sharing-off")["content"]
     assert fetch(guide_path, "guide-off")["result"] != "ok"

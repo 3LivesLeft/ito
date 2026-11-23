@@ -9,5 +9,9 @@
 `[Recognising dehydration`:/page/water/dehydration.mu]
 `[Wells and boreholes after flooding`:/page/water/private-supply.mu]
 `[Unsafe water quick card`:/page/water/quick.mu]
+`[Collecting water from streams and lakes`:/page/water/surface.mu]
+`[Settling and straining raw water`:/page/water/settling.mu]
+`[Water collection in freezing conditions`:/page/water/cold-source.mu]
+`[Managing a limited water supply`:/page/water/ration.mu]
 
 `[Home`:/page/index.mu]

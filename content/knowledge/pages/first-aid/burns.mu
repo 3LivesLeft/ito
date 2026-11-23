@@ -1,9 +1,12 @@
->Burns and scalds
-Cool the burn under cool or lukewarm running water for 20 minutes.
+>Cooling and covering burns
+Stop the burning and cool the affected skin as soon as possible.
+1. Move the person away from the heat when safe. For electrical contact, isolate the supply before touching them. Remove nearby jewellery and clothing before swelling, leaving anything stuck to the skin in place.
+2. Cool under cool running water. Aim for 20 minutes where possible. Keep the rest of the person warm, particularly children or anyone with extensive burns. Avoid ice, creams and grease.
+3. After cooling, lay clean cling film loosely over the burn if suitable, without wrapping a limb or covering the face. A clean non-fluffy dressing is an alternative. Leave blisters intact.
+4. Get urgent help for large, deep, electrical or chemical burns, or breathing difficulty after smoke exposure. Seek medical advice for significant burns to the face, hands, feet, genitals or major joints.
 
-Move away from the source if safe. Remove jewellery and clothing near the burn before swelling, but do not remove anything stuck to the skin. Keep the rest of the person warm while cooling the burn. Do not use ice, butter, creams or adhesive dressings.
-After cooling, loosely lay clean cling film over the burn; do not wrap it tightly around a limb. A clean clear plastic bag can cover a hand. Do not burst blisters.
-Call 999 for serious burns or breathing difficulty. Large or deep burns, white or charred skin, burns to face, hands, feet, joints or genitals, and chemical or electrical burns need urgent hospital assessment. For chemicals, avoid contact and rinse with plenty of running water; follow emergency instructions. Switch electricity off before touching the person.
+`[Monitoring someone awaiting care`:/page/first-aid/monitor.mu]
+`[Recognising circulatory shock`:/page/first-aid/shock.mu]
 
-Reviewed: 2026-11-22
-`[First aid`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]
+Reviewed: 2026-11-23
+`[Category`:/page/first-aid/index.mu]  `[Home`:/page/index.mu]
